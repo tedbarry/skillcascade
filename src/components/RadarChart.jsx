@@ -20,6 +20,8 @@ function CustomTooltip({ active, payload }) {
   const data = payload[0]?.payload
   if (!data) return null
 
+  const completionPct = data.total > 0 ? Math.round((data.assessed / data.total) * 100) : 0
+
   return (
     <div className="bg-white/95 backdrop-blur-sm border border-warm-200 rounded-lg shadow-lg px-4 py-3 max-w-xs">
       <div className="font-semibold text-warm-800 text-sm mb-1">{data.domain}</div>
@@ -35,8 +37,18 @@ function CustomTooltip({ active, payload }) {
           </span>
         </div>
       ))}
-      <div className="text-[10px] text-warm-400 mt-1.5">
-        {data.assessed} of {data.total} skills assessed
+      <div className="text-[10px] mt-2 space-y-0.5">
+        <div className="text-warm-500">
+          {data.assessed} of {data.total} skills assessed ({completionPct}%)
+        </div>
+        {completionPct < 50 && completionPct > 0 && (
+          <div className="text-coral-500 font-medium">
+            Low coverage — score may not be representative
+          </div>
+        )}
+        {completionPct === 0 && (
+          <div className="text-warm-400 italic">No skills assessed yet</div>
+        )}
       </div>
     </div>
   )
@@ -47,7 +59,6 @@ function CustomTooltip({ active, payload }) {
  */
 function CustomTick({ payload, x, y, textAnchor }) {
   const name = payload.value
-  // Split long names for readability
   const parts = name.length > 14 ? name.split(/[\s&]+/, 2) : [name]
 
   return (
@@ -69,6 +80,13 @@ function CustomTick({ payload, x, y, textAnchor }) {
   )
 }
 
+function scoreColor(score, assessed) {
+  if (assessed === 0) return ASSESSMENT_COLORS[ASSESSMENT_LEVELS.NOT_ASSESSED]
+  if (score >= 2.5) return ASSESSMENT_COLORS[ASSESSMENT_LEVELS.SOLID]
+  if (score >= 1.5) return ASSESSMENT_COLORS[ASSESSMENT_LEVELS.DEVELOPING]
+  return ASSESSMENT_COLORS[ASSESSMENT_LEVELS.NEEDS_WORK]
+}
+
 export default function RadarChart({
   assessments = {},
   compareAssessments = null,
@@ -82,7 +100,6 @@ export default function RadarChart({
     [compareAssessments]
   )
 
-  // Merge data for recharts
   const chartData = useMemo(() => {
     return scores.map((s, i) => ({
       domain: s.domain,
@@ -96,7 +113,6 @@ export default function RadarChart({
     }))
   }, [scores, compareScores])
 
-  // Summary stats
   const overallAvg = useMemo(() => {
     const withScores = scores.filter((s) => s.assessed > 0)
     if (withScores.length === 0) return 0
@@ -105,16 +121,8 @@ export default function RadarChart({
 
   const totalAssessed = scores.reduce((sum, s) => sum + s.assessed, 0)
   const totalSkills = scores.reduce((sum, s) => sum + s.total, 0)
-
-  // Determine color for overall score
-  const overallColor =
-    overallAvg >= 2.5
-      ? ASSESSMENT_COLORS[ASSESSMENT_LEVELS.SOLID]
-      : overallAvg >= 1.5
-        ? ASSESSMENT_COLORS[ASSESSMENT_LEVELS.DEVELOPING]
-        : overallAvg > 0
-          ? ASSESSMENT_COLORS[ASSESSMENT_LEVELS.NEEDS_WORK]
-          : ASSESSMENT_COLORS[ASSESSMENT_LEVELS.NOT_ASSESSED]
+  const overallCompletion = totalSkills > 0 ? Math.round((totalAssessed / totalSkills) * 100) : 0
+  const overallColor = scoreColor(overallAvg, totalAssessed)
 
   return (
     <div>
@@ -126,25 +134,34 @@ export default function RadarChart({
           </div>
           <div className="flex items-baseline gap-2 mt-0.5">
             <span className="text-2xl font-bold font-display" style={{ color: overallColor }}>
-              {overallAvg.toFixed(1)}
+              {totalAssessed > 0 ? overallAvg.toFixed(1) : '—'}
             </span>
             <span className="text-sm text-warm-400">/ 3.0</span>
           </div>
         </div>
         <div className="text-right">
-          <div className="text-xs text-warm-400">
-            {totalAssessed} of {totalSkills} skills assessed
+          <div className="text-xs text-warm-500">
+            <span className="font-semibold text-warm-700">{totalAssessed}</span> of {totalSkills} skills assessed
           </div>
-          <div className="w-32 h-1.5 bg-warm-200 rounded-full mt-1.5 overflow-hidden">
+          <div className="text-[10px] text-warm-400 mt-0.5">
+            {overallCompletion}% complete
+          </div>
+          <div className="w-32 h-1.5 bg-warm-200 rounded-full mt-1 overflow-hidden">
             <div
               className="h-full rounded-full transition-all duration-500"
               style={{
-                width: `${(totalAssessed / totalSkills) * 100}%`,
+                width: `${overallCompletion}%`,
                 backgroundColor: overallColor,
               }}
             />
           </div>
         </div>
+      </div>
+
+      {/* Note about scoring */}
+      <div className="text-[10px] text-warm-400 px-2 mb-3 italic">
+        Scores reflect the average of assessed skills only. Unassessed skills are excluded, not counted as zero.
+        Check completion % per domain to gauge reliability.
       </div>
 
       {/* Radar chart */}
@@ -168,7 +185,6 @@ export default function RadarChart({
             axisLine={false}
           />
 
-          {/* Comparison profile (behind) */}
           {compareScores && (
             <Radar
               name={compareLabel}
@@ -182,7 +198,6 @@ export default function RadarChart({
             />
           )}
 
-          {/* Current profile */}
           <Radar
             name="Current"
             dataKey="score"
@@ -212,27 +227,30 @@ export default function RadarChart({
       {/* Domain breakdown */}
       <div className="grid grid-cols-3 gap-2 mt-4 px-2">
         {scores.map((s) => {
-          const color =
-            s.score >= 2.5
-              ? ASSESSMENT_COLORS[ASSESSMENT_LEVELS.SOLID]
-              : s.score >= 1.5
-                ? ASSESSMENT_COLORS[ASSESSMENT_LEVELS.DEVELOPING]
-                : s.score > 0
-                  ? ASSESSMENT_COLORS[ASSESSMENT_LEVELS.NEEDS_WORK]
-                  : ASSESSMENT_COLORS[ASSESSMENT_LEVELS.NOT_ASSESSED]
+          const color = scoreColor(s.score, s.assessed)
+          const completionPct = s.total > 0 ? Math.round((s.assessed / s.total) * 100) : 0
+          const lowCoverage = completionPct > 0 && completionPct < 50
 
           return (
             <div
               key={s.domainId}
-              className="bg-white border border-warm-200 rounded-lg px-3 py-2"
+              className={`bg-white rounded-lg px-3 py-2 ${
+                lowCoverage
+                  ? 'border border-dashed border-warm-300'
+                  : 'border border-warm-200'
+              }`}
             >
               <div className="text-[10px] text-warm-400 truncate">{s.domain}</div>
               <div className="flex items-baseline gap-1 mt-0.5">
-                <span className="text-sm font-bold" style={{ color }}>
+                <span
+                  className="text-sm font-bold"
+                  style={{ color, opacity: s.assessed === 0 ? 0.4 : 1 }}
+                >
                   {s.assessed > 0 ? s.score.toFixed(1) : '—'}
                 </span>
                 <span className="text-[10px] text-warm-300">/ 3</span>
               </div>
+              {/* Score bar */}
               <div className="w-full h-1 bg-warm-100 rounded-full mt-1 overflow-hidden">
                 <div
                   className="h-full rounded-full"
@@ -241,6 +259,18 @@ export default function RadarChart({
                     backgroundColor: color,
                   }}
                 />
+              </div>
+              {/* Completion indicator */}
+              <div className="flex items-center gap-1 mt-1">
+                <div className="flex-1 h-0.5 bg-warm-100 rounded-full overflow-hidden">
+                  <div
+                    className="h-full rounded-full bg-warm-300"
+                    style={{ width: `${completionPct}%` }}
+                  />
+                </div>
+                <span className={`text-[9px] ${lowCoverage ? 'text-coral-400 font-medium' : 'text-warm-300'}`}>
+                  {completionPct}%
+                </span>
               </div>
             </div>
           )

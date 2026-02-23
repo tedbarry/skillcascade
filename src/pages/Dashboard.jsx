@@ -21,7 +21,8 @@ export default function Dashboard() {
     setAssessments(generateSampleAssessments())
   }, [])
 
-  const hierarchyData = useMemo(() => toHierarchy(assessments), [assessments])
+  // Hierarchy structure is stable — doesn't depend on assessments
+  const hierarchyData = useMemo(() => toHierarchy(), [])
 
   // Find the selected node's details in the framework
   const selectedDetail = useMemo(() => {

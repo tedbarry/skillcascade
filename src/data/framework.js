@@ -1606,9 +1606,12 @@ export function getFrameworkStats() {
 }
 
 /**
- * Helper: Convert framework to D3 hierarchy format for sunburst
+ * Helper: Convert framework to D3 hierarchy format for sunburst.
+ * Structure-only — does NOT include assessment data.
+ * Assessment levels are looked up separately so the hierarchy stays stable
+ * and D3 doesn't need to rebuild on every rating change.
  */
-export function toHierarchy(assessments = {}) {
+export function toHierarchy() {
   return {
     name: 'Client',
     children: framework.map((domain) => ({
@@ -1625,7 +1628,6 @@ export function toHierarchy(assessments = {}) {
             id: skill.id,
             name: skill.name,
             value: 1,
-            level: assessments[skill.id] ?? ASSESSMENT_LEVELS.NOT_ASSESSED,
           })),
         })),
       })),
