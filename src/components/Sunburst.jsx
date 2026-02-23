@@ -342,7 +342,7 @@ export default function Sunburst({ data, assessments = {}, width = 800, height =
       <div className="flex items-center gap-1.5 mb-3 text-sm text-warm-600 min-h-[28px] flex-wrap">
         {breadcrumb.map((item, i) => (
           <span key={i} className="flex items-center gap-1.5">
-            {i > 0 && <span className="text-warm-400">\u203A</span>}
+            {i > 0 && <span className="text-warm-400">{'›'}</span>}
             {i < breadcrumb.length - 1 ? (
               <button
                 onClick={() => {
