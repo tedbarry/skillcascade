@@ -149,13 +149,15 @@ export default function AssessmentPanel({ assessments, onAssess, initialSubAreaI
               const dStats = getDomainStats(domain, assessments)
               const dPct = dStats.total > 0 ? Math.round((dStats.assessed / dStats.total) * 100) : 0
               const isCurrentDomain = currentDomain.id === domain.id
+              const firstSaIndex = ALL_SUB_AREAS.findIndex((x) => x.domain.id === domain.id)
 
               return (
                 <div key={domain.id}>
-                  {/* Domain header */}
-                  <div
-                    className={`px-2 py-1.5 rounded-md text-xs font-semibold flex items-center gap-2 ${
-                      isCurrentDomain ? 'text-sage-800 bg-sage-50' : 'text-warm-600'
+                  {/* Domain header — clickable to jump to first sub-area */}
+                  <button
+                    onClick={() => goTo(firstSaIndex)}
+                    className={`w-full text-left px-2 py-1.5 rounded-md text-xs font-semibold flex items-center gap-2 transition-colors ${
+                      isCurrentDomain ? 'text-sage-800 bg-sage-50' : 'text-warm-600 hover:bg-warm-50 hover:text-warm-800'
                     }`}
                   >
                     <span className="flex-1 truncate">{domain.name}</span>
@@ -166,9 +168,9 @@ export default function AssessmentPanel({ assessments, onAssess, initialSubAreaI
                     }`}>
                       {dPct}%
                     </span>
-                  </div>
+                  </button>
 
-                  {/* Sub-areas for current domain */}
+                  {/* Sub-areas — always shown for current domain */}
                   {isCurrentDomain && (
                     <div className="ml-2 mt-0.5 space-y-0.5">
                       {domain.subAreas.map((sa) => {
