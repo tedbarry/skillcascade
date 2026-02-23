@@ -1,4 +1,5 @@
 import { Link } from 'react-router-dom'
+import CascadeAnimation from '../components/CascadeAnimation.jsx'
 
 export default function Landing() {
   return (
@@ -74,6 +75,20 @@ export default function Landing() {
               <div className="text-sm text-warm-600">{d.desc}</div>
             </div>
           ))}
+        </div>
+      </section>
+
+      {/* Cascade demo */}
+      <section id="demo" className="max-w-7xl mx-auto px-8 py-20">
+        <h2 className="text-3xl font-bold text-warm-800 font-display text-center mb-4">
+          See Why Foundations Matter
+        </h2>
+        <p className="text-warm-600 text-center max-w-2xl mx-auto mb-8">
+          Click any domain to weaken it and watch the impact cascade upward.
+          This is why effective intervention starts at the bottom.
+        </p>
+        <div className="bg-[#1a1a1e] rounded-2xl p-6 max-w-2xl mx-auto">
+          <CascadeAnimation compact />
         </div>
       </section>
 

@@ -4,6 +4,7 @@ import Sunburst from '../components/Sunburst.jsx'
 import RadarChart from '../components/RadarChart.jsx'
 import AssessmentPanel from '../components/AssessmentPanel.jsx'
 import SkillTree from '../components/SkillTree.jsx'
+import CascadeAnimation from '../components/CascadeAnimation.jsx'
 import ClientManager from '../components/ClientManager.jsx'
 import { framework, toHierarchy, ASSESSMENT_LABELS, ASSESSMENT_COLORS, ASSESSMENT_LEVELS } from '../data/framework.js'
 import { generateSampleAssessments } from '../data/sampleAssessments.js'
@@ -12,6 +13,7 @@ const VIEWS = {
   SUNBURST: 'sunburst',
   RADAR: 'radar',
   TREE: 'tree',
+  CASCADE: 'cascade',
   ASSESS: 'assess',
 }
 
@@ -57,8 +59,8 @@ export default function Dashboard() {
     }
   }
 
-  // Assessment and tree views are full-width — no side panels
-  const showSidePanels = activeView !== VIEWS.ASSESS && activeView !== VIEWS.TREE
+  // Assessment, tree, and cascade views are full-width — no side panels
+  const showSidePanels = activeView !== VIEWS.ASSESS && activeView !== VIEWS.TREE && activeView !== VIEWS.CASCADE
 
   return (
     <div className="min-h-screen bg-warm-50 flex flex-col">
@@ -114,6 +116,7 @@ export default function Dashboard() {
               { key: VIEWS.SUNBURST, label: 'Sunburst' },
               { key: VIEWS.RADAR, label: 'Radar' },
               { key: VIEWS.TREE, label: 'Skill Tree' },
+              { key: VIEWS.CASCADE, label: 'Cascade' },
               { key: VIEWS.ASSESS, label: 'Assess' },
             ].map((v) => (
               <button
@@ -176,6 +179,19 @@ export default function Dashboard() {
                 assessments={assessments}
                 onSelectDomain={(domain) => setSelectedNode({ id: domain.id, name: domain.name })}
               />
+            </div>
+          )}
+
+          {/* Cascade view */}
+          {activeView === VIEWS.CASCADE && (
+            <div className="w-full max-w-4xl mx-auto">
+              <h2 className="text-lg font-semibold text-warm-800 font-display mb-1 text-center">
+                Cascade Animation — Why Foundations Matter
+              </h2>
+              <p className="text-sm text-warm-500 mb-6 text-center">
+                See how weakness in one domain ripples upward through the entire system.
+              </p>
+              <CascadeAnimation />
             </div>
           )}
 
