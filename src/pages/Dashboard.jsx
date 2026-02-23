@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom'
 import Sunburst from '../components/Sunburst.jsx'
 import RadarChart from '../components/RadarChart.jsx'
 import AssessmentPanel from '../components/AssessmentPanel.jsx'
+import SkillTree from '../components/SkillTree.jsx'
 import ClientManager from '../components/ClientManager.jsx'
 import { framework, toHierarchy, ASSESSMENT_LABELS, ASSESSMENT_COLORS, ASSESSMENT_LEVELS } from '../data/framework.js'
 import { generateSampleAssessments } from '../data/sampleAssessments.js'
@@ -10,6 +11,7 @@ import { generateSampleAssessments } from '../data/sampleAssessments.js'
 const VIEWS = {
   SUNBURST: 'sunburst',
   RADAR: 'radar',
+  TREE: 'tree',
   ASSESS: 'assess',
 }
 
@@ -55,8 +57,8 @@ export default function Dashboard() {
     }
   }
 
-  // Assessment view is full-width — no side panels
-  const showSidePanels = activeView !== VIEWS.ASSESS
+  // Assessment and tree views are full-width — no side panels
+  const showSidePanels = activeView !== VIEWS.ASSESS && activeView !== VIEWS.TREE
 
   return (
     <div className="min-h-screen bg-warm-50 flex flex-col">
@@ -107,10 +109,11 @@ export default function Dashboard() {
         {/* Center content */}
         <main className={`flex-1 overflow-auto ${activeView === VIEWS.ASSESS ? '' : 'flex flex-col items-center p-8'}`}>
           {/* View toggle */}
-          <div className={`flex items-center gap-1 bg-warm-100 rounded-lg p-1 mb-6 ${activeView === VIEWS.ASSESS ? 'mx-auto mt-6 w-fit' : ''}`}>
+          <div className={`flex items-center gap-1 bg-warm-100 rounded-lg p-1 mb-6 ${!showSidePanels ? 'mx-auto mt-6 w-fit' : ''}`}>
             {[
               { key: VIEWS.SUNBURST, label: 'Sunburst' },
               { key: VIEWS.RADAR, label: 'Radar' },
+              { key: VIEWS.TREE, label: 'Skill Tree' },
               { key: VIEWS.ASSESS, label: 'Assess' },
             ].map((v) => (
               <button
@@ -156,6 +159,22 @@ export default function Dashboard() {
               <RadarChart
                 assessments={assessments}
                 height={480}
+              />
+            </div>
+          )}
+
+          {/* Skill Tree view */}
+          {activeView === VIEWS.TREE && (
+            <div className="w-full max-w-4xl mx-auto">
+              <h2 className="text-lg font-semibold text-warm-800 font-display mb-1 text-center">
+                Skill Tree — Domain Dependencies
+              </h2>
+              <p className="text-sm text-warm-500 mb-6 text-center">
+                Click any domain to expand. Pulsing node = recommended next target.
+              </p>
+              <SkillTree
+                assessments={assessments}
+                onSelectDomain={(domain) => setSelectedNode({ id: domain.id, name: domain.name })}
               />
             </div>
           )}
