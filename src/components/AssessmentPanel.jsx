@@ -1,4 +1,4 @@
-import { useState, useMemo } from 'react'
+import { useState, useMemo, useEffect, useCallback } from 'react'
 import { framework, ASSESSMENT_LEVELS, ASSESSMENT_LABELS, ASSESSMENT_COLORS } from '../data/framework.js'
 
 /**
@@ -51,8 +51,16 @@ function getDomainStats(domain, assessments) {
   return { total, assessed, avg: assessed > 0 ? scoreSum / assessed : 0 }
 }
 
-export default function AssessmentPanel({ assessments, onAssess }) {
+export default function AssessmentPanel({ assessments, onAssess, initialSubAreaId }) {
   const [currentIndex, setCurrentIndex] = useState(0)
+
+  // Jump to a specific sub-area when navigated from elsewhere
+  useEffect(() => {
+    if (initialSubAreaId?.subAreaId) {
+      const idx = ALL_SUB_AREAS.findIndex((sa) => sa.id === initialSubAreaId.subAreaId)
+      if (idx >= 0) setCurrentIndex(idx)
+    }
+  }, [initialSubAreaId?.subAreaId, initialSubAreaId?.ts])
 
   const currentSubArea = ALL_SUB_AREAS[currentIndex]
   const currentDomain = currentSubArea.domain
@@ -77,9 +85,26 @@ export default function AssessmentPanel({ assessments, onAssess }) {
 
   const subAreaStats = getSubAreaStats(currentSubArea, assessments)
 
-  function goTo(index) {
+  const goTo = useCallback((index) => {
     setCurrentIndex(Math.max(0, Math.min(ALL_SUB_AREAS.length - 1, index)))
-  }
+  }, [])
+
+  // Keyboard shortcuts: arrow left/right to navigate
+  useEffect(() => {
+    function handleKeyDown(e) {
+      // Don't capture if user is typing in an input
+      if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA') return
+      if (e.key === 'ArrowLeft') {
+        e.preventDefault()
+        setCurrentIndex((prev) => Math.max(0, prev - 1))
+      } else if (e.key === 'ArrowRight') {
+        e.preventDefault()
+        setCurrentIndex((prev) => Math.min(ALL_SUB_AREAS.length - 1, prev + 1))
+      }
+    }
+    window.addEventListener('keydown', handleKeyDown)
+    return () => window.removeEventListener('keydown', handleKeyDown)
+  }, [])
 
   // Mark all skills in current sub-area to a given level
   function bulkRate(level) {
@@ -252,36 +277,41 @@ export default function AssessmentPanel({ assessments, onAssess }) {
           </div>
 
           {/* Navigation */}
-          <div className="flex items-center justify-between mt-10 pt-6 border-t border-warm-200">
-            <button
-              onClick={() => goTo(currentIndex - 1)}
-              disabled={currentIndex === 0}
-              className={`flex items-center gap-2 px-4 py-2.5 rounded-lg text-sm font-medium transition-colors ${
-                currentIndex === 0
-                  ? 'text-warm-300 cursor-not-allowed'
-                  : 'text-warm-600 hover:bg-warm-100 hover:text-warm-800'
-              }`}
-            >
-              <span>{'←'}</span>
-              <span>Previous</span>
-            </button>
+          <div className="mt-10 pt-6 border-t border-warm-200">
+            <div className="flex items-center justify-between">
+              <button
+                onClick={() => goTo(currentIndex - 1)}
+                disabled={currentIndex === 0}
+                className={`flex items-center gap-2 px-4 py-2.5 rounded-lg text-sm font-medium transition-colors ${
+                  currentIndex === 0
+                    ? 'text-warm-300 cursor-not-allowed'
+                    : 'text-warm-600 hover:bg-warm-100 hover:text-warm-800'
+                }`}
+              >
+                <span>{'\u2190'}</span>
+                <span>Previous</span>
+              </button>
 
-            <span className="text-xs text-warm-400">
-              {currentIndex + 1} of {ALL_SUB_AREAS.length} sub-areas
-            </span>
+              <span className="text-xs text-warm-400">
+                {currentIndex + 1} of {ALL_SUB_AREAS.length} sub-areas
+              </span>
 
-            <button
-              onClick={() => goTo(currentIndex + 1)}
-              disabled={currentIndex === ALL_SUB_AREAS.length - 1}
-              className={`flex items-center gap-2 px-4 py-2.5 rounded-lg text-sm font-medium transition-colors ${
-                currentIndex === ALL_SUB_AREAS.length - 1
-                  ? 'text-warm-300 cursor-not-allowed'
-                  : 'bg-sage-500 text-white hover:bg-sage-600'
-              }`}
-            >
-              <span>Next</span>
-              <span>{'→'}</span>
-            </button>
+              <button
+                onClick={() => goTo(currentIndex + 1)}
+                disabled={currentIndex === ALL_SUB_AREAS.length - 1}
+                className={`flex items-center gap-2 px-4 py-2.5 rounded-lg text-sm font-medium transition-colors ${
+                  currentIndex === ALL_SUB_AREAS.length - 1
+                    ? 'text-warm-300 cursor-not-allowed'
+                    : 'bg-sage-500 text-white hover:bg-sage-600'
+                }`}
+              >
+                <span>Next</span>
+                <span>{'\u2192'}</span>
+              </button>
+            </div>
+            <p className="text-[10px] text-warm-400 text-center mt-2">
+              Use arrow keys \u2190 \u2192 to navigate between sub-areas
+            </p>
           </div>
         </div>
       </div>

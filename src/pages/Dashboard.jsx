@@ -1,4 +1,4 @@
-import { useState, useMemo, useEffect } from 'react'
+import { useState, useMemo, useEffect, useCallback } from 'react'
 import { Link } from 'react-router-dom'
 import Sunburst from '../components/Sunburst.jsx'
 import RadarChart from '../components/RadarChart.jsx'
@@ -9,6 +9,7 @@ import ProgressTimeline from '../components/ProgressTimeline.jsx'
 import ClientManager from '../components/ClientManager.jsx'
 import ExportMenu from '../components/ExportMenu.jsx'
 import PrintReport from '../components/PrintReport.jsx'
+import Toast from '../components/Toast.jsx'
 import { framework, toHierarchy, ASSESSMENT_LABELS, ASSESSMENT_COLORS, ASSESSMENT_LEVELS } from '../data/framework.js'
 import { generateSampleAssessments } from '../data/sampleAssessments.js'
 import { saveSnapshot, getSnapshots, deleteSnapshot } from '../data/storage.js'
@@ -30,6 +31,18 @@ export default function Dashboard() {
   const [clientId, setClientId] = useState(null)
   const [snapshots, setSnapshots] = useState([])
   const [clientName, setClientName] = useState('Sample Client')
+  const [toast, setToast] = useState(null)
+  const [assessTarget, setAssessTarget] = useState({ subAreaId: null, ts: 0 })
+  const [compareSnapshotId, setCompareSnapshotId] = useState(null)
+
+  const showToast = useCallback((message, type = 'success') => {
+    setToast({ message, type, key: Date.now() })
+  }, [])
+
+  const handleNavigateToAssess = useCallback((subAreaId) => {
+    setAssessTarget({ subAreaId, ts: Date.now() })
+    setActiveView(VIEWS.ASSESS)
+  }, [])
 
   // Load sample data on mount
   useEffect(() => {
@@ -78,6 +91,7 @@ export default function Dashboard() {
     if (!clientId) return
     const updated = saveSnapshot(clientId, label, assessments)
     setSnapshots(updated)
+    showToast('Snapshot saved', 'success')
   }
 
   function handleDeleteSnapshot(snapshotId) {
@@ -103,6 +117,7 @@ export default function Dashboard() {
             currentClientId={clientId}
             onSelectClient={handleSelectClient}
             assessments={assessments}
+            onSaveSuccess={() => showToast('Assessment saved', 'success')}
           />
         </div>
         <div className="flex items-center gap-3">
@@ -190,11 +205,30 @@ export default function Dashboard() {
               <h2 className="text-lg font-semibold text-warm-800 font-display mb-1 text-center">
                 Skills Profile — Domain Overview
               </h2>
-              <p className="text-sm text-warm-500 mb-6 text-center">
+              <p className="text-sm text-warm-500 mb-4 text-center">
                 Average score per domain across all assessed skills.
               </p>
+              {snapshots.length > 0 && (
+                <div className="flex items-center justify-center gap-2 mb-4">
+                  <label className="text-xs text-warm-500">Compare with:</label>
+                  <select
+                    value={compareSnapshotId || ''}
+                    onChange={(e) => setCompareSnapshotId(e.target.value || null)}
+                    className="text-xs px-2.5 py-1.5 rounded-md border border-warm-200 text-warm-700 focus:outline-none focus:border-sage-400"
+                  >
+                    <option value="">None</option>
+                    {snapshots.map((snap) => (
+                      <option key={snap.id} value={snap.id}>
+                        {snap.label || new Date(snap.timestamp).toLocaleDateString()}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+              )}
               <RadarChart
                 assessments={assessments}
+                compareAssessments={compareSnapshotId ? snapshots.find((s) => s.id === compareSnapshotId)?.assessments : undefined}
+                compareLabel={compareSnapshotId ? (snapshots.find((s) => s.id === compareSnapshotId)?.label || 'Snapshot') : undefined}
                 height={480}
               />
             </div>
@@ -207,7 +241,7 @@ export default function Dashboard() {
                 Skill Tree — Domain Dependencies
               </h2>
               <p className="text-sm text-warm-500 mb-6 text-center">
-                Click any domain to expand. Pulsing node = recommended next target.
+                Developmental hierarchy — prerequisites cascade upward. Pulsing node = recommended focus area. Click to expand.
               </p>
               <SkillTree
                 assessments={assessments}
@@ -238,6 +272,7 @@ export default function Dashboard() {
                 onSaveSnapshot={handleSaveSnapshot}
                 onDeleteSnapshot={handleDeleteSnapshot}
                 clientName={clientName}
+                hasClient={!!clientId}
               />
             </div>
           )}
@@ -247,6 +282,7 @@ export default function Dashboard() {
             <AssessmentPanel
               assessments={assessments}
               onAssess={setAssessments}
+              initialSubAreaId={assessTarget}
             />
           )}
         </main>
@@ -254,12 +290,20 @@ export default function Dashboard() {
         {/* Right panel — Detail View (only for viz views) */}
         {showSidePanels && sidebarOpen && selectedDetail && (
           <aside className="w-80 bg-white border-l border-warm-200 overflow-y-auto shrink-0 p-5">
-            <DetailPanel detail={selectedDetail} assessments={assessments} onAssess={setAssessments} />
+            <DetailPanel detail={selectedDetail} assessments={assessments} onAssess={setAssessments} onNavigateToAssess={handleNavigateToAssess} />
           </aside>
         )}
       </div>
     </div>
     <PrintReport assessments={assessments} clientName={clientName} />
+    {toast && (
+      <Toast
+        key={toast.key}
+        message={toast.message}
+        type={toast.type}
+        onDismiss={() => setToast(null)}
+      />
+    )}
     </>
   )
 }
@@ -354,7 +398,7 @@ function ScoreBadge({ score, count, total }) {
 /**
  * Right panel: details + assessment controls for selected node
  */
-function DetailPanel({ detail, assessments, onAssess }) {
+function DetailPanel({ detail, assessments, onAssess, onNavigateToAssess }) {
   const { type, data, domain, subArea } = detail
 
   if (type === 'domain') {
@@ -374,6 +418,14 @@ function DetailPanel({ detail, assessments, onAssess }) {
           {data.subAreas.length} sub-areas •{' '}
           {data.subAreas.reduce((sum, sa) => sum + sa.skillGroups.length, 0)} skill groups
         </div>
+        {onNavigateToAssess && data.subAreas.length > 0 && (
+          <button
+            onClick={() => onNavigateToAssess(data.subAreas[0].id)}
+            className="mt-4 w-full text-xs px-3 py-2 rounded-lg bg-sage-500 text-white hover:bg-sage-600 transition-colors font-medium"
+          >
+            Assess this Domain
+          </button>
+        )}
       </div>
     )
   }
@@ -393,6 +445,14 @@ function DetailPanel({ detail, assessments, onAssess }) {
             />
           ))}
         </div>
+        {onNavigateToAssess && (
+          <button
+            onClick={() => onNavigateToAssess(data.id)}
+            className="mt-4 w-full text-xs px-3 py-2 rounded-lg bg-sage-500 text-white hover:bg-sage-600 transition-colors font-medium"
+          >
+            Assess this Sub-area
+          </button>
+        )}
       </div>
     )
   }
@@ -405,6 +465,14 @@ function DetailPanel({ detail, assessments, onAssess }) {
         </div>
         <h3 className="text-base font-bold text-warm-800 font-display mb-4">{data.name}</h3>
         <SkillGroupAssessor skillGroup={data} assessments={assessments} onAssess={onAssess} />
+        {onNavigateToAssess && (
+          <button
+            onClick={() => onNavigateToAssess(subArea.id)}
+            className="mt-4 w-full text-xs px-3 py-2 rounded-lg bg-sage-500 text-white hover:bg-sage-600 transition-colors font-medium"
+          >
+            Assess this area
+          </button>
+        )}
       </div>
     )
   }

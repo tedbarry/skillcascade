@@ -169,9 +169,11 @@ export default function CascadeAnimation({ compact = false }) {
     setAnimationPhase(0)
   }, [])
 
+  const isIndependent = (id) => id === 'd8' || id === 'd9'
+
   function getNodeStyle(domainId) {
     if (domainId === selectedDomain) {
-      return { fill: '#5c1a1a', stroke: '#ff4444', textColor: '#ff8888', glow: true, shake: true }
+      return { fill: '#5c1a1a', stroke: '#ff4444', textColor: '#ff8888', glow: true, shake: true, independent: false }
     }
     if (affectedDomains.has(domainId)) {
       const tier = cascadeTiers[domainId] || 1
@@ -182,14 +184,19 @@ export default function CascadeAnimation({ compact = false }) {
         textColor: `rgba(255, 136, 136, ${intensity})`,
         glow: true,
         shake: false,
+        independent: false,
       }
+    }
+    if (isIndependent(domainId)) {
+      // D8/D9 always neutral/dimmed — never shown as healthy green
+      return { fill: '#252530', stroke: '#667', textColor: '#aab', glow: false, shake: false, independent: true }
     }
     if (cascadeActive) {
       // Unaffected during cascade — stays healthy
-      return { fill: '#1e3525', stroke: '#7fb589', textColor: '#b5e8bf', glow: false, shake: false }
+      return { fill: '#1e3525', stroke: '#7fb589', textColor: '#b5e8bf', glow: false, shake: false, independent: false }
     }
     // Default — neutral/healthy
-    return { fill: '#252530', stroke: '#667', textColor: '#aab', glow: false, shake: false }
+    return { fill: '#252530', stroke: '#667', textColor: '#aab', glow: false, shake: false, independent: false }
   }
 
   function getEdgeStyle(fromId, toId) {
@@ -396,6 +403,33 @@ export default function CascadeAnimation({ compact = false }) {
                   if (isClickable) triggerCascade(domain.id)
                 }}
               >
+                {/* INDEPENDENT badge for D8/D9 */}
+                {style.independent && (
+                  <>
+                    <rect
+                      x={pos.x - 38}
+                      y={pos.y - nodeH / 2 - 16}
+                      width={76}
+                      height={14}
+                      rx={7}
+                      fill="#444"
+                      opacity={0.6}
+                    />
+                    <text
+                      x={pos.x}
+                      y={pos.y - nodeH / 2 - 9}
+                      textAnchor="middle"
+                      dominantBaseline="middle"
+                      fill="#999"
+                      fontSize="8"
+                      fontWeight="700"
+                      fontFamily="monospace"
+                    >
+                      INDEPENDENT
+                    </text>
+                  </>
+                )}
+
                 {/* Node rect */}
                 <rect
                   x={pos.x - nodeW / 2}
@@ -406,6 +440,8 @@ export default function CascadeAnimation({ compact = false }) {
                   fill={style.fill}
                   stroke={style.stroke}
                   strokeWidth={isSource || isAffected ? 2.5 : 1.5}
+                  strokeDasharray={style.independent ? '6,4' : 'none'}
+                  opacity={style.independent ? 0.7 : 1}
                   filter={style.glow ? 'url(#cascade-glow)' : undefined}
                 />
 
@@ -454,12 +490,14 @@ export default function CascadeAnimation({ compact = false }) {
                   fontFamily="Inter, sans-serif"
                 >
                   {isSource
-                    ? '⚠ WEAKENED'
+                    ? '\u26A0 WEAKENED'
                     : isAffected
-                      ? `↑ Cascade impact (tier ${cascadeTier})`
-                      : cascadeActive
-                        ? '✓ Stable'
-                        : domain.subtitle
+                      ? `\u2191 Cascade impact (tier ${cascadeTier})`
+                      : isIndependent(domain.id)
+                        ? 'Independent domain'
+                        : cascadeActive
+                          ? '\u2713 Stable'
+                          : domain.subtitle
                   }
                 </text>
 
@@ -537,37 +575,34 @@ export default function CascadeAnimation({ compact = false }) {
         )}
       </svg>
 
-      {/* Domain selector buttons (alternative to clicking nodes) */}
-      {!compact && !cascadeActive && (
+      {/* Domain selector buttons — always rendered to prevent layout shuffle */}
+      {!compact && (
         <div className="flex items-center justify-center gap-2 mt-4 flex-wrap">
-          <span className="text-xs text-warm-400 mr-1">Weaken:</span>
-          {framework.filter(d => d.id !== 'd8' && d.id !== 'd9').map((domain) => (
-            <button
-              key={domain.id}
-              onClick={() => triggerCascade(domain.id)}
-              className="text-xs px-3 py-1.5 rounded-md bg-[#2a2a30] text-gray-400 hover:bg-[#3a2525] hover:text-coral-300 border border-[#444] hover:border-coral-500 transition-all font-medium"
-            >
-              {domain.name}
-            </button>
-          ))}
-        </div>
-      )}
-
-      {!compact && cascadeActive && (
-        <div className="flex items-center justify-center gap-2 mt-4">
-          <span className="text-xs text-warm-400 mr-1">Try another:</span>
-          {framework.filter(d => d.id !== 'd8' && d.id !== 'd9' && d.id !== selectedDomain).map((domain) => (
-            <button
-              key={domain.id}
-              onClick={() => {
-                reset()
-                setTimeout(() => triggerCascade(domain.id), 100)
-              }}
-              className="text-xs px-3 py-1.5 rounded-md bg-[#2a2a30] text-gray-400 hover:bg-[#3a2525] hover:text-coral-300 border border-[#444] hover:border-coral-500 transition-all font-medium"
-            >
-              {domain.name}
-            </button>
-          ))}
+          <span className="text-xs text-warm-400 mr-1">{cascadeActive ? 'Try another:' : 'Weaken:'}</span>
+          {framework.filter(d => d.id !== 'd8' && d.id !== 'd9').map((domain) => {
+            const isSelected = cascadeActive && domain.id === selectedDomain
+            return (
+              <button
+                key={domain.id}
+                disabled={isSelected}
+                onClick={() => {
+                  if (cascadeActive) {
+                    reset()
+                    setTimeout(() => triggerCascade(domain.id), 100)
+                  } else {
+                    triggerCascade(domain.id)
+                  }
+                }}
+                className={`text-xs px-3 py-1.5 rounded-md border transition-all font-medium ${
+                  isSelected
+                    ? 'bg-[#3a2020] text-coral-400 border-coral-500 ring-2 ring-coral-500/30 cursor-default opacity-80'
+                    : 'bg-[#2a2a30] text-gray-400 hover:bg-[#3a2525] hover:text-coral-300 border-[#444] hover:border-coral-500'
+                }`}
+              >
+                {domain.name}
+              </button>
+            )
+          })}
         </div>
       )}
     </div>

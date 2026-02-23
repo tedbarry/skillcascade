@@ -138,17 +138,27 @@ export default function SkillTree({ assessments = {}, onSelectDomain }) {
 
   // Dimensions
   const width = 900
-  const height = 820
+  const baseHeight = 920
   const nodeW = 200
   const nodeH = 64
   const tierSpacing = 96
   const colSpacing = 280
 
+  // Dynamically extend SVG height when a domain is expanded
+  const expandedExtra = useMemo(() => {
+    if (!expandedDomain) return 0
+    const domain = framework.find((d) => d.id === expandedDomain)
+    if (!domain) return 0
+    return domain.subAreas.length * 38 + 40
+  }, [expandedDomain])
+
+  const height = baseHeight + expandedExtra
+
   // Compute positions (bottom-up: tier 0 at bottom)
   const positions = useMemo(() => {
     const pos = {}
     const centerX = width / 2
-    const bottomY = height - 70
+    const bottomY = baseHeight - 100
 
     Object.entries(NODE_LAYOUT).forEach(([id, { col, tier }]) => {
       pos[id] = {
@@ -214,8 +224,8 @@ export default function SkillTree({ assessments = {}, onSelectDomain }) {
 
         {/* Tier labels */}
         <g>
-          <text x={15} y={height - 58} fill="#444" fontSize="9" fontFamily="monospace">FOUNDATION</text>
-          <text x={15} y={height - 58 - 6 * tierSpacing} fill="#444" fontSize="9" fontFamily="monospace">HIGHEST ORDER</text>
+          <text x={15} y={baseHeight - 58} fill="#444" fontSize="9" fontFamily="monospace">FOUNDATION</text>
+          <text x={15} y={baseHeight - 58 - 6 * tierSpacing} fill="#444" fontSize="9" fontFamily="monospace">HIGHEST ORDER</text>
           <text x={15} y={positions.d8.y + 4} fill="#444" fontSize="9" fontFamily="monospace">OVERRIDE</text>
           <text x={width - 70} y={positions.d9.y + 4} fill="#444" fontSize="9" fontFamily="monospace">SYSTEM</text>
         </g>

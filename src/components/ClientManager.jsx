@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import { getClients, saveClient, deleteClient, getAssessments, saveAssessment, generateId } from '../data/storage.js'
 
-export default function ClientManager({ currentClientId, onSelectClient, assessments }) {
+export default function ClientManager({ currentClientId, onSelectClient, assessments, onSaveSuccess }) {
   const [isOpen, setIsOpen] = useState(false)
   const [clients, setClients] = useState(() => getClients())
   const [newName, setNewName] = useState('')
@@ -33,6 +33,7 @@ export default function ClientManager({ currentClientId, onSelectClient, assessm
     if (!currentClientId) return
     saveAssessment(currentClientId, assessments)
     refreshClients()
+    onSaveSuccess?.()
   }
 
   function handleDelete(clientId) {

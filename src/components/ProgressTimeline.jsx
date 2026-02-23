@@ -74,6 +74,7 @@ export default function ProgressTimeline({
   onSaveSnapshot,
   onDeleteSnapshot,
   clientName = 'Client',
+  hasClient = false,
 }) {
   const [snapshotLabel, setSnapshotLabel] = useState('')
   const [compareMode, setCompareMode] = useState(false)
@@ -173,25 +174,35 @@ export default function ProgressTimeline({
             <h3 className="text-xs uppercase tracking-wider text-warm-400 font-semibold mb-2">
               Save Snapshot
             </h3>
-            <div className="flex gap-1.5">
-              <input
-                type="text"
-                value={snapshotLabel}
-                onChange={(e) => setSnapshotLabel(e.target.value)}
-                onKeyDown={(e) => e.key === 'Enter' && handleSaveSnapshot()}
-                placeholder="Label (optional)"
-                className="flex-1 text-xs px-2.5 py-1.5 rounded-md border border-warm-200 focus:outline-none focus:border-sage-400 text-warm-700 placeholder-warm-300"
-              />
-              <button
-                onClick={handleSaveSnapshot}
-                className="text-xs px-3 py-1.5 rounded-md bg-sage-500 text-white hover:bg-sage-600 transition-colors font-medium shrink-0"
-              >
-                Save
-              </button>
-            </div>
-            <p className="text-[10px] text-warm-400 mt-1">
-              Saves a point-in-time copy of all ratings
-            </p>
+            {hasClient ? (
+              <>
+                <div className="flex gap-1.5">
+                  <input
+                    type="text"
+                    value={snapshotLabel}
+                    onChange={(e) => setSnapshotLabel(e.target.value)}
+                    onKeyDown={(e) => e.key === 'Enter' && handleSaveSnapshot()}
+                    placeholder="Label (optional)"
+                    className="flex-1 text-xs px-2.5 py-1.5 rounded-md border border-warm-200 focus:outline-none focus:border-sage-400 text-warm-700 placeholder-warm-300"
+                  />
+                  <button
+                    onClick={handleSaveSnapshot}
+                    className="text-xs px-3 py-1.5 rounded-md bg-sage-500 text-white hover:bg-sage-600 transition-colors font-medium shrink-0"
+                  >
+                    Save
+                  </button>
+                </div>
+                <p className="text-[10px] text-warm-400 mt-1">
+                  Saves a point-in-time copy of all ratings
+                </p>
+              </>
+            ) : (
+              <div className="bg-warm-50 border border-warm-200 rounded-lg p-3">
+                <p className="text-xs text-warm-500">
+                  Create or select a client first to save snapshots.
+                </p>
+              </div>
+            )}
           </div>
 
           {/* Snapshot list */}
