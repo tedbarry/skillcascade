@@ -7,6 +7,8 @@ import SkillTree from '../components/SkillTree.jsx'
 import CascadeAnimation from '../components/CascadeAnimation.jsx'
 import ProgressTimeline from '../components/ProgressTimeline.jsx'
 import ClientManager from '../components/ClientManager.jsx'
+import ExportMenu from '../components/ExportMenu.jsx'
+import PrintReport from '../components/PrintReport.jsx'
 import { framework, toHierarchy, ASSESSMENT_LABELS, ASSESSMENT_COLORS, ASSESSMENT_LEVELS } from '../data/framework.js'
 import { generateSampleAssessments } from '../data/sampleAssessments.js'
 import { saveSnapshot, getSnapshots, deleteSnapshot } from '../data/storage.js'
@@ -88,7 +90,8 @@ export default function Dashboard() {
   const showSidePanels = activeView !== VIEWS.ASSESS && activeView !== VIEWS.TREE && activeView !== VIEWS.CASCADE && activeView !== VIEWS.TIMELINE
 
   return (
-    <div className="min-h-screen bg-warm-50 flex flex-col">
+    <>
+    <div className="min-h-screen bg-warm-50 flex flex-col print:hidden">
       {/* Top bar */}
       <header className="bg-white border-b border-warm-200 px-6 py-3 flex items-center justify-between shrink-0">
         <div className="flex items-center gap-4">
@@ -111,6 +114,11 @@ export default function Dashboard() {
               {sidebarOpen ? 'Hide' : 'Show'} Details
             </button>
           )}
+          <ExportMenu
+            assessments={assessments}
+            snapshots={snapshots}
+            clientName={clientName}
+          />
           <Link
             to="/"
             className="text-sm text-warm-500 hover:text-warm-700 px-3 py-1.5 rounded-md hover:bg-warm-100 transition-colors"
@@ -251,6 +259,8 @@ export default function Dashboard() {
         )}
       </div>
     </div>
+    <PrintReport assessments={assessments} clientName={clientName} />
+    </>
   )
 }
 

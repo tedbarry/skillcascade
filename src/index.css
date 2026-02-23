@@ -70,3 +70,30 @@ body {
   background-color: #1a1a1a;
   color: #e5e5e5;
 }
+
+/* Print styles */
+@media print {
+  @page {
+    size: letter;
+    margin: 0.5in;
+  }
+
+  body {
+    background-color: #fff !important;
+    color: #000 !important;
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
+  }
+
+  .print\:hidden {
+    display: none !important;
+  }
+
+  .print\:block {
+    display: block !important;
+  }
+
+  table {
+    page-break-inside: avoid;
+  }
+}
