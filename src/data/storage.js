@@ -62,9 +62,9 @@ export function deleteAssessments(clientId) {
 /**
  * Assessment snapshots — for progress timeline
  */
-export function saveSnapshot(clientId, label = '') {
+export function saveSnapshot(clientId, label = '', assessmentsOverride = null) {
   const snapshots = getSnapshots(clientId)
-  const assessments = getAssessments(clientId)
+  const assessments = assessmentsOverride || getAssessments(clientId)
   snapshots.push({
     id: `snap_${Date.now()}`,
     label,
@@ -72,11 +72,18 @@ export function saveSnapshot(clientId, label = '') {
     assessments: { ...assessments },
   })
   localStorage.setItem(getKey(`snapshots_${clientId}`), JSON.stringify(snapshots))
+  return snapshots
 }
 
 export function getSnapshots(clientId) {
   const raw = localStorage.getItem(getKey(`snapshots_${clientId}`))
   return raw ? JSON.parse(raw) : []
+}
+
+export function deleteSnapshot(clientId, snapshotId) {
+  const snapshots = getSnapshots(clientId).filter((s) => s.id !== snapshotId)
+  localStorage.setItem(getKey(`snapshots_${clientId}`), JSON.stringify(snapshots))
+  return snapshots
 }
 
 /**

@@ -5,15 +5,18 @@ import RadarChart from '../components/RadarChart.jsx'
 import AssessmentPanel from '../components/AssessmentPanel.jsx'
 import SkillTree from '../components/SkillTree.jsx'
 import CascadeAnimation from '../components/CascadeAnimation.jsx'
+import ProgressTimeline from '../components/ProgressTimeline.jsx'
 import ClientManager from '../components/ClientManager.jsx'
 import { framework, toHierarchy, ASSESSMENT_LABELS, ASSESSMENT_COLORS, ASSESSMENT_LEVELS } from '../data/framework.js'
 import { generateSampleAssessments } from '../data/sampleAssessments.js'
+import { saveSnapshot, getSnapshots, deleteSnapshot } from '../data/storage.js'
 
 const VIEWS = {
   SUNBURST: 'sunburst',
   RADAR: 'radar',
   TREE: 'tree',
   CASCADE: 'cascade',
+  TIMELINE: 'timeline',
   ASSESS: 'assess',
 }
 
@@ -23,6 +26,7 @@ export default function Dashboard() {
   const [sidebarOpen, setSidebarOpen] = useState(true)
   const [activeView, setActiveView] = useState(VIEWS.SUNBURST)
   const [clientId, setClientId] = useState(null)
+  const [snapshots, setSnapshots] = useState([])
   const [clientName, setClientName] = useState('Sample Client')
 
   // Load sample data on mount
@@ -59,8 +63,29 @@ export default function Dashboard() {
     }
   }
 
-  // Assessment, tree, and cascade views are full-width — no side panels
-  const showSidePanels = activeView !== VIEWS.ASSESS && activeView !== VIEWS.TREE && activeView !== VIEWS.CASCADE
+  // Load snapshots when client changes
+  useEffect(() => {
+    if (clientId) {
+      setSnapshots(getSnapshots(clientId))
+    } else {
+      setSnapshots([])
+    }
+  }, [clientId])
+
+  function handleSaveSnapshot(label) {
+    if (!clientId) return
+    const updated = saveSnapshot(clientId, label, assessments)
+    setSnapshots(updated)
+  }
+
+  function handleDeleteSnapshot(snapshotId) {
+    if (!clientId) return
+    const updated = deleteSnapshot(clientId, snapshotId)
+    setSnapshots(updated)
+  }
+
+  // Assessment, tree, cascade, and timeline views are full-width — no side panels
+  const showSidePanels = activeView !== VIEWS.ASSESS && activeView !== VIEWS.TREE && activeView !== VIEWS.CASCADE && activeView !== VIEWS.TIMELINE
 
   return (
     <div className="min-h-screen bg-warm-50 flex flex-col">
@@ -109,7 +134,7 @@ export default function Dashboard() {
         )}
 
         {/* Center content */}
-        <main className={`flex-1 overflow-auto ${activeView === VIEWS.ASSESS ? '' : 'flex flex-col items-center p-8'}`}>
+        <main className={`flex-1 overflow-auto ${activeView === VIEWS.ASSESS || activeView === VIEWS.TIMELINE ? '' : 'flex flex-col items-center p-8'}`}>
           {/* View toggle */}
           <div className={`flex items-center gap-1 bg-warm-100 rounded-lg p-1 mb-6 ${!showSidePanels ? 'mx-auto mt-6 w-fit' : ''}`}>
             {[
@@ -117,6 +142,7 @@ export default function Dashboard() {
               { key: VIEWS.RADAR, label: 'Radar' },
               { key: VIEWS.TREE, label: 'Skill Tree' },
               { key: VIEWS.CASCADE, label: 'Cascade' },
+              { key: VIEWS.TIMELINE, label: 'Timeline' },
               { key: VIEWS.ASSESS, label: 'Assess' },
             ].map((v) => (
               <button
@@ -192,6 +218,19 @@ export default function Dashboard() {
                 See how weakness in one domain ripples upward through the entire system.
               </p>
               <CascadeAnimation />
+            </div>
+          )}
+
+          {/* Timeline view */}
+          {activeView === VIEWS.TIMELINE && (
+            <div className="w-full h-full">
+              <ProgressTimeline
+                snapshots={snapshots}
+                currentAssessments={assessments}
+                onSaveSnapshot={handleSaveSnapshot}
+                onDeleteSnapshot={handleDeleteSnapshot}
+                clientName={clientName}
+              />
             </div>
           )}
 
