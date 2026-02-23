@@ -1,0 +1,72 @@
+@import "tailwindcss";
+
+@theme {
+  /* Warm color palette: "Clinical Precision meets Warm Humanity" */
+  --color-warm-50: #fdf8f0;
+  --color-warm-100: #f5ebe0;
+  --color-warm-200: #e8d5c0;
+  --color-warm-300: #d4b896;
+  --color-warm-400: #c49a6c;
+  --color-warm-500: #b07d4f;
+  --color-warm-600: #9a6740;
+  --color-warm-700: #7d5235;
+  --color-warm-800: #5f3e2a;
+  --color-warm-900: #3d2a1c;
+
+  /* Skill assessment states */
+  --color-not-assessed: #9ca3af;
+  --color-needs-work: #e8928a;
+  --color-developing: #e5b76a;
+  --color-solid: #7fb589;
+
+  /* Sage green accent */
+  --color-sage-50: #f0f5f1;
+  --color-sage-100: #dce8de;
+  --color-sage-200: #b8d1bd;
+  --color-sage-300: #8fb898;
+  --color-sage-400: #6a9e76;
+  --color-sage-500: #4f8460;
+  --color-sage-600: #3d6a4c;
+  --color-sage-700: #31543d;
+  --color-sage-800: #273f30;
+  --color-sage-900: #1d2e23;
+
+  /* Coral accent */
+  --color-coral-50: #fdf2f1;
+  --color-coral-100: #fce0dd;
+  --color-coral-200: #f5b8b2;
+  --color-coral-300: #ec8e85;
+  --color-coral-400: #e06b5f;
+  --color-coral-500: #d44d3f;
+  --color-coral-600: #b63a2e;
+  --color-coral-700: #912e24;
+  --color-coral-800: #6d231b;
+  --color-coral-900: #491813;
+
+  /* Fonts */
+  --font-sans: 'Inter', 'system-ui', '-apple-system', sans-serif;
+  --font-display: 'Plus Jakarta Sans', 'Inter', sans-serif;
+}
+
+/* Base styles */
+body {
+  font-family: var(--font-sans);
+  background-color: var(--color-warm-50);
+  color: var(--color-warm-900);
+}
+
+/* Dark mode */
+@media (prefers-color-scheme: dark) {
+  :root {
+    color-scheme: dark;
+  }
+  body {
+    background-color: #1a1a1a;
+    color: #e5e5e5;
+  }
+}
+
+.dark body {
+  background-color: #1a1a1a;
+  color: #e5e5e5;
+}
