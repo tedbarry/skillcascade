@@ -2,12 +2,15 @@ import { useState, useMemo, useEffect } from 'react'
 import { Link } from 'react-router-dom'
 import Sunburst from '../components/Sunburst.jsx'
 import RadarChart from '../components/RadarChart.jsx'
+import AssessmentPanel from '../components/AssessmentPanel.jsx'
+import ClientManager from '../components/ClientManager.jsx'
 import { framework, toHierarchy, ASSESSMENT_LABELS, ASSESSMENT_COLORS, ASSESSMENT_LEVELS } from '../data/framework.js'
 import { generateSampleAssessments } from '../data/sampleAssessments.js'
 
 const VIEWS = {
   SUNBURST: 'sunburst',
   RADAR: 'radar',
+  ASSESS: 'assess',
 }
 
 export default function Dashboard() {
@@ -15,6 +18,8 @@ export default function Dashboard() {
   const [selectedNode, setSelectedNode] = useState(null)
   const [sidebarOpen, setSidebarOpen] = useState(true)
   const [activeView, setActiveView] = useState(VIEWS.SUNBURST)
+  const [clientId, setClientId] = useState(null)
+  const [clientName, setClientName] = useState('Sample Client')
 
   // Load sample data on mount
   useEffect(() => {
@@ -39,24 +44,44 @@ export default function Dashboard() {
     return null
   }, [selectedNode])
 
+  function handleSelectClient(id, name, savedAssessments) {
+    setClientId(id)
+    setClientName(name || 'Sample Client')
+    if (savedAssessments === null) {
+      // Switch to sample
+      setAssessments(generateSampleAssessments())
+    } else {
+      setAssessments(savedAssessments || {})
+    }
+  }
+
+  // Assessment view is full-width — no side panels
+  const showSidePanels = activeView !== VIEWS.ASSESS
+
   return (
     <div className="min-h-screen bg-warm-50 flex flex-col">
       {/* Top bar */}
       <header className="bg-white border-b border-warm-200 px-6 py-3 flex items-center justify-between shrink-0">
-        <div className="flex items-center gap-6">
+        <div className="flex items-center gap-4">
           <Link to="/" className="text-xl font-bold text-warm-800 font-display">
             Skill<span className="text-sage-500">Cascade</span>
           </Link>
-          <span className="text-sm text-warm-400">|</span>
-          <span className="text-sm text-warm-600 font-medium">Sample Client</span>
+          <span className="text-warm-200">|</span>
+          <ClientManager
+            currentClientId={clientId}
+            onSelectClient={handleSelectClient}
+            assessments={assessments}
+          />
         </div>
         <div className="flex items-center gap-3">
-          <button
-            onClick={() => setSidebarOpen(!sidebarOpen)}
-            className="text-sm text-warm-500 hover:text-warm-700 px-3 py-1.5 rounded-md hover:bg-warm-100 transition-colors"
-          >
-            {sidebarOpen ? 'Hide' : 'Show'} Details
-          </button>
+          {showSidePanels && (
+            <button
+              onClick={() => setSidebarOpen(!sidebarOpen)}
+              className="text-sm text-warm-500 hover:text-warm-700 px-3 py-1.5 rounded-md hover:bg-warm-100 transition-colors"
+            >
+              {sidebarOpen ? 'Hide' : 'Show'} Details
+            </button>
+          )}
           <Link
             to="/"
             className="text-sm text-warm-500 hover:text-warm-700 px-3 py-1.5 rounded-md hover:bg-warm-100 transition-colors"
@@ -68,8 +93,8 @@ export default function Dashboard() {
 
       {/* Main content */}
       <div className="flex flex-1 overflow-hidden">
-        {/* Sidebar — Domain Navigator */}
-        {sidebarOpen && (
+        {/* Sidebar — Domain Navigator (only for viz views) */}
+        {showSidePanels && sidebarOpen && (
           <aside className="w-80 bg-white border-r border-warm-200 overflow-y-auto shrink-0">
             <DomainNavigator
               assessments={assessments}
@@ -79,13 +104,14 @@ export default function Dashboard() {
           </aside>
         )}
 
-        {/* Center — Visualization */}
-        <main className="flex-1 overflow-auto flex flex-col items-center p-8">
+        {/* Center content */}
+        <main className={`flex-1 overflow-auto ${activeView === VIEWS.ASSESS ? '' : 'flex flex-col items-center p-8'}`}>
           {/* View toggle */}
-          <div className="flex items-center gap-1 bg-warm-100 rounded-lg p-1 mb-6">
+          <div className={`flex items-center gap-1 bg-warm-100 rounded-lg p-1 mb-6 ${activeView === VIEWS.ASSESS ? 'mx-auto mt-6 w-fit' : ''}`}>
             {[
               { key: VIEWS.SUNBURST, label: 'Sunburst' },
               { key: VIEWS.RADAR, label: 'Radar' },
+              { key: VIEWS.ASSESS, label: 'Assess' },
             ].map((v) => (
               <button
                 key={v.key}
@@ -133,10 +159,18 @@ export default function Dashboard() {
               />
             </div>
           )}
+
+          {/* Assessment view */}
+          {activeView === VIEWS.ASSESS && (
+            <AssessmentPanel
+              assessments={assessments}
+              onAssess={setAssessments}
+            />
+          )}
         </main>
 
-        {/* Right panel — Detail View */}
-        {sidebarOpen && selectedDetail && (
+        {/* Right panel — Detail View (only for viz views) */}
+        {showSidePanels && sidebarOpen && selectedDetail && (
           <aside className="w-80 bg-white border-l border-warm-200 overflow-y-auto shrink-0 p-5">
             <DetailPanel detail={selectedDetail} assessments={assessments} onAssess={setAssessments} />
           </aside>
@@ -217,7 +251,6 @@ function DomainNavigator({ assessments, selectedId, onSelect }) {
 }
 
 function ScoreBadge({ score, count, total }) {
-  const pct = total > 0 ? count / total : 0
   const color =
     score >= 2.5
       ? 'bg-sage-100 text-sage-700'
@@ -284,7 +317,7 @@ function DetailPanel({ detail, assessments, onAssess }) {
     return (
       <div>
         <div className="text-xs text-warm-400 mb-1">
-          {domain.name} → {subArea.name}
+          {domain.name} {'→'} {subArea.name}
         </div>
         <h3 className="text-base font-bold text-warm-800 font-display mb-4">{data.name}</h3>
         <SkillGroupAssessor skillGroup={data} assessments={assessments} onAssess={onAssess} />
