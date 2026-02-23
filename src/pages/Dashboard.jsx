@@ -1,13 +1,20 @@
 import { useState, useMemo, useEffect } from 'react'
 import { Link } from 'react-router-dom'
 import Sunburst from '../components/Sunburst.jsx'
+import RadarChart from '../components/RadarChart.jsx'
 import { framework, toHierarchy, ASSESSMENT_LABELS, ASSESSMENT_COLORS, ASSESSMENT_LEVELS } from '../data/framework.js'
 import { generateSampleAssessments } from '../data/sampleAssessments.js'
+
+const VIEWS = {
+  SUNBURST: 'sunburst',
+  RADAR: 'radar',
+}
 
 export default function Dashboard() {
   const [assessments, setAssessments] = useState({})
   const [selectedNode, setSelectedNode] = useState(null)
   const [sidebarOpen, setSidebarOpen] = useState(true)
+  const [activeView, setActiveView] = useState(VIEWS.SUNBURST)
 
   // Load sample data on mount
   useEffect(() => {
@@ -71,21 +78,60 @@ export default function Dashboard() {
           </aside>
         )}
 
-        {/* Center — Sunburst */}
-        <main className="flex-1 overflow-auto flex items-start justify-center p-8">
-          <div className="flex flex-col items-center">
-            <h2 className="text-lg font-semibold text-warm-800 font-display mb-1">
-              Skills Profile — Sunburst View
-            </h2>
-            <p className="text-sm text-warm-500 mb-4">Click any segment to zoom in. Click center to zoom out.</p>
-            <Sunburst
-              data={hierarchyData}
-              assessments={assessments}
-              width={700}
-              height={700}
-              onSelect={setSelectedNode}
-            />
+        {/* Center — Visualization */}
+        <main className="flex-1 overflow-auto flex flex-col items-center p-8">
+          {/* View toggle */}
+          <div className="flex items-center gap-1 bg-warm-100 rounded-lg p-1 mb-6">
+            {[
+              { key: VIEWS.SUNBURST, label: 'Sunburst' },
+              { key: VIEWS.RADAR, label: 'Radar' },
+            ].map((v) => (
+              <button
+                key={v.key}
+                onClick={() => setActiveView(v.key)}
+                className={`px-4 py-1.5 rounded-md text-sm font-medium transition-all ${
+                  activeView === v.key
+                    ? 'bg-white text-warm-800 shadow-sm'
+                    : 'text-warm-500 hover:text-warm-700'
+                }`}
+              >
+                {v.label}
+              </button>
+            ))}
           </div>
+
+          {/* Sunburst view */}
+          {activeView === VIEWS.SUNBURST && (
+            <div className="flex flex-col items-center">
+              <h2 className="text-lg font-semibold text-warm-800 font-display mb-1">
+                Skills Profile — Sunburst View
+              </h2>
+              <p className="text-sm text-warm-500 mb-4">Click any segment to zoom in. Click center to zoom out.</p>
+              <Sunburst
+                data={hierarchyData}
+                assessments={assessments}
+                width={700}
+                height={700}
+                onSelect={setSelectedNode}
+              />
+            </div>
+          )}
+
+          {/* Radar view */}
+          {activeView === VIEWS.RADAR && (
+            <div className="w-full max-w-2xl">
+              <h2 className="text-lg font-semibold text-warm-800 font-display mb-1 text-center">
+                Skills Profile — Domain Overview
+              </h2>
+              <p className="text-sm text-warm-500 mb-6 text-center">
+                Average score per domain across all assessed skills.
+              </p>
+              <RadarChart
+                assessments={assessments}
+                height={480}
+              />
+            </div>
+          )}
         </main>
 
         {/* Right panel — Detail View */}
