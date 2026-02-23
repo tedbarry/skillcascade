@@ -1,4 +1,4 @@
-import { useState, useMemo, useEffect, useCallback } from 'react'
+import { useState, useMemo, useEffect, useCallback, useRef } from 'react'
 import { framework, ASSESSMENT_LEVELS, ASSESSMENT_LABELS, ASSESSMENT_COLORS } from '../data/framework.js'
 
 /**
@@ -85,9 +85,16 @@ export default function AssessmentPanel({ assessments, onAssess, initialSubAreaI
 
   const subAreaStats = getSubAreaStats(currentSubArea, assessments)
 
+  const contentRef = useRef(null)
+
   const goTo = useCallback((index) => {
     setCurrentIndex(Math.max(0, Math.min(ALL_SUB_AREAS.length - 1, index)))
   }, [])
+
+  // Auto-scroll content to top when sub-area changes
+  useEffect(() => {
+    if (contentRef.current) contentRef.current.scrollTop = 0
+  }, [currentIndex])
 
   // Keyboard shortcuts: arrow left/right to navigate
   useEffect(() => {
@@ -210,7 +217,69 @@ export default function AssessmentPanel({ assessments, onAssess, initialSubAreaI
       </div>
 
       {/* Center — Assessment form */}
-      <div className="flex-1 overflow-y-auto">
+      <div className="flex-1 overflow-y-auto" ref={contentRef}>
+        {/* Sticky navigation bar */}
+        <div className="sticky top-0 z-10 bg-white/95 backdrop-blur-sm border-b border-warm-200 px-8 py-3">
+          <div className="max-w-3xl mx-auto">
+            <div className="flex items-center">
+              <div className="w-28">
+                <button
+                  onClick={() => goTo(currentIndex - 1)}
+                  disabled={currentIndex === 0}
+                  className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
+                    currentIndex === 0
+                      ? 'text-warm-300 cursor-not-allowed'
+                      : 'text-warm-600 hover:bg-warm-100 hover:text-warm-800'
+                  }`}
+                >
+                  <span>{'\u2190'}</span>
+                  <span>Prev</span>
+                </button>
+              </div>
+
+              <div className="flex-1 flex flex-col items-center gap-1">
+                <div className="flex items-center gap-3">
+                  <select
+                    value={ALL_SUB_AREAS.findIndex((x) => x.domain.id === currentDomain.id)}
+                    onChange={(e) => goTo(Number(e.target.value))}
+                    className="text-sm font-medium text-warm-700 bg-transparent border border-warm-200 rounded-md px-2 py-1 cursor-pointer hover:border-warm-300 focus:outline-none focus:ring-2 focus:ring-sage-300"
+                  >
+                    {framework.map((domain) => {
+                      const firstIdx = ALL_SUB_AREAS.findIndex((x) => x.domain.id === domain.id)
+                      return (
+                        <option key={domain.id} value={firstIdx}>
+                          {domain.name}
+                        </option>
+                      )
+                    })}
+                  </select>
+                  <span className="text-xs text-warm-500">
+                    Sub-area {currentDomain.subAreas.findIndex((sa) => sa.id === currentSubArea.id) + 1}/{currentDomain.subAreas.length}
+                  </span>
+                </div>
+              </div>
+
+              <div className="w-28 flex justify-end">
+                <button
+                  onClick={() => goTo(currentIndex + 1)}
+                  disabled={currentIndex === ALL_SUB_AREAS.length - 1}
+                  className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
+                    currentIndex === ALL_SUB_AREAS.length - 1
+                      ? 'text-warm-300 cursor-not-allowed'
+                      : 'bg-sage-500 text-white hover:bg-sage-600'
+                  }`}
+                >
+                  <span>Next</span>
+                  <span>{'\u2192'}</span>
+                </button>
+              </div>
+            </div>
+            <p className="text-[10px] text-warm-400 text-center mt-1">
+              {'\u2190'} {'\u2192'} arrow keys
+            </p>
+          </div>
+        </div>
+
         <div className="max-w-3xl mx-auto px-8 py-6">
           {/* Header */}
           <div className="mb-6">
@@ -276,44 +345,6 @@ export default function AssessmentPanel({ assessments, onAssess, initialSubAreaI
                 onAssess={onAssess}
               />
             ))}
-          </div>
-
-          {/* Navigation */}
-          <div className="mt-10 pt-6 border-t border-warm-200">
-            <div className="flex items-center justify-between">
-              <button
-                onClick={() => goTo(currentIndex - 1)}
-                disabled={currentIndex === 0}
-                className={`flex items-center gap-2 px-4 py-2.5 rounded-lg text-sm font-medium transition-colors ${
-                  currentIndex === 0
-                    ? 'text-warm-300 cursor-not-allowed'
-                    : 'text-warm-600 hover:bg-warm-100 hover:text-warm-800'
-                }`}
-              >
-                <span>{'\u2190'}</span>
-                <span>Previous</span>
-              </button>
-
-              <span className="text-xs text-warm-400">
-                {currentIndex + 1} of {ALL_SUB_AREAS.length} sub-areas
-              </span>
-
-              <button
-                onClick={() => goTo(currentIndex + 1)}
-                disabled={currentIndex === ALL_SUB_AREAS.length - 1}
-                className={`flex items-center gap-2 px-4 py-2.5 rounded-lg text-sm font-medium transition-colors ${
-                  currentIndex === ALL_SUB_AREAS.length - 1
-                    ? 'text-warm-300 cursor-not-allowed'
-                    : 'bg-sage-500 text-white hover:bg-sage-600'
-                }`}
-              >
-                <span>Next</span>
-                <span>{'\u2192'}</span>
-              </button>
-            </div>
-            <p className="text-[10px] text-warm-400 text-center mt-2">
-              Use arrow keys \u2190 \u2192 to navigate between sub-areas
-            </p>
           </div>
         </div>
       </div>
