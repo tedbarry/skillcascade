@@ -678,7 +678,7 @@ export default function Dashboard() {
 
           {/* Messages view */}
           {activeView === VIEWS.MESSAGES && (
-            <div className="w-full h-full overflow-hidden">
+            <div className="w-full max-w-2xl mx-auto px-4 py-6">
               <Suspense fallback={<ViewLoader />}>
                 <Messaging
                   clientId={clientId}

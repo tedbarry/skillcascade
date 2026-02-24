@@ -152,17 +152,20 @@ export default function Messaging({
   const currentUser = { name: profile?.display_name || 'User', role: profile?.role || 'bcba' }
   const [messages, setMessages] = useState([])
   const [inputValue, setInputValue] = useState('')
+  const [loading, setLoading] = useState(false)
+  const [sendError, setSendError] = useState(null)
   const scrollRef = useRef(null)
   const inputRef = useRef(null)
 
   /* ── Load messages when clientId changes ── */
 
   useEffect(() => {
-    if (!clientId) {
+    if (!clientId || !user?.id) {
       setMessages([])
       return
     }
 
+    setLoading(true)
     loadMessages(clientId).then((loaded) => {
       // Mark unread messages as read
       const unreadIds = loaded
@@ -178,7 +181,7 @@ export default function Messaging({
       }
 
       setMessages(loaded)
-    })
+    }).finally(() => setLoading(false))
   }, [clientId, user?.id])
 
   /* ── Auto-scroll to bottom ── */
@@ -198,36 +201,40 @@ export default function Messaging({
   async function handleSend() {
     const text = inputValue.trim()
     if (!text || !clientId || !user) return
+    setSendError(null)
 
-    const { data, error } = await supabase
-      .from('messages')
-      .insert({
-        client_id: clientId,
-        sender_id: user.id,
-        text,
-      })
-      .select('*, sender:profiles!sender_id(display_name, role)')
-      .single()
+    try {
+      const { data, error } = await supabase
+        .from('messages')
+        .insert({
+          client_id: clientId,
+          sender_id: user.id,
+          text,
+        })
+        .select('*, sender:profiles!sender_id(display_name, role)')
+        .single()
 
-    if (error) {
-      console.error('Failed to send message:', error.message)
-      return
+      if (error) throw error
+
+      const newMsg = {
+        id: data.id,
+        sender: data.sender?.display_name || currentUser.name,
+        role: data.sender?.role || currentUser.role,
+        text: data.text,
+        timestamp: new Date(data.created_at).getTime(),
+        read: false,
+        read_by: [],
+        sender_id: data.sender_id,
+      }
+
+      setMessages((prev) => [...prev, newMsg])
+      setInputValue('')
+      inputRef.current?.focus()
+    } catch (err) {
+      console.error('Failed to send message:', err.message)
+      setSendError('Failed to send — check your connection and try again')
+      setTimeout(() => setSendError(null), 4000)
     }
-
-    const newMsg = {
-      id: data.id,
-      sender: data.sender?.display_name || currentUser.name,
-      role: data.sender?.role || currentUser.role,
-      text: data.text,
-      timestamp: new Date(data.created_at).getTime(),
-      read: false,
-      read_by: [],
-      sender_id: data.sender_id,
-    }
-
-    setMessages((prev) => [...prev, newMsg])
-    setInputValue('')
-    inputRef.current?.focus()
   }
 
   function handleKeyDown(e) {
@@ -302,7 +309,13 @@ export default function Messaging({
         className="flex-1 overflow-y-auto px-4 py-3 space-y-1"
         style={{ minHeight: 0 }}
       >
-        {messages.length === 0 ? (
+        {loading ? (
+          /* ── Loading State ── */
+          <div className="flex flex-col items-center justify-center h-full text-center py-12">
+            <div className="w-5 h-5 border-2 border-warm-200 border-t-sage-500 rounded-full animate-spin mb-3" />
+            <p className="text-sm text-warm-400">Loading messages...</p>
+          </div>
+        ) : messages.length === 0 ? (
           /* ── Empty State ── */
           <div className="flex flex-col items-center justify-center h-full text-center py-12">
             <div className="text-warm-300 mb-3">{ICONS.chat}</div>
@@ -397,6 +410,13 @@ export default function Messaging({
           })}
         </div>
       </div>
+
+      {/* ── Send Error ── */}
+      {sendError && (
+        <div className="px-4 py-1.5">
+          <p className="text-xs text-red-500 bg-red-50 border border-red-200 rounded px-2.5 py-1.5">{sendError}</p>
+        </div>
+      )}
 
       {/* ── Input Area ── */}
       <div className="px-4 pb-3 pt-1">

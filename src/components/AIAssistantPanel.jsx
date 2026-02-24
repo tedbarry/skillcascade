@@ -689,9 +689,20 @@ export default function AIAssistantPanel({ isOpen, onClose, clientName, assessme
     return summary.percentAssessed
   }, [assessments])
 
-  // Reset messages when tool changes, with a welcome message
+  // Load saved conversation or show welcome when tool/client changes
   useEffect(() => {
     if (!selectedTool) return
+    const storageKey = `skillcascade_ai_chat_${clientName || 'default'}_${selectedToolId}`
+    try {
+      const saved = localStorage.getItem(storageKey)
+      if (saved) {
+        const parsed = JSON.parse(saved)
+        if (Array.isArray(parsed) && parsed.length > 1) {
+          setMessages(parsed)
+          return
+        }
+      }
+    } catch { /* ignore */ }
     setMessages([
       {
         id: 'welcome',
@@ -700,6 +711,15 @@ export default function AIAssistantPanel({ isOpen, onClose, clientName, assessme
       },
     ])
   }, [selectedToolId, clientName])
+
+  // Persist conversation when messages change
+  useEffect(() => {
+    if (messages.length <= 1) return // don't save just the welcome message
+    const storageKey = `skillcascade_ai_chat_${clientName || 'default'}_${selectedToolId}`
+    try {
+      localStorage.setItem(storageKey, JSON.stringify(messages))
+    } catch { /* storage full, ignore */ }
+  }, [messages, clientName, selectedToolId])
 
   // Scroll to bottom on new messages
   useEffect(() => {
@@ -915,13 +935,33 @@ export default function AIAssistantPanel({ isOpen, onClose, clientName, assessme
                 </p>
               </div>
             </div>
-            <button
-              onClick={onClose}
-              className="p-1.5 rounded-lg text-warm-400 hover:text-warm-600 hover:bg-warm-100 transition-colors"
-              aria-label="Close AI Assistant"
-            >
-              <CloseIcon />
-            </button>
+            <div className="flex items-center gap-1">
+              <button
+                onClick={() => {
+                  const storageKey = `skillcascade_ai_chat_${clientName || 'default'}_${selectedToolId}`
+                  localStorage.removeItem(storageKey)
+                  setMessages([{
+                    id: 'welcome',
+                    role: 'system',
+                    content: `Ready to help with ${selectedTool?.name.toLowerCase()} for ${clientName || 'this client'}. Select a quick action below or type a message.`,
+                  }])
+                }}
+                className="p-1.5 rounded-lg text-warm-400 hover:text-warm-600 hover:bg-warm-100 transition-colors"
+                aria-label="New conversation"
+                title="New conversation"
+              >
+                <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M12 4.5v15m7.5-7.5h-15" />
+                </svg>
+              </button>
+              <button
+                onClick={onClose}
+                className="p-1.5 rounded-lg text-warm-400 hover:text-warm-600 hover:bg-warm-100 transition-colors"
+                aria-label="Close AI Assistant"
+              >
+                <CloseIcon />
+              </button>
+            </div>
           </div>
         </div>
 
