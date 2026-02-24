@@ -10,6 +10,10 @@ import ClientManager from '../components/ClientManager.jsx'
 import ExportMenu from '../components/ExportMenu.jsx'
 import PrintReport from '../components/PrintReport.jsx'
 import Toast from '../components/Toast.jsx'
+import AdaptiveAssessment from '../components/AdaptiveAssessment.jsx'
+import SearchOverlay from '../components/SearchOverlay.jsx'
+import GoalEngine from '../components/GoalEngine.jsx'
+import useUndoRedo from '../hooks/useUndoRedo.js'
 import { framework, toHierarchy, ASSESSMENT_LABELS, ASSESSMENT_COLORS, ASSESSMENT_LEVELS } from '../data/framework.js'
 import { generateSampleAssessments } from '../data/sampleAssessments.js'
 import { saveSnapshot, getSnapshots, deleteSnapshot } from '../data/storage.js'
@@ -21,10 +25,12 @@ const VIEWS = {
   CASCADE: 'cascade',
   TIMELINE: 'timeline',
   ASSESS: 'assess',
+  QUICK_ASSESS: 'quick-assess',
+  GOALS: 'goals',
 }
 
 export default function Dashboard() {
-  const [assessments, setAssessments] = useState({})
+  const [assessments, setAssessments, { undo, redo, canUndo, canRedo, resetState: resetAssessments }] = useUndoRedo({})
   const [selectedNode, setSelectedNode] = useState(null)
   const [sidebarOpen, setSidebarOpen] = useState(true)
   const [activeView, setActiveView] = useState(VIEWS.SUNBURST)
@@ -34,6 +40,19 @@ export default function Dashboard() {
   const [toast, setToast] = useState(null)
   const [assessTarget, setAssessTarget] = useState({ subAreaId: null, ts: 0 })
   const [compareSnapshotId, setCompareSnapshotId] = useState(null)
+  const [searchOpen, setSearchOpen] = useState(false)
+
+  // Global Ctrl+K / Cmd+K to open search
+  useEffect(() => {
+    function handleKeyDown(e) {
+      if ((e.metaKey || e.ctrlKey) && e.key === 'k') {
+        e.preventDefault()
+        setSearchOpen(true)
+      }
+    }
+    window.addEventListener('keydown', handleKeyDown)
+    return () => window.removeEventListener('keydown', handleKeyDown)
+  }, [])
 
   const showToast = useCallback((message, type = 'success') => {
     setToast({ message, type, key: Date.now() })
@@ -46,7 +65,7 @@ export default function Dashboard() {
 
   // Load sample data on mount
   useEffect(() => {
-    setAssessments(generateSampleAssessments())
+    resetAssessments(generateSampleAssessments())
   }, [])
 
   // Hierarchy structure is stable — doesn't depend on assessments
@@ -71,10 +90,9 @@ export default function Dashboard() {
     setClientId(id)
     setClientName(name || 'Sample Client')
     if (savedAssessments === null) {
-      // Switch to sample
-      setAssessments(generateSampleAssessments())
+      resetAssessments(generateSampleAssessments())
     } else {
-      setAssessments(savedAssessments || {})
+      resetAssessments(savedAssessments || {})
     }
   }
 
@@ -101,7 +119,7 @@ export default function Dashboard() {
   }
 
   // Assessment, tree, cascade, and timeline views are full-width — no side panels
-  const showSidePanels = activeView !== VIEWS.ASSESS && activeView !== VIEWS.TREE && activeView !== VIEWS.CASCADE && activeView !== VIEWS.TIMELINE
+  const showSidePanels = activeView !== VIEWS.ASSESS && activeView !== VIEWS.TREE && activeView !== VIEWS.CASCADE && activeView !== VIEWS.TIMELINE && activeView !== VIEWS.QUICK_ASSESS && activeView !== VIEWS.GOALS
 
   return (
     <>
@@ -121,6 +139,38 @@ export default function Dashboard() {
           />
         </div>
         <div className="flex items-center gap-3">
+          <div className="flex items-center gap-1 mr-1">
+            <button
+              onClick={undo}
+              disabled={!canUndo}
+              title="Undo (Ctrl+Z)"
+              className={`p-1.5 rounded-md transition-colors ${canUndo ? 'text-warm-500 hover:text-warm-700 hover:bg-warm-100' : 'text-warm-200 cursor-not-allowed'}`}
+            >
+              <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                <path strokeLinecap="round" strokeLinejoin="round" d="M3 10h10a5 5 0 015 5v2M3 10l4-4M3 10l4 4" />
+              </svg>
+            </button>
+            <button
+              onClick={redo}
+              disabled={!canRedo}
+              title="Redo (Ctrl+Y)"
+              className={`p-1.5 rounded-md transition-colors ${canRedo ? 'text-warm-500 hover:text-warm-700 hover:bg-warm-100' : 'text-warm-200 cursor-not-allowed'}`}
+            >
+              <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                <path strokeLinecap="round" strokeLinejoin="round" d="M21 10H11a5 5 0 00-5 5v2M21 10l-4-4M21 10l-4 4" />
+              </svg>
+            </button>
+          </div>
+          <button
+            onClick={() => setSearchOpen(true)}
+            className="flex items-center gap-2 text-sm text-warm-500 hover:text-warm-700 px-3 py-1.5 rounded-md hover:bg-warm-100 transition-colors border border-warm-200"
+          >
+            <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+              <path strokeLinecap="round" strokeLinejoin="round" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+            </svg>
+            <span className="hidden sm:inline">Search</span>
+            <kbd className="hidden sm:inline text-[10px] px-1.5 py-0.5 rounded bg-warm-100 text-warm-400 font-mono">Ctrl+K</kbd>
+          </button>
           {showSidePanels && (
             <button
               onClick={() => setSidebarOpen(!sidebarOpen)}
@@ -157,7 +207,7 @@ export default function Dashboard() {
         )}
 
         {/* Center content */}
-        <main className={`flex-1 overflow-auto ${activeView === VIEWS.ASSESS || activeView === VIEWS.TIMELINE ? '' : 'flex flex-col items-center p-8'}`}>
+        <main className={`flex-1 overflow-auto ${activeView === VIEWS.ASSESS || activeView === VIEWS.TIMELINE || activeView === VIEWS.QUICK_ASSESS || activeView === VIEWS.GOALS ? '' : 'flex flex-col items-center p-8'}`}>
           {/* View toggle */}
           <div className={`flex items-center gap-1 bg-warm-100 rounded-lg p-1 mb-6 ${!showSidePanels ? 'mx-auto mt-6 w-fit' : ''}`}>
             {[
@@ -167,6 +217,8 @@ export default function Dashboard() {
               { key: VIEWS.CASCADE, label: 'Cascade' },
               { key: VIEWS.TIMELINE, label: 'Timeline' },
               { key: VIEWS.ASSESS, label: 'Assess' },
+              { key: VIEWS.QUICK_ASSESS, label: 'Quick Assess' },
+              { key: VIEWS.GOALS, label: 'Goals' },
             ].map((v) => (
               <button
                 key={v.key}
@@ -285,6 +337,30 @@ export default function Dashboard() {
               initialSubAreaId={assessTarget}
             />
           )}
+
+          {/* Quick Assessment view */}
+          {activeView === VIEWS.QUICK_ASSESS && (
+            <div className="w-full h-full">
+              <AdaptiveAssessment
+                assessments={assessments}
+                onAssess={setAssessments}
+                onComplete={() => {
+                  showToast('Quick assessment applied', 'success')
+                  setActiveView(VIEWS.RADAR)
+                }}
+              />
+            </div>
+          )}
+
+          {/* Goals view */}
+          {activeView === VIEWS.GOALS && (
+            <div className="w-full h-full overflow-y-auto">
+              <GoalEngine
+                assessments={assessments}
+                onNavigateToAssess={handleNavigateToAssess}
+              />
+            </div>
+          )}
         </main>
 
         {/* Right panel — Detail View (only for viz views) */}
@@ -295,6 +371,15 @@ export default function Dashboard() {
         )}
       </div>
     </div>
+    <SearchOverlay
+      isOpen={searchOpen}
+      onClose={() => setSearchOpen(false)}
+      onNavigate={(subAreaId) => {
+        setSearchOpen(false)
+        handleNavigateToAssess(subAreaId)
+      }}
+      assessments={assessments}
+    />
     <PrintReport assessments={assessments} clientName={clientName} />
     {toast && (
       <Toast
