@@ -1,4 +1,4 @@
-import { useState, useMemo, useEffect, useCallback } from 'react'
+import { useState, useMemo, useEffect, useCallback, lazy, Suspense } from 'react'
 import { Link } from 'react-router-dom'
 import Sunburst from '../components/Sunburst.jsx'
 import RadarChart from '../components/RadarChart.jsx'
@@ -10,28 +10,45 @@ import ClientManager from '../components/ClientManager.jsx'
 import ExportMenu from '../components/ExportMenu.jsx'
 import PrintReport from '../components/PrintReport.jsx'
 import Toast from '../components/Toast.jsx'
-import AdaptiveAssessment from '../components/AdaptiveAssessment.jsx'
 import SearchOverlay from '../components/SearchOverlay.jsx'
-import GoalEngine from '../components/GoalEngine.jsx'
-import AIAssistantPanel from '../components/AIAssistantPanel.jsx'
 import SettingsDropdown from '../components/SettingsDropdown.jsx'
 import OnboardingTour from '../components/OnboardingTour.jsx'
-import PatternAlerts from '../components/PatternAlerts.jsx'
-import ReportGenerator from '../components/ReportGenerator.jsx'
-import ParentDashboard from '../components/ParentDashboard.jsx'
-import CaseloadDashboard from '../components/CaseloadDashboard.jsx'
-import MilestoneCelebrations from '../components/MilestoneCelebrations.jsx'
-import HomePractice from '../components/HomePractice.jsx'
-import OrgAnalytics from '../components/OrgAnalytics.jsx'
-import ProgressPrediction from '../components/ProgressPrediction.jsx'
-import BrandingSettings from '../components/BrandingSettings.jsx'
-import Messaging from '../components/Messaging.jsx'
-import DataPortability from '../components/DataPortability.jsx'
-import AccessibilitySettings from '../components/AccessibilitySettings.jsx'
 import useUndoRedo from '../hooks/useUndoRedo.js'
+
+const AdaptiveAssessment = lazy(() => import('../components/AdaptiveAssessment.jsx'))
+const GoalEngine = lazy(() => import('../components/GoalEngine.jsx'))
+const AIAssistantPanel = lazy(() => import('../components/AIAssistantPanel.jsx'))
+const PatternAlerts = lazy(() => import('../components/PatternAlerts.jsx'))
+const ReportGenerator = lazy(() => import('../components/ReportGenerator.jsx'))
+const ParentDashboard = lazy(() => import('../components/ParentDashboard.jsx'))
+const CaseloadDashboard = lazy(() => import('../components/CaseloadDashboard.jsx'))
+const MilestoneCelebrations = lazy(() => import('../components/MilestoneCelebrations.jsx'))
+const HomePractice = lazy(() => import('../components/HomePractice.jsx'))
+const OrgAnalytics = lazy(() => import('../components/OrgAnalytics.jsx'))
+const ProgressPrediction = lazy(() => import('../components/ProgressPrediction.jsx'))
+const BrandingSettings = lazy(() => import('../components/BrandingSettings.jsx'))
+const Messaging = lazy(() => import('../components/Messaging.jsx'))
+const DataPortability = lazy(() => import('../components/DataPortability.jsx'))
+const AccessibilitySettings = lazy(() => import('../components/AccessibilitySettings.jsx'))
+const PricingPage = lazy(() => import('../components/PricingPage.jsx'))
+const Marketplace = lazy(() => import('../components/Marketplace.jsx'))
+const OutcomeCertification = lazy(() => import('../components/OutcomeCertification.jsx'))
+const ComparisonView = lazy(() => import('../components/ComparisonView.jsx'))
+const KeyboardShortcuts = lazy(() => import('../components/KeyboardShortcuts.jsx'))
 import { framework, toHierarchy, ASSESSMENT_LABELS, ASSESSMENT_COLORS, ASSESSMENT_LEVELS } from '../data/framework.js'
 import { generateSampleAssessments } from '../data/sampleAssessments.js'
 import { saveSnapshot, getSnapshots, deleteSnapshot } from '../data/storage.js'
+
+function ViewLoader() {
+  return (
+    <div className="flex items-center justify-center py-12 w-full">
+      <div className="flex items-center gap-3 text-warm-400">
+        <div className="w-4 h-4 border-2 border-warm-200 border-t-sage-500 rounded-full animate-spin" />
+        <span className="text-sm">Loading...</span>
+      </div>
+    </div>
+  )
+}
 
 const VIEWS = {
   SUNBURST: 'sunburst',
@@ -54,6 +71,10 @@ const VIEWS = {
   MESSAGES: 'messages',
   DATA: 'data',
   ACCESSIBILITY: 'accessibility',
+  PRICING: 'pricing',
+  MARKETPLACE: 'marketplace',
+  CERTIFICATIONS: 'certifications',
+  COMPARE: 'compare',
 }
 
 export default function Dashboard() {
@@ -70,6 +91,7 @@ export default function Dashboard() {
   const [searchOpen, setSearchOpen] = useState(false)
   const [aiPanelOpen, setAiPanelOpen] = useState(false)
   const [moreMenuOpen, setMoreMenuOpen] = useState(false)
+  const [shortcutsOpen, setShortcutsOpen] = useState(false)
 
   // Global Ctrl+K / Cmd+K to open search
   useEffect(() => {
@@ -168,7 +190,7 @@ export default function Dashboard() {
   }
 
   // Assessment, tree, cascade, and timeline views are full-width — no side panels
-  const fullWidthViews = [VIEWS.ASSESS, VIEWS.TREE, VIEWS.CASCADE, VIEWS.TIMELINE, VIEWS.QUICK_ASSESS, VIEWS.GOALS, VIEWS.ALERTS, VIEWS.REPORTS, VIEWS.PARENT, VIEWS.CASELOAD, VIEWS.MILESTONES, VIEWS.PRACTICE, VIEWS.ORG_ANALYTICS, VIEWS.PREDICTIONS, VIEWS.BRANDING, VIEWS.MESSAGES, VIEWS.DATA, VIEWS.ACCESSIBILITY]
+  const fullWidthViews = [VIEWS.ASSESS, VIEWS.TREE, VIEWS.CASCADE, VIEWS.TIMELINE, VIEWS.QUICK_ASSESS, VIEWS.GOALS, VIEWS.ALERTS, VIEWS.REPORTS, VIEWS.PARENT, VIEWS.CASELOAD, VIEWS.MILESTONES, VIEWS.PRACTICE, VIEWS.ORG_ANALYTICS, VIEWS.PREDICTIONS, VIEWS.BRANDING, VIEWS.MESSAGES, VIEWS.DATA, VIEWS.ACCESSIBILITY, VIEWS.PRICING, VIEWS.MARKETPLACE, VIEWS.CERTIFICATIONS, VIEWS.COMPARE]
   const showSidePanels = !fullWidthViews.includes(activeView)
 
   return (
@@ -358,6 +380,10 @@ export default function Dashboard() {
               { key: VIEWS.BRANDING, label: 'Branding' },
               { key: VIEWS.DATA, label: 'Data' },
               { key: VIEWS.ACCESSIBILITY, label: 'Access.' },
+              { key: VIEWS.COMPARE, label: 'Compare' },
+              { key: VIEWS.CERTIFICATIONS, label: 'Certs' },
+              { key: VIEWS.MARKETPLACE, label: 'Marketplace' },
+              { key: VIEWS.PRICING, label: 'Pricing' },
             ].map((v) => (
               <button
                 key={v.key}
@@ -480,142 +506,215 @@ export default function Dashboard() {
           {/* Quick Assessment view */}
           {activeView === VIEWS.QUICK_ASSESS && (
             <div className="w-full h-full">
-              <AdaptiveAssessment
-                assessments={assessments}
-                onAssess={setAssessments}
-                onComplete={() => {
-                  showToast('Quick assessment applied', 'success')
-                  setActiveView(VIEWS.RADAR)
-                }}
-              />
+              <Suspense fallback={<ViewLoader />}>
+                <AdaptiveAssessment
+                  assessments={assessments}
+                  onAssess={setAssessments}
+                  onComplete={() => {
+                    showToast('Quick assessment applied', 'success')
+                    setActiveView(VIEWS.RADAR)
+                  }}
+                />
+              </Suspense>
             </div>
           )}
 
           {/* Goals view */}
           {activeView === VIEWS.GOALS && (
             <div className="w-full h-full overflow-y-auto">
-              <GoalEngine
-                assessments={assessments}
-                onNavigateToAssess={handleNavigateToAssess}
-              />
+              <Suspense fallback={<ViewLoader />}>
+                <GoalEngine
+                  assessments={assessments}
+                  onNavigateToAssess={handleNavigateToAssess}
+                />
+              </Suspense>
             </div>
           )}
 
           {/* Alerts view */}
           {activeView === VIEWS.ALERTS && (
             <div className="w-full h-full overflow-y-auto">
-              <PatternAlerts
-                assessments={assessments}
-                snapshots={snapshots}
-                onNavigateToAssess={handleNavigateToAssess}
-              />
+              <Suspense fallback={<ViewLoader />}>
+                <PatternAlerts
+                  assessments={assessments}
+                  snapshots={snapshots}
+                  onNavigateToAssess={handleNavigateToAssess}
+                />
+              </Suspense>
             </div>
           )}
 
           {/* Reports view */}
           {activeView === VIEWS.REPORTS && (
             <div className="w-full h-full overflow-y-auto">
-              <ReportGenerator
-                assessments={assessments}
-                clientName={clientName}
-                snapshots={snapshots}
-                onNavigateToAssess={handleNavigateToAssess}
-              />
+              <Suspense fallback={<ViewLoader />}>
+                <ReportGenerator
+                  assessments={assessments}
+                  clientName={clientName}
+                  snapshots={snapshots}
+                  onNavigateToAssess={handleNavigateToAssess}
+                />
+              </Suspense>
             </div>
           )}
 
           {/* Parent view */}
           {activeView === VIEWS.PARENT && (
             <div className="w-full h-full overflow-y-auto">
-              <ParentDashboard
-                assessments={assessments}
-                clientName={clientName}
-                snapshots={snapshots}
-                onNavigateToAssess={handleNavigateToAssess}
-              />
+              <Suspense fallback={<ViewLoader />}>
+                <ParentDashboard
+                  assessments={assessments}
+                  clientName={clientName}
+                  snapshots={snapshots}
+                  onNavigateToAssess={handleNavigateToAssess}
+                />
+              </Suspense>
             </div>
           )}
 
           {/* Caseload view */}
           {activeView === VIEWS.CASELOAD && (
             <div className="w-full h-full overflow-y-auto">
-              <CaseloadDashboard
-                currentClientId={clientId}
-                onSelectClient={(id, name, saved) => {
-                  handleSelectClient(id, name, saved)
-                  setActiveView(VIEWS.RADAR)
-                }}
-              />
+              <Suspense fallback={<ViewLoader />}>
+                <CaseloadDashboard
+                  currentClientId={clientId}
+                  onSelectClient={(id, name, saved) => {
+                    handleSelectClient(id, name, saved)
+                    setActiveView(VIEWS.RADAR)
+                  }}
+                />
+              </Suspense>
             </div>
           )}
 
           {/* Milestones view */}
           {activeView === VIEWS.MILESTONES && (
             <div className="w-full h-full overflow-y-auto">
-              <MilestoneCelebrations
-                assessments={assessments}
-                snapshots={snapshots}
-                clientName={clientName}
-              />
+              <Suspense fallback={<ViewLoader />}>
+                <MilestoneCelebrations
+                  assessments={assessments}
+                  snapshots={snapshots}
+                  clientName={clientName}
+                />
+              </Suspense>
             </div>
           )}
 
           {/* Home Practice view */}
           {activeView === VIEWS.PRACTICE && (
             <div className="w-full h-full overflow-y-auto">
-              <HomePractice
-                assessments={assessments}
-                clientName={clientName}
-              />
+              <Suspense fallback={<ViewLoader />}>
+                <HomePractice
+                  assessments={assessments}
+                  clientName={clientName}
+                />
+              </Suspense>
             </div>
           )}
 
           {/* Predictions view */}
           {activeView === VIEWS.PREDICTIONS && (
             <div className="w-full h-full overflow-y-auto">
-              <ProgressPrediction
-                assessments={assessments}
-                snapshots={snapshots}
-                clientName={clientName}
-              />
+              <Suspense fallback={<ViewLoader />}>
+                <ProgressPrediction
+                  assessments={assessments}
+                  snapshots={snapshots}
+                  clientName={clientName}
+                />
+              </Suspense>
             </div>
           )}
 
           {/* Org Analytics view */}
           {activeView === VIEWS.ORG_ANALYTICS && (
             <div className="w-full h-full overflow-y-auto">
-              <OrgAnalytics />
+              <Suspense fallback={<ViewLoader />}>
+                <OrgAnalytics />
+              </Suspense>
             </div>
           )}
 
           {/* Messages view */}
           {activeView === VIEWS.MESSAGES && (
             <div className="w-full h-full overflow-hidden">
-              <Messaging
-                clientId={clientId}
-                clientName={clientName}
-              />
+              <Suspense fallback={<ViewLoader />}>
+                <Messaging
+                  clientId={clientId}
+                  clientName={clientName}
+                />
+              </Suspense>
             </div>
           )}
 
           {/* Branding view */}
           {activeView === VIEWS.BRANDING && (
             <div className="w-full h-full overflow-y-auto">
-              <BrandingSettings onBrandingChange={() => {}} />
+              <Suspense fallback={<ViewLoader />}>
+                <BrandingSettings onBrandingChange={() => {}} />
+              </Suspense>
             </div>
           )}
 
           {/* Data view */}
           {activeView === VIEWS.DATA && (
             <div className="w-full h-full overflow-y-auto">
-              <DataPortability onImportComplete={() => window.location.reload()} />
+              <Suspense fallback={<ViewLoader />}>
+                <DataPortability onImportComplete={() => window.location.reload()} />
+              </Suspense>
             </div>
           )}
 
           {/* Accessibility view */}
           {activeView === VIEWS.ACCESSIBILITY && (
             <div className="w-full h-full overflow-y-auto">
-              <AccessibilitySettings onSettingsChange={() => {}} />
+              <Suspense fallback={<ViewLoader />}>
+                <AccessibilitySettings onSettingsChange={() => {}} />
+              </Suspense>
+            </div>
+          )}
+
+          {/* Compare view */}
+          {activeView === VIEWS.COMPARE && (
+            <div className="w-full h-full overflow-y-auto">
+              <Suspense fallback={<ViewLoader />}>
+                <ComparisonView
+                  assessments={assessments}
+                  clientName={clientName}
+                  clientId={clientId}
+                  snapshots={snapshots}
+                />
+              </Suspense>
+            </div>
+          )}
+
+          {/* Certifications view */}
+          {activeView === VIEWS.CERTIFICATIONS && (
+            <div className="w-full h-full overflow-y-auto">
+              <Suspense fallback={<ViewLoader />}>
+                <OutcomeCertification
+                  assessments={assessments}
+                  clientName={clientName}
+                  snapshots={snapshots}
+                />
+              </Suspense>
+            </div>
+          )}
+
+          {/* Marketplace view */}
+          {activeView === VIEWS.MARKETPLACE && (
+            <div className="w-full h-full overflow-y-auto">
+              <Suspense fallback={<ViewLoader />}>
+                <Marketplace />
+              </Suspense>
+            </div>
+          )}
+
+          {/* Pricing view */}
+          {activeView === VIEWS.PRICING && (
+            <div className="w-full h-full overflow-y-auto">
+              <Suspense fallback={<ViewLoader />}>
+                <PricingPage />
+              </Suspense>
             </div>
           )}
         </main>
@@ -628,12 +727,14 @@ export default function Dashboard() {
         )}
       </div>
     </div>
-    <AIAssistantPanel
-      isOpen={aiPanelOpen}
-      onClose={() => setAiPanelOpen(false)}
-      clientName={clientName}
-      assessments={assessments}
-    />
+    <Suspense fallback={null}>
+      <AIAssistantPanel
+        isOpen={aiPanelOpen}
+        onClose={() => setAiPanelOpen(false)}
+        clientName={clientName}
+        assessments={assessments}
+      />
+    </Suspense>
     <SearchOverlay
       isOpen={searchOpen}
       onClose={() => setSearchOpen(false)}
@@ -653,6 +754,16 @@ export default function Dashboard() {
       />
     )}
     <OnboardingTour onComplete={() => {}} />
+    <Suspense fallback={null}>
+      <KeyboardShortcuts
+        isOpen={shortcutsOpen}
+        onClose={() => setShortcutsOpen(false)}
+        onToggle={() => setShortcutsOpen(prev => !prev)}
+        onSwitchView={(viewKey) => { setActiveView(viewKey); setShortcutsOpen(false) }}
+        onSave={() => { if (clientId) { import('../data/storage.js').then(m => { m.saveAssessment(clientId, assessments); showToast('Assessment saved', 'success') }) } }}
+        onPrint={() => window.print()}
+      />
+    </Suspense>
     </>
   )
 }
