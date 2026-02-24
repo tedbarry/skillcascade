@@ -100,7 +100,7 @@ function resolveSynonym(word) {
   return SYNONYM_MAP.get(word) || word
 }
 
-export function normalizeText(text) {
+function normalizeText(text) {
   return text
     .toLowerCase()
     .replace(/[^\w\s]/g, ' ')
@@ -108,7 +108,7 @@ export function normalizeText(text) {
     .trim()
 }
 
-export function extractKeywords(text) {
+function extractKeywords(text) {
   const normalized = normalizeText(text)
   const words = normalized.split(' ')
   const keywords = new Set()
@@ -154,7 +154,7 @@ export function extractKeywords(text) {
  * Levenshtein edit distance between two strings.
  * Used for typo tolerance (e.g., "elopemnt" ↔ "elopement").
  */
-export function editDistance(a, b) {
+function editDistance(a, b) {
   if (a === b) return 0
   if (a.length === 0) return b.length
   if (b.length === 0) return a.length
@@ -193,7 +193,7 @@ function wordsMatch(a, b) {
  * Fuzzy Jaccard similarity — like Jaccard, but uses edit distance
  * so typos and minor misspellings still count as matching keywords.
  */
-export function jaccardSimilarity(setA, setB) {
+function jaccardSimilarity(setA, setB) {
   if (setA.size === 0 && setB.size === 0) return 0
 
   const arrB = [...setB]
@@ -272,55 +272,11 @@ export function findSimilarMessage(text, index) {
   return null
 }
 
-// ── localStorage index management ──
-
-function getIndexKey(client, toolId) {
-  return `skillcascade_ai_index_${client || 'default'}_${toolId}`
-}
-
-export function loadSearchIndex(client, toolId) {
-  try {
-    const raw = localStorage.getItem(getIndexKey(client, toolId))
-    if (!raw) return []
-    const entries = JSON.parse(raw)
-    // Rehydrate keyword Sets from arrays
-    return entries.map((e) => ({ ...e, keywords: new Set(e.keywords) }))
-  } catch {
-    return []
-  }
-}
-
-export function saveSearchIndex(client, toolId, index) {
-  try {
-    // Cap at 100 entries, serialize Sets as arrays
-    const capped = index.slice(0, 100)
-    const serializable = capped.map((e) => ({ ...e, keywords: [...e.keywords] }))
-    localStorage.setItem(getIndexKey(client, toolId), JSON.stringify(serializable))
-  } catch { /* storage full */ }
-}
-
-export function addToSearchIndex(client, toolId, index, userText, chatId, msgId) {
-  const normalized = normalizeText(userText)
-  const keywords = extractKeywords(userText)
-  if (keywords.size === 0) return index // skip trivially short messages
-
-  // Don't add duplicates
-  if (index.some((e) => e.normalized === normalized)) return index
-
-  const updated = [
-    { normalized, keywords, text: userText, chatId, msgId },
-    ...index,
-  ].slice(0, 100)
-
-  saveSearchIndex(client, toolId, updated)
-  return updated
-}
-
 /**
  * Rebuild the search index from scratch using the full chat list.
  * Only indexes user messages that have a following assistant response.
  */
-export function rebuildSearchIndex(client, toolId, chatList) {
+export function rebuildSearchIndex(chatList) {
   const entries = []
   for (const chat of chatList) {
     const msgs = chat.messages || []
@@ -342,12 +298,7 @@ export function rebuildSearchIndex(client, toolId, chatList) {
       }
     }
   }
-  const capped = entries.slice(0, 100)
-  // Only persist to localStorage if client is specified (legacy mode)
-  if (client != null) {
-    saveSearchIndex(client, toolId, capped)
-  }
-  return capped
+  return entries.slice(0, 100)
 }
 
 /**

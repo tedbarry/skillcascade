@@ -2,6 +2,7 @@ import { lazy, Suspense } from 'react'
 import { Routes, Route } from 'react-router-dom'
 import { AuthProvider } from './contexts/AuthContext.jsx'
 import ProtectedRoute from './components/ProtectedRoute.jsx'
+import ErrorBoundary from './components/ErrorBoundary.jsx'
 
 const Landing = lazy(() => import('./pages/Landing.jsx'))
 const Login = lazy(() => import('./pages/Login.jsx'))
@@ -24,6 +25,7 @@ function LoadingSpinner() {
 
 export default function App() {
   return (
+    <ErrorBoundary>
     <AuthProvider>
       <Suspense fallback={<LoadingSpinner />}>
         <Routes>
@@ -49,5 +51,6 @@ export default function App() {
         </Routes>
       </Suspense>
     </AuthProvider>
+    </ErrorBoundary>
   )
 }

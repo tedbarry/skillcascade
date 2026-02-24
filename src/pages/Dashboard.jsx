@@ -1,20 +1,22 @@
 import { useState, useMemo, useEffect, useCallback, lazy, Suspense } from 'react'
 import { Link } from 'react-router-dom'
-import Sunburst from '../components/Sunburst.jsx'
-import RadarChart from '../components/RadarChart.jsx'
-import AssessmentPanel from '../components/AssessmentPanel.jsx'
-import SkillTree from '../components/SkillTree.jsx'
-import CascadeAnimation from '../components/CascadeAnimation.jsx'
-import ProgressTimeline from '../components/ProgressTimeline.jsx'
 import ClientManager from '../components/ClientManager.jsx'
 import ExportMenu from '../components/ExportMenu.jsx'
 import PrintReport from '../components/PrintReport.jsx'
 import Toast from '../components/Toast.jsx'
-import SearchOverlay from '../components/SearchOverlay.jsx'
 import SettingsDropdown from '../components/SettingsDropdown.jsx'
-import OnboardingTour from '../components/OnboardingTour.jsx'
+import ErrorBoundary from '../components/ErrorBoundary.jsx'
 import useUndoRedo from '../hooks/useUndoRedo.js'
 
+// Lazy-loaded view components — each gets its own chunk, loaded on-demand
+const Sunburst = lazy(() => import('../components/Sunburst.jsx'))
+const RadarChart = lazy(() => import('../components/RadarChart.jsx'))
+const AssessmentPanel = lazy(() => import('../components/AssessmentPanel.jsx'))
+const SkillTree = lazy(() => import('../components/SkillTree.jsx'))
+const CascadeAnimation = lazy(() => import('../components/CascadeAnimation.jsx'))
+const ProgressTimeline = lazy(() => import('../components/ProgressTimeline.jsx'))
+const SearchOverlay = lazy(() => import('../components/SearchOverlay.jsx'))
+const OnboardingTour = lazy(() => import('../components/OnboardingTour.jsx'))
 const AdaptiveAssessment = lazy(() => import('../components/AdaptiveAssessment.jsx'))
 const GoalEngine = lazy(() => import('../components/GoalEngine.jsx'))
 const AIAssistantPanel = lazy(() => import('../components/AIAssistantPanel.jsx'))
@@ -438,6 +440,17 @@ export default function Dashboard() {
             ))}
           </div>
 
+          <ErrorBoundary key={activeView} fallback={({ error, reset }) => (
+            <div className="flex flex-col items-center justify-center py-16 px-6 text-center">
+              <p className="text-warm-600 mb-3">This view encountered an error.</p>
+              <button onClick={reset} className="px-4 py-2 bg-sage-500 text-white rounded-lg hover:bg-sage-600 transition-colors text-sm font-medium">
+                Try again
+              </button>
+              {import.meta.env.DEV && error && (
+                <pre className="mt-3 text-left text-xs text-red-600 bg-red-50 rounded-lg p-3 overflow-auto max-h-32 max-w-lg">{error.message}</pre>
+              )}
+            </div>
+          )}>
           {/* Sample data banner */}
           {!clientId && [VIEWS.SUNBURST, VIEWS.RADAR, VIEWS.TREE, VIEWS.CASCADE, VIEWS.ASSESS, VIEWS.QUICK_ASSESS].includes(activeView) && (
             <div className="w-full max-w-2xl mx-auto mb-4 px-4 py-2.5 bg-warm-100 border border-warm-200 rounded-lg text-center">
@@ -449,106 +462,118 @@ export default function Dashboard() {
 
           {/* Sunburst view */}
           {activeView === VIEWS.SUNBURST && (
-            <div className="flex flex-col items-center">
-              <h2 className="text-lg font-semibold text-warm-800 font-display mb-1">
-                Skills Profile — Sunburst View
-              </h2>
-              <p className="text-sm text-warm-500 mb-4">Click any segment to zoom in. Click center to zoom out.</p>
-              <Sunburst
-                data={hierarchyData}
-                assessments={assessments}
-                width={700}
-                height={700}
-                onSelect={setSelectedNode}
-              />
-            </div>
+            <Suspense fallback={<ViewLoader />}>
+              <div className="flex flex-col items-center">
+                <h2 className="text-lg font-semibold text-warm-800 font-display mb-1">
+                  Skills Profile — Sunburst View
+                </h2>
+                <p className="text-sm text-warm-500 mb-4">Click any segment to zoom in. Click center to zoom out.</p>
+                <Sunburst
+                  data={hierarchyData}
+                  assessments={assessments}
+                  width={700}
+                  height={700}
+                  onSelect={setSelectedNode}
+                />
+              </div>
+            </Suspense>
           )}
 
           {/* Radar view */}
           {activeView === VIEWS.RADAR && (
-            <div className="w-full max-w-2xl">
-              <h2 className="text-lg font-semibold text-warm-800 font-display mb-1 text-center">
-                Skills Profile — Domain Overview
-              </h2>
-              <p className="text-sm text-warm-500 mb-4 text-center">
-                Average score per domain across all assessed skills.
-              </p>
-              {snapshots.length > 0 && (
-                <div className="flex items-center justify-center gap-2 mb-4">
-                  <label className="text-xs text-warm-500">Compare with:</label>
-                  <select
-                    value={compareSnapshotId || ''}
-                    onChange={(e) => setCompareSnapshotId(e.target.value || null)}
-                    className="text-xs px-2.5 py-1.5 rounded-md border border-warm-200 text-warm-700 focus:outline-none focus:border-sage-400"
-                  >
-                    <option value="">None</option>
-                    {snapshots.map((snap) => (
-                      <option key={snap.id} value={snap.id}>
-                        {snap.label || new Date(snap.timestamp).toLocaleDateString()}
-                      </option>
-                    ))}
-                  </select>
-                </div>
-              )}
-              <RadarChart
-                assessments={assessments}
-                compareAssessments={compareSnapshotId ? snapshots.find((s) => s.id === compareSnapshotId)?.assessments : undefined}
-                compareLabel={compareSnapshotId ? (snapshots.find((s) => s.id === compareSnapshotId)?.label || 'Snapshot') : undefined}
-                height={480}
-              />
-            </div>
+            <Suspense fallback={<ViewLoader />}>
+              <div className="w-full max-w-2xl">
+                <h2 className="text-lg font-semibold text-warm-800 font-display mb-1 text-center">
+                  Skills Profile — Domain Overview
+                </h2>
+                <p className="text-sm text-warm-500 mb-4 text-center">
+                  Average score per domain across all assessed skills.
+                </p>
+                {snapshots.length > 0 && (
+                  <div className="flex items-center justify-center gap-2 mb-4">
+                    <label className="text-xs text-warm-500">Compare with:</label>
+                    <select
+                      value={compareSnapshotId || ''}
+                      onChange={(e) => setCompareSnapshotId(e.target.value || null)}
+                      className="text-xs px-2.5 py-1.5 rounded-md border border-warm-200 text-warm-700 focus:outline-none focus:border-sage-400"
+                    >
+                      <option value="">None</option>
+                      {snapshots.map((snap) => (
+                        <option key={snap.id} value={snap.id}>
+                          {snap.label || new Date(snap.timestamp).toLocaleDateString()}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+                )}
+                <RadarChart
+                  assessments={assessments}
+                  compareAssessments={compareSnapshotId ? snapshots.find((s) => s.id === compareSnapshotId)?.assessments : undefined}
+                  compareLabel={compareSnapshotId ? (snapshots.find((s) => s.id === compareSnapshotId)?.label || 'Snapshot') : undefined}
+                  height={480}
+                />
+              </div>
+            </Suspense>
           )}
 
           {/* Skill Tree view */}
           {activeView === VIEWS.TREE && (
-            <div className="w-full max-w-4xl mx-auto">
-              <h2 className="text-lg font-semibold text-warm-800 font-display mb-1 text-center">
-                Skill Tree — Domain Dependencies
-              </h2>
-              <p className="text-sm text-warm-500 mb-6 text-center">
-                Developmental hierarchy — prerequisites cascade upward. Pulsing node = recommended focus area. Click to expand.
-              </p>
-              <SkillTree
-                assessments={assessments}
-                onSelectDomain={(domain) => setSelectedNode({ id: domain.id, name: domain.name })}
-              />
-            </div>
+            <Suspense fallback={<ViewLoader />}>
+              <div className="w-full max-w-4xl mx-auto">
+                <h2 className="text-lg font-semibold text-warm-800 font-display mb-1 text-center">
+                  Skill Tree — Domain Dependencies
+                </h2>
+                <p className="text-sm text-warm-500 mb-6 text-center">
+                  Developmental hierarchy — prerequisites cascade upward. Pulsing node = recommended focus area. Click to expand.
+                </p>
+                <SkillTree
+                  assessments={assessments}
+                  onSelectDomain={(domain) => setSelectedNode({ id: domain.id, name: domain.name })}
+                />
+              </div>
+            </Suspense>
           )}
 
           {/* Cascade view */}
           {activeView === VIEWS.CASCADE && (
-            <div className="w-full max-w-4xl mx-auto">
-              <h2 className="text-lg font-semibold text-warm-800 font-display mb-1 text-center">
-                Cascade Animation — Why Foundations Matter
-              </h2>
-              <p className="text-sm text-warm-500 mb-6 text-center">
-                See how weakness in one domain ripples upward through the entire system.
-              </p>
-              <CascadeAnimation />
-            </div>
+            <Suspense fallback={<ViewLoader />}>
+              <div className="w-full max-w-4xl mx-auto">
+                <h2 className="text-lg font-semibold text-warm-800 font-display mb-1 text-center">
+                  Cascade Animation — Why Foundations Matter
+                </h2>
+                <p className="text-sm text-warm-500 mb-6 text-center">
+                  See how weakness in one domain ripples upward through the entire system.
+                </p>
+                <CascadeAnimation />
+              </div>
+            </Suspense>
           )}
 
           {/* Timeline view */}
           {activeView === VIEWS.TIMELINE && (
-            <div className="w-full h-full">
-              <ProgressTimeline
-                snapshots={snapshots}
-                currentAssessments={assessments}
-                onSaveSnapshot={handleSaveSnapshot}
-                onDeleteSnapshot={handleDeleteSnapshot}
-                clientName={clientName}
-                hasClient={!!clientId}
-              />
-            </div>
+            <Suspense fallback={<ViewLoader />}>
+              <div className="w-full h-full">
+                <ProgressTimeline
+                  snapshots={snapshots}
+                  currentAssessments={assessments}
+                  onSaveSnapshot={handleSaveSnapshot}
+                  onDeleteSnapshot={handleDeleteSnapshot}
+                  clientName={clientName}
+                  hasClient={!!clientId}
+                />
+              </div>
+            </Suspense>
           )}
 
           {/* Assessment view */}
           {activeView === VIEWS.ASSESS && (
-            <AssessmentPanel
-              assessments={assessments}
-              onAssess={setAssessments}
-              initialSubAreaId={assessTarget}
-            />
+            <Suspense fallback={<ViewLoader />}>
+              <AssessmentPanel
+                assessments={assessments}
+                onAssess={setAssessments}
+                initialSubAreaId={assessTarget}
+              />
+            </Suspense>
           )}
 
           {/* Quick Assessment view */}
@@ -766,6 +791,7 @@ export default function Dashboard() {
               </Suspense>
             </div>
           )}
+          </ErrorBoundary>
         </main>
 
         {/* Right panel — Detail View (only for viz views) */}
@@ -784,15 +810,17 @@ export default function Dashboard() {
         assessments={assessments}
       />
     </Suspense>
-    <SearchOverlay
-      isOpen={searchOpen}
-      onClose={() => setSearchOpen(false)}
-      onNavigate={(subAreaId) => {
-        setSearchOpen(false)
-        handleNavigateToAssess(subAreaId)
-      }}
-      assessments={assessments}
-    />
+    <Suspense fallback={null}>
+      <SearchOverlay
+        isOpen={searchOpen}
+        onClose={() => setSearchOpen(false)}
+        onNavigate={(subAreaId) => {
+          setSearchOpen(false)
+          handleNavigateToAssess(subAreaId)
+        }}
+        assessments={assessments}
+      />
+    </Suspense>
     <PrintReport assessments={assessments} clientName={clientName} />
     {toast && (
       <Toast
@@ -802,7 +830,9 @@ export default function Dashboard() {
         onDismiss={() => setToast(null)}
       />
     )}
-    <OnboardingTour onComplete={() => {}} />
+    <Suspense fallback={null}>
+      <OnboardingTour onComplete={() => {}} />
+    </Suspense>
     <Suspense fallback={null}>
       <KeyboardShortcuts
         isOpen={shortcutsOpen}

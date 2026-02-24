@@ -839,7 +839,7 @@ export default function AIAssistantPanel({ isOpen, onClose, clientName, assessme
           setMessages(makeWelcome())
         }
         // Build search index from ALL org chats (cross-client)
-        setSearchIndex(rebuildIndex(null, selectedToolId, list))
+        setSearchIndex(rebuildIndex(list))
       } catch (err) {
         console.error('Failed to load AI chats:', err.message)
         if (!cancelled) {
@@ -922,7 +922,7 @@ export default function AIAssistantPanel({ isOpen, onClose, clientName, assessme
             setActiveChatId(clientChats[0].id)
             setMessages(clientChats[0].messages)
           }
-          setSearchIndex(rebuildIndex(null, selectedToolId, list))
+          setSearchIndex(rebuildIndex(list))
         } catch { /* will load on next tool switch */ }
       }
     }
@@ -956,7 +956,7 @@ export default function AIAssistantPanel({ isOpen, onClose, clientName, assessme
         // Refresh chat list in background
         const list = await getAiChats(selectedToolId)
         setChatList(list)
-        setSearchIndex(rebuildIndex(null, selectedToolId, list))
+        setSearchIndex(rebuildIndex(list))
       } catch (err) {
         console.error('Failed to save AI chat:', err.message)
       }
@@ -996,7 +996,7 @@ export default function AIAssistantPanel({ isOpen, onClose, clientName, assessme
         }
       }
       // Rebuild search index after deletion
-      setSearchIndex(rebuildIndex(null, selectedToolId, filtered))
+      setSearchIndex(rebuildIndex(filtered))
     } catch (err) {
       console.error('Failed to delete AI chat:', err.message)
     }
