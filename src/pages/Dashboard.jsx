@@ -83,7 +83,14 @@ export default function Dashboard() {
   const [assessments, setAssessments, { undo, redo, canUndo, canRedo, resetState: resetAssessments }] = useUndoRedo({})
   const [selectedNode, setSelectedNode] = useState(null)
   const [sidebarOpen, setSidebarOpen] = useState(true)
-  const [activeView, setActiveView] = useState(VIEWS.SUNBURST)
+  const [activeView, setActiveViewRaw] = useState(() => {
+    const saved = localStorage.getItem('skillcascade_active_view')
+    return saved && Object.values(VIEWS).includes(saved) ? saved : VIEWS.SUNBURST
+  })
+  const setActiveView = useCallback((view) => {
+    setActiveViewRaw(view)
+    localStorage.setItem('skillcascade_active_view', view)
+  }, [])
   const [clientId, setClientId] = useState(() => localStorage.getItem('skillcascade_selected_client') || null)
   const [snapshots, setSnapshots] = useState([])
   const [clientName, setClientName] = useState(() => localStorage.getItem('skillcascade_selected_client_name') || 'Sample Client')
