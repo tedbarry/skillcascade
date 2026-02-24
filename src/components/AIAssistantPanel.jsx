@@ -1,10 +1,10 @@
 import { useState, useEffect, useRef, useMemo, useCallback } from 'react'
 import { framework, ASSESSMENT_LEVELS, ASSESSMENT_LABELS } from '../data/framework.js'
+import { useAuth } from '../contexts/AuthContext.jsx'
+import { getAiChats, saveAiChat, deleteAiChat } from '../data/storage.js'
 import {
   findSimilarMessage,
-  loadSearchIndex,
-  addToSearchIndex,
-  rebuildSearchIndex,
+  rebuildSearchIndex as rebuildIndex,
   getMatchedResponse,
 } from '../lib/chatSimilarity.js'
 
@@ -699,23 +699,6 @@ function CheckIcon() {
    Chat History Helpers
    ───────────────────────────────────────────── */
 
-function getChatListKey(client, toolId) {
-  return `skillcascade_ai_chats_${client || 'default'}_${toolId}`
-}
-
-function loadChatList(client, toolId) {
-  try {
-    const raw = localStorage.getItem(getChatListKey(client, toolId))
-    return raw ? JSON.parse(raw) : []
-  } catch { return [] }
-}
-
-function saveChatList(client, toolId, list) {
-  try {
-    localStorage.setItem(getChatListKey(client, toolId), JSON.stringify(list))
-  } catch { /* storage full */ }
-}
-
 function makeChatTitle(messages) {
   const first = messages.find((m) => m.role === 'user')
   if (!first) return 'New chat'
@@ -791,6 +774,10 @@ function SimilarMatchBanner({ match, onUse, onDismiss }) {
    ───────────────────────────────────────────── */
 
 export default function AIAssistantPanel({ isOpen, onClose, clientName, assessments }) {
+  const { user, profile } = useAuth()
+  const orgId = profile?.org_id
+  const userId = user?.id
+
   const [selectedToolId, setSelectedToolId] = useState('reports')
   const [messages, setMessages] = useState([])
   const [inputValue, setInputValue] = useState('')
@@ -808,6 +795,7 @@ export default function AIAssistantPanel({ isOpen, onClose, clientName, assessme
   const inputRef = useRef(null)
   const toolScrollRef = useRef(null)
   const quickParamRef = useRef(null)
+  const saveTimerRef = useRef(null)
 
   const selectedTool = AI_TOOLS.find((t) => t.id === selectedToolId)
 
@@ -831,65 +819,81 @@ export default function AIAssistantPanel({ isOpen, onClose, clientName, assessme
     }]
   }
 
-  // Load chat list and active chat when tool/client changes
+  // Load chat list from Supabase when tool changes
   useEffect(() => {
     if (!selectedTool) return
-    const list = loadChatList(clientName, selectedToolId)
-    setChatList(list)
-    // Load most recent chat, or start fresh
-    if (list.length > 0) {
-      const latest = list[0]
-      setActiveChatId(latest.id)
-      setMessages(latest.messages)
-    } else {
-      setActiveChatId(null)
-      setMessages(makeWelcome())
+    let cancelled = false
+
+    async function load() {
+      try {
+        const list = await getAiChats(selectedToolId)
+        if (cancelled) return
+        setChatList(list)
+        // Load most recent chat for this client, or start fresh
+        const clientChats = list.filter((c) => c.client_name === clientName)
+        if (clientChats.length > 0) {
+          setActiveChatId(clientChats[0].id)
+          setMessages(clientChats[0].messages)
+        } else {
+          setActiveChatId(null)
+          setMessages(makeWelcome())
+        }
+        // Build search index from ALL org chats (cross-client)
+        setSearchIndex(rebuildIndex(null, selectedToolId, list))
+      } catch (err) {
+        console.error('Failed to load AI chats:', err.message)
+        if (!cancelled) {
+          setChatList([])
+          setActiveChatId(null)
+          setMessages(makeWelcome())
+          setSearchIndex([])
+        }
+      }
     }
+
+    load()
     setShowHistory(false)
     setPendingMatch(null)
     setActiveQuickAction(null)
     setQuickActionParam('')
-    // Load or rebuild search index
-    let idx = loadSearchIndex(clientName, selectedToolId)
-    if (idx.length === 0 && list.length > 0) {
-      idx = rebuildSearchIndex(clientName, selectedToolId, list)
-    }
-    setSearchIndex(idx)
+
+    return () => { cancelled = true }
   }, [selectedToolId, clientName]) // eslint-disable-line react-hooks/exhaustive-deps
 
-  // Save active chat whenever messages change
+  // Save active chat to Supabase (debounced) whenever messages change
   useEffect(() => {
-    if (messages.length <= 1 || !selectedTool) return // don't save just the welcome
-    const list = loadChatList(clientName, selectedToolId)
-    const title = makeChatTitle(messages)
-    if (activeChatId) {
-      // Update existing chat
-      const idx = list.findIndex((c) => c.id === activeChatId)
-      if (idx >= 0) {
-        list[idx] = { ...list[idx], title, messages, updated_at: Date.now() }
-      } else {
-        list.unshift({ id: activeChatId, title, messages, created_at: Date.now(), updated_at: Date.now() })
-      }
-    } else {
-      // Create new chat entry
-      const newId = 'chat_' + Date.now()
-      list.unshift({ id: newId, title, messages, created_at: Date.now(), updated_at: Date.now() })
-      setActiveChatId(newId)
-    }
-    saveChatList(clientName, selectedToolId, list)
-    setChatList(list)
+    if (messages.length <= 1 || !selectedTool || !orgId || !userId) return
 
-    // Update search index: if the last two messages are user→assistant, index the user msg
-    const len = messages.length
-    if (len >= 2) {
-      const last = messages[len - 1]
-      const prev = messages[len - 2]
-      if (prev.role === 'user' && last.role === 'assistant') {
-        const chatId = activeChatId || list[0]?.id
-        if (chatId) {
-          setSearchIndex((cur) => addToSearchIndex(clientName, selectedToolId, cur, prev.content, chatId, prev.id))
+    // Clear previous save timer
+    if (saveTimerRef.current) clearTimeout(saveTimerRef.current)
+
+    saveTimerRef.current = setTimeout(async () => {
+      const title = makeChatTitle(messages)
+      try {
+        const saved = await saveAiChat({
+          id: activeChatId || undefined,
+          tool_id: selectedToolId,
+          title,
+          messages,
+          client_name: clientName,
+        }, orgId, userId)
+
+        // If this was a new chat, capture the server-assigned ID
+        if (!activeChatId && saved.id) {
+          setActiveChatId(saved.id)
         }
+
+        // Refresh chat list in background
+        const list = await getAiChats(selectedToolId)
+        setChatList(list)
+        setSearchIndex(rebuildIndex(null, selectedToolId, list))
+      } catch (err) {
+        console.error('Failed to save AI chat:', err.message)
       }
+    }, 800) // debounce 800ms
+
+    return () => {
+      if (saveTimerRef.current) clearTimeout(saveTimerRef.current)
     }
   }, [messages]) // eslint-disable-line react-hooks/exhaustive-deps
 
@@ -906,22 +910,26 @@ export default function AIAssistantPanel({ isOpen, onClose, clientName, assessme
     setShowHistory(false)
   }
 
-  function handleDeleteChat(chatId) {
-    const list = loadChatList(clientName, selectedToolId)
-    const filtered = list.filter((c) => c.id !== chatId)
-    saveChatList(clientName, selectedToolId, filtered)
-    setChatList(filtered)
-    if (activeChatId === chatId) {
-      if (filtered.length > 0) {
-        setActiveChatId(filtered[0].id)
-        setMessages(filtered[0].messages)
-      } else {
-        setActiveChatId(null)
-        setMessages(makeWelcome())
+  async function handleDeleteChat(chatId) {
+    try {
+      await deleteAiChat(chatId)
+      const filtered = chatList.filter((c) => c.id !== chatId)
+      setChatList(filtered)
+      if (activeChatId === chatId) {
+        const clientChats = filtered.filter((c) => c.client_name === clientName)
+        if (clientChats.length > 0) {
+          setActiveChatId(clientChats[0].id)
+          setMessages(clientChats[0].messages)
+        } else {
+          setActiveChatId(null)
+          setMessages(makeWelcome())
+        }
       }
+      // Rebuild search index after deletion
+      setSearchIndex(rebuildIndex(null, selectedToolId, filtered))
+    } catch (err) {
+      console.error('Failed to delete AI chat:', err.message)
     }
-    // Rebuild search index after deletion
-    setSearchIndex(rebuildSearchIndex(clientName, selectedToolId, filtered))
   }
 
   // Scroll to bottom on new messages
@@ -1402,6 +1410,9 @@ export default function AIAssistantPanel({ isOpen, onClose, clientName, assessme
                         {chat.title}
                       </div>
                       <div className="text-[10px] text-warm-400 mt-0.5">
+                        {chat.client_name && chat.client_name !== clientName && (
+                          <span className="text-sage-500 font-medium">{chat.client_name} · </span>
+                        )}
                         {chat.messages.filter((m) => m.role === 'user').length} messages
                         {' · '}
                         {new Date(chat.updated_at).toLocaleDateString(undefined, { month: 'short', day: 'numeric' })}

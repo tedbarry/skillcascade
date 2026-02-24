@@ -343,7 +343,10 @@ export function rebuildSearchIndex(client, toolId, chatList) {
     }
   }
   const capped = entries.slice(0, 100)
-  saveSearchIndex(client, toolId, capped)
+  // Only persist to localStorage if client is specified (legacy mode)
+  if (client != null) {
+    saveSearchIndex(client, toolId, capped)
+  }
   return capped
 }
 

@@ -158,6 +158,80 @@ export async function deleteSnapshot(clientId, snapshotId) {
 }
 
 /**
+ * AI Chats — org-scoped, cross-client, cross-user
+ */
+
+/** Load all chats for a tool across the entire org. */
+export async function getAiChats(toolId) {
+  const { data, error } = await supabase
+    .from('ai_chats')
+    .select('*')
+    .eq('tool_id', toolId)
+    .order('updated_at', { ascending: false })
+  if (error) throw error
+  return (data || []).map((row) => ({
+    id: row.id,
+    title: row.title,
+    messages: row.messages || [],
+    client_name: row.client_name,
+    user_id: row.user_id,
+    created_at: new Date(row.created_at).getTime(),
+    updated_at: new Date(row.updated_at).getTime(),
+  }))
+}
+
+/** Create or update a chat. Returns the saved row. */
+export async function saveAiChat(chat, orgId, userId) {
+  if (chat.id) {
+    // Update existing — only the creator can update (RLS enforced)
+    const { data, error } = await supabase
+      .from('ai_chats')
+      .update({
+        title: chat.title,
+        messages: chat.messages,
+        client_name: chat.client_name,
+      })
+      .eq('id', chat.id)
+      .select()
+      .single()
+    if (error) throw error
+    return { ...chat, id: data.id }
+  }
+  // Insert new
+  const { data, error } = await supabase
+    .from('ai_chats')
+    .insert({
+      org_id: orgId,
+      user_id: userId,
+      tool_id: chat.tool_id,
+      title: chat.title,
+      messages: chat.messages,
+      client_name: chat.client_name,
+    })
+    .select()
+    .single()
+  if (error) throw error
+  return {
+    id: data.id,
+    title: data.title,
+    messages: data.messages || [],
+    client_name: data.client_name,
+    user_id: data.user_id,
+    created_at: new Date(data.created_at).getTime(),
+    updated_at: new Date(data.updated_at).getTime(),
+  }
+}
+
+/** Delete a chat (only creator can delete, enforced by RLS). */
+export async function deleteAiChat(chatId) {
+  const { error } = await supabase
+    .from('ai_chats')
+    .delete()
+    .eq('id', chatId)
+  if (error) throw error
+}
+
+/**
  * Delete all data for an organization — clients (soft-delete), assessments, snapshots, messages
  */
 export async function clearAllData(orgId) {
