@@ -53,25 +53,83 @@ body {
   font-family: var(--font-sans);
   background-color: var(--color-warm-50);
   color: var(--color-warm-900);
+  transition: background-color 0.3s ease, color 0.3s ease;
 }
 
-/* Dark mode */
-@media (prefers-color-scheme: dark) {
-  :root {
-    color-scheme: dark;
-  }
-  body {
-    background-color: #1a1a1a;
-    color: #e5e5e5;
-  }
+/* ─── Dark Mode ─────────────────────────────────────────────
+   Activated by adding class="dark" to <html>.
+   Inverts the warm palette so bg-warm-50 becomes dark, etc.
+   This means all existing Tailwind classes just work.
+   ──────────────────────────────────────────────────────────── */
+.dark {
+  color-scheme: dark;
+
+  /* Warm palette — inverted for dark backgrounds */
+  --color-warm-50: #1c1714;
+  --color-warm-100: #2a2320;
+  --color-warm-200: #3d332c;
+  --color-warm-300: #5a4a3e;
+  --color-warm-400: #7d6b5a;
+  --color-warm-500: #a08a74;
+  --color-warm-600: #bca68e;
+  --color-warm-700: #d4c0a8;
+  --color-warm-800: #e8dac8;
+  --color-warm-900: #f5efe6;
+
+  /* Sage — slightly muted for dark */
+  --color-sage-50: #1a2320;
+  --color-sage-100: #243330;
+  --color-sage-200: #2e4540;
+  --color-sage-300: #3d6050;
+  --color-sage-400: #4f8460;
+  --color-sage-500: #6a9e76;
+  --color-sage-600: #8fb898;
+  --color-sage-700: #b8d1bd;
+  --color-sage-800: #dce8de;
+  --color-sage-900: #f0f5f1;
+
+  /* Coral — slightly muted for dark */
+  --color-coral-50: #2a1815;
+  --color-coral-100: #3d2320;
+  --color-coral-200: #5a332e;
+  --color-coral-300: #7d4a42;
+  --color-coral-400: #c06055;
+  --color-coral-500: #d44d3f;
+  --color-coral-600: #ec8e85;
+  --color-coral-700: #f5b8b2;
+  --color-coral-800: #fce0dd;
+  --color-coral-900: #fdf2f1;
 }
 
 .dark body {
-  background-color: #1a1a1a;
-  color: #e5e5e5;
+  background-color: var(--color-warm-50);
+  color: var(--color-warm-900);
 }
 
-/* Print styles */
+/* Dark mode overrides for white backgrounds (bg-white) */
+.dark .bg-white {
+  background-color: var(--color-warm-100) !important;
+}
+
+.dark .border-warm-200 {
+  border-color: var(--color-warm-200) !important;
+}
+
+/* Dark mode for inputs and selects */
+.dark select,
+.dark input,
+.dark textarea {
+  background-color: var(--color-warm-100);
+  color: var(--color-warm-900);
+  border-color: var(--color-warm-300);
+}
+
+/* Dark mode for white text on sage buttons — keep readable */
+.dark .bg-sage-500 {
+  background-color: var(--color-sage-500) !important;
+}
+
+/* Print — always light mode */
 @media print {
   @page {
     size: letter;

@@ -14,6 +14,9 @@ import AdaptiveAssessment from '../components/AdaptiveAssessment.jsx'
 import SearchOverlay from '../components/SearchOverlay.jsx'
 import GoalEngine from '../components/GoalEngine.jsx'
 import AIAssistantPanel from '../components/AIAssistantPanel.jsx'
+import SettingsDropdown from '../components/SettingsDropdown.jsx'
+import OnboardingTour from '../components/OnboardingTour.jsx'
+import PatternAlerts from '../components/PatternAlerts.jsx'
 import useUndoRedo from '../hooks/useUndoRedo.js'
 import { framework, toHierarchy, ASSESSMENT_LABELS, ASSESSMENT_COLORS, ASSESSMENT_LEVELS } from '../data/framework.js'
 import { generateSampleAssessments } from '../data/sampleAssessments.js'
@@ -28,6 +31,7 @@ const VIEWS = {
   ASSESS: 'assess',
   QUICK_ASSESS: 'quick-assess',
   GOALS: 'goals',
+  ALERTS: 'alerts',
 }
 
 export default function Dashboard() {
@@ -121,7 +125,7 @@ export default function Dashboard() {
   }
 
   // Assessment, tree, cascade, and timeline views are full-width — no side panels
-  const showSidePanels = activeView !== VIEWS.ASSESS && activeView !== VIEWS.TREE && activeView !== VIEWS.CASCADE && activeView !== VIEWS.TIMELINE && activeView !== VIEWS.QUICK_ASSESS && activeView !== VIEWS.GOALS
+  const showSidePanels = activeView !== VIEWS.ASSESS && activeView !== VIEWS.TREE && activeView !== VIEWS.CASCADE && activeView !== VIEWS.TIMELINE && activeView !== VIEWS.QUICK_ASSESS && activeView !== VIEWS.GOALS && activeView !== VIEWS.ALERTS
 
   return (
     <>
@@ -133,12 +137,12 @@ export default function Dashboard() {
             Skill<span className="text-sage-500">Cascade</span>
           </Link>
           <span className="text-warm-200">|</span>
-          <ClientManager
+          <span data-tour="client-manager"><ClientManager
             currentClientId={clientId}
             onSelectClient={handleSelectClient}
             assessments={assessments}
             onSaveSuccess={() => showToast('Assessment saved', 'success')}
-          />
+          /></span>
         </div>
         <div className="flex items-center gap-3">
           <div className="flex items-center gap-1 mr-1">
@@ -164,6 +168,7 @@ export default function Dashboard() {
             </button>
           </div>
           <button
+            data-tour="ai-tools"
             onClick={() => setAiPanelOpen(true)}
             className="flex items-center gap-2 text-sm text-warm-500 hover:text-warm-700 px-3 py-1.5 rounded-md hover:bg-warm-100 transition-colors border border-warm-200"
           >
@@ -195,6 +200,7 @@ export default function Dashboard() {
             snapshots={snapshots}
             clientName={clientName}
           />
+          <SettingsDropdown />
           <Link
             to="/"
             className="text-sm text-warm-500 hover:text-warm-700 px-3 py-1.5 rounded-md hover:bg-warm-100 transition-colors"
@@ -220,7 +226,7 @@ export default function Dashboard() {
         {/* Center content */}
         <main className={`flex-1 overflow-auto ${activeView === VIEWS.ASSESS || activeView === VIEWS.TIMELINE || activeView === VIEWS.QUICK_ASSESS || activeView === VIEWS.GOALS ? '' : 'flex flex-col items-center p-8'}`}>
           {/* View toggle */}
-          <div className={`flex items-center gap-1 bg-warm-100 rounded-lg p-1 mb-6 ${!showSidePanels ? 'mx-auto mt-6 w-fit' : ''}`}>
+          <div data-tour="view-tabs" className={`flex items-center gap-1 bg-warm-100 rounded-lg p-1 mb-6 ${!showSidePanels ? 'mx-auto mt-6 w-fit' : ''}`}>
             {[
               { key: VIEWS.SUNBURST, label: 'Sunburst' },
               { key: VIEWS.RADAR, label: 'Radar' },
@@ -230,6 +236,7 @@ export default function Dashboard() {
               { key: VIEWS.ASSESS, label: 'Assess' },
               { key: VIEWS.QUICK_ASSESS, label: 'Quick Assess' },
               { key: VIEWS.GOALS, label: 'Goals' },
+              { key: VIEWS.ALERTS, label: 'Alerts' },
             ].map((v) => (
               <button
                 key={v.key}
@@ -372,6 +379,17 @@ export default function Dashboard() {
               />
             </div>
           )}
+
+          {/* Alerts view */}
+          {activeView === VIEWS.ALERTS && (
+            <div className="w-full h-full overflow-y-auto">
+              <PatternAlerts
+                assessments={assessments}
+                snapshots={snapshots}
+                onNavigateToAssess={handleNavigateToAssess}
+              />
+            </div>
+          )}
         </main>
 
         {/* Right panel — Detail View (only for viz views) */}
@@ -406,6 +424,7 @@ export default function Dashboard() {
         onDismiss={() => setToast(null)}
       />
     )}
+    <OnboardingTour onComplete={() => {}} />
     </>
   )
 }
