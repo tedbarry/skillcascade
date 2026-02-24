@@ -22,6 +22,8 @@ import ParentDashboard from '../components/ParentDashboard.jsx'
 import CaseloadDashboard from '../components/CaseloadDashboard.jsx'
 import MilestoneCelebrations from '../components/MilestoneCelebrations.jsx'
 import HomePractice from '../components/HomePractice.jsx'
+import OrgAnalytics from '../components/OrgAnalytics.jsx'
+import ProgressPrediction from '../components/ProgressPrediction.jsx'
 import useUndoRedo from '../hooks/useUndoRedo.js'
 import { framework, toHierarchy, ASSESSMENT_LABELS, ASSESSMENT_COLORS, ASSESSMENT_LEVELS } from '../data/framework.js'
 import { generateSampleAssessments } from '../data/sampleAssessments.js'
@@ -42,6 +44,8 @@ const VIEWS = {
   CASELOAD: 'caseload',
   MILESTONES: 'milestones',
   PRACTICE: 'practice',
+  ORG_ANALYTICS: 'org-analytics',
+  PREDICTIONS: 'predictions',
 }
 
 export default function Dashboard() {
@@ -57,6 +61,7 @@ export default function Dashboard() {
   const [compareSnapshotId, setCompareSnapshotId] = useState(null)
   const [searchOpen, setSearchOpen] = useState(false)
   const [aiPanelOpen, setAiPanelOpen] = useState(false)
+  const [moreMenuOpen, setMoreMenuOpen] = useState(false)
 
   // Global Ctrl+K / Cmd+K to open search
   useEffect(() => {
@@ -69,6 +74,26 @@ export default function Dashboard() {
     window.addEventListener('keydown', handleKeyDown)
     return () => window.removeEventListener('keydown', handleKeyDown)
   }, [])
+
+  // Auto-close sidebars on narrow viewports
+  useEffect(() => {
+    function handleResize() {
+      if (window.innerWidth < 1024) {
+        setSidebarOpen(false)
+      }
+    }
+    handleResize()
+    window.addEventListener('resize', handleResize)
+    return () => window.removeEventListener('resize', handleResize)
+  }, [])
+
+  // Close "More" menu when clicking outside
+  useEffect(() => {
+    if (!moreMenuOpen) return
+    function handleClick() { setMoreMenuOpen(false) }
+    window.addEventListener('click', handleClick)
+    return () => window.removeEventListener('click', handleClick)
+  }, [moreMenuOpen])
 
   const showToast = useCallback((message, type = 'success') => {
     setToast({ message, type, key: Date.now() })
@@ -135,19 +160,19 @@ export default function Dashboard() {
   }
 
   // Assessment, tree, cascade, and timeline views are full-width — no side panels
-  const fullWidthViews = [VIEWS.ASSESS, VIEWS.TREE, VIEWS.CASCADE, VIEWS.TIMELINE, VIEWS.QUICK_ASSESS, VIEWS.GOALS, VIEWS.ALERTS, VIEWS.REPORTS, VIEWS.PARENT, VIEWS.CASELOAD, VIEWS.MILESTONES, VIEWS.PRACTICE]
+  const fullWidthViews = [VIEWS.ASSESS, VIEWS.TREE, VIEWS.CASCADE, VIEWS.TIMELINE, VIEWS.QUICK_ASSESS, VIEWS.GOALS, VIEWS.ALERTS, VIEWS.REPORTS, VIEWS.PARENT, VIEWS.CASELOAD, VIEWS.MILESTONES, VIEWS.PRACTICE, VIEWS.ORG_ANALYTICS, VIEWS.PREDICTIONS]
   const showSidePanels = !fullWidthViews.includes(activeView)
 
   return (
     <>
     <div className="min-h-screen bg-warm-50 flex flex-col print:hidden">
       {/* Top bar */}
-      <header className="bg-white border-b border-warm-200 px-6 py-3 flex items-center justify-between shrink-0">
-        <div className="flex items-center gap-4">
-          <Link to="/" className="text-xl font-bold text-warm-800 font-display">
+      <header className="bg-white border-b border-warm-200 px-3 sm:px-6 py-2 sm:py-3 flex items-center justify-between shrink-0">
+        <div className="flex items-center gap-2 sm:gap-4 min-w-0">
+          <Link to="/" className="text-lg sm:text-xl font-bold text-warm-800 font-display whitespace-nowrap">
             Skill<span className="text-sage-500">Cascade</span>
           </Link>
-          <span className="text-warm-200">|</span>
+          <span className="text-warm-200 hidden sm:inline">|</span>
           <span data-tour="client-manager"><ClientManager
             currentClientId={clientId}
             onSelectClient={handleSelectClient}
@@ -155,8 +180,9 @@ export default function Dashboard() {
             onSaveSuccess={() => showToast('Assessment saved', 'success')}
           /></span>
         </div>
-        <div className="flex items-center gap-3">
-          <div className="flex items-center gap-1 mr-1">
+        <div className="flex items-center gap-1 sm:gap-3">
+          {/* Undo/Redo — hidden on mobile */}
+          <div className="hidden sm:flex items-center gap-1 mr-1">
             <button
               onClick={undo}
               disabled={!canUndo}
@@ -178,43 +204,108 @@ export default function Dashboard() {
               </svg>
             </button>
           </div>
+          {/* Desktop buttons — hidden on mobile */}
           <button
             data-tour="ai-tools"
             onClick={() => setAiPanelOpen(true)}
-            className="flex items-center gap-2 text-sm text-warm-500 hover:text-warm-700 px-3 py-1.5 rounded-md hover:bg-warm-100 transition-colors border border-warm-200"
+            className="hidden sm:flex items-center gap-2 text-sm text-warm-500 hover:text-warm-700 px-3 py-1.5 rounded-md hover:bg-warm-100 transition-colors border border-warm-200"
           >
             <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
               <path strokeLinecap="round" strokeLinejoin="round" d="M9.813 15.904L9 18.75l-.813-2.846a4.5 4.5 0 00-3.09-3.09L2.25 12l2.846-.813a4.5 4.5 0 003.09-3.09L9 5.25l.813 2.846a4.5 4.5 0 003.09 3.09L15.75 12l-2.846.813a4.5 4.5 0 00-3.09 3.09zM18.259 8.715L18 9.75l-.259-1.035a3.375 3.375 0 00-2.455-2.456L14.25 6l1.036-.259a3.375 3.375 0 002.455-2.456L18 2.25l.259 1.035a3.375 3.375 0 002.455 2.456L21.75 6l-1.036.259a3.375 3.375 0 00-2.455 2.456z" />
             </svg>
-            <span className="hidden sm:inline">AI Tools</span>
+            <span>AI Tools</span>
           </button>
           <button
             onClick={() => setSearchOpen(true)}
-            className="flex items-center gap-2 text-sm text-warm-500 hover:text-warm-700 px-3 py-1.5 rounded-md hover:bg-warm-100 transition-colors border border-warm-200"
+            className="hidden sm:flex items-center gap-2 text-sm text-warm-500 hover:text-warm-700 px-3 py-1.5 rounded-md hover:bg-warm-100 transition-colors border border-warm-200"
           >
             <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
               <path strokeLinecap="round" strokeLinejoin="round" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
             </svg>
-            <span className="hidden sm:inline">Search</span>
-            <kbd className="hidden sm:inline text-[10px] px-1.5 py-0.5 rounded bg-warm-100 text-warm-400 font-mono">Ctrl+K</kbd>
+            <span>Search</span>
+            <kbd className="text-[10px] px-1.5 py-0.5 rounded bg-warm-100 text-warm-400 font-mono">Ctrl+K</kbd>
           </button>
           {showSidePanels && (
             <button
               onClick={() => setSidebarOpen(!sidebarOpen)}
-              className="text-sm text-warm-500 hover:text-warm-700 px-3 py-1.5 rounded-md hover:bg-warm-100 transition-colors"
+              className="hidden sm:block text-sm text-warm-500 hover:text-warm-700 px-3 py-1.5 rounded-md hover:bg-warm-100 transition-colors"
             >
               {sidebarOpen ? 'Hide' : 'Show'} Details
             </button>
           )}
-          <ExportMenu
-            assessments={assessments}
-            snapshots={snapshots}
-            clientName={clientName}
-          />
+          <span className="hidden sm:inline">
+            <ExportMenu
+              assessments={assessments}
+              snapshots={snapshots}
+              clientName={clientName}
+            />
+          </span>
+          {/* Mobile "More" dropdown — visible only on small screens */}
+          <div className="relative sm:hidden">
+            <button
+              onClick={(e) => { e.stopPropagation(); setMoreMenuOpen(!moreMenuOpen) }}
+              className="p-1.5 rounded-md text-warm-500 hover:text-warm-700 hover:bg-warm-100 transition-colors"
+              title="More actions"
+            >
+              <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                <path strokeLinecap="round" strokeLinejoin="round" d="M12 6.75a.75.75 0 110-1.5.75.75 0 010 1.5zM12 12.75a.75.75 0 110-1.5.75.75 0 010 1.5zM12 18.75a.75.75 0 110-1.5.75.75 0 010 1.5z" />
+              </svg>
+            </button>
+            {moreMenuOpen && (
+              <div className="absolute right-0 top-full mt-1 w-48 bg-white rounded-lg shadow-lg border border-warm-200 py-1 z-50">
+                <button
+                  onClick={() => { setAiPanelOpen(true); setMoreMenuOpen(false) }}
+                  className="w-full text-left px-4 py-2 text-sm text-warm-700 hover:bg-warm-50 flex items-center gap-2"
+                >
+                  <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M9.813 15.904L9 18.75l-.813-2.846a4.5 4.5 0 00-3.09-3.09L2.25 12l2.846-.813a4.5 4.5 0 003.09-3.09L9 5.25l.813 2.846a4.5 4.5 0 003.09 3.09L15.75 12l-2.846.813a4.5 4.5 0 00-3.09 3.09z" />
+                  </svg>
+                  AI Tools
+                </button>
+                <button
+                  onClick={() => { setSearchOpen(true); setMoreMenuOpen(false) }}
+                  className="w-full text-left px-4 py-2 text-sm text-warm-700 hover:bg-warm-50 flex items-center gap-2"
+                >
+                  <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+                  </svg>
+                  Search
+                </button>
+                {showSidePanels && (
+                  <button
+                    onClick={() => { setSidebarOpen(!sidebarOpen); setMoreMenuOpen(false) }}
+                    className="w-full text-left px-4 py-2 text-sm text-warm-700 hover:bg-warm-50 flex items-center gap-2"
+                  >
+                    <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                      <path strokeLinecap="round" strokeLinejoin="round" d="M3.98 8.223A10.477 10.477 0 001.934 12C3.226 16.338 7.244 19.5 12 19.5c.993 0 1.953-.138 2.863-.395M6.228 6.228A10.45 10.45 0 0112 4.5c4.756 0 8.773 3.162 10.065 7.498a10.523 10.523 0 01-4.293 5.774M6.228 6.228L3 3m3.228 3.228l3.65 3.65m7.894 7.894L21 21m-3.228-3.228l-3.65-3.65m0 0a3 3 0 10-4.243-4.243m4.242 4.242L9.88 9.88" />
+                    </svg>
+                    {sidebarOpen ? 'Hide' : 'Show'} Details
+                  </button>
+                )}
+                <button
+                  onClick={() => { setMoreMenuOpen(false) }}
+                  className="w-full text-left px-4 py-2 text-sm text-warm-700 hover:bg-warm-50 flex items-center gap-2"
+                >
+                  <ExportMenu
+                    assessments={assessments}
+                    snapshots={snapshots}
+                    clientName={clientName}
+                  />
+                </button>
+                <Link
+                  to="/"
+                  onClick={() => setMoreMenuOpen(false)}
+                  className="block px-4 py-2 text-sm text-warm-700 hover:bg-warm-50"
+                >
+                  Home
+                </Link>
+              </div>
+            )}
+          </div>
           <SettingsDropdown />
           <Link
             to="/"
-            className="text-sm text-warm-500 hover:text-warm-700 px-3 py-1.5 rounded-md hover:bg-warm-100 transition-colors"
+            className="hidden sm:block text-sm text-warm-500 hover:text-warm-700 px-3 py-1.5 rounded-md hover:bg-warm-100 transition-colors"
           >
             Home
           </Link>
@@ -235,9 +326,9 @@ export default function Dashboard() {
         )}
 
         {/* Center content */}
-        <main className={`flex-1 overflow-auto ${fullWidthViews.includes(activeView) ? '' : 'flex flex-col items-center p-8'}`}>
+        <main className={`flex-1 overflow-auto ${fullWidthViews.includes(activeView) ? '' : 'flex flex-col items-center p-3 sm:p-8'}`}>
           {/* View toggle */}
-          <div data-tour="view-tabs" className={`flex flex-wrap items-center gap-1 bg-warm-100 rounded-lg p-1 mb-6 ${!showSidePanels ? 'mx-auto mt-6 w-fit' : ''}`}>
+          <div data-tour="view-tabs" className={`flex items-center gap-1 bg-warm-100 rounded-lg p-1 mb-6 overflow-x-auto scrollbar-hide sm:flex-wrap ${!showSidePanels ? 'mx-auto mt-6 sm:w-fit' : ''}`}>
             {[
               { key: VIEWS.SUNBURST, label: 'Sunburst' },
               { key: VIEWS.RADAR, label: 'Radar' },
@@ -253,11 +344,13 @@ export default function Dashboard() {
               { key: VIEWS.PARENT, label: 'Parent View' },
               { key: VIEWS.MILESTONES, label: 'Milestones' },
               { key: VIEWS.PRACTICE, label: 'Home Practice' },
+              { key: VIEWS.PREDICTIONS, label: 'Predictions' },
+              { key: VIEWS.ORG_ANALYTICS, label: 'Org Analytics' },
             ].map((v) => (
               <button
                 key={v.key}
                 onClick={() => setActiveView(v.key)}
-                className={`px-4 py-1.5 rounded-md text-sm font-medium transition-all ${
+                className={`px-2.5 py-1 sm:px-4 sm:py-1.5 rounded-md text-xs sm:text-sm font-medium transition-all whitespace-nowrap ${
                   activeView === v.key
                     ? 'bg-white text-warm-800 shadow-sm'
                     : 'text-warm-500 hover:text-warm-700'
@@ -462,6 +555,24 @@ export default function Dashboard() {
                 assessments={assessments}
                 clientName={clientName}
               />
+            </div>
+          )}
+
+          {/* Predictions view */}
+          {activeView === VIEWS.PREDICTIONS && (
+            <div className="w-full h-full overflow-y-auto">
+              <ProgressPrediction
+                assessments={assessments}
+                snapshots={snapshots}
+                clientName={clientName}
+              />
+            </div>
+          )}
+
+          {/* Org Analytics view */}
+          {activeView === VIEWS.ORG_ANALYTICS && (
+            <div className="w-full h-full overflow-y-auto">
+              <OrgAnalytics />
             </div>
           )}
         </main>

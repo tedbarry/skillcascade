@@ -129,6 +129,15 @@ body {
   background-color: var(--color-sage-500) !important;
 }
 
+/* Scrollbar-hide utility for horizontal scroll containers */
+.scrollbar-hide::-webkit-scrollbar {
+  display: none;
+}
+.scrollbar-hide {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+
 /* Print — always light mode */
 @media print {
   @page {
