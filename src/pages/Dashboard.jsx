@@ -13,6 +13,7 @@ import Toast from '../components/Toast.jsx'
 import AdaptiveAssessment from '../components/AdaptiveAssessment.jsx'
 import SearchOverlay from '../components/SearchOverlay.jsx'
 import GoalEngine from '../components/GoalEngine.jsx'
+import AIAssistantPanel from '../components/AIAssistantPanel.jsx'
 import useUndoRedo from '../hooks/useUndoRedo.js'
 import { framework, toHierarchy, ASSESSMENT_LABELS, ASSESSMENT_COLORS, ASSESSMENT_LEVELS } from '../data/framework.js'
 import { generateSampleAssessments } from '../data/sampleAssessments.js'
@@ -41,6 +42,7 @@ export default function Dashboard() {
   const [assessTarget, setAssessTarget] = useState({ subAreaId: null, ts: 0 })
   const [compareSnapshotId, setCompareSnapshotId] = useState(null)
   const [searchOpen, setSearchOpen] = useState(false)
+  const [aiPanelOpen, setAiPanelOpen] = useState(false)
 
   // Global Ctrl+K / Cmd+K to open search
   useEffect(() => {
@@ -161,6 +163,15 @@ export default function Dashboard() {
               </svg>
             </button>
           </div>
+          <button
+            onClick={() => setAiPanelOpen(true)}
+            className="flex items-center gap-2 text-sm text-warm-500 hover:text-warm-700 px-3 py-1.5 rounded-md hover:bg-warm-100 transition-colors border border-warm-200"
+          >
+            <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+              <path strokeLinecap="round" strokeLinejoin="round" d="M9.813 15.904L9 18.75l-.813-2.846a4.5 4.5 0 00-3.09-3.09L2.25 12l2.846-.813a4.5 4.5 0 003.09-3.09L9 5.25l.813 2.846a4.5 4.5 0 003.09 3.09L15.75 12l-2.846.813a4.5 4.5 0 00-3.09 3.09zM18.259 8.715L18 9.75l-.259-1.035a3.375 3.375 0 00-2.455-2.456L14.25 6l1.036-.259a3.375 3.375 0 002.455-2.456L18 2.25l.259 1.035a3.375 3.375 0 002.455 2.456L21.75 6l-1.036.259a3.375 3.375 0 00-2.455 2.456z" />
+            </svg>
+            <span className="hidden sm:inline">AI Tools</span>
+          </button>
           <button
             onClick={() => setSearchOpen(true)}
             className="flex items-center gap-2 text-sm text-warm-500 hover:text-warm-700 px-3 py-1.5 rounded-md hover:bg-warm-100 transition-colors border border-warm-200"
@@ -371,6 +382,12 @@ export default function Dashboard() {
         )}
       </div>
     </div>
+    <AIAssistantPanel
+      isOpen={aiPanelOpen}
+      onClose={() => setAiPanelOpen(false)}
+      clientName={clientName}
+      assessments={assessments}
+    />
     <SearchOverlay
       isOpen={searchOpen}
       onClose={() => setSearchOpen(false)}
