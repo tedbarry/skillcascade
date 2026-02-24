@@ -156,3 +156,37 @@ export async function deleteSnapshot(clientId, snapshotId) {
 
   return getSnapshots(clientId)
 }
+
+/**
+ * Delete all data for an organization — clients (soft-delete), assessments, snapshots, messages
+ */
+export async function clearAllData(orgId) {
+  // Get all clients in this org
+  const { data: clients, error: clientsErr } = await supabase
+    .from('clients')
+    .select('id')
+    .eq('org_id', orgId)
+    .is('deleted_at', null)
+  if (clientsErr) throw clientsErr
+
+  const clientIds = (clients || []).map((c) => c.id)
+  if (clientIds.length === 0) return
+
+  // Delete assessments, snapshots, and messages for all clients
+  const { error: assessErr } = await supabase.from('assessments').delete().in('client_id', clientIds)
+  if (assessErr) throw assessErr
+
+  const { error: snapErr } = await supabase.from('snapshots').delete().in('client_id', clientIds)
+  if (snapErr) throw snapErr
+
+  const { error: msgErr } = await supabase.from('messages').delete().in('client_id', clientIds)
+  if (msgErr) throw msgErr
+
+  // Soft-delete all clients
+  const { error: delErr } = await supabase
+    .from('clients')
+    .update({ deleted_at: new Date().toISOString() })
+    .eq('org_id', orgId)
+    .is('deleted_at', null)
+  if (delErr) throw delErr
+}

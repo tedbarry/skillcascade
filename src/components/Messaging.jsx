@@ -355,13 +355,19 @@ export default function Messaging({
                     {msg.text}
                   </div>
 
-                  {/* Timestamp */}
+                  {/* Timestamp + Read receipt */}
                   <span
-                    className={`text-[10px] text-warm-400 mt-0.5 px-1 ${
-                      isSelf ? 'text-right' : 'text-left'
+                    className={`text-[10px] text-warm-400 mt-0.5 px-1 flex items-center gap-1 ${
+                      isSelf ? 'justify-end' : 'justify-start'
                     }`}
                   >
                     {relativeTime(msg.timestamp)}
+                    {isSelf && msg.read_by && msg.read_by.length > 0 && (
+                      <svg className="w-3 h-3 text-sage-500 inline-block" viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                        <path d="M2 10l4 4 8-8" />
+                        <path d="M6 10l4 4 8-8" />
+                      </svg>
+                    )}
                   </span>
                 </div>
               </div>

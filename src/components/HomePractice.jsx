@@ -601,7 +601,12 @@ export default function HomePractice({ assessments = {}, clientName = 'your chil
   const [scopeFilter, setScopeFilter] = useState('all')
   const [difficultyFilter, setDifficultyFilter] = useState('all')
   const [timeFilter, setTimeFilter] = useState('all')
-  const [triedActivities, setTriedActivities] = useState(new Set())
+  const [triedActivities, setTriedActivities] = useState(() => {
+    try {
+      const saved = localStorage.getItem('skillcascade_tried_activities')
+      return saved ? new Set(JSON.parse(saved)) : new Set()
+    } catch { return new Set() }
+  })
 
   const priorityDomains = useMemo(() => getPriorityDomains(assessments), [assessments])
 
@@ -847,6 +852,7 @@ export default function HomePractice({ assessments = {}, clientName = 'your chil
                           const next = new Set(prev)
                           if (tried) next.delete(actKey)
                           else next.add(actKey)
+                          localStorage.setItem('skillcascade_tried_activities', JSON.stringify([...next]))
                           return next
                         })}
                         className="inline-flex items-center gap-1.5 text-xs font-medium px-3 py-1.5 rounded-lg transition-colors"

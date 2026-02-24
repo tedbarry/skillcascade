@@ -414,9 +414,15 @@ export default function Marketplace() {
   const [typeFilter, setTypeFilter] = useState('all')
   const [priceFilter, setPriceFilter] = useState('all')
   const [sortBy, setSortBy] = useState('popular')
-  const [installedIds, setInstalledIds] = useState(new Set())
+  const [installedIds, setInstalledIds] = useState(() => {
+    try {
+      const saved = localStorage.getItem('skillcascade_marketplace_installed')
+      return saved ? new Set(JSON.parse(saved)) : new Set()
+    } catch { return new Set() }
+  })
   const [toast, setToast] = useState(null)
   const [featuredScroll, setFeaturedScroll] = useState(0)
+  const [previewItem, setPreviewItem] = useState(null)
 
   const featuredItems = useMemo(
     () => MARKETPLACE_ITEMS.filter((item) => item.featured),
@@ -467,8 +473,23 @@ export default function Marketplace() {
   }, [search, typeFilter, priceFilter, sortBy])
 
   function handleInstall(item) {
-    if (installedIds.has(item.id)) return
-    setInstalledIds((prev) => new Set([...prev, item.id]))
+    if (installedIds.has(item.id)) {
+      // Uninstall
+      setInstalledIds((prev) => {
+        const next = new Set(prev)
+        next.delete(item.id)
+        localStorage.setItem('skillcascade_marketplace_installed', JSON.stringify([...next]))
+        return next
+      })
+      setToast({ message: `"${item.title}" uninstalled`, type: 'success' })
+      setTimeout(() => setToast(null), 3000)
+      return
+    }
+    setInstalledIds((prev) => {
+      const next = new Set([...prev, item.id])
+      localStorage.setItem('skillcascade_marketplace_installed', JSON.stringify([...next]))
+      return next
+    })
     setToast({ message: `"${item.title}" installed successfully`, type: 'success' })
     setTimeout(() => setToast(null), 3000)
   }
@@ -674,16 +695,15 @@ export default function Marketplace() {
                     </div>
 
                     <div className="flex gap-2">
-                      <button className="flex-1 flex items-center justify-center gap-1.5 px-3 py-2 border border-warm-200 rounded-lg text-sm text-warm-700 hover:bg-warm-50 transition-colors">
+                      <button onClick={() => setPreviewItem(item)} className="flex-1 flex items-center justify-center gap-1.5 px-3 py-2 border border-warm-200 rounded-lg text-sm text-warm-700 hover:bg-warm-50 transition-colors">
                         <IconEye className="w-3.5 h-3.5" />
                         Preview
                       </button>
                       <button
                         onClick={() => handleInstall(item)}
-                        disabled={isInstalled}
                         className={`flex-1 flex items-center justify-center gap-1.5 px-3 py-2 rounded-lg text-sm font-medium transition-colors ${
                           isInstalled
-                            ? 'bg-sage-100 text-sage-600 cursor-default'
+                            ? 'bg-sage-100 text-sage-600 hover:bg-red-50 hover:text-red-600'
                             : 'bg-sage-600 text-white hover:bg-sage-700'
                         }`}
                       >
@@ -862,6 +882,62 @@ export default function Marketplace() {
           </div>
         </section>
       </div>
+
+      {/* ── Preview Modal ──────────────────────── */}
+      {previewItem && (() => {
+        const config = TYPE_CONFIG[previewItem.type]
+        const isInstalled = installedIds.has(previewItem.id)
+        return (
+          <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/40" onClick={() => setPreviewItem(null)}>
+            <div className="bg-white rounded-2xl shadow-2xl max-w-lg w-full max-h-[80vh] overflow-y-auto" onClick={(e) => e.stopPropagation()}>
+              <div className="p-6">
+                <div className="flex items-start justify-between mb-4">
+                  <span className={`inline-flex px-2.5 py-0.5 rounded-full text-xs font-medium ${config.pillBg} ${config.pillText}`}>
+                    {config.label}
+                  </span>
+                  <button onClick={() => setPreviewItem(null)} className="text-warm-400 hover:text-warm-600 p-1">
+                    <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                      <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
+                    </svg>
+                  </button>
+                </div>
+                <h2 className="font-display text-xl font-bold text-warm-900 mb-1">{previewItem.title}</h2>
+                <p className="text-sm text-warm-500 mb-3">{previewItem.author}</p>
+                <div className="flex items-center gap-3 mb-4">
+                  <StarRating rating={previewItem.rating} />
+                  <span className="text-sm text-warm-600">{previewItem.rating}</span>
+                  <span className="text-sm text-warm-400">|</span>
+                  <span className="text-sm text-warm-500">{formatDownloads(previewItem.downloads)} downloads</span>
+                </div>
+                <p className="text-sm text-warm-700 leading-relaxed mb-4">{previewItem.description}</p>
+                <div className="flex flex-wrap gap-4 text-sm text-warm-600 mb-4">
+                  <span>{previewItem.itemCount} {previewItem.itemCount === 1 ? config.unit : config.unit + 's'}</span>
+                  <span>{previewItem.price === 'free' ? 'Free' : `$${previewItem.price}`}</span>
+                </div>
+                <div className="flex flex-wrap gap-1.5 mb-5">
+                  {previewItem.tags.map((tag) => (
+                    <span key={tag} className="px-2 py-0.5 bg-warm-50 border border-warm-100 rounded text-xs text-warm-500">{tag}</span>
+                  ))}
+                </div>
+                <button
+                  onClick={() => { handleInstall(previewItem); if (!isInstalled) setPreviewItem(null) }}
+                  className={`w-full flex items-center justify-center gap-2 px-4 py-2.5 rounded-lg text-sm font-medium transition-colors ${
+                    isInstalled
+                      ? 'bg-red-50 text-red-600 hover:bg-red-100'
+                      : 'bg-sage-600 text-white hover:bg-sage-700'
+                  }`}
+                >
+                  {isInstalled ? (
+                    <><IconCheck className="w-4 h-4" /> Uninstall</>
+                  ) : (
+                    <><IconDownload className="w-4 h-4" /> Install</>
+                  )}
+                </button>
+              </div>
+            </div>
+          </div>
+        )
+      })()}
     </div>
   )
 }

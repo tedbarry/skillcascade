@@ -1,5 +1,5 @@
 import { useState, useRef, useMemo, useEffect, useCallback } from 'react'
-import { getClients, getAssessments, getSnapshots, saveClient, saveAssessment, saveSnapshot } from '../data/storage.js'
+import { getClients, getAssessments, getSnapshots, saveClient, saveAssessment, saveSnapshot, clearAllData } from '../data/storage.js'
 import { framework } from '../data/framework.js'
 import { downloadFile } from '../data/exportUtils.js'
 import { useAuth } from '../contexts/AuthContext.jsx'
@@ -430,11 +430,18 @@ export default function DataPortability({ onImportComplete }) {
   /* ── Clear All Data ── */
   // Note: This is now a dangerous operation. In production, this should be admin-only.
 
-  function handleClearAll() {
-    if (clearConfirmText !== 'DELETE') return
-    showStatus('Data deletion must be performed by an admin through the Supabase dashboard for HIPAA compliance.', 'error')
-    setShowClearConfirm(false)
-    setClearConfirmText('')
+  async function handleClearAll() {
+    if (clearConfirmText !== 'DELETE' || !orgId) return
+    try {
+      await clearAllData(orgId)
+      setShowClearConfirm(false)
+      setClearConfirmText('')
+      await refreshClients()
+      onImportComplete?.()
+      showStatus('All data has been deleted')
+    } catch (err) {
+      showStatus('Failed to clear data: ' + err.message, 'error')
+    }
   }
 
   /* ─────────────────────────────────────────────

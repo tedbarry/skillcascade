@@ -279,7 +279,7 @@ function PricingCard({ tier, isAnnual }) {
 
         {/* CTA */}
         <Link
-          to={tier.name === 'Enterprise' ? '/signup' : '/signup'}
+          to={`/signup?plan=${tier.name.toLowerCase()}`}
           className={`mt-6 w-full rounded-lg py-2.5 text-sm font-semibold transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 block text-center ${
             tier.popular
               ? 'bg-sage-500 text-white hover:bg-sage-600 focus-visible:ring-sage-500'
