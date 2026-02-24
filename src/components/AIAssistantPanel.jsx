@@ -77,49 +77,72 @@ const AI_TOOLS = [
     id: 'reports',
     name: 'Report Writer',
     description: 'Write deficit summaries, observations, and titration plans',
-    actions: ['Summarize deficits', 'Hypothetical observation', 'Real observation', 'Titration plan'],
+    actions: [
+      { label: 'Summarize deficits' },
+      { label: 'Hypothetical observation', param: 'behavior or setting', placeholder: 'e.g., elopement during recess' },
+      { label: 'Real observation', param: 'behavior or setting', placeholder: 'e.g., aggression during group activity' },
+      { label: 'Titration plan', param: 'goal or behavior (optional)', placeholder: 'e.g., reduce elopement to 2x/week' },
+    ],
   },
   {
     id: 'bip',
     name: 'BIP Creator',
     description: 'Create operational definitions with intervention strategies',
-    actions: ['Write operational definition'],
+    actions: [
+      { label: 'Write BIP', param: 'behavior', placeholder: 'e.g., elopement, noncompliance, aggression' },
+    ],
   },
   {
     id: 'ltg',
     name: 'Long-Term Goals',
     description: 'Generate concise long-term goals with functions and teaching points',
-    actions: ['Create long-term goal'],
+    actions: [
+      { label: 'Create long-term goal', param: 'skill or area', placeholder: 'e.g., social skills, daily living, communication' },
+    ],
   },
   {
     id: 'goals',
     name: 'Goal Writer',
     description: 'Write measurable ABA goals with variations and measurements',
-    actions: ['Write ABA goal'],
+    actions: [
+      { label: 'Write ABA goal', param: 'skill or target', placeholder: 'e.g., requesting items, turn-taking' },
+    ],
   },
   {
     id: 'analyzer',
     name: 'Goal Analyzer',
     description: 'Check if goals are behavioral or mentalistic, rewrite if needed',
-    actions: ['Classify a goal', 'Rewrite a goal'],
+    actions: [
+      { label: 'Classify a goal', param: 'goal text', placeholder: 'Paste or type the goal to classify' },
+      { label: 'Rewrite a goal', param: 'goal text', placeholder: 'Paste or type the goal to rewrite' },
+    ],
   },
   {
     id: 'classifier',
     name: 'Domain Classifier',
     description: 'Classify goals into Behavior/Communication/Social with goal levels',
-    actions: ['Classify a skill/goal', 'Batch classify', 'Suggest parent LTG'],
+    actions: [
+      { label: 'Classify a skill/goal', param: 'skill or goal', placeholder: 'e.g., follows 2-step directions' },
+      { label: 'Batch classify', param: 'list of skills/goals', placeholder: 'Paste goals separated by commas or newlines' },
+      { label: 'Suggest parent LTG', param: 'domain or area (optional)', placeholder: 'e.g., communication, behavior' },
+    ],
   },
   {
     id: 'subcategory',
     name: 'Subcategory Creator',
     description: 'Break any concept into 8-15 structured subcategories',
-    actions: ['ABA/IEP mode', 'General mode'],
+    actions: [
+      { label: 'ABA/IEP mode', param: 'concept or skill area', placeholder: 'e.g., social skills, executive function' },
+      { label: 'General mode', param: 'any concept', placeholder: 'e.g., emotional regulation, problem solving' },
+    ],
   },
   {
     id: 'opdef',
     name: 'Op. Definition',
     description: 'Generate precise operational definitions for any behavior',
-    actions: ['Write operational definition'],
+    actions: [
+      { label: 'Write operational definition', param: 'behavior', placeholder: 'e.g., elopement, SIB, property destruction' },
+    ],
   },
 ]
 
@@ -778,10 +801,13 @@ export default function AIAssistantPanel({ isOpen, onClose, clientName, assessme
   const [isLoading, setIsLoading] = useState(false)
   const [pendingMatch, setPendingMatch] = useState(null)
   const [searchIndex, setSearchIndex] = useState([])
+  const [activeQuickAction, setActiveQuickAction] = useState(null)
+  const [quickActionParam, setQuickActionParam] = useState('')
 
   const messagesEndRef = useRef(null)
   const inputRef = useRef(null)
   const toolScrollRef = useRef(null)
+  const quickParamRef = useRef(null)
 
   const selectedTool = AI_TOOLS.find((t) => t.id === selectedToolId)
 
@@ -821,6 +847,8 @@ export default function AIAssistantPanel({ isOpen, onClose, clientName, assessme
     }
     setShowHistory(false)
     setPendingMatch(null)
+    setActiveQuickAction(null)
+    setQuickActionParam('')
     // Load or rebuild search index
     let idx = loadSearchIndex(clientName, selectedToolId)
     if (idx.length === 0 && list.length > 0) {
@@ -976,33 +1004,56 @@ export default function AIAssistantPanel({ isOpen, onClose, clientName, assessme
       }
     } else {
       const closestAction = selectedTool?.actions?.find((a) =>
-        text.toLowerCase().includes(a.toLowerCase().split(' ')[0])
+        text.toLowerCase().includes(a.label.toLowerCase().split(' ')[0])
       )
       const previewContent = closestAction
-        ? generatePreviewResponse(selectedToolId, closestAction, clientName || 'this client', assessments || {})
+        ? generatePreviewResponse(selectedToolId, closestAction.label, clientName || 'this client', assessments || {})
         : `I understand you're asking about "${text}" in the context of ${selectedTool?.name}. This is preview mode -- connect an API key below to get full AI-powered responses.`
       const aiMsg = { id: `ai-${Date.now()}`, role: 'assistant', content: previewContent }
       setMessages((prev) => [...prev, aiMsg])
     }
   }, [pendingMatch, isApiConnected, selectedToolId, selectedTool, clientName, assessments, messages])
 
-  const handleQuickAction = useCallback(
-    async (action) => {
+  // Click on a quick action button
+  function handleQuickActionClick(action) {
+    if (isLoading || pendingMatch) return
+    if (action.param) {
+      // Toggle: clicking same action again closes it
+      if (activeQuickAction?.label === action.label) {
+        setActiveQuickAction(null)
+        setQuickActionParam('')
+      } else {
+        setActiveQuickAction(action)
+        setQuickActionParam('')
+        // Focus the param input after render
+        requestAnimationFrame(() => quickParamRef.current?.focus())
+      }
+    } else {
+      // No param needed — send immediately
+      setActiveQuickAction(null)
+      setQuickActionParam('')
+      sendQuickAction(action.label)
+    }
+  }
+
+  // Submit a quick action (with or without param)
+  const sendQuickAction = useCallback(
+    async (text) => {
       if (isLoading || pendingMatch) return
       const userMsg = {
         id: `user-${Date.now()}`,
         role: 'user',
-        content: action,
+        content: text,
       }
 
       // Check for similar previous answer
-      if (checkSimilarity(action, userMsg)) return
+      if (checkSimilarity(text, userMsg)) return
 
       if (isApiConnected) {
         setMessages((prev) => [...prev, userMsg])
         setIsLoading(true)
         try {
-          const response = await callOpenAI(action, messages)
+          const response = await callOpenAI(text, messages)
           const aiMsg = { id: `ai-${Date.now()}`, role: 'assistant', content: response }
           setMessages((prev) => [...prev, aiMsg])
         } catch (err) {
@@ -1013,7 +1064,7 @@ export default function AIAssistantPanel({ isOpen, onClose, clientName, assessme
         }
       } else {
         const previewContent = generatePreviewResponse(
-          selectedToolId, action, clientName || 'this client', assessments || {}
+          selectedToolId, text, clientName || 'this client', assessments || {}
         )
         const aiMsg = { id: `ai-${Date.now()}`, role: 'assistant', content: previewContent }
         setMessages((prev) => [...prev, userMsg, aiMsg])
@@ -1021,6 +1072,14 @@ export default function AIAssistantPanel({ isOpen, onClose, clientName, assessme
     },
     [selectedToolId, clientName, assessments, isApiConnected, messages, isLoading, pendingMatch, checkSimilarity]
   )
+
+  function handleQuickActionSubmit() {
+    if (!activeQuickAction || !quickActionParam.trim()) return
+    const composed = `${activeQuickAction.label}: ${quickActionParam.trim()}`
+    setActiveQuickAction(null)
+    setQuickActionParam('')
+    sendQuickAction(composed)
+  }
 
   const [showKeyInput, setShowKeyInput] = useState(false)
   const [keyDraft, setKeyDraft] = useState('')
@@ -1114,11 +1173,11 @@ export default function AIAssistantPanel({ isOpen, onClose, clientName, assessme
       }
     } else {
       const closestAction = selectedTool?.actions?.find((a) =>
-        text.toLowerCase().includes(a.toLowerCase().split(' ')[0])
+        text.toLowerCase().includes(a.label.toLowerCase().split(' ')[0])
       )
 
       const previewContent = closestAction
-        ? generatePreviewResponse(selectedToolId, closestAction, clientName || 'this client', assessments || {})
+        ? generatePreviewResponse(selectedToolId, closestAction.label, clientName || 'this client', assessments || {})
         : `I understand you're asking about "${text}" in the context of ${selectedTool?.name}. This is preview mode -- connect an API key below to get full AI-powered responses.\n\nIn the meantime, try one of the quick actions above to see what this tool can do with ${clientName}'s assessment data (${assessmentProgress}% assessed).`
 
       const aiMsg = {
@@ -1249,14 +1308,60 @@ export default function AIAssistantPanel({ isOpen, onClose, clientName, assessme
             <div className="flex flex-wrap gap-1.5">
               {selectedTool.actions.map((action) => (
                 <button
-                  key={action}
-                  onClick={() => handleQuickAction(action)}
-                  className="text-xs px-3 py-1.5 rounded-lg bg-white border border-warm-200 text-warm-600 hover:border-sage-300 hover:text-sage-700 hover:bg-sage-50 transition-all font-medium"
+                  key={action.label}
+                  onClick={() => handleQuickActionClick(action)}
+                  className={`text-xs px-3 py-1.5 rounded-lg border transition-all font-medium ${
+                    activeQuickAction?.label === action.label
+                      ? 'bg-sage-50 border-sage-300 text-sage-700'
+                      : 'bg-white border-warm-200 text-warm-600 hover:border-sage-300 hover:text-sage-700 hover:bg-sage-50'
+                  }`}
                 >
-                  {action}
+                  {action.label}
+                  {action.param && <span className="text-warm-300 ml-1">...</span>}
                 </button>
               ))}
             </div>
+            {/* Inline param input */}
+            {activeQuickAction && (
+              <div className="mt-2.5">
+                <div className="text-[10px] text-warm-500 mb-1">
+                  {activeQuickAction.label} — <span className="italic">{activeQuickAction.param}</span>
+                </div>
+                <form
+                  onSubmit={(e) => { e.preventDefault(); handleQuickActionSubmit() }}
+                  className="flex gap-1.5"
+                >
+                  <input
+                    ref={quickParamRef}
+                    type="text"
+                    value={quickActionParam}
+                    onChange={(e) => setQuickActionParam(e.target.value)}
+                    placeholder={activeQuickAction.placeholder || `Enter ${activeQuickAction.param}...`}
+                    className="flex-1 text-xs px-3 py-2 rounded-lg border border-warm-200 bg-white text-warm-800 placeholder-warm-400 focus:outline-none focus:border-sage-400 focus:ring-1 focus:ring-sage-200"
+                  />
+                  <button
+                    type="submit"
+                    disabled={!quickActionParam.trim()}
+                    className={`text-xs px-3 py-2 rounded-lg font-medium transition-colors ${
+                      quickActionParam.trim()
+                        ? 'bg-sage-500 text-white hover:bg-sage-600'
+                        : 'bg-warm-100 text-warm-300 cursor-not-allowed'
+                    }`}
+                  >
+                    Send
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => { setActiveQuickAction(null); setQuickActionParam('') }}
+                    className="text-xs px-2 py-2 rounded-lg text-warm-400 hover:text-warm-600 hover:bg-warm-100 transition-colors"
+                  >
+                    <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                      <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
+                    </svg>
+                  </button>
+                </form>
+              </div>
+            )}
           </div>
         )}
 
