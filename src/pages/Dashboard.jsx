@@ -18,6 +18,10 @@ import SettingsDropdown from '../components/SettingsDropdown.jsx'
 import OnboardingTour from '../components/OnboardingTour.jsx'
 import PatternAlerts from '../components/PatternAlerts.jsx'
 import ReportGenerator from '../components/ReportGenerator.jsx'
+import ParentDashboard from '../components/ParentDashboard.jsx'
+import CaseloadDashboard from '../components/CaseloadDashboard.jsx'
+import MilestoneCelebrations from '../components/MilestoneCelebrations.jsx'
+import HomePractice from '../components/HomePractice.jsx'
 import useUndoRedo from '../hooks/useUndoRedo.js'
 import { framework, toHierarchy, ASSESSMENT_LABELS, ASSESSMENT_COLORS, ASSESSMENT_LEVELS } from '../data/framework.js'
 import { generateSampleAssessments } from '../data/sampleAssessments.js'
@@ -34,6 +38,10 @@ const VIEWS = {
   GOALS: 'goals',
   ALERTS: 'alerts',
   REPORTS: 'reports',
+  PARENT: 'parent',
+  CASELOAD: 'caseload',
+  MILESTONES: 'milestones',
+  PRACTICE: 'practice',
 }
 
 export default function Dashboard() {
@@ -127,7 +135,8 @@ export default function Dashboard() {
   }
 
   // Assessment, tree, cascade, and timeline views are full-width — no side panels
-  const showSidePanels = activeView !== VIEWS.ASSESS && activeView !== VIEWS.TREE && activeView !== VIEWS.CASCADE && activeView !== VIEWS.TIMELINE && activeView !== VIEWS.QUICK_ASSESS && activeView !== VIEWS.GOALS && activeView !== VIEWS.ALERTS && activeView !== VIEWS.REPORTS
+  const fullWidthViews = [VIEWS.ASSESS, VIEWS.TREE, VIEWS.CASCADE, VIEWS.TIMELINE, VIEWS.QUICK_ASSESS, VIEWS.GOALS, VIEWS.ALERTS, VIEWS.REPORTS, VIEWS.PARENT, VIEWS.CASELOAD, VIEWS.MILESTONES, VIEWS.PRACTICE]
+  const showSidePanels = !fullWidthViews.includes(activeView)
 
   return (
     <>
@@ -226,9 +235,9 @@ export default function Dashboard() {
         )}
 
         {/* Center content */}
-        <main className={`flex-1 overflow-auto ${activeView === VIEWS.ASSESS || activeView === VIEWS.TIMELINE || activeView === VIEWS.QUICK_ASSESS || activeView === VIEWS.GOALS || activeView === VIEWS.REPORTS ? '' : 'flex flex-col items-center p-8'}`}>
+        <main className={`flex-1 overflow-auto ${fullWidthViews.includes(activeView) ? '' : 'flex flex-col items-center p-8'}`}>
           {/* View toggle */}
-          <div data-tour="view-tabs" className={`flex items-center gap-1 bg-warm-100 rounded-lg p-1 mb-6 ${!showSidePanels ? 'mx-auto mt-6 w-fit' : ''}`}>
+          <div data-tour="view-tabs" className={`flex flex-wrap items-center gap-1 bg-warm-100 rounded-lg p-1 mb-6 ${!showSidePanels ? 'mx-auto mt-6 w-fit' : ''}`}>
             {[
               { key: VIEWS.SUNBURST, label: 'Sunburst' },
               { key: VIEWS.RADAR, label: 'Radar' },
@@ -240,6 +249,10 @@ export default function Dashboard() {
               { key: VIEWS.GOALS, label: 'Goals' },
               { key: VIEWS.ALERTS, label: 'Alerts' },
               { key: VIEWS.REPORTS, label: 'Reports' },
+              { key: VIEWS.CASELOAD, label: 'Caseload' },
+              { key: VIEWS.PARENT, label: 'Parent View' },
+              { key: VIEWS.MILESTONES, label: 'Milestones' },
+              { key: VIEWS.PRACTICE, label: 'Home Practice' },
             ].map((v) => (
               <button
                 key={v.key}
@@ -402,6 +415,52 @@ export default function Dashboard() {
                 clientName={clientName}
                 snapshots={snapshots}
                 onNavigateToAssess={handleNavigateToAssess}
+              />
+            </div>
+          )}
+
+          {/* Parent view */}
+          {activeView === VIEWS.PARENT && (
+            <div className="w-full h-full overflow-y-auto">
+              <ParentDashboard
+                assessments={assessments}
+                clientName={clientName}
+                snapshots={snapshots}
+                onNavigateToAssess={handleNavigateToAssess}
+              />
+            </div>
+          )}
+
+          {/* Caseload view */}
+          {activeView === VIEWS.CASELOAD && (
+            <div className="w-full h-full overflow-y-auto">
+              <CaseloadDashboard
+                currentClientId={clientId}
+                onSelectClient={(id, name, saved) => {
+                  handleSelectClient(id, name, saved)
+                  setActiveView(VIEWS.RADAR)
+                }}
+              />
+            </div>
+          )}
+
+          {/* Milestones view */}
+          {activeView === VIEWS.MILESTONES && (
+            <div className="w-full h-full overflow-y-auto">
+              <MilestoneCelebrations
+                assessments={assessments}
+                snapshots={snapshots}
+                clientName={clientName}
+              />
+            </div>
+          )}
+
+          {/* Home Practice view */}
+          {activeView === VIEWS.PRACTICE && (
+            <div className="w-full h-full overflow-y-auto">
+              <HomePractice
+                assessments={assessments}
+                clientName={clientName}
               />
             </div>
           )}
