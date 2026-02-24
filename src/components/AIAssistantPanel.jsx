@@ -1,5 +1,12 @@
 import { useState, useEffect, useRef, useMemo, useCallback } from 'react'
 import { framework, ASSESSMENT_LEVELS, ASSESSMENT_LABELS } from '../data/framework.js'
+import {
+  findSimilarMessage,
+  loadSearchIndex,
+  addToSearchIndex,
+  rebuildSearchIndex,
+  getMatchedResponse,
+} from '../lib/chatSimilarity.js'
 
 /* ─────────────────────────────────────────────
    SVG Icons (inline, no emojis)
@@ -693,6 +700,70 @@ function makeChatTitle(messages) {
 }
 
 /* ─────────────────────────────────────────────
+   Similar Match Banner
+   ───────────────────────────────────────────── */
+
+function SimilarMatchBanner({ match, onUse, onDismiss }) {
+  const [expanded, setExpanded] = useState(false)
+  const pct = Math.round(match.score * 100)
+
+  return (
+    <div className="mb-3 mx-1 rounded-xl border border-amber-200 bg-amber-50 overflow-hidden">
+      <div className="px-3.5 py-2.5 flex items-start gap-2.5">
+        <svg className="w-4 h-4 text-amber-500 mt-0.5 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+          <path strokeLinecap="round" strokeLinejoin="round" d="M12 9v3.75m9-.75a9 9 0 11-18 0 9 9 0 0118 0zm-9 3.75h.008v.008H12v-.008z" />
+        </svg>
+        <div className="flex-1 min-w-0">
+          <div className="text-xs font-medium text-amber-800">
+            Similar question found ({pct}% match)
+          </div>
+          <div className="text-[11px] text-amber-600 mt-0.5 truncate">
+            From: {match.chatTitle}
+          </div>
+
+          {/* Expandable preview */}
+          <button
+            onClick={() => setExpanded(!expanded)}
+            className="text-[10px] text-amber-500 hover:text-amber-700 mt-1 underline"
+          >
+            {expanded ? 'Hide preview' : 'Show previous Q&A'}
+          </button>
+
+          {expanded && (
+            <div className="mt-2 space-y-1.5 text-[11px]">
+              <div className="bg-white/60 rounded-lg px-2.5 py-1.5 border border-amber-100">
+                <span className="font-semibold text-amber-700">Q: </span>
+                <span className="text-amber-900">{match.question}</span>
+              </div>
+              <div className="bg-white/60 rounded-lg px-2.5 py-1.5 border border-amber-100 max-h-32 overflow-y-auto">
+                <span className="font-semibold text-amber-700">A: </span>
+                <span className="text-amber-900 whitespace-pre-wrap">{match.answer}</span>
+              </div>
+            </div>
+          )}
+
+          {/* Action buttons */}
+          <div className="flex gap-2 mt-2.5">
+            <button
+              onClick={onUse}
+              className="text-[11px] px-3 py-1.5 rounded-lg bg-amber-500 text-white hover:bg-amber-600 font-medium transition-colors"
+            >
+              Use previous answer (free)
+            </button>
+            <button
+              onClick={onDismiss}
+              className="text-[11px] px-3 py-1.5 rounded-lg border border-amber-300 text-amber-700 hover:bg-amber-100 font-medium transition-colors"
+            >
+              Ask anyway
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  )
+}
+
+/* ─────────────────────────────────────────────
    Main component
    ───────────────────────────────────────────── */
 
@@ -704,6 +775,9 @@ export default function AIAssistantPanel({ isOpen, onClose, clientName, assessme
   const [activeChatId, setActiveChatId] = useState(null)
   const [chatList, setChatList] = useState([])
   const [showHistory, setShowHistory] = useState(false)
+  const [isLoading, setIsLoading] = useState(false)
+  const [pendingMatch, setPendingMatch] = useState(null)
+  const [searchIndex, setSearchIndex] = useState([])
 
   const messagesEndRef = useRef(null)
   const inputRef = useRef(null)
@@ -746,6 +820,13 @@ export default function AIAssistantPanel({ isOpen, onClose, clientName, assessme
       setMessages(makeWelcome())
     }
     setShowHistory(false)
+    setPendingMatch(null)
+    // Load or rebuild search index
+    let idx = loadSearchIndex(clientName, selectedToolId)
+    if (idx.length === 0 && list.length > 0) {
+      idx = rebuildSearchIndex(clientName, selectedToolId, list)
+    }
+    setSearchIndex(idx)
   }, [selectedToolId, clientName]) // eslint-disable-line react-hooks/exhaustive-deps
 
   // Save active chat whenever messages change
@@ -769,12 +850,26 @@ export default function AIAssistantPanel({ isOpen, onClose, clientName, assessme
     }
     saveChatList(clientName, selectedToolId, list)
     setChatList(list)
+
+    // Update search index: if the last two messages are user→assistant, index the user msg
+    const len = messages.length
+    if (len >= 2) {
+      const last = messages[len - 1]
+      const prev = messages[len - 2]
+      if (prev.role === 'user' && last.role === 'assistant') {
+        const chatId = activeChatId || list[0]?.id
+        if (chatId) {
+          setSearchIndex((cur) => addToSearchIndex(clientName, selectedToolId, cur, prev.content, chatId, prev.id))
+        }
+      }
+    }
   }, [messages]) // eslint-disable-line react-hooks/exhaustive-deps
 
   function handleNewChat() {
     setActiveChatId(null)
     setMessages(makeWelcome())
     setShowHistory(false)
+    setPendingMatch(null)
   }
 
   function handleSelectChat(chat) {
@@ -797,6 +892,8 @@ export default function AIAssistantPanel({ isOpen, onClose, clientName, assessme
         setMessages(makeWelcome())
       }
     }
+    // Rebuild search index after deletion
+    setSearchIndex(rebuildSearchIndex(clientName, selectedToolId, filtered))
   }
 
   // Scroll to bottom on new messages
@@ -826,13 +923,80 @@ export default function AIAssistantPanel({ isOpen, onClose, clientName, assessme
     return () => window.removeEventListener('keydown', handleKeyDown)
   }, [isOpen, onClose])
 
+  // Check for similar previously-answered question; returns true if match found (flow paused)
+  const checkSimilarity = useCallback((text, userMsg) => {
+    const result = findSimilarMessage(text, searchIndex)
+    if (result) {
+      const matched = getMatchedResponse(chatList, result.entry.chatId, result.entry.msgId)
+      if (matched) {
+        // Add user message to chat, then show the banner
+        setMessages((prev) => [...prev, userMsg])
+        setPendingMatch({
+          score: result.score,
+          question: matched.question,
+          answer: matched.answer,
+          chatTitle: matched.chatTitle,
+          userMsg,
+        })
+        return true
+      }
+    }
+    return false
+  }, [searchIndex, chatList])
+
+  // User chose "Use previous answer"
+  function handleUsePrevious() {
+    if (!pendingMatch) return
+    const aiMsg = {
+      id: `ai-${Date.now()}`,
+      role: 'assistant',
+      content: pendingMatch.answer,
+    }
+    setMessages((prev) => [...prev, aiMsg])
+    setPendingMatch(null)
+  }
+
+  // User chose "Ask anyway" — send the original message to AI
+  const handleAskAnyway = useCallback(async () => {
+    if (!pendingMatch) return
+    const text = pendingMatch.userMsg.content
+    setPendingMatch(null)
+
+    if (isApiConnected) {
+      setIsLoading(true)
+      try {
+        const response = await callOpenAI(text, messages)
+        const aiMsg = { id: `ai-${Date.now()}`, role: 'assistant', content: response }
+        setMessages((prev) => [...prev, aiMsg])
+      } catch (err) {
+        const errorMsg = { id: `error-${Date.now()}`, role: 'system', content: `Error: ${err.message}` }
+        setMessages((prev) => [...prev, errorMsg])
+      } finally {
+        setIsLoading(false)
+      }
+    } else {
+      const closestAction = selectedTool?.actions?.find((a) =>
+        text.toLowerCase().includes(a.toLowerCase().split(' ')[0])
+      )
+      const previewContent = closestAction
+        ? generatePreviewResponse(selectedToolId, closestAction, clientName || 'this client', assessments || {})
+        : `I understand you're asking about "${text}" in the context of ${selectedTool?.name}. This is preview mode -- connect an API key below to get full AI-powered responses.`
+      const aiMsg = { id: `ai-${Date.now()}`, role: 'assistant', content: previewContent }
+      setMessages((prev) => [...prev, aiMsg])
+    }
+  }, [pendingMatch, isApiConnected, selectedToolId, selectedTool, clientName, assessments, messages])
+
   const handleQuickAction = useCallback(
     async (action) => {
+      if (isLoading || pendingMatch) return
       const userMsg = {
         id: `user-${Date.now()}`,
         role: 'user',
         content: action,
       }
+
+      // Check for similar previous answer
+      if (checkSimilarity(action, userMsg)) return
 
       if (isApiConnected) {
         setMessages((prev) => [...prev, userMsg])
@@ -855,10 +1019,9 @@ export default function AIAssistantPanel({ isOpen, onClose, clientName, assessme
         setMessages((prev) => [...prev, userMsg, aiMsg])
       }
     },
-    [selectedToolId, clientName, assessments, isApiConnected, messages]
+    [selectedToolId, clientName, assessments, isApiConnected, messages, isLoading, pendingMatch, checkSimilarity]
   )
 
-  const [isLoading, setIsLoading] = useState(false)
   const [showKeyInput, setShowKeyInput] = useState(false)
   const [keyDraft, setKeyDraft] = useState('')
 
@@ -914,7 +1077,7 @@ export default function AIAssistantPanel({ isOpen, onClose, clientName, assessme
 
   const handleSendMessage = useCallback(async () => {
     const text = inputValue.trim()
-    if (!text || isLoading) return
+    if (!text || isLoading || pendingMatch) return
 
     const userMsg = {
       id: `user-${Date.now()}`,
@@ -923,6 +1086,9 @@ export default function AIAssistantPanel({ isOpen, onClose, clientName, assessme
     }
 
     setInputValue('')
+
+    // Check for similar previous answer
+    if (checkSimilarity(text, userMsg)) return
 
     if (isApiConnected) {
       setMessages((prev) => [...prev, userMsg])
@@ -963,7 +1129,7 @@ export default function AIAssistantPanel({ isOpen, onClose, clientName, assessme
 
       setMessages((prev) => [...prev, userMsg, aiMsg])
     }
-  }, [inputValue, isLoading, isApiConnected, selectedToolId, selectedTool, clientName, assessments, assessmentProgress, messages])
+  }, [inputValue, isLoading, isApiConnected, selectedToolId, selectedTool, clientName, assessments, assessmentProgress, messages, pendingMatch, checkSimilarity])
 
   const handleKeyDown = useCallback(
     (e) => {
@@ -1168,6 +1334,13 @@ export default function AIAssistantPanel({ isOpen, onClose, clientName, assessme
                 </div>
               </div>
             )}
+            {pendingMatch && (
+              <SimilarMatchBanner
+                match={pendingMatch}
+                onUse={handleUsePrevious}
+                onDismiss={handleAskAnyway}
+              />
+            )}
             <div ref={messagesEndRef} />
           </div>
         )}
@@ -1180,8 +1353,9 @@ export default function AIAssistantPanel({ isOpen, onClose, clientName, assessme
               value={inputValue}
               onChange={(e) => setInputValue(e.target.value)}
               onKeyDown={handleKeyDown}
-              placeholder="Type a message..."
-              className="flex-1 text-sm text-warm-800 placeholder-warm-400 bg-warm-50 border border-warm-200 rounded-xl px-3.5 py-2.5 outline-none focus:border-sage-400 focus:ring-1 focus:ring-sage-200 resize-none transition-colors"
+              placeholder={pendingMatch ? 'Respond to the suggestion above...' : 'Type a message...'}
+              disabled={!!pendingMatch}
+              className={`flex-1 text-sm text-warm-800 placeholder-warm-400 bg-warm-50 border border-warm-200 rounded-xl px-3.5 py-2.5 outline-none focus:border-sage-400 focus:ring-1 focus:ring-sage-200 resize-none transition-colors ${pendingMatch ? 'opacity-50' : ''}`}
               rows={1}
               style={{ minHeight: '40px', maxHeight: '120px' }}
               onInput={(e) => {
@@ -1191,9 +1365,9 @@ export default function AIAssistantPanel({ isOpen, onClose, clientName, assessme
             />
             <button
               onClick={handleSendMessage}
-              disabled={!inputValue.trim()}
+              disabled={!inputValue.trim() || !!pendingMatch}
               className={`p-2.5 rounded-xl transition-all shrink-0 ${
-                inputValue.trim()
+                inputValue.trim() && !pendingMatch
                   ? 'bg-sage-500 text-white hover:bg-sage-600 shadow-sm'
                   : 'bg-warm-100 text-warm-300 cursor-not-allowed'
               }`}

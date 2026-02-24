@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react'
+import { useState, useEffect, useCallback, useRef } from 'react'
 import { getClients, saveClient, deleteClient, getAssessments, saveAssessment } from '../data/storage.js'
 import { useAuth } from '../contexts/AuthContext.jsx'
 
@@ -11,6 +11,8 @@ export default function ClientManager({ currentClientId, onSelectClient, assessm
   const [editingClient, setEditingClient] = useState(null)
   const [editForm, setEditForm] = useState({ name: '', date_of_birth: '', notes: '' })
   const { profile, user } = useAuth()
+  const triggerRef = useRef(null)
+  const [dropdownPos, setDropdownPos] = useState({ top: 0, left: 0 })
 
   const orgId = profile?.org_id
 
@@ -107,12 +109,30 @@ export default function ClientManager({ currentClientId, onSelectClient, assessm
     }
   }
 
+  const updateDropdownPos = useCallback(() => {
+    if (!triggerRef.current) return
+    const rect = triggerRef.current.getBoundingClientRect()
+    const left = Math.min(rect.left, window.innerWidth - 288 - 8) // 288 = w-72, 8px margin
+    setDropdownPos({ top: rect.bottom + 8, left: Math.max(8, left) })
+  }, [])
+
+  useEffect(() => {
+    if (!isOpen) return
+    updateDropdownPos()
+    window.addEventListener('resize', updateDropdownPos)
+    window.addEventListener('scroll', updateDropdownPos, true)
+    return () => {
+      window.removeEventListener('resize', updateDropdownPos)
+      window.removeEventListener('scroll', updateDropdownPos, true)
+    }
+  }, [isOpen, updateDropdownPos])
+
   const currentClient = clients.find((c) => c.id === currentClientId)
 
   return (
     <div className="relative">
       {/* Trigger button */}
-      <div className="flex items-center gap-2">
+      <div ref={triggerRef} className="flex items-center gap-2">
         <button
           onClick={() => setIsOpen(!isOpen)}
           className="flex items-center gap-2 px-3 py-1.5 rounded-lg hover:bg-warm-100 transition-colors text-sm"
@@ -143,7 +163,10 @@ export default function ClientManager({ currentClientId, onSelectClient, assessm
           {/* Backdrop */}
           <div className="fixed inset-0 z-20" onClick={() => setIsOpen(false)} />
 
-          <div className="absolute top-full left-0 mt-2 w-72 bg-white border border-warm-200 rounded-xl shadow-xl z-30 overflow-hidden">
+          <div
+            className="fixed w-72 bg-white border border-warm-200 rounded-xl shadow-xl z-50 overflow-hidden"
+            style={{ top: dropdownPos.top, left: dropdownPos.left }}
+          >
             {/* New client */}
             <div className="p-3 border-b border-warm-100">
               <div className="text-[10px] uppercase tracking-wider text-warm-400 font-semibold mb-2">
