@@ -665,11 +665,45 @@ function CheckIcon() {
    Main component
    ───────────────────────────────────────────── */
 
+/* ─────────────────────────────────────────────
+   Chat History Helpers
+   ───────────────────────────────────────────── */
+
+function getChatListKey(client, toolId) {
+  return `skillcascade_ai_chats_${client || 'default'}_${toolId}`
+}
+
+function loadChatList(client, toolId) {
+  try {
+    const raw = localStorage.getItem(getChatListKey(client, toolId))
+    return raw ? JSON.parse(raw) : []
+  } catch { return [] }
+}
+
+function saveChatList(client, toolId, list) {
+  try {
+    localStorage.setItem(getChatListKey(client, toolId), JSON.stringify(list))
+  } catch { /* storage full */ }
+}
+
+function makeChatTitle(messages) {
+  const first = messages.find((m) => m.role === 'user')
+  if (!first) return 'New chat'
+  return first.content.length > 40 ? first.content.slice(0, 40) + '...' : first.content
+}
+
+/* ─────────────────────────────────────────────
+   Main component
+   ───────────────────────────────────────────── */
+
 export default function AIAssistantPanel({ isOpen, onClose, clientName, assessments }) {
   const [selectedToolId, setSelectedToolId] = useState('reports')
   const [messages, setMessages] = useState([])
   const [inputValue, setInputValue] = useState('')
   const [isApiConnected, setIsApiConnected] = useState(false)
+  const [activeChatId, setActiveChatId] = useState(null)
+  const [chatList, setChatList] = useState([])
+  const [showHistory, setShowHistory] = useState(false)
 
   const messagesEndRef = useRef(null)
   const inputRef = useRef(null)
@@ -689,37 +723,81 @@ export default function AIAssistantPanel({ isOpen, onClose, clientName, assessme
     return summary.percentAssessed
   }, [assessments])
 
-  // Load saved conversation or show welcome when tool/client changes
+  function makeWelcome() {
+    return [{
+      id: 'welcome',
+      role: 'system',
+      content: `Ready to help with ${selectedTool?.name.toLowerCase() || 'this tool'} for ${clientName || 'this client'}. Select a quick action below or type a message.`,
+    }]
+  }
+
+  // Load chat list and active chat when tool/client changes
   useEffect(() => {
     if (!selectedTool) return
-    const storageKey = `skillcascade_ai_chat_${clientName || 'default'}_${selectedToolId}`
-    try {
-      const saved = localStorage.getItem(storageKey)
-      if (saved) {
-        const parsed = JSON.parse(saved)
-        if (Array.isArray(parsed) && parsed.length > 1) {
-          setMessages(parsed)
-          return
-        }
-      }
-    } catch { /* ignore */ }
-    setMessages([
-      {
-        id: 'welcome',
-        role: 'system',
-        content: `Ready to help with ${selectedTool.name.toLowerCase()} for ${clientName || 'this client'}. Select a quick action below or type a message.`,
-      },
-    ])
-  }, [selectedToolId, clientName])
+    const list = loadChatList(clientName, selectedToolId)
+    setChatList(list)
+    // Load most recent chat, or start fresh
+    if (list.length > 0) {
+      const latest = list[0]
+      setActiveChatId(latest.id)
+      setMessages(latest.messages)
+    } else {
+      setActiveChatId(null)
+      setMessages(makeWelcome())
+    }
+    setShowHistory(false)
+  }, [selectedToolId, clientName]) // eslint-disable-line react-hooks/exhaustive-deps
 
-  // Persist conversation when messages change
+  // Save active chat whenever messages change
   useEffect(() => {
-    if (messages.length <= 1) return // don't save just the welcome message
-    const storageKey = `skillcascade_ai_chat_${clientName || 'default'}_${selectedToolId}`
-    try {
-      localStorage.setItem(storageKey, JSON.stringify(messages))
-    } catch { /* storage full, ignore */ }
-  }, [messages, clientName, selectedToolId])
+    if (messages.length <= 1 || !selectedTool) return // don't save just the welcome
+    const list = loadChatList(clientName, selectedToolId)
+    const title = makeChatTitle(messages)
+    if (activeChatId) {
+      // Update existing chat
+      const idx = list.findIndex((c) => c.id === activeChatId)
+      if (idx >= 0) {
+        list[idx] = { ...list[idx], title, messages, updated_at: Date.now() }
+      } else {
+        list.unshift({ id: activeChatId, title, messages, created_at: Date.now(), updated_at: Date.now() })
+      }
+    } else {
+      // Create new chat entry
+      const newId = 'chat_' + Date.now()
+      list.unshift({ id: newId, title, messages, created_at: Date.now(), updated_at: Date.now() })
+      setActiveChatId(newId)
+    }
+    saveChatList(clientName, selectedToolId, list)
+    setChatList(list)
+  }, [messages]) // eslint-disable-line react-hooks/exhaustive-deps
+
+  function handleNewChat() {
+    setActiveChatId(null)
+    setMessages(makeWelcome())
+    setShowHistory(false)
+  }
+
+  function handleSelectChat(chat) {
+    setActiveChatId(chat.id)
+    setMessages(chat.messages)
+    setShowHistory(false)
+  }
+
+  function handleDeleteChat(chatId) {
+    const list = loadChatList(clientName, selectedToolId)
+    const filtered = list.filter((c) => c.id !== chatId)
+    saveChatList(clientName, selectedToolId, filtered)
+    setChatList(filtered)
+    if (activeChatId === chatId) {
+      if (filtered.length > 0) {
+        setActiveChatId(filtered[0].id)
+        setMessages(filtered[0].messages)
+      } else {
+        setActiveChatId(null)
+        setMessages(makeWelcome())
+      }
+    }
+  }
 
   // Scroll to bottom on new messages
   useEffect(() => {
@@ -937,15 +1015,17 @@ export default function AIAssistantPanel({ isOpen, onClose, clientName, assessme
             </div>
             <div className="flex items-center gap-1">
               <button
-                onClick={() => {
-                  const storageKey = `skillcascade_ai_chat_${clientName || 'default'}_${selectedToolId}`
-                  localStorage.removeItem(storageKey)
-                  setMessages([{
-                    id: 'welcome',
-                    role: 'system',
-                    content: `Ready to help with ${selectedTool?.name.toLowerCase()} for ${clientName || 'this client'}. Select a quick action below or type a message.`,
-                  }])
-                }}
+                onClick={() => setShowHistory(!showHistory)}
+                className={`p-1.5 rounded-lg transition-colors ${showHistory ? 'text-sage-600 bg-sage-50' : 'text-warm-400 hover:text-warm-600 hover:bg-warm-100'}`}
+                aria-label="Chat history"
+                title="Chat history"
+              >
+                <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M12 6v6h4.5m4.5 0a9 9 0 11-18 0 9 9 0 0118 0z" />
+                </svg>
+              </button>
+              <button
+                onClick={handleNewChat}
                 className="p-1.5 rounded-lg text-warm-400 hover:text-warm-600 hover:bg-warm-100 transition-colors"
                 aria-label="New conversation"
                 title="New conversation"
@@ -1014,25 +1094,83 @@ export default function AIAssistantPanel({ isOpen, onClose, clientName, assessme
           </div>
         )}
 
-        {/* ── Messages ── */}
-        <div className="flex-1 overflow-y-auto px-4 py-4">
-          {messages.map((msg) => (
-            <ChatMessage key={msg.id} message={msg} />
-          ))}
-          {isLoading && (
-            <div className="flex justify-start mb-3">
-              <div className="bg-white text-warm-500 border border-warm-200 shadow-sm rounded-xl rounded-bl-sm px-4 py-3 text-sm">
-                <div className="flex items-center gap-2">
-                  <div className="w-2 h-2 bg-sage-400 rounded-full animate-pulse" />
-                  <div className="w-2 h-2 bg-sage-400 rounded-full animate-pulse" style={{ animationDelay: '0.2s' }} />
-                  <div className="w-2 h-2 bg-sage-400 rounded-full animate-pulse" style={{ animationDelay: '0.4s' }} />
-                  <span className="text-xs text-warm-400 ml-1">Thinking...</span>
-                </div>
+        {/* ── Chat History Panel ── */}
+        {showHistory ? (
+          <div className="flex-1 overflow-y-auto">
+            <div className="px-4 pt-3 pb-2">
+              <div className="text-[10px] uppercase tracking-wider text-warm-400 font-semibold mb-2">
+                Chat History — {selectedTool?.name}
               </div>
             </div>
-          )}
-          <div ref={messagesEndRef} />
-        </div>
+            {chatList.length === 0 ? (
+              <div className="px-4 py-8 text-center">
+                <div className="text-warm-300 mb-2">
+                  <svg className="w-8 h-8 mx-auto" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M20.25 8.511c.884.284 1.5 1.128 1.5 2.097v4.286c0 1.136-.847 2.1-1.98 2.193-.34.027-.68.052-1.02.072v3.091l-3-3c-1.354 0-2.694-.055-4.02-.163a2.115 2.115 0 01-.825-.242m9.345-8.334a2.126 2.126 0 00-.476-.095 48.64 48.64 0 00-8.048 0c-1.131.094-1.976 1.057-1.976 2.192v4.286c0 .837.46 1.58 1.155 1.951m9.345-8.334V6.637c0-1.621-1.152-3.026-2.76-3.235A48.455 48.455 0 0011.25 3c-2.115 0-4.198.137-6.24.402-1.608.209-2.76 1.614-2.76 3.235v6.226c0 1.621 1.152 3.026 2.76 3.235.577.075 1.157.14 1.74.194V21l4.155-4.155" />
+                  </svg>
+                </div>
+                <p className="text-xs text-warm-400">No saved conversations yet.</p>
+                <p className="text-[10px] text-warm-300 mt-1">Start chatting to create your first one.</p>
+              </div>
+            ) : (
+              <div className="space-y-1 px-3 pb-3">
+                {chatList.map((chat) => (
+                  <div
+                    key={chat.id}
+                    className={`group flex items-center gap-2 px-3 py-2.5 rounded-lg cursor-pointer transition-colors ${
+                      activeChatId === chat.id
+                        ? 'bg-sage-50 border border-sage-200'
+                        : 'hover:bg-warm-100 border border-transparent'
+                    }`}
+                    onClick={() => handleSelectChat(chat)}
+                  >
+                    <div className="flex-1 min-w-0">
+                      <div className={`text-xs font-medium truncate ${
+                        activeChatId === chat.id ? 'text-sage-700' : 'text-warm-700'
+                      }`}>
+                        {chat.title}
+                      </div>
+                      <div className="text-[10px] text-warm-400 mt-0.5">
+                        {chat.messages.filter((m) => m.role === 'user').length} messages
+                        {' · '}
+                        {new Date(chat.updated_at).toLocaleDateString(undefined, { month: 'short', day: 'numeric' })}
+                      </div>
+                    </div>
+                    <button
+                      onClick={(e) => { e.stopPropagation(); handleDeleteChat(chat.id) }}
+                      className="opacity-0 group-hover:opacity-100 p-1 rounded text-warm-300 hover:text-red-400 transition-all shrink-0"
+                      title="Delete conversation"
+                    >
+                      <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                        <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
+                      </svg>
+                    </button>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        ) : (
+          /* ── Messages ── */
+          <div className="flex-1 overflow-y-auto px-4 py-4">
+            {messages.map((msg) => (
+              <ChatMessage key={msg.id} message={msg} />
+            ))}
+            {isLoading && (
+              <div className="flex justify-start mb-3">
+                <div className="bg-white text-warm-500 border border-warm-200 shadow-sm rounded-xl rounded-bl-sm px-4 py-3 text-sm">
+                  <div className="flex items-center gap-2">
+                    <div className="w-2 h-2 bg-sage-400 rounded-full animate-pulse" />
+                    <div className="w-2 h-2 bg-sage-400 rounded-full animate-pulse" style={{ animationDelay: '0.2s' }} />
+                    <div className="w-2 h-2 bg-sage-400 rounded-full animate-pulse" style={{ animationDelay: '0.4s' }} />
+                    <span className="text-xs text-warm-400 ml-1">Thinking...</span>
+                  </div>
+                </div>
+              </div>
+            )}
+            <div ref={messagesEndRef} />
+          </div>
+        )}
 
         {/* ── Input Bar ── */}
         <div className="shrink-0 bg-white border-t border-warm-200 px-4 py-3">
