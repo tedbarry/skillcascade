@@ -164,3 +164,46 @@ body {
     page-break-inside: avoid;
   }
 }
+
+/* ─── Accessibility Overrides ─────────────────────────────── */
+.a11y-high-contrast {
+  --color-warm-50: #ffffff;
+  --color-warm-900: #000000;
+  --color-warm-500: #333333;
+  --color-warm-400: #444444;
+  --color-warm-200: #999999;
+}
+
+.a11y-reduce-motion * {
+  animation-duration: 0s !important;
+  transition-duration: 0s !important;
+}
+
+.a11y-dyslexia {
+  letter-spacing: 0.05em;
+  word-spacing: 0.1em;
+  line-height: 1.8;
+}
+
+.a11y-focus *:focus {
+  outline: 3px solid #4f8460 !important;
+  outline-offset: 2px !important;
+}
+
+.a11y-cb-protanopia {
+  --color-needs-work: #d4a017;
+  --color-developing: #6b8cc7;
+  --color-solid: #2d6a4f;
+}
+
+.a11y-cb-deuteranopia {
+  --color-needs-work: #d4a017;
+  --color-developing: #7ba3d9;
+  --color-solid: #1a5c3a;
+}
+
+.a11y-cb-tritanopia {
+  --color-needs-work: #c44536;
+  --color-developing: #8b6fc0;
+  --color-solid: #2d8a6e;
+}

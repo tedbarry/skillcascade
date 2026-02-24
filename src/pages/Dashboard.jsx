@@ -24,6 +24,10 @@ import MilestoneCelebrations from '../components/MilestoneCelebrations.jsx'
 import HomePractice from '../components/HomePractice.jsx'
 import OrgAnalytics from '../components/OrgAnalytics.jsx'
 import ProgressPrediction from '../components/ProgressPrediction.jsx'
+import BrandingSettings from '../components/BrandingSettings.jsx'
+import Messaging from '../components/Messaging.jsx'
+import DataPortability from '../components/DataPortability.jsx'
+import AccessibilitySettings from '../components/AccessibilitySettings.jsx'
 import useUndoRedo from '../hooks/useUndoRedo.js'
 import { framework, toHierarchy, ASSESSMENT_LABELS, ASSESSMENT_COLORS, ASSESSMENT_LEVELS } from '../data/framework.js'
 import { generateSampleAssessments } from '../data/sampleAssessments.js'
@@ -46,6 +50,10 @@ const VIEWS = {
   PRACTICE: 'practice',
   ORG_ANALYTICS: 'org-analytics',
   PREDICTIONS: 'predictions',
+  BRANDING: 'branding',
+  MESSAGES: 'messages',
+  DATA: 'data',
+  ACCESSIBILITY: 'accessibility',
 }
 
 export default function Dashboard() {
@@ -160,7 +168,7 @@ export default function Dashboard() {
   }
 
   // Assessment, tree, cascade, and timeline views are full-width — no side panels
-  const fullWidthViews = [VIEWS.ASSESS, VIEWS.TREE, VIEWS.CASCADE, VIEWS.TIMELINE, VIEWS.QUICK_ASSESS, VIEWS.GOALS, VIEWS.ALERTS, VIEWS.REPORTS, VIEWS.PARENT, VIEWS.CASELOAD, VIEWS.MILESTONES, VIEWS.PRACTICE, VIEWS.ORG_ANALYTICS, VIEWS.PREDICTIONS]
+  const fullWidthViews = [VIEWS.ASSESS, VIEWS.TREE, VIEWS.CASCADE, VIEWS.TIMELINE, VIEWS.QUICK_ASSESS, VIEWS.GOALS, VIEWS.ALERTS, VIEWS.REPORTS, VIEWS.PARENT, VIEWS.CASELOAD, VIEWS.MILESTONES, VIEWS.PRACTICE, VIEWS.ORG_ANALYTICS, VIEWS.PREDICTIONS, VIEWS.BRANDING, VIEWS.MESSAGES, VIEWS.DATA, VIEWS.ACCESSIBILITY]
   const showSidePanels = !fullWidthViews.includes(activeView)
 
   return (
@@ -346,6 +354,10 @@ export default function Dashboard() {
               { key: VIEWS.PRACTICE, label: 'Home Practice' },
               { key: VIEWS.PREDICTIONS, label: 'Predictions' },
               { key: VIEWS.ORG_ANALYTICS, label: 'Org Analytics' },
+              { key: VIEWS.MESSAGES, label: 'Messages' },
+              { key: VIEWS.BRANDING, label: 'Branding' },
+              { key: VIEWS.DATA, label: 'Data' },
+              { key: VIEWS.ACCESSIBILITY, label: 'Access.' },
             ].map((v) => (
               <button
                 key={v.key}
@@ -573,6 +585,37 @@ export default function Dashboard() {
           {activeView === VIEWS.ORG_ANALYTICS && (
             <div className="w-full h-full overflow-y-auto">
               <OrgAnalytics />
+            </div>
+          )}
+
+          {/* Messages view */}
+          {activeView === VIEWS.MESSAGES && (
+            <div className="w-full h-full overflow-hidden">
+              <Messaging
+                clientId={clientId}
+                clientName={clientName}
+              />
+            </div>
+          )}
+
+          {/* Branding view */}
+          {activeView === VIEWS.BRANDING && (
+            <div className="w-full h-full overflow-y-auto">
+              <BrandingSettings onBrandingChange={() => {}} />
+            </div>
+          )}
+
+          {/* Data view */}
+          {activeView === VIEWS.DATA && (
+            <div className="w-full h-full overflow-y-auto">
+              <DataPortability onImportComplete={() => window.location.reload()} />
+            </div>
+          )}
+
+          {/* Accessibility view */}
+          {activeView === VIEWS.ACCESSIBILITY && (
+            <div className="w-full h-full overflow-y-auto">
+              <AccessibilitySettings onSettingsChange={() => {}} />
             </div>
           )}
         </main>
