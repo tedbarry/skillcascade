@@ -19,6 +19,87 @@ const STOPWORDS = new Set([
   'describe','provide','list','suggest','need','want','like','using','use','get',
 ])
 
+/* ─────────────────────────────────────────────
+   ABA Domain Synonym Map
+   Each array shares a canonical term (first entry).
+   Words map to their canonical form before comparison.
+   ───────────────────────────────────────────── */
+
+const SYNONYM_GROUPS = [
+  // ── Behavior types ──
+  ['elopement', 'running away', 'bolting', 'fleeing', 'eloping', 'runaway', 'absconding', 'wandering off', 'leaving area'],
+  ['aggression', 'hitting', 'attacking', 'aggressive', 'combative', 'violent', 'fighting', 'striking', 'kicking', 'biting', 'scratching', 'pushing'],
+  ['self injury', 'sib', 'self harm', 'self injurious', 'self mutilation', 'head banging', 'self hitting', 'self biting'],
+  ['noncompliance', 'non compliance', 'refusal', 'refusing', 'noncompliant', 'non compliant', 'defiance', 'defiant', 'oppositional'],
+  ['tantrum', 'meltdown', 'outburst', 'emotional outburst', 'crying episode', 'screaming'],
+  ['stereotypy', 'stimming', 'self stimulatory', 'repetitive behavior', 'stim', 'self stimulation'],
+  ['pica', 'eating non food', 'mouthing objects', 'ingesting non edible'],
+  ['property destruction', 'destroying', 'breaking things', 'damaging property', 'throwing objects', 'breaking objects'],
+  ['echolalia', 'echoing', 'repeating words', 'scripting', 'vocal stereotypy'],
+  ['toileting', 'toilet training', 'potty training', 'bathroom', 'enuresis', 'encopresis', 'incontinence'],
+
+  // ── Clinical / assessment terms ──
+  ['deficit', 'deficits', 'problem', 'problems', 'challenge', 'challenges', 'weakness', 'weaknesses', 'area of need', 'areas of need', 'difficulty', 'difficulties', 'concern', 'concerns'],
+  ['strength', 'strengths', 'mastered', 'mastery', 'proficient', 'competent', 'strong area'],
+  ['goal', 'goals', 'objective', 'objectives', 'target', 'targets', 'benchmark', 'benchmarks'],
+  ['baseline', 'current level', 'present level', 'starting point', 'initial assessment'],
+  ['maintenance', 'maintaining', 'generalization', 'generalizing', 'retention', 'carryover'],
+  ['prompt', 'prompting', 'cue', 'cueing', 'prompt level', 'assistance level'],
+  ['reinforcement', 'reinforcer', 'reward', 'preferred item', 'motivator', 'incentive'],
+  ['extinction', 'planned ignoring', 'withholding reinforcement', 'ignoring behavior'],
+  ['antecedent', 'trigger', 'precursor', 'setting event', 'discriminative stimulus'],
+  ['consequence', 'outcome', 'result', 'response to behavior', 'contingency'],
+  ['frequency', 'rate', 'how often', 'occurrences', 'count', 'tally'],
+  ['duration', 'how long', 'length of time', 'time spent'],
+  ['latency', 'response time', 'time to respond', 'delay'],
+  ['intensity', 'severity', 'magnitude', 'how severe', 'how intense'],
+  ['interval', 'interval recording', 'time sampling', 'momentary time sampling'],
+
+  // ── Document / plan types ──
+  ['bip', 'behavior intervention plan', 'behavior plan', 'behaviour plan', 'behavior support plan', 'bsp'],
+  ['operational definition', 'op def', 'opdef', 'behavior definition', 'behavioral definition'],
+  ['functional assessment', 'fba', 'functional behavior assessment', 'functional analysis', 'fa'],
+  ['treatment plan', 'tx plan', 'intervention plan', 'therapy plan', 'service plan'],
+  ['progress report', 'progress note', 'session note', 'progress summary', 'status report'],
+  ['iep', 'individualized education program', 'education plan', 'individualized education plan'],
+  ['observation', 'observation report', 'direct observation', 'behavioral observation'],
+  ['titration', 'titration plan', 'fading plan', 'reduction plan', 'thinning plan'],
+  ['ltg', 'long term goal', 'long term goals', 'annual goal', 'annual goals'],
+  ['stg', 'short term goal', 'short term goals', 'short term objective', 'short term objectives'],
+
+  // ── Actions / task verbs ──
+  ['summarize', 'summary', 'summarise', 'overview', 'recap', 'synopsis', 'brief'],
+  ['analyze', 'analyse', 'analysis', 'assess', 'evaluate', 'evaluation', 'review'],
+  ['classify', 'categorize', 'categorise', 'sort', 'label', 'identify type'],
+  ['rewrite', 'rephrase', 'revise', 'edit', 'improve', 'rework', 'fix wording'],
+  ['reduce', 'decrease', 'lower', 'minimize', 'diminish', 'lessen'],
+  ['increase', 'improve', 'raise', 'enhance', 'boost', 'build'],
+
+  // ── People / roles ──
+  ['client', 'student', 'learner', 'patient', 'individual', 'child', 'kiddo'],
+  ['bcba', 'analyst', 'behavior analyst', 'supervisor', 'board certified behavior analyst'],
+  ['rbt', 'technician', 'behavior technician', 'therapist', 'paraprofessional', 'line therapist', 'direct staff'],
+  ['caregiver', 'parent', 'guardian', 'family member', 'family'],
+]
+
+// Build lookup: word/phrase → canonical form
+const SYNONYM_MAP = new Map()
+for (const group of SYNONYM_GROUPS) {
+  const canonical = group[0]
+  for (const term of group) {
+    // Handle multi-word phrases: store both the phrase and individual words
+    const normalized = term.toLowerCase().replace(/[^\w\s]/g, '').trim()
+    SYNONYM_MAP.set(normalized, canonical)
+  }
+}
+
+/**
+ * Resolve a word (or bigram) to its canonical synonym, if one exists.
+ */
+function resolveSynonym(word) {
+  return SYNONYM_MAP.get(word) || word
+}
+
 export function normalizeText(text) {
   return text
     .toLowerCase()
@@ -28,18 +109,117 @@ export function normalizeText(text) {
 }
 
 export function extractKeywords(text) {
-  const words = normalizeText(text).split(' ')
-  return new Set(words.filter((w) => w.length > 2 && !STOPWORDS.has(w)))
+  const normalized = normalizeText(text)
+  const words = normalized.split(' ')
+  const keywords = new Set()
+
+  // Check bigrams first (for multi-word synonyms like "running away", "self injury")
+  let i = 0
+  while (i < words.length) {
+    let matched = false
+    // Try trigram
+    if (i + 2 < words.length) {
+      const trigram = `${words[i]} ${words[i + 1]} ${words[i + 2]}`
+      const resolved = SYNONYM_MAP.get(trigram)
+      if (resolved) {
+        keywords.add(resolved)
+        i += 3
+        matched = true
+      }
+    }
+    // Try bigram
+    if (!matched && i + 1 < words.length) {
+      const bigram = `${words[i]} ${words[i + 1]}`
+      const resolved = SYNONYM_MAP.get(bigram)
+      if (resolved) {
+        keywords.add(resolved)
+        i += 2
+        matched = true
+      }
+    }
+    // Single word
+    if (!matched) {
+      const w = words[i]
+      if (w.length > 2 && !STOPWORDS.has(w)) {
+        keywords.add(resolveSynonym(w))
+      }
+      i++
+    }
+  }
+
+  return keywords
 }
 
+/**
+ * Levenshtein edit distance between two strings.
+ * Used for typo tolerance (e.g., "elopemnt" ↔ "elopement").
+ */
+export function editDistance(a, b) {
+  if (a === b) return 0
+  if (a.length === 0) return b.length
+  if (b.length === 0) return a.length
+
+  // Use single-row DP for memory efficiency
+  let prev = Array.from({ length: b.length + 1 }, (_, i) => i)
+  for (let i = 1; i <= a.length; i++) {
+    const curr = [i]
+    for (let j = 1; j <= b.length; j++) {
+      const cost = a[i - 1] === b[j - 1] ? 0 : 1
+      curr[j] = Math.min(
+        curr[j - 1] + 1,      // insert
+        prev[j] + 1,          // delete
+        prev[j - 1] + cost,   // substitute
+      )
+    }
+    prev = curr
+  }
+  return prev[b.length]
+}
+
+/**
+ * Check if two words are "close enough" to count as a match.
+ * Exact match, or edit distance within a length-scaled threshold.
+ */
+function wordsMatch(a, b) {
+  if (a === b) return true
+  // Allow 1 edit for words 4-6 chars, 2 edits for 7+ chars
+  const maxDist = Math.min(a.length, b.length) >= 7 ? 2 : 1
+  // Quick reject: length difference alone exceeds threshold
+  if (Math.abs(a.length - b.length) > maxDist) return false
+  return editDistance(a, b) <= maxDist
+}
+
+/**
+ * Fuzzy Jaccard similarity — like Jaccard, but uses edit distance
+ * so typos and minor misspellings still count as matching keywords.
+ */
 export function jaccardSimilarity(setA, setB) {
   if (setA.size === 0 && setB.size === 0) return 0
-  let intersection = 0
-  for (const w of setA) {
-    if (setB.has(w)) intersection++
+
+  const arrB = [...setB]
+  const matchedB = new Set()
+  let fuzzyMatches = 0
+
+  for (const wordA of setA) {
+    // Try exact match first (fast path)
+    if (setB.has(wordA)) {
+      fuzzyMatches++
+      matchedB.add(wordA)
+      continue
+    }
+    // Fuzzy match against unmatched words in B
+    for (const wordB of arrB) {
+      if (matchedB.has(wordB)) continue
+      if (wordsMatch(wordA, wordB)) {
+        fuzzyMatches++
+        matchedB.add(wordB)
+        break
+      }
+    }
   }
-  const union = setA.size + setB.size - intersection
-  return union === 0 ? 0 : intersection / union
+
+  const union = setA.size + setB.size - fuzzyMatches
+  return union === 0 ? 0 : fuzzyMatches / union
 }
 
 /**
