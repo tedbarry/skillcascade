@@ -46,10 +46,12 @@ export default function ClientManager({ currentClientId, onSelectClient, assessm
     try {
       const saved = await getAssessments(client.id)
       onSelectClient(client.id, client.name, saved)
-      setIsOpen(false)
     } catch (err) {
       console.error('Failed to load assessments:', err.message)
+      // Still select the client even if assessments fail to load
+      onSelectClient(client.id, client.name, {})
     }
+    setIsOpen(false)
   }
 
   async function handleSave() {

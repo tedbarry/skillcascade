@@ -229,7 +229,7 @@ export default function Dashboard() {
     <>
     <div className="min-h-screen bg-warm-50 flex flex-col print:hidden">
       {/* Top bar */}
-      <header className="bg-white border-b border-warm-200 px-3 sm:px-6 py-2 sm:py-3 flex items-center justify-between shrink-0">
+      <header className="bg-white border-b border-warm-200 px-3 sm:px-6 py-2 sm:py-3 flex items-center justify-between shrink-0 relative z-40">
         <div className="flex items-center gap-2 sm:gap-4 min-w-0">
           <Link to="/" className="text-lg sm:text-xl font-bold text-warm-800 font-display whitespace-nowrap">
             Skill<span className="text-sage-500">Cascade</span>
