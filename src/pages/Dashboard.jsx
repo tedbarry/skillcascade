@@ -17,6 +17,7 @@ import AIAssistantPanel from '../components/AIAssistantPanel.jsx'
 import SettingsDropdown from '../components/SettingsDropdown.jsx'
 import OnboardingTour from '../components/OnboardingTour.jsx'
 import PatternAlerts from '../components/PatternAlerts.jsx'
+import ReportGenerator from '../components/ReportGenerator.jsx'
 import useUndoRedo from '../hooks/useUndoRedo.js'
 import { framework, toHierarchy, ASSESSMENT_LABELS, ASSESSMENT_COLORS, ASSESSMENT_LEVELS } from '../data/framework.js'
 import { generateSampleAssessments } from '../data/sampleAssessments.js'
@@ -32,6 +33,7 @@ const VIEWS = {
   QUICK_ASSESS: 'quick-assess',
   GOALS: 'goals',
   ALERTS: 'alerts',
+  REPORTS: 'reports',
 }
 
 export default function Dashboard() {
@@ -125,7 +127,7 @@ export default function Dashboard() {
   }
 
   // Assessment, tree, cascade, and timeline views are full-width — no side panels
-  const showSidePanels = activeView !== VIEWS.ASSESS && activeView !== VIEWS.TREE && activeView !== VIEWS.CASCADE && activeView !== VIEWS.TIMELINE && activeView !== VIEWS.QUICK_ASSESS && activeView !== VIEWS.GOALS && activeView !== VIEWS.ALERTS
+  const showSidePanels = activeView !== VIEWS.ASSESS && activeView !== VIEWS.TREE && activeView !== VIEWS.CASCADE && activeView !== VIEWS.TIMELINE && activeView !== VIEWS.QUICK_ASSESS && activeView !== VIEWS.GOALS && activeView !== VIEWS.ALERTS && activeView !== VIEWS.REPORTS
 
   return (
     <>
@@ -224,7 +226,7 @@ export default function Dashboard() {
         )}
 
         {/* Center content */}
-        <main className={`flex-1 overflow-auto ${activeView === VIEWS.ASSESS || activeView === VIEWS.TIMELINE || activeView === VIEWS.QUICK_ASSESS || activeView === VIEWS.GOALS ? '' : 'flex flex-col items-center p-8'}`}>
+        <main className={`flex-1 overflow-auto ${activeView === VIEWS.ASSESS || activeView === VIEWS.TIMELINE || activeView === VIEWS.QUICK_ASSESS || activeView === VIEWS.GOALS || activeView === VIEWS.REPORTS ? '' : 'flex flex-col items-center p-8'}`}>
           {/* View toggle */}
           <div data-tour="view-tabs" className={`flex items-center gap-1 bg-warm-100 rounded-lg p-1 mb-6 ${!showSidePanels ? 'mx-auto mt-6 w-fit' : ''}`}>
             {[
@@ -237,6 +239,7 @@ export default function Dashboard() {
               { key: VIEWS.QUICK_ASSESS, label: 'Quick Assess' },
               { key: VIEWS.GOALS, label: 'Goals' },
               { key: VIEWS.ALERTS, label: 'Alerts' },
+              { key: VIEWS.REPORTS, label: 'Reports' },
             ].map((v) => (
               <button
                 key={v.key}
@@ -385,6 +388,18 @@ export default function Dashboard() {
             <div className="w-full h-full overflow-y-auto">
               <PatternAlerts
                 assessments={assessments}
+                snapshots={snapshots}
+                onNavigateToAssess={handleNavigateToAssess}
+              />
+            </div>
+          )}
+
+          {/* Reports view */}
+          {activeView === VIEWS.REPORTS && (
+            <div className="w-full h-full overflow-y-auto">
+              <ReportGenerator
+                assessments={assessments}
+                clientName={clientName}
                 snapshots={snapshots}
                 onNavigateToAssess={handleNavigateToAssess}
               />
