@@ -860,6 +860,76 @@ export default function AIAssistantPanel({ isOpen, onClose, clientName, assessme
     return () => { cancelled = true }
   }, [selectedToolId, clientName]) // eslint-disable-line react-hooks/exhaustive-deps
 
+  // One-time migration: move localStorage chats → Supabase
+  useEffect(() => {
+    if (!orgId || !userId) return
+    const migrationKey = 'skillcascade_ai_chats_migrated'
+    if (localStorage.getItem(migrationKey)) return // already migrated
+
+    async function migrate() {
+      const lsKeys = Object.keys(localStorage).filter((k) => k.startsWith('skillcascade_ai_chats_'))
+      if (lsKeys.length === 0) {
+        localStorage.setItem(migrationKey, '1')
+        return
+      }
+
+      let migrated = 0
+      for (const key of lsKeys) {
+        try {
+          const chats = JSON.parse(localStorage.getItem(key))
+          if (!Array.isArray(chats) || chats.length === 0) continue
+
+          // Parse key: skillcascade_ai_chats_${clientName}_${toolId}
+          const suffix = key.replace('skillcascade_ai_chats_', '')
+          const lastUnderscore = suffix.lastIndexOf('_')
+          if (lastUnderscore < 0) continue
+          const chatClientName = suffix.slice(0, lastUnderscore)
+          const toolId = suffix.slice(lastUnderscore + 1)
+
+          for (const chat of chats) {
+            if (!chat.messages || chat.messages.length <= 1) continue
+            try {
+              await saveAiChat({
+                tool_id: toolId,
+                title: chat.title || 'Migrated chat',
+                messages: chat.messages,
+                client_name: chatClientName || null,
+              }, orgId, userId)
+              migrated++
+            } catch { /* skip individual chat errors */ }
+          }
+        } catch { /* skip unparseable keys */ }
+      }
+
+      // Mark as migrated and clean up localStorage
+      localStorage.setItem(migrationKey, '1')
+      for (const key of lsKeys) {
+        localStorage.removeItem(key)
+      }
+      // Also clean up old search index keys
+      Object.keys(localStorage)
+        .filter((k) => k.startsWith('skillcascade_ai_index_'))
+        .forEach((k) => localStorage.removeItem(k))
+
+      if (migrated > 0) {
+        console.log(`Migrated ${migrated} AI chats to Supabase`)
+        // Reload current tool's chats
+        try {
+          const list = await getAiChats(selectedToolId)
+          setChatList(list)
+          const clientChats = list.filter((c) => c.client_name === clientName)
+          if (clientChats.length > 0) {
+            setActiveChatId(clientChats[0].id)
+            setMessages(clientChats[0].messages)
+          }
+          setSearchIndex(rebuildIndex(null, selectedToolId, list))
+        } catch { /* will load on next tool switch */ }
+      }
+    }
+
+    migrate()
+  }, [orgId, userId]) // eslint-disable-line react-hooks/exhaustive-deps
+
   // Save active chat to Supabase (debounced) whenever messages change
   useEffect(() => {
     if (messages.length <= 1 || !selectedTool || !orgId || !userId) return
