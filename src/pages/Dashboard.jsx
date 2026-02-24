@@ -37,7 +37,8 @@ const ComparisonView = lazy(() => import('../components/ComparisonView.jsx'))
 const KeyboardShortcuts = lazy(() => import('../components/KeyboardShortcuts.jsx'))
 import { framework, toHierarchy, ASSESSMENT_LABELS, ASSESSMENT_COLORS, ASSESSMENT_LEVELS } from '../data/framework.js'
 import { generateSampleAssessments } from '../data/sampleAssessments.js'
-import { saveSnapshot, getSnapshots, deleteSnapshot } from '../data/storage.js'
+import { saveSnapshot, getSnapshots, deleteSnapshot, getAssessments, saveAssessment } from '../data/storage.js'
+import { useAuth } from '../contexts/AuthContext.jsx'
 
 function ViewLoader() {
   return (
@@ -78,13 +79,14 @@ const VIEWS = {
 }
 
 export default function Dashboard() {
+  const { user } = useAuth()
   const [assessments, setAssessments, { undo, redo, canUndo, canRedo, resetState: resetAssessments }] = useUndoRedo({})
   const [selectedNode, setSelectedNode] = useState(null)
   const [sidebarOpen, setSidebarOpen] = useState(true)
   const [activeView, setActiveView] = useState(VIEWS.SUNBURST)
-  const [clientId, setClientId] = useState(null)
+  const [clientId, setClientId] = useState(() => localStorage.getItem('skillcascade_selected_client') || null)
   const [snapshots, setSnapshots] = useState([])
-  const [clientName, setClientName] = useState('Sample Client')
+  const [clientName, setClientName] = useState(() => localStorage.getItem('skillcascade_selected_client_name') || 'Sample Client')
   const [toast, setToast] = useState(null)
   const [assessTarget, setAssessTarget] = useState({ subAreaId: null, ts: 0 })
   const [compareSnapshotId, setCompareSnapshotId] = useState(null)
@@ -92,6 +94,12 @@ export default function Dashboard() {
   const [aiPanelOpen, setAiPanelOpen] = useState(false)
   const [moreMenuOpen, setMoreMenuOpen] = useState(false)
   const [shortcutsOpen, setShortcutsOpen] = useState(false)
+  const [branding, setBranding] = useState(() => {
+    try {
+      const raw = localStorage.getItem('skillcascade_branding')
+      return raw ? JSON.parse(raw) : null
+    } catch { return null }
+  })
 
   // Global Ctrl+K / Cmd+K to open search
   useEffect(() => {
@@ -134,10 +142,12 @@ export default function Dashboard() {
     setActiveView(VIEWS.ASSESS)
   }, [])
 
-  // Load sample data on mount
+  // Load sample data on mount (only if no saved client)
   useEffect(() => {
-    resetAssessments(generateSampleAssessments())
-  }, [])
+    if (!clientId) {
+      resetAssessments(generateSampleAssessments())
+    }
+  }, []) // eslint-disable-line react-hooks/exhaustive-deps
 
   // Hierarchy structure is stable — doesn't depend on assessments
   const hierarchyData = useMemo(() => toHierarchy(), [])
@@ -160,6 +170,13 @@ export default function Dashboard() {
   function handleSelectClient(id, name, savedAssessments) {
     setClientId(id)
     setClientName(name || 'Sample Client')
+    if (id) {
+      localStorage.setItem('skillcascade_selected_client', id)
+      localStorage.setItem('skillcascade_selected_client_name', name || 'Sample Client')
+    } else {
+      localStorage.removeItem('skillcascade_selected_client')
+      localStorage.removeItem('skillcascade_selected_client_name')
+    }
     if (savedAssessments === null) {
       resetAssessments(generateSampleAssessments())
     } else {
@@ -167,26 +184,41 @@ export default function Dashboard() {
     }
   }
 
+  // Load assessments for restored client on mount
+  useEffect(() => {
+    if (clientId) {
+      getAssessments(clientId).then((saved) => resetAssessments(saved || {})).catch(() => {})
+    }
+  }, []) // eslint-disable-line react-hooks/exhaustive-deps
+
   // Load snapshots when client changes
   useEffect(() => {
     if (clientId) {
-      setSnapshots(getSnapshots(clientId))
+      getSnapshots(clientId).then(setSnapshots).catch(() => setSnapshots([]))
     } else {
       setSnapshots([])
     }
   }, [clientId])
 
-  function handleSaveSnapshot(label) {
+  async function handleSaveSnapshot(label) {
     if (!clientId) return
-    const updated = saveSnapshot(clientId, label, assessments)
-    setSnapshots(updated)
-    showToast('Snapshot saved', 'success')
+    try {
+      const updated = await saveSnapshot(clientId, label, assessments, user?.id)
+      setSnapshots(updated)
+      showToast('Snapshot saved', 'success')
+    } catch (err) {
+      showToast('Failed to save snapshot', 'error')
+    }
   }
 
-  function handleDeleteSnapshot(snapshotId) {
+  async function handleDeleteSnapshot(snapshotId) {
     if (!clientId) return
-    const updated = deleteSnapshot(clientId, snapshotId)
-    setSnapshots(updated)
+    try {
+      const updated = await deleteSnapshot(clientId, snapshotId)
+      setSnapshots(updated)
+    } catch (err) {
+      showToast('Failed to delete snapshot', 'error')
+    }
   }
 
   // Assessment, tree, cascade, and timeline views are full-width — no side panels
@@ -399,6 +431,15 @@ export default function Dashboard() {
             ))}
           </div>
 
+          {/* Sample data banner */}
+          {!clientId && [VIEWS.SUNBURST, VIEWS.RADAR, VIEWS.TREE, VIEWS.CASCADE, VIEWS.ASSESS, VIEWS.QUICK_ASSESS].includes(activeView) && (
+            <div className="w-full max-w-2xl mx-auto mb-4 px-4 py-2.5 bg-warm-100 border border-warm-200 rounded-lg text-center">
+              <p className="text-xs text-warm-500">
+                <span className="font-medium text-warm-600">Viewing sample data.</span> Select or create a client to see real assessments.
+              </p>
+            </div>
+          )}
+
           {/* Sunburst view */}
           {activeView === VIEWS.SUNBURST && (
             <div className="flex flex-col items-center">
@@ -553,6 +594,7 @@ export default function Dashboard() {
                   clientName={clientName}
                   snapshots={snapshots}
                   onNavigateToAssess={handleNavigateToAssess}
+                  branding={branding}
                 />
               </Suspense>
             </div>
@@ -650,7 +692,7 @@ export default function Dashboard() {
           {activeView === VIEWS.BRANDING && (
             <div className="w-full h-full overflow-y-auto">
               <Suspense fallback={<ViewLoader />}>
-                <BrandingSettings onBrandingChange={() => {}} />
+                <BrandingSettings onBrandingChange={setBranding} />
               </Suspense>
             </div>
           )}
@@ -760,7 +802,7 @@ export default function Dashboard() {
         onClose={() => setShortcutsOpen(false)}
         onToggle={() => setShortcutsOpen(prev => !prev)}
         onSwitchView={(viewKey) => { setActiveView(viewKey); setShortcutsOpen(false) }}
-        onSave={() => { if (clientId) { import('../data/storage.js').then(m => { m.saveAssessment(clientId, assessments); showToast('Assessment saved', 'success') }) } }}
+        onSave={() => { if (clientId && user) { saveAssessment(clientId, assessments, user.id).then(() => showToast('Assessment saved', 'success')).catch(() => showToast('Failed to save', 'error')) } }}
         onPrint={() => window.print()}
       />
     </Suspense>

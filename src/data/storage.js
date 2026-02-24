@@ -1,94 +1,158 @@
 /**
- * Data persistence layer — abstracted so a real backend can plug in later.
- * Currently uses localStorage for MVP.
+ * Data persistence layer — Supabase backend.
+ * All functions are async and return data from the database.
  */
 
-const STORAGE_PREFIX = 'skillcascade_'
-
-function getKey(key) {
-  return `${STORAGE_PREFIX}${key}`
-}
+import { supabase } from '../lib/supabase.js'
 
 /**
  * Client profiles
  */
-export function saveClient(client) {
-  const clients = getClients()
-  const existing = clients.findIndex((c) => c.id === client.id)
-  if (existing >= 0) {
-    clients[existing] = { ...clients[existing], ...client, updatedAt: Date.now() }
-  } else {
-    clients.push({ ...client, createdAt: Date.now(), updatedAt: Date.now() })
+export async function saveClient(client, orgId) {
+  if (client.id) {
+    // Update existing
+    const { data, error } = await supabase
+      .from('clients')
+      .update({ name: client.name, date_of_birth: client.date_of_birth, notes: client.notes })
+      .eq('id', client.id)
+      .select()
+      .single()
+    if (error) throw error
+    return data
   }
-  localStorage.setItem(getKey('clients'), JSON.stringify(clients))
-  return client
+  // Insert new
+  const { data, error } = await supabase
+    .from('clients')
+    .insert({ name: client.name, org_id: orgId, date_of_birth: client.date_of_birth, notes: client.notes })
+    .select()
+    .single()
+  if (error) throw error
+  return data
 }
 
-export function getClients() {
-  const raw = localStorage.getItem(getKey('clients'))
-  return raw ? JSON.parse(raw) : []
+export async function getClients(orgId) {
+  const { data, error } = await supabase
+    .from('clients')
+    .select('*')
+    .eq('org_id', orgId)
+    .is('deleted_at', null)
+    .order('name')
+  if (error) throw error
+  return data || []
 }
 
-export function getClient(id) {
-  return getClients().find((c) => c.id === id) || null
+export async function getClient(id) {
+  const { data, error } = await supabase
+    .from('clients')
+    .select('*')
+    .eq('id', id)
+    .is('deleted_at', null)
+    .single()
+  if (error) return null
+  return data
 }
 
-export function deleteClient(id) {
-  const clients = getClients().filter((c) => c.id !== id)
-  localStorage.setItem(getKey('clients'), JSON.stringify(clients))
-  deleteAssessments(id)
+export async function deleteClient(id) {
+  // Soft delete for HIPAA compliance
+  const { error } = await supabase
+    .from('clients')
+    .update({ deleted_at: new Date().toISOString() })
+    .eq('id', id)
+  if (error) throw error
 }
 
 /**
- * Assessments — map of skillId → assessment level per client
+ * Assessments — stored as individual rows, returned as a map of skillId → level
  */
-export function saveAssessment(clientId, assessments) {
-  const key = getKey(`assessments_${clientId}`)
-  const existing = getAssessments(clientId)
-  const merged = { ...existing, ...assessments, _updatedAt: Date.now() }
-  localStorage.setItem(key, JSON.stringify(merged))
-  return merged
+export async function saveAssessment(clientId, assessments, userId) {
+  // Build upsert rows from the assessments map
+  const rows = Object.entries(assessments)
+    .filter(([key]) => !key.startsWith('_'))
+    .map(([skillId, level]) => ({
+      client_id: clientId,
+      skill_id: skillId,
+      level,
+      assessed_by: userId,
+      assessed_at: new Date().toISOString(),
+    }))
+
+  if (rows.length === 0) return {}
+
+  const { error } = await supabase
+    .from('assessments')
+    .upsert(rows, { onConflict: 'client_id,skill_id' })
+  if (error) throw error
+
+  return assessments
 }
 
-export function getAssessments(clientId) {
-  const raw = localStorage.getItem(getKey(`assessments_${clientId}`))
-  return raw ? JSON.parse(raw) : {}
+export async function getAssessments(clientId) {
+  const { data, error } = await supabase
+    .from('assessments')
+    .select('skill_id, level')
+    .eq('client_id', clientId)
+  if (error) throw error
+
+  // Convert rows to map: { skillId: level }
+  const map = {}
+  for (const row of data || []) {
+    map[row.skill_id] = row.level
+  }
+  return map
 }
 
-export function deleteAssessments(clientId) {
-  localStorage.removeItem(getKey(`assessments_${clientId}`))
+export async function deleteAssessments(clientId) {
+  const { error } = await supabase
+    .from('assessments')
+    .delete()
+    .eq('client_id', clientId)
+  if (error) throw error
 }
 
 /**
  * Assessment snapshots — for progress timeline
  */
-export function saveSnapshot(clientId, label = '', assessmentsOverride = null) {
-  const snapshots = getSnapshots(clientId)
-  const assessments = assessmentsOverride || getAssessments(clientId)
-  snapshots.push({
-    id: `snap_${Date.now()}`,
-    label,
-    timestamp: Date.now(),
-    assessments: { ...assessments },
-  })
-  localStorage.setItem(getKey(`snapshots_${clientId}`), JSON.stringify(snapshots))
-  return snapshots
+export async function saveSnapshot(clientId, label, data, userId) {
+  const { data: snap, error } = await supabase
+    .from('snapshots')
+    .insert({
+      client_id: clientId,
+      label,
+      data,
+      created_by: userId,
+    })
+    .select()
+    .single()
+  if (error) throw error
+
+  // Return all snapshots for this client
+  return getSnapshots(clientId)
 }
 
-export function getSnapshots(clientId) {
-  const raw = localStorage.getItem(getKey(`snapshots_${clientId}`))
-  return raw ? JSON.parse(raw) : []
+export async function getSnapshots(clientId) {
+  const { data, error } = await supabase
+    .from('snapshots')
+    .select('*')
+    .eq('client_id', clientId)
+    .order('created_at')
+  if (error) throw error
+
+  // Normalize to the shape the frontend expects
+  return (data || []).map((s) => ({
+    id: s.id,
+    label: s.label,
+    timestamp: new Date(s.created_at).getTime(),
+    assessments: s.data,
+  }))
 }
 
-export function deleteSnapshot(clientId, snapshotId) {
-  const snapshots = getSnapshots(clientId).filter((s) => s.id !== snapshotId)
-  localStorage.setItem(getKey(`snapshots_${clientId}`), JSON.stringify(snapshots))
-  return snapshots
-}
+export async function deleteSnapshot(clientId, snapshotId) {
+  const { error } = await supabase
+    .from('snapshots')
+    .delete()
+    .eq('id', snapshotId)
+    .eq('client_id', clientId)
+  if (error) throw error
 
-/**
- * Generate a simple unique ID
- */
-export function generateId() {
-  return `client_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`
+  return getSnapshots(clientId)
 }

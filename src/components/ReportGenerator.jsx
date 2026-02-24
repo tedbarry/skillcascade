@@ -179,9 +179,13 @@ function getSchoolAccommodations(weakSubAreas) {
 /**
  * Generate the HTML report string for download
  */
-function generateReportHTML(type, clientName, assessments, analysis, snapshotComparison) {
+function generateReportHTML(type, clientName, assessments, analysis, snapshotComparison, branding) {
   const date = new Date().toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' })
   const { scores, totalSkills, assessed, needsWork, developing, solid, weakSubAreas, strongSubAreas, cascadeIssues } = analysis
+  const orgName = branding?.orgName || 'SkillCascade'
+  const reportHeader = branding?.reportHeader || 'Confidential — Protected Health Information'
+  const reportFooter = branding?.reportFooter || `${orgName} Assessment Report`
+  const showPoweredBy = branding?.showPoweredBy !== false
 
   const styles = `
     body { font-family: 'Segoe UI', system-ui, -apple-system, sans-serif; color: #2d2d2d; line-height: 1.5; max-width: 800px; margin: 0 auto; padding: 40px; }
@@ -211,8 +215,8 @@ function generateReportHTML(type, clientName, assessments, analysis, snapshotCom
     @media print { body { padding: 0; } }
   `
 
-  let html = `<!DOCTYPE html><html><head><meta charset="utf-8"><title>SkillCascade Report - ${clientName}</title><style>${styles}</style></head><body>`
-  html += `<div class="confidential">Confidential — Protected Health Information</div>`
+  let html = `<!DOCTYPE html><html><head><meta charset="utf-8"><title>${orgName} Report - ${clientName}</title><style>${styles}</style></head><body>`
+  html += `<div class="confidential">${reportHeader}</div>`
 
   if (type === REPORT_TYPES.SCHOOL) {
     html += generateSchoolReport(clientName, date, analysis)
@@ -222,7 +226,7 @@ function generateReportHTML(type, clientName, assessments, analysis, snapshotCom
     html += generateProgressReport(clientName, date, analysis, snapshotComparison)
   }
 
-  html += `<div class="footer"><span>SkillCascade Assessment Report — ${clientName}</span><span>${date}</span></div>`
+  html += `<div class="footer"><span>${reportFooter} — ${clientName}</span><span>${date}${showPoweredBy ? ' • Powered by SkillCascade' : ''}</span></div>`
   html += `</body></html>`
   return html
 }
@@ -449,7 +453,7 @@ function generateProgressReport(clientName, date, analysis, snapshotComparison) 
 /**
  * ReportGenerator component — full-page view for generating audience-specific reports
  */
-export default function ReportGenerator({ assessments, clientName, snapshots, onNavigateToAssess }) {
+export default function ReportGenerator({ assessments, clientName, snapshots, onNavigateToAssess, branding }) {
   const [selectedType, setSelectedType] = useState(null)
   const [compareSnapshotId, setCompareSnapshotId] = useState('')
   const [generating, setGenerating] = useState(false)
@@ -470,7 +474,7 @@ export default function ReportGenerator({ assessments, clientName, snapshots, on
 
     // Small timeout so the UI shows the generating state
     setTimeout(() => {
-      const html = generateReportHTML(selectedType, clientName, assessments, analysis, snapshotComparison)
+      const html = generateReportHTML(selectedType, clientName, assessments, analysis, snapshotComparison, branding)
       setPreviewHTML(html)
       setGenerating(false)
     }, 300)

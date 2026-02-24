@@ -1,4 +1,6 @@
 import { useState, useEffect, useRef, useCallback } from 'react'
+import { supabase } from '../lib/supabase.js'
+import { useAuth } from '../contexts/AuthContext.jsx'
 
 /* ─────────────────────────────────────────────
    SVG Icons (inline, no emoji)
@@ -92,30 +94,27 @@ function dateDividerLabel(timestamp) {
 }
 
 /* ─────────────────────────────────────────────
-   Storage Helpers
+   Supabase Message Helpers
    ───────────────────────────────────────────── */
 
-function storageKey(clientId) {
-  return `skillcascade_messages_${clientId}`
-}
-
-function loadMessages(clientId) {
+async function loadMessages(clientId) {
   if (!clientId) return []
-  try {
-    const raw = localStorage.getItem(storageKey(clientId))
-    return raw ? JSON.parse(raw) : []
-  } catch {
-    return []
-  }
-}
-
-function persistMessages(clientId, messages) {
-  if (!clientId) return
-  localStorage.setItem(storageKey(clientId), JSON.stringify(messages))
-}
-
-function generateId() {
-  return Date.now().toString(36) + Math.random().toString(36).slice(2, 9)
+  const { data, error } = await supabase
+    .from('messages')
+    .select('*, sender:profiles!sender_id(display_name, role)')
+    .eq('client_id', clientId)
+    .order('created_at')
+  if (error) { console.error('Failed to load messages:', error.message); return [] }
+  return (data || []).map((m) => ({
+    id: m.id,
+    sender: m.sender?.display_name || 'Unknown',
+    role: m.sender?.role || 'bcba',
+    text: m.text,
+    timestamp: new Date(m.created_at).getTime(),
+    read: (m.read_by || []).length > 0,
+    read_by: m.read_by || [],
+    sender_id: m.sender_id,
+  }))
 }
 
 /* ─────────────────────────────────────────────
@@ -148,8 +147,9 @@ function groupMessagesByDate(messages) {
 export default function Messaging({
   clientId,
   clientName,
-  currentUser = { name: 'BCBA', role: 'bcba' },
 }) {
+  const { user, profile } = useAuth()
+  const currentUser = { name: profile?.display_name || 'User', role: profile?.role || 'bcba' }
   const [messages, setMessages] = useState([])
   const [inputValue, setInputValue] = useState('')
   const scrollRef = useRef(null)
@@ -163,24 +163,23 @@ export default function Messaging({
       return
     }
 
-    const loaded = loadMessages(clientId)
+    loadMessages(clientId).then((loaded) => {
+      // Mark unread messages as read
+      const unreadIds = loaded
+        .filter((msg) => msg.sender_id !== user?.id && !(msg.read_by || []).includes(user?.id))
+        .map((msg) => msg.id)
 
-    // Mark messages from the other role as read
-    let changed = false
-    const updated = loaded.map((msg) => {
-      if (msg.role !== currentUser.role && !msg.read) {
-        changed = true
-        return { ...msg, read: true }
+      if (unreadIds.length > 0 && user) {
+        // Mark as read in Supabase
+        Promise.all(unreadIds.map((id) =>
+          supabase.rpc('mark_message_read', { message_id: id, reader_id: user.id })
+            .catch(() => {}) // best effort
+        ))
       }
-      return msg
+
+      setMessages(loaded)
     })
-
-    if (changed) {
-      persistMessages(clientId, updated)
-    }
-
-    setMessages(updated)
-  }, [clientId, currentUser.role])
+  }, [clientId, user?.id])
 
   /* ── Auto-scroll to bottom ── */
 
@@ -196,22 +195,37 @@ export default function Messaging({
 
   /* ── Send a message ── */
 
-  function handleSend() {
+  async function handleSend() {
     const text = inputValue.trim()
-    if (!text || !clientId) return
+    if (!text || !clientId || !user) return
 
-    const newMsg = {
-      id: generateId(),
-      sender: currentUser.name,
-      role: currentUser.role,
-      text,
-      timestamp: Date.now(),
-      read: false,
+    const { data, error } = await supabase
+      .from('messages')
+      .insert({
+        client_id: clientId,
+        sender_id: user.id,
+        text,
+      })
+      .select('*, sender:profiles!sender_id(display_name, role)')
+      .single()
+
+    if (error) {
+      console.error('Failed to send message:', error.message)
+      return
     }
 
-    const updated = [...messages, newMsg]
-    setMessages(updated)
-    persistMessages(clientId, updated)
+    const newMsg = {
+      id: data.id,
+      sender: data.sender?.display_name || currentUser.name,
+      role: data.sender?.role || currentUser.role,
+      text: data.text,
+      timestamp: new Date(data.created_at).getTime(),
+      read: false,
+      read_by: [],
+      sender_id: data.sender_id,
+    }
+
+    setMessages((prev) => [...prev, newMsg])
     setInputValue('')
     inputRef.current?.focus()
   }
@@ -223,10 +237,10 @@ export default function Messaging({
     }
   }
 
-  /* ── Unread count (messages from the other role) ── */
+  /* ── Unread count (messages not sent by me) ── */
 
   const unreadCount = messages.filter(
-    (m) => m.role !== currentUser.role && !m.read
+    (m) => m.sender_id !== user?.id && !(m.read_by || []).includes(user?.id)
   ).length
 
   /* ── Grouped items for rendering ── */
@@ -270,7 +284,7 @@ export default function Messaging({
               )}
             </h3>
             <p className="text-[11px] text-warm-400 leading-tight mt-0.5">
-              Messages are stored locally and visible only on this device
+              Secure team messaging — synced across all your devices
             </p>
           </div>
         </div>
@@ -312,7 +326,7 @@ export default function Messaging({
             }
 
             const msg = item.data
-            const isSelf = msg.role === currentUser.role
+            const isSelf = msg.sender_id === user?.id
             const isBcba = msg.role === 'bcba'
 
             return (

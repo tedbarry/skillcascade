@@ -1,9 +1,9 @@
-import { useState, useRef, useMemo } from 'react'
-import { getClients, getAssessments, getSnapshots, saveClient, generateId } from '../data/storage.js'
+import { useState, useRef, useMemo, useEffect, useCallback } from 'react'
+import { getClients, getAssessments, getSnapshots, saveClient, saveAssessment, saveSnapshot } from '../data/storage.js'
 import { framework } from '../data/framework.js'
 import { downloadFile } from '../data/exportUtils.js'
+import { useAuth } from '../contexts/AuthContext.jsx'
 
-const STORAGE_PREFIX = 'skillcascade_'
 const APP_VERSION = '1.0.0'
 
 const EXTERNAL_SYSTEMS = [
@@ -12,38 +12,12 @@ const EXTERNAL_SYSTEMS = [
   { id: 'passage', name: 'Passage', accepts: '.csv,.json,.xlsx' },
 ]
 
-function getStorageUsageKB() {
-  let total = 0
-  for (let i = 0; i < localStorage.length; i++) {
-    const key = localStorage.key(i)
-    if (key.startsWith(STORAGE_PREFIX)) {
-      total += (key.length + (localStorage.getItem(key) || '').length) * 2
-    }
-  }
-  return Math.round(total / 1024 * 100) / 100
-}
-
-function getAllStorageData() {
-  const data = {}
-  for (let i = 0; i < localStorage.length; i++) {
-    const key = localStorage.key(i)
-    if (key.startsWith(STORAGE_PREFIX)) {
-      try {
-        data[key] = JSON.parse(localStorage.getItem(key))
-      } catch {
-        data[key] = localStorage.getItem(key)
-      }
-    }
-  }
-  return data
-}
-
-function generateCSVAllClients(clients) {
+async function generateCSVAllClients(clients) {
   const headers = ['Client Name', 'Domain', 'Sub-Area', 'Skill Group', 'Skill', 'Skill ID', 'Score']
   const rows = [headers]
 
   for (const client of clients) {
-    const assessments = getAssessments(client.id)
+    const assessments = await getAssessments(client.id)
     for (const domain of framework) {
       for (const sa of domain.subAreas) {
         for (const sg of sa.skillGroups) {
@@ -195,17 +169,30 @@ function FileDropZone({ accept, onFile, label, disabled }) {
    ───────────────────────────────────────────── */
 
 export default function DataPortability({ onImportComplete }) {
-  const [clients, setClients] = useState(() => getClients())
+  const { profile } = useAuth()
+  const orgId = profile?.org_id
+  const [clients, setClients] = useState([])
   const [selectedClientId, setSelectedClientId] = useState('')
   const [status, setStatus] = useState(null)
   const [clearConfirmText, setClearConfirmText] = useState('')
   const [showClearConfirm, setShowClearConfirm] = useState(false)
-  const [lastBackup, setLastBackup] = useState(() => localStorage.getItem(STORAGE_PREFIX + 'last_backup') || null)
+  const [lastBackup, setLastBackup] = useState(() => localStorage.getItem('skillcascade_last_backup') || null)
   const [mappingPreview, setMappingPreview] = useState(null)
+  const [dataSummary, setDataSummary] = useState({ clients: 0, assessments: 0, snapshots: 0 })
 
-  function refreshClients() {
-    setClients(getClients())
-  }
+  const refreshClients = useCallback(async () => {
+    if (!orgId) return
+    try {
+      const data = await getClients(orgId)
+      setClients(data)
+    } catch (err) {
+      console.error('Failed to load clients:', err.message)
+    }
+  }, [orgId])
+
+  useEffect(() => {
+    refreshClients()
+  }, [refreshClients])
 
   function showStatus(message, type = 'success') {
     setStatus({ message, type })
@@ -214,95 +201,104 @@ export default function DataPortability({ onImportComplete }) {
 
   /* ── Data Summary ── */
 
-  const dataSummary = useMemo(() => {
-    const cl = clients.length
-    let totalAssessments = 0
-    let totalSnapshots = 0
-    for (const c of clients) {
-      const a = getAssessments(c.id)
-      const assessed = Object.keys(a).filter((k) => !k.startsWith('_')).length
-      if (assessed > 0) totalAssessments++
-      totalSnapshots += getSnapshots(c.id).length
+  useEffect(() => {
+    async function computeSummary() {
+      let totalAssessments = 0
+      let totalSnapshots = 0
+      for (const c of clients) {
+        const a = await getAssessments(c.id)
+        const assessed = Object.keys(a).filter((k) => !k.startsWith('_')).length
+        if (assessed > 0) totalAssessments++
+        const snaps = await getSnapshots(c.id)
+        totalSnapshots += snaps.length
+      }
+      setDataSummary({ clients: clients.length, assessments: totalAssessments, snapshots: totalSnapshots })
     }
-    return {
-      clients: cl,
-      assessments: totalAssessments,
-      snapshots: totalSnapshots,
-      storageKB: getStorageUsageKB(),
-    }
+    computeSummary()
   }, [clients])
 
   /* ── Full Backup Export ── */
 
-  function handleFullExport() {
-    const allData = getAllStorageData()
-    const bundle = {
-      _meta: {
-        exportDate: new Date().toISOString(),
-        exportVersion: 2,
-        appVersion: APP_VERSION,
-        type: 'full_backup',
-      },
-      data: allData,
+  async function handleFullExport() {
+    try {
+      const clientsWithData = await Promise.all(clients.map(async (c) => ({
+        ...c,
+        assessments: await getAssessments(c.id),
+        snapshots: await getSnapshots(c.id),
+      })))
+
+      const bundle = {
+        _meta: {
+          exportDate: new Date().toISOString(),
+          exportVersion: 3,
+          appVersion: APP_VERSION,
+          type: 'full_backup',
+        },
+        clients: clientsWithData,
+      }
+      const json = JSON.stringify(bundle, null, 2)
+      const date = new Date().toISOString().slice(0, 10)
+      downloadFile(json, `skillcascade-backup-${date}.json`, 'application/json')
+      localStorage.setItem('skillcascade_last_backup', new Date().toISOString())
+      setLastBackup(new Date().toISOString())
+      showStatus('Full backup exported successfully')
+    } catch (err) {
+      showStatus('Export failed: ' + err.message, 'error')
     }
-    const json = JSON.stringify(bundle, null, 2)
-    const date = new Date().toISOString().slice(0, 10)
-    downloadFile(json, `skillcascade-backup-${date}.json`, 'application/json')
-    localStorage.setItem(STORAGE_PREFIX + 'last_backup', new Date().toISOString())
-    setLastBackup(new Date().toISOString())
-    showStatus('Full backup exported successfully')
   }
 
   /* ── Full Backup Import ── */
 
   function handleFullImport(file) {
     const reader = new FileReader()
-    reader.onload = (e) => {
+    reader.onload = async (e) => {
       try {
         const parsed = JSON.parse(e.target.result)
 
-        if (!parsed._meta || !parsed.data) {
-          showStatus('Invalid backup file: missing metadata or data', 'error')
-          return
-        }
-
-        if (parsed._meta.type !== 'full_backup') {
-          showStatus('This file is not a full backup. Use Per-Client import instead.', 'error')
+        if (!parsed._meta || !parsed.clients) {
+          showStatus('Invalid backup file format', 'error')
           return
         }
 
         let imported = 0
         let skipped = 0
-        const existingClients = getClients()
-        const existingNames = new Set(existingClients.map((c) => c.name.toLowerCase()))
+        const existingNames = new Set(clients.map((c) => c.name.toLowerCase()))
+        const userId = profile?.id
 
-        for (const [key, value] of Object.entries(parsed.data)) {
-          if (key === STORAGE_PREFIX + 'clients') {
-            const incomingClients = Array.isArray(value) ? value : []
-            for (const ic of incomingClients) {
-              if (existingNames.has(ic.name.toLowerCase())) {
-                skipped++
-              } else {
-                saveClient(ic)
-                existingNames.add(ic.name.toLowerCase())
-                imported++
+        for (const ic of parsed.clients) {
+          if (existingNames.has(ic.name.toLowerCase())) {
+            skipped++
+          } else {
+            const newClient = await saveClient({ name: ic.name }, orgId)
+            existingNames.add(ic.name.toLowerCase())
+
+            // Import assessments if present
+            if (ic.assessments && Object.keys(ic.assessments).length > 0 && userId) {
+              const assessmentMap = {}
+              for (const [key, val] of Object.entries(ic.assessments)) {
+                if (!key.startsWith('_')) assessmentMap[key] = val
+              }
+              if (Object.keys(assessmentMap).length > 0) {
+                await saveAssessment(newClient.id, assessmentMap, userId)
               }
             }
-          } else if (key.startsWith(STORAGE_PREFIX + 'assessments_') || key.startsWith(STORAGE_PREFIX + 'snapshots_')) {
-            const clientId = key.replace(STORAGE_PREFIX + 'assessments_', '').replace(STORAGE_PREFIX + 'snapshots_', '')
-            const allClients = getClients()
-            const clientExists = allClients.some((c) => c.id === clientId)
-            if (clientExists) {
-              localStorage.setItem(key, JSON.stringify(value))
+
+            // Import snapshots if present
+            if (ic.snapshots && Array.isArray(ic.snapshots) && userId) {
+              for (const snap of ic.snapshots) {
+                const snapData = snap.assessments || snap.data || {}
+                const snapLabel = snap.label || 'Imported snapshot'
+                await saveSnapshot(newClient.id, snapLabel, snapData, userId)
+              }
             }
-          } else {
-            localStorage.setItem(key, typeof value === 'string' ? value : JSON.stringify(value))
+
+            imported++
           }
         }
 
-        refreshClients()
+        await refreshClients()
         onImportComplete?.()
-        showStatus(`Import complete: ${imported} client(s) added, ${skipped} duplicate(s) skipped`)
+        showStatus(`Import complete: ${imported} client(s) added with assessments & snapshots, ${skipped} duplicate(s) skipped`)
       } catch (err) {
         showStatus('Failed to parse backup file: ' + err.message, 'error')
       }
@@ -312,27 +308,31 @@ export default function DataPortability({ onImportComplete }) {
 
   /* ── Per-Client Export ── */
 
-  function handleClientExport() {
+  async function handleClientExport() {
     if (!selectedClientId) return
     const client = clients.find((c) => c.id === selectedClientId)
     if (!client) return
 
-    const bundle = {
-      _meta: {
-        exportDate: new Date().toISOString(),
-        exportVersion: 2,
-        appVersion: APP_VERSION,
-        type: 'client_export',
-      },
-      client,
-      assessments: getAssessments(client.id),
-      snapshots: getSnapshots(client.id),
-    }
+    try {
+      const bundle = {
+        _meta: {
+          exportDate: new Date().toISOString(),
+          exportVersion: 3,
+          appVersion: APP_VERSION,
+          type: 'client_export',
+        },
+        client,
+        assessments: await getAssessments(client.id),
+        snapshots: await getSnapshots(client.id),
+      }
 
-    const safeName = client.name.replace(/[^a-zA-Z0-9]/g, '-').toLowerCase()
-    const json = JSON.stringify(bundle, null, 2)
-    downloadFile(json, `skillcascade-client-${safeName}.json`, 'application/json')
-    showStatus(`Exported data for ${client.name}`)
+      const safeName = client.name.replace(/[^a-zA-Z0-9]/g, '-').toLowerCase()
+      const json = JSON.stringify(bundle, null, 2)
+      downloadFile(json, `skillcascade-client-${safeName}.json`, 'application/json')
+      showStatus(`Exported data for ${client.name}`)
+    } catch (err) {
+      showStatus('Export failed: ' + err.message, 'error')
+    }
   }
 
   /* ── External System File Handler ── */
@@ -381,57 +381,60 @@ export default function DataPortability({ onImportComplete }) {
 
   /* ── CSV Export (All Clients) ── */
 
-  function handleCSVExport() {
+  async function handleCSVExport() {
     if (clients.length === 0) {
       showStatus('No clients to export', 'error')
       return
     }
-    const csv = generateCSVAllClients(clients)
-    const date = new Date().toISOString().slice(0, 10)
-    downloadFile(csv, `skillcascade-all-clients-${date}.csv`, 'text/csv;charset=utf-8;')
-    showStatus('CSV export complete')
+    try {
+      const csv = await generateCSVAllClients(clients)
+      const date = new Date().toISOString().slice(0, 10)
+      downloadFile(csv, `skillcascade-all-clients-${date}.csv`, 'text/csv;charset=utf-8;')
+      showStatus('CSV export complete')
+    } catch (err) {
+      showStatus('CSV export failed: ' + err.message, 'error')
+    }
   }
 
   /* ── JSON Export (All Clients) ── */
 
-  function handleJSONExport() {
+  async function handleJSONExport() {
     if (clients.length === 0) {
       showStatus('No clients to export', 'error')
       return
     }
-    const bundle = {
-      _meta: {
-        exportDate: new Date().toISOString(),
-        exportVersion: 2,
-        appVersion: APP_VERSION,
-        type: 'all_clients_export',
-      },
-      clients: clients.map((c) => ({
+    try {
+      const clientsWithData = await Promise.all(clients.map(async (c) => ({
         ...c,
-        assessments: getAssessments(c.id),
-        snapshots: getSnapshots(c.id),
-      })),
+        assessments: await getAssessments(c.id),
+        snapshots: await getSnapshots(c.id),
+      })))
+
+      const bundle = {
+        _meta: {
+          exportDate: new Date().toISOString(),
+          exportVersion: 3,
+          appVersion: APP_VERSION,
+          type: 'all_clients_export',
+        },
+        clients: clientsWithData,
+      }
+      const date = new Date().toISOString().slice(0, 10)
+      downloadFile(JSON.stringify(bundle, null, 2), `skillcascade-all-clients-${date}.json`, 'application/json')
+      showStatus('JSON export complete')
+    } catch (err) {
+      showStatus('JSON export failed: ' + err.message, 'error')
     }
-    const date = new Date().toISOString().slice(0, 10)
-    downloadFile(JSON.stringify(bundle, null, 2), `skillcascade-all-clients-${date}.json`, 'application/json')
-    showStatus('JSON export complete')
   }
 
   /* ── Clear All Data ── */
+  // Note: This is now a dangerous operation. In production, this should be admin-only.
 
   function handleClearAll() {
     if (clearConfirmText !== 'DELETE') return
-    const keysToRemove = []
-    for (let i = 0; i < localStorage.length; i++) {
-      const key = localStorage.key(i)
-      if (key.startsWith(STORAGE_PREFIX)) keysToRemove.push(key)
-    }
-    keysToRemove.forEach((k) => localStorage.removeItem(k))
+    showStatus('Data deletion must be performed by an admin through the Supabase dashboard for HIPAA compliance.', 'error')
     setShowClearConfirm(false)
     setClearConfirmText('')
-    refreshClients()
-    onImportComplete?.()
-    showStatus('All data cleared')
   }
 
   /* ─────────────────────────────────────────────
@@ -643,12 +646,11 @@ export default function DataPortability({ onImportComplete }) {
           </h3>
         </div>
         <div className="p-5">
-          <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 mb-5">
+          <div className="grid grid-cols-2 sm:grid-cols-3 gap-4 mb-5">
             {[
               { label: 'Clients', value: dataSummary.clients },
               { label: 'Assessments', value: dataSummary.assessments },
               { label: 'Snapshots', value: dataSummary.snapshots },
-              { label: 'Storage Used', value: `${dataSummary.storageKB} KB` },
             ].map((stat) => (
               <div key={stat.label} className="text-center p-3 bg-warm-50 rounded-lg">
                 <div className="text-lg font-semibold text-warm-800">{stat.value}</div>

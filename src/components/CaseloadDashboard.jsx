@@ -1,6 +1,7 @@
-import { useState, useMemo } from 'react'
+import { useState, useMemo, useEffect } from 'react'
 import { getClients, getAssessments } from '../data/storage.js'
 import { framework, ASSESSMENT_LEVELS, getDomainScores } from '../data/framework.js'
+import { useAuth } from '../contexts/AuthContext.jsx'
 
 /* ─────────────────────────────────────────────
    Constants
@@ -118,56 +119,73 @@ function scoreBarColor(score) {
    ───────────────────────────────────────────── */
 
 export default function CaseloadDashboard({ currentClientId, onSelectClient }) {
+  const { profile } = useAuth()
   const [sortBy, setSortBy] = useState('name')
   const [filterBy, setFilterBy] = useState('all')
+  const [clientData, setClientData] = useState([])
+  const [dataLoading, setDataLoading] = useState(true)
 
-  /* ── Compute enriched client data ── */
+  /* ── Load and enrich client data ── */
 
-  const clientData = useMemo(() => {
-    const clients = getClients()
-    const now = Date.now()
+  useEffect(() => {
+    if (!profile?.org_id) return
 
-    return clients.map((client) => {
-      const assessments = getAssessments(client.id)
-      const domainScores = getDomainScores(assessments)
+    async function loadAll() {
+      try {
+        const clients = await getClients(profile.org_id)
+        const now = Date.now()
 
-      // Count assessed skills (non-zero entries, excluding metadata keys)
-      let assessedCount = 0
-      for (const key of Object.keys(assessments)) {
-        if (key.startsWith('_')) continue
-        if (assessments[key] !== ASSESSMENT_LEVELS.NOT_ASSESSED) assessedCount++
+        const enriched = await Promise.all(clients.map(async (client) => {
+          const assessments = await getAssessments(client.id)
+          const domainScores = getDomainScores(assessments)
+
+          // Count assessed skills (non-zero entries, excluding metadata keys)
+          let assessedCount = 0
+          for (const key of Object.keys(assessments)) {
+            if (key.startsWith('_')) continue
+            if (assessments[key] !== ASSESSMENT_LEVELS.NOT_ASSESSED) assessedCount++
+          }
+
+          const completion = TOTAL_SKILLS > 0
+            ? Math.round((assessedCount / TOTAL_SKILLS) * 100)
+            : 0
+
+          // Alert counts
+          const domainsNeedsWork = domainScores.filter(
+            (d) => d.assessed > 0 && d.score < 1.5
+          ).length
+          const domainsDeveloping = domainScores.filter(
+            (d) => d.assessed > 0 && d.score >= 1.5 && d.score < 2.0
+          ).length
+
+          const updatedAt = new Date(client.updated_at || client.created_at).getTime() || 0
+          const daysSinceUpdate = Math.floor((now - updatedAt) / (1000 * 60 * 60 * 24))
+
+          return {
+            ...client,
+            assessments,
+            domainScores,
+            assessedCount,
+            completion,
+            domainsNeedsWork,
+            domainsDeveloping,
+            alertCount: domainsNeedsWork + domainsDeveloping,
+            updatedAt,
+            daysSinceUpdate,
+            isStale: daysSinceUpdate > 30,
+          }
+        }))
+
+        setClientData(enriched)
+      } catch (err) {
+        console.error('Failed to load caseload data:', err.message)
+      } finally {
+        setDataLoading(false)
       }
+    }
 
-      const completion = TOTAL_SKILLS > 0
-        ? Math.round((assessedCount / TOTAL_SKILLS) * 100)
-        : 0
-
-      // Alert counts
-      const domainsNeedsWork = domainScores.filter(
-        (d) => d.assessed > 0 && d.score < 1.5
-      ).length
-      const domainsDeveloping = domainScores.filter(
-        (d) => d.assessed > 0 && d.score >= 1.5 && d.score < 2.0
-      ).length
-
-      const updatedAt = client.updatedAt || client.createdAt || 0
-      const daysSinceUpdate = Math.floor((now - updatedAt) / (1000 * 60 * 60 * 24))
-
-      return {
-        ...client,
-        assessments,
-        domainScores,
-        assessedCount,
-        completion,
-        domainsNeedsWork,
-        domainsDeveloping,
-        alertCount: domainsNeedsWork + domainsDeveloping,
-        updatedAt,
-        daysSinceUpdate,
-        isStale: daysSinceUpdate > 30,
-      }
-    })
-  }, [])
+    loadAll()
+  }, [profile?.org_id])
 
   /* ── Filter ── */
 
@@ -235,7 +253,16 @@ export default function CaseloadDashboard({ currentClientId, onSelectClient }) {
     return `${Math.floor(days / 30)}mo ago`
   }
 
-  /* ── Empty state ── */
+  /* ── Loading / Empty state ── */
+
+  if (dataLoading) {
+    return (
+      <div className="max-w-lg mx-auto py-16 px-6 text-center">
+        <div className="w-6 h-6 border-2 border-warm-200 border-t-sage-500 rounded-full animate-spin mx-auto mb-4" />
+        <p className="text-warm-500 text-sm">Loading caseload...</p>
+      </div>
+    )
+  }
 
   if (clientData.length === 0) {
     return (

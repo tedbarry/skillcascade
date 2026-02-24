@@ -1,10 +1,11 @@
-import { useState, useMemo } from 'react'
+import { useState, useMemo, useEffect } from 'react'
 import {
   BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer,
   PieChart, Pie, Cell, LineChart, Line,
 } from 'recharts'
 import { getClients, getAssessments, getSnapshots } from '../data/storage.js'
 import { framework, ASSESSMENT_LEVELS, getDomainScores } from '../data/framework.js'
+import { useAuth } from '../contexts/AuthContext.jsx'
 
 /* ─────────────────────────────────────────────
    Constants
@@ -155,53 +156,68 @@ function ChartTooltip({ active, payload, label, suffix }) {
    ───────────────────────────────────────────── */
 
 export default function OrgAnalytics() {
+  const { profile } = useAuth()
   const [tableSortKey, setTableSortKey] = useState('name')
   const [tableSortDir, setTableSortDir] = useState('asc')
+  const [orgData, setOrgData] = useState([])
+  const [dataLoading, setDataLoading] = useState(true)
 
   /* ── Load and enrich all client data ── */
 
-  const orgData = useMemo(() => {
-    const clients = getClients()
+  useEffect(() => {
+    if (!profile?.org_id) return
 
-    const enriched = clients.map((client) => {
-      const assessments = getAssessments(client.id)
-      const snapshots = getSnapshots(client.id)
-      const domainScores = getDomainScores(assessments)
-      const assessedCount = countAssessed(assessments)
-      const avgScore = computeAvgScore(assessments)
-      const completion = TOTAL_SKILLS > 0
-        ? Math.round((assessedCount / TOTAL_SKILLS) * 100)
-        : 0
-      const domainsAtRisk = domainScores.filter(
-        (d) => d.assessed > 0 && d.score < 1.5
-      ).length
-      const updatedAt = assessments._updatedAt || client.updatedAt || client.createdAt || 0
+    async function loadAll() {
+      try {
+        const clients = await getClients(profile.org_id)
 
-      // Determine improvement: compare latest snapshot avg to previous
-      let improving = null
-      if (snapshots.length >= 2) {
-        const sorted = [...snapshots].sort((a, b) => a.timestamp - b.timestamp)
-        const prevAvg = computeAvgScore(sorted[sorted.length - 2].assessments)
-        const latestAvg = computeAvgScore(sorted[sorted.length - 1].assessments)
-        improving = latestAvg > prevAvg ? 'up' : latestAvg < prevAvg ? 'down' : 'same'
+        const enriched = await Promise.all(clients.map(async (client) => {
+          const assessments = await getAssessments(client.id)
+          const snapshots = await getSnapshots(client.id)
+          const domainScores = getDomainScores(assessments)
+          const assessedCount = countAssessed(assessments)
+          const avgScore = computeAvgScore(assessments)
+          const completion = TOTAL_SKILLS > 0
+            ? Math.round((assessedCount / TOTAL_SKILLS) * 100)
+            : 0
+          const domainsAtRisk = domainScores.filter(
+            (d) => d.assessed > 0 && d.score < 1.5
+          ).length
+          const updatedAt = new Date(client.updated_at || client.created_at).getTime() || 0
+
+          // Determine improvement: compare latest snapshot avg to previous
+          let improving = null
+          if (snapshots.length >= 2) {
+            const sorted = [...snapshots].sort((a, b) => a.timestamp - b.timestamp)
+            const prevAvg = computeAvgScore(sorted[sorted.length - 2].assessments)
+            const latestAvg = computeAvgScore(sorted[sorted.length - 1].assessments)
+            improving = latestAvg > prevAvg ? 'up' : latestAvg < prevAvg ? 'down' : 'same'
+          }
+
+          return {
+            ...client,
+            assessments,
+            snapshots,
+            domainScores,
+            assessedCount,
+            avgScore,
+            completion,
+            domainsAtRisk,
+            updatedAt,
+            improving,
+          }
+        }))
+
+        setOrgData(enriched)
+      } catch (err) {
+        console.error('Failed to load org data:', err.message)
+      } finally {
+        setDataLoading(false)
       }
+    }
 
-      return {
-        ...client,
-        assessments,
-        snapshots,
-        domainScores,
-        assessedCount,
-        avgScore,
-        completion,
-        domainsAtRisk,
-        updatedAt,
-        improving,
-      }
-    })
-
-    return enriched
-  }, [])
+    loadAll()
+  }, [profile?.org_id])
 
   /* ── KPI calculations ── */
 
@@ -403,7 +419,16 @@ export default function OrgAnalytics() {
     )
   }
 
-  /* ── Empty state ── */
+  /* ── Loading / Empty state ── */
+
+  if (dataLoading) {
+    return (
+      <div className="max-w-lg mx-auto py-16 px-6 text-center">
+        <div className="w-6 h-6 border-2 border-warm-200 border-t-sage-500 rounded-full animate-spin mx-auto mb-4" />
+        <p className="text-warm-500 text-sm">Loading organization data...</p>
+      </div>
+    )
+  }
 
   if (orgData.length === 0) {
     return (

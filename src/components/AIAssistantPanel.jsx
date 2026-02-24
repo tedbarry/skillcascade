@@ -729,34 +729,94 @@ export default function AIAssistantPanel({ isOpen, onClose, clientName, assessme
   }, [isOpen, onClose])
 
   const handleQuickAction = useCallback(
-    (action) => {
+    async (action) => {
       const userMsg = {
         id: `user-${Date.now()}`,
         role: 'user',
         content: action,
       }
 
-      const previewContent = generatePreviewResponse(
-        selectedToolId,
-        action,
-        clientName || 'this client',
-        assessments || {}
-      )
-
-      const aiMsg = {
-        id: `ai-${Date.now()}`,
-        role: 'assistant',
-        content: previewContent,
+      if (isApiConnected) {
+        setMessages((prev) => [...prev, userMsg])
+        setIsLoading(true)
+        try {
+          const response = await callOpenAI(action, messages)
+          const aiMsg = { id: `ai-${Date.now()}`, role: 'assistant', content: response }
+          setMessages((prev) => [...prev, aiMsg])
+        } catch (err) {
+          const errorMsg = { id: `error-${Date.now()}`, role: 'system', content: `Error: ${err.message}` }
+          setMessages((prev) => [...prev, errorMsg])
+        } finally {
+          setIsLoading(false)
+        }
+      } else {
+        const previewContent = generatePreviewResponse(
+          selectedToolId, action, clientName || 'this client', assessments || {}
+        )
+        const aiMsg = { id: `ai-${Date.now()}`, role: 'assistant', content: previewContent }
+        setMessages((prev) => [...prev, userMsg, aiMsg])
       }
-
-      setMessages((prev) => [...prev, userMsg, aiMsg])
     },
-    [selectedToolId, clientName, assessments]
+    [selectedToolId, clientName, assessments, isApiConnected, messages]
   )
 
-  const handleSendMessage = useCallback(() => {
+  const [isLoading, setIsLoading] = useState(false)
+  const [showKeyInput, setShowKeyInput] = useState(false)
+  const [keyDraft, setKeyDraft] = useState('')
+
+  function handleSaveKey() {
+    const key = keyDraft.trim()
+    if (key) {
+      localStorage.setItem('skillcascade_ai_api_key', key)
+      setIsApiConnected(true)
+    } else {
+      localStorage.removeItem('skillcascade_ai_api_key')
+      setIsApiConnected(false)
+    }
+    setShowKeyInput(false)
+    setKeyDraft('')
+  }
+
+  async function callOpenAI(userText, history) {
+    const apiKey = localStorage.getItem('skillcascade_ai_api_key')
+    if (!apiKey) throw new Error('No API key configured')
+
+    const systemPrompt = buildSystemPrompt(selectedToolId, clientName || 'this client', assessments || {})
+
+    const apiMessages = [
+      { role: 'system', content: systemPrompt },
+      ...history
+        .filter((m) => m.role === 'user' || m.role === 'assistant')
+        .map((m) => ({ role: m.role, content: m.content })),
+      { role: 'user', content: userText },
+    ]
+
+    const res = await fetch('https://api.openai.com/v1/chat/completions', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${apiKey}`,
+      },
+      body: JSON.stringify({
+        model: 'gpt-4o-mini',
+        messages: apiMessages,
+        max_tokens: 2000,
+        temperature: 0.7,
+      }),
+    })
+
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({}))
+      throw new Error(err.error?.message || `API error: ${res.status}`)
+    }
+
+    const data = await res.json()
+    return data.choices?.[0]?.message?.content || 'No response generated.'
+  }
+
+  const handleSendMessage = useCallback(async () => {
     const text = inputValue.trim()
-    if (!text) return
+    if (!text || isLoading) return
 
     const userMsg = {
       id: `user-${Date.now()}`,
@@ -767,23 +827,35 @@ export default function AIAssistantPanel({ isOpen, onClose, clientName, assessme
     setInputValue('')
 
     if (isApiConnected) {
-      // Future: actual API call would go here
-      // For now, still show preview
-      const aiMsg = {
-        id: `ai-${Date.now()}`,
-        role: 'assistant',
-        content: `[API integration pending] I received your message: "${text}"\n\nThe system prompt for ${selectedTool?.name} has been prepared with ${clientName}'s assessment data (${assessmentProgress}% assessed). When the API connection is implemented, this tool will process your request using the full prompt context.`,
+      setMessages((prev) => [...prev, userMsg])
+      setIsLoading(true)
+
+      try {
+        const response = await callOpenAI(text, messages)
+        const aiMsg = {
+          id: `ai-${Date.now()}`,
+          role: 'assistant',
+          content: response,
+        }
+        setMessages((prev) => [...prev, aiMsg])
+      } catch (err) {
+        const errorMsg = {
+          id: `error-${Date.now()}`,
+          role: 'system',
+          content: `Error: ${err.message}. Check your API key in the connection bar below.`,
+        }
+        setMessages((prev) => [...prev, errorMsg])
+      } finally {
+        setIsLoading(false)
       }
-      setMessages((prev) => [...prev, userMsg, aiMsg])
     } else {
-      // Find the closest matching action or use generic preview
       const closestAction = selectedTool?.actions?.find((a) =>
         text.toLowerCase().includes(a.toLowerCase().split(' ')[0])
       )
 
       const previewContent = closestAction
         ? generatePreviewResponse(selectedToolId, closestAction, clientName || 'this client', assessments || {})
-        : `I understand you're asking about "${text}" in the context of ${selectedTool?.name}. This is preview mode -- connect an API key in settings to get full AI-powered responses.\n\nIn the meantime, try one of the quick actions above to see what this tool can do with ${clientName}'s assessment data (${assessmentProgress}% assessed).`
+        : `I understand you're asking about "${text}" in the context of ${selectedTool?.name}. This is preview mode -- connect an API key below to get full AI-powered responses.\n\nIn the meantime, try one of the quick actions above to see what this tool can do with ${clientName}'s assessment data (${assessmentProgress}% assessed).`
 
       const aiMsg = {
         id: `ai-${Date.now()}`,
@@ -793,7 +865,7 @@ export default function AIAssistantPanel({ isOpen, onClose, clientName, assessme
 
       setMessages((prev) => [...prev, userMsg, aiMsg])
     }
-  }, [inputValue, isApiConnected, selectedToolId, selectedTool, clientName, assessments, assessmentProgress])
+  }, [inputValue, isLoading, isApiConnected, selectedToolId, selectedTool, clientName, assessments, assessmentProgress, messages])
 
   const handleKeyDown = useCallback(
     (e) => {
@@ -907,6 +979,18 @@ export default function AIAssistantPanel({ isOpen, onClose, clientName, assessme
           {messages.map((msg) => (
             <ChatMessage key={msg.id} message={msg} />
           ))}
+          {isLoading && (
+            <div className="flex justify-start mb-3">
+              <div className="bg-white text-warm-500 border border-warm-200 shadow-sm rounded-xl rounded-bl-sm px-4 py-3 text-sm">
+                <div className="flex items-center gap-2">
+                  <div className="w-2 h-2 bg-sage-400 rounded-full animate-pulse" />
+                  <div className="w-2 h-2 bg-sage-400 rounded-full animate-pulse" style={{ animationDelay: '0.2s' }} />
+                  <div className="w-2 h-2 bg-sage-400 rounded-full animate-pulse" style={{ animationDelay: '0.4s' }} />
+                  <span className="text-xs text-warm-400 ml-1">Thinking...</span>
+                </div>
+              </div>
+            </div>
+          )}
           <div ref={messagesEndRef} />
         </div>
 
@@ -943,25 +1027,65 @@ export default function AIAssistantPanel({ isOpen, onClose, clientName, assessme
         </div>
 
         {/* ── Connection Status ── */}
-        <div className={`shrink-0 px-4 py-2.5 border-t text-xs flex items-center gap-2 ${
-          isApiConnected
-            ? 'bg-sage-50 border-sage-200 text-sage-600'
-            : 'bg-warm-100 border-warm-200 text-warm-500'
+        <div className={`shrink-0 border-t text-xs ${
+          isApiConnected ? 'bg-sage-50 border-sage-200' : 'bg-warm-100 border-warm-200'
         }`}>
-          {isApiConnected ? (
-            <>
-              <CheckIcon />
-              <span className="font-medium">Connected</span>
-              <span className="text-sage-400">— AI responses enabled</span>
-            </>
+          {showKeyInput ? (
+            <div className="px-4 py-3 space-y-2">
+              <label className="block text-xs font-medium text-warm-600">OpenAI API Key</label>
+              <div className="flex gap-2">
+                <input
+                  type="password"
+                  value={keyDraft}
+                  onChange={(e) => setKeyDraft(e.target.value)}
+                  placeholder="sk-..."
+                  className="flex-1 text-xs px-3 py-1.5 rounded-lg border border-warm-200 bg-white text-warm-700 focus:outline-none focus:border-sage-400"
+                  onKeyDown={(e) => e.key === 'Enter' && handleSaveKey()}
+                />
+                <button
+                  onClick={handleSaveKey}
+                  className="px-3 py-1.5 text-xs font-medium rounded-lg bg-sage-500 text-white hover:bg-sage-600"
+                >
+                  Save
+                </button>
+                <button
+                  onClick={() => { setShowKeyInput(false); setKeyDraft('') }}
+                  className="px-3 py-1.5 text-xs font-medium rounded-lg border border-warm-200 text-warm-500 hover:bg-warm-50"
+                >
+                  Cancel
+                </button>
+              </div>
+              <p className="text-[10px] text-warm-400">Key is stored in your browser only. Never sent to our servers.</p>
+            </div>
           ) : (
-            <>
-              <WarningIcon />
-              <span>
-                <span className="font-medium">AI not connected</span>
-                <span className="text-warm-400"> — preview mode. Configure API key in settings to enable.</span>
-              </span>
-            </>
+            <div className="px-4 py-2.5 flex items-center gap-2">
+              {isApiConnected ? (
+                <>
+                  <CheckIcon />
+                  <span className="font-medium text-sage-600">Connected</span>
+                  <span className="text-sage-400">— AI responses enabled</span>
+                  <button
+                    onClick={() => setShowKeyInput(true)}
+                    className="ml-auto text-[10px] text-sage-400 hover:text-sage-600 underline"
+                  >
+                    Change key
+                  </button>
+                </>
+              ) : (
+                <>
+                  <WarningIcon />
+                  <span className="text-warm-500">
+                    <span className="font-medium">Preview mode</span>
+                  </span>
+                  <button
+                    onClick={() => setShowKeyInput(true)}
+                    className="ml-auto text-[10px] font-medium text-sage-600 hover:text-sage-700 underline"
+                  >
+                    Add API key
+                  </button>
+                </>
+              )}
+            </div>
           )}
         </div>
       </div>

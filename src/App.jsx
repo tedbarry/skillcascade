@@ -1,7 +1,11 @@
 import { lazy, Suspense } from 'react'
 import { Routes, Route } from 'react-router-dom'
+import { AuthProvider } from './contexts/AuthContext.jsx'
+import ProtectedRoute from './components/ProtectedRoute.jsx'
 
 const Landing = lazy(() => import('./pages/Landing.jsx'))
+const Login = lazy(() => import('./pages/Login.jsx'))
+const Signup = lazy(() => import('./pages/Signup.jsx'))
 const Dashboard = lazy(() => import('./pages/Dashboard.jsx'))
 const Profile = lazy(() => import('./pages/Profile.jsx'))
 
@@ -20,12 +24,30 @@ function LoadingSpinner() {
 
 export default function App() {
   return (
-    <Suspense fallback={<LoadingSpinner />}>
-      <Routes>
-        <Route path="/" element={<Landing />} />
-        <Route path="/dashboard" element={<Dashboard />} />
-        <Route path="/profile/:clientId?" element={<Profile />} />
-      </Routes>
-    </Suspense>
+    <AuthProvider>
+      <Suspense fallback={<LoadingSpinner />}>
+        <Routes>
+          <Route path="/" element={<Landing />} />
+          <Route path="/login" element={<Login />} />
+          <Route path="/signup" element={<Signup />} />
+          <Route
+            path="/dashboard"
+            element={
+              <ProtectedRoute>
+                <Dashboard />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/profile/:clientId?"
+            element={
+              <ProtectedRoute>
+                <Profile />
+              </ProtectedRoute>
+            }
+          />
+        </Routes>
+      </Suspense>
+    </AuthProvider>
   )
 }

@@ -1,47 +1,76 @@
-import { useState } from 'react'
-import { getClients, saveClient, deleteClient, getAssessments, saveAssessment, generateId } from '../data/storage.js'
+import { useState, useEffect, useCallback } from 'react'
+import { getClients, saveClient, deleteClient, getAssessments, saveAssessment } from '../data/storage.js'
+import { useAuth } from '../contexts/AuthContext.jsx'
 
 export default function ClientManager({ currentClientId, onSelectClient, assessments, onSaveSuccess }) {
   const [isOpen, setIsOpen] = useState(false)
-  const [clients, setClients] = useState(() => getClients())
+  const [clients, setClients] = useState([])
   const [newName, setNewName] = useState('')
   const [confirmDelete, setConfirmDelete] = useState(null)
+  const [loading, setLoading] = useState(true)
+  const { profile, user } = useAuth()
 
-  function refreshClients() {
-    setClients(getClients())
-  }
+  const orgId = profile?.org_id
 
-  function handleCreate() {
-    if (!newName.trim()) return
-    const client = {
-      id: generateId(),
-      name: newName.trim(),
+  const refreshClients = useCallback(async () => {
+    if (!orgId) { setLoading(false); return }
+    try {
+      const data = await getClients(orgId)
+      setClients(data)
+    } catch (err) {
+      console.error('Failed to load clients:', err.message)
+    } finally {
+      setLoading(false)
     }
-    saveClient(client)
-    setNewName('')
+  }, [orgId])
+
+  useEffect(() => {
     refreshClients()
-    onSelectClient(client.id, client.name, {})
+  }, [refreshClients])
+
+  async function handleCreate() {
+    if (!newName.trim() || !orgId) return
+    try {
+      const client = await saveClient({ name: newName.trim() }, orgId)
+      setNewName('')
+      await refreshClients()
+      onSelectClient(client.id, client.name, {})
+    } catch (err) {
+      console.error('Failed to create client:', err.message)
+    }
   }
 
-  function handleSelect(client) {
-    const saved = getAssessments(client.id)
-    onSelectClient(client.id, client.name, saved)
-    setIsOpen(false)
+  async function handleSelect(client) {
+    try {
+      const saved = await getAssessments(client.id)
+      onSelectClient(client.id, client.name, saved)
+      setIsOpen(false)
+    } catch (err) {
+      console.error('Failed to load assessments:', err.message)
+    }
   }
 
-  function handleSave() {
-    if (!currentClientId) return
-    saveAssessment(currentClientId, assessments)
-    refreshClients()
-    onSaveSuccess?.()
+  async function handleSave() {
+    if (!currentClientId || !user) return
+    try {
+      await saveAssessment(currentClientId, assessments, user.id)
+      await refreshClients()
+      onSaveSuccess?.()
+    } catch (err) {
+      console.error('Failed to save assessment:', err.message)
+    }
   }
 
-  function handleDelete(clientId) {
-    deleteClient(clientId)
-    setConfirmDelete(null)
-    refreshClients()
-    if (clientId === currentClientId) {
-      onSelectClient(null, 'Sample Client', {})
+  async function handleDelete(clientId) {
+    try {
+      await deleteClient(clientId)
+      setConfirmDelete(null)
+      await refreshClients()
+      if (clientId === currentClientId) {
+        onSelectClient(null, 'Sample Client', {})
+      }
+    } catch (err) {
+      console.error('Failed to delete client:', err.message)
     }
   }
 
@@ -130,7 +159,12 @@ export default function ClientManager({ currentClientId, onSelectClient, assessm
                 <span className="text-[10px] text-warm-400">demo</span>
               </button>
 
-              {clients.length > 0 && (
+              {loading ? (
+                <div className="px-4 py-4 text-xs text-warm-400 text-center">
+                  <div className="w-4 h-4 border-2 border-warm-200 border-t-sage-500 rounded-full animate-spin mx-auto mb-1" />
+                  Loading...
+                </div>
+              ) : clients.length > 0 ? (
                 <div className="border-t border-warm-100">
                   <div className="text-[10px] uppercase tracking-wider text-warm-400 font-semibold px-4 pt-2 pb-1">
                     Saved Clients
@@ -153,9 +187,9 @@ export default function ClientManager({ currentClientId, onSelectClient, assessm
                         </span>
                         <div className="flex-1 min-w-0">
                           <div className="font-medium truncate">{client.name}</div>
-                          {client.updatedAt && (
+                          {client.updated_at && (
                             <div className="text-[10px] text-warm-400">
-                              {new Date(client.updatedAt).toLocaleDateString()}
+                              {new Date(client.updated_at).toLocaleDateString()}
                             </div>
                           )}
                         </div>
@@ -189,9 +223,7 @@ export default function ClientManager({ currentClientId, onSelectClient, assessm
                     </div>
                   ))}
                 </div>
-              )}
-
-              {clients.length === 0 && (
+              ) : (
                 <div className="px-4 py-4 text-xs text-warm-400 text-center italic">
                   No saved clients yet. Create one above.
                 </div>

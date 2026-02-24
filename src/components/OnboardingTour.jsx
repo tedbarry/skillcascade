@@ -1,4 +1,6 @@
 import { useState, useEffect, useCallback, useRef, useMemo } from 'react'
+import { mergeUserSettings } from '../lib/supabase.js'
+import { useAuth } from '../contexts/AuthContext.jsx'
 
 /* ─────────────────────────────────────────────
    Constants
@@ -321,6 +323,7 @@ const ParentIcon = (
    ───────────────────────────────────────────── */
 
 export default function OnboardingTour({ onComplete }) {
+  const { user } = useAuth()
   // Phase: 'role-select' | 'touring' | 'hidden'
   const [phase, setPhase] = useState('hidden')
   const [role, setRole] = useState(null)
@@ -444,8 +447,14 @@ export default function OnboardingTour({ onComplete }) {
     } catch {
       // localStorage unavailable
     }
+
+    // Sync to Supabase
+    if (user) {
+      mergeUserSettings(user.id, { onboarding_complete: true, user_role: role })
+    }
+
     onComplete?.()
-  }, [onComplete, role])
+  }, [onComplete, role, user])
 
   // Skip tour
   const skipTour = useCallback(() => {

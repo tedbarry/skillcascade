@@ -1,4 +1,6 @@
 import { useState, useEffect, useRef } from 'react'
+import { supabase } from '../lib/supabase.js'
+import { useAuth } from '../contexts/AuthContext.jsx'
 
 const STORAGE_KEY = 'skillcascade_branding'
 
@@ -73,14 +75,17 @@ const Icons = {
    ───────────────────────────────────────────── */
 
 export default function BrandingSettings({ onBrandingChange }) {
+  const { profile } = useAuth()
   const [branding, setBranding] = useState(loadBranding)
   const [saved, setSaved] = useState(false)
   const fileRef = useRef(null)
 
-  // Load persisted branding on mount
+  // Load from Supabase org branding on mount
   useEffect(() => {
-    setBranding(loadBranding())
-  }, [])
+    if (profile?.organizations?.branding) {
+      setBranding((prev) => ({ ...prev, ...profile.organizations.branding }))
+    }
+  }, [profile])
 
   // Flash "Saved" confirmation then fade it
   useEffect(() => {
@@ -108,18 +113,35 @@ export default function BrandingSettings({ onBrandingChange }) {
     if (fileRef.current) fileRef.current.value = ''
   }
 
-  function handleSave() {
+  async function handleSave() {
     localStorage.setItem(STORAGE_KEY, JSON.stringify(branding))
     onBrandingChange?.(branding)
+
+    // Persist to Supabase organization record
+    if (profile?.org_id) {
+      const { error } = await supabase
+        .from('organizations')
+        .update({ branding })
+        .eq('id', profile.org_id)
+      if (error) console.error('Failed to save branding:', error.message)
+    }
+
     setSaved(true)
   }
 
-  function handleReset() {
+  async function handleReset() {
     const fresh = { ...DEFAULT_BRANDING }
     setBranding(fresh)
     localStorage.removeItem(STORAGE_KEY)
     onBrandingChange?.(fresh)
     if (fileRef.current) fileRef.current.value = ''
+
+    if (profile?.org_id) {
+      await supabase
+        .from('organizations')
+        .update({ branding: {} })
+        .eq('id', profile.org_id)
+    }
   }
 
   /* ── Shared field classes ────────────────── */

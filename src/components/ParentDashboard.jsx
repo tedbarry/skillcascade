@@ -542,12 +542,11 @@ export default function ParentDashboard({
                 module will offer simple, practical ideas you can weave into your daily
                 routine — no special materials needed.
               </p>
-              <button
-                className="text-xs font-medium text-warm-600 bg-white rounded-lg px-4 py-2 border border-warm-200 hover:border-warm-300 hover:shadow-sm transition-all"
-                onClick={() => {}}
+              <span
+                className="inline-block text-xs font-medium text-warm-400 bg-warm-50 rounded-lg px-4 py-2 border border-warm-200 cursor-default"
               >
                 Coming Soon
-              </button>
+              </span>
             </div>
           </div>
         </div>

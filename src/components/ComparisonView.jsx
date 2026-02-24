@@ -1,5 +1,6 @@
-import { useState, useMemo, useCallback } from 'react'
-import { getClients, getAssessments, getSnapshots } from '../data/storage.js'
+import { useState, useMemo, useCallback, useEffect } from 'react'
+import { getClients, getAssessments } from '../data/storage.js'
+import { useAuth } from '../contexts/AuthContext.jsx'
 import { framework, ASSESSMENT_LEVELS, getDomainScores, ASSESSMENT_LABELS } from '../data/framework.js'
 import {
   RadarChart as ReRadarChart,
@@ -153,16 +154,22 @@ export default function ComparisonView({
   clientId = null,
   snapshots = [],
 }) {
+  const { profile } = useAuth()
   const [mode, setMode] = useState(MODES.CLIENTS)
   const [rightClientId, setRightClientId] = useState('')
   const [leftSnapshotId, setLeftSnapshotId] = useState('current')
   const [rightSnapshotId, setRightSnapshotId] = useState('')
   const [expandedDomains, setExpandedDomains] = useState({})
+  const [otherClients, setOtherClients] = useState([])
+  const [rightAssessments, setRightAssessments] = useState(null)
 
   /* ── Load other clients for comparison ── */
-  const otherClients = useMemo(() => {
-    return getClients().filter((c) => c.id !== clientId)
-  }, [clientId])
+  useEffect(() => {
+    if (!profile?.org_id) return
+    getClients(profile.org_id).then((all) => {
+      setOtherClients(all.filter((c) => c.id !== clientId))
+    }).catch(() => setOtherClients([]))
+  }, [clientId, profile?.org_id])
 
   /* ── Resolve left & right assessment data ── */
   const resolveSnapshotAssessments = useCallback((snapshotId) => {
@@ -176,11 +183,17 @@ export default function ComparisonView({
     return resolveSnapshotAssessments(leftSnapshotId)
   }, [mode, assessments, leftSnapshotId, resolveSnapshotAssessments])
 
-  const rightAssessments = useMemo(() => {
+  /* ── Load right-side assessments when selection changes ── */
+  useEffect(() => {
     if (mode === MODES.CLIENTS) {
-      return rightClientId ? getAssessments(rightClientId) : null
+      if (rightClientId) {
+        getAssessments(rightClientId).then(setRightAssessments).catch(() => setRightAssessments(null))
+      } else {
+        setRightAssessments(null)
+      }
+    } else {
+      setRightAssessments(rightSnapshotId ? resolveSnapshotAssessments(rightSnapshotId) : null)
     }
-    return rightSnapshotId ? resolveSnapshotAssessments(rightSnapshotId) : null
   }, [mode, rightClientId, rightSnapshotId, resolveSnapshotAssessments])
 
   const leftLabel = useMemo(() => {

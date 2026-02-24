@@ -1,4 +1,6 @@
 import { useState, useEffect, useCallback } from 'react'
+import { supabase, mergeUserSettings } from '../lib/supabase.js'
+import { useAuth } from '../contexts/AuthContext.jsx'
 
 const STORAGE_KEY = 'skillcascade_accessibility'
 
@@ -104,14 +106,36 @@ function ToggleSwitch({ enabled, onToggle, id }) {
 
 /* ── Main component ──────────────────────────────────────── */
 export default function AccessibilitySettings({ onSettingsChange }) {
+  const { user } = useAuth()
   const [settings, setSettings] = useState(loadSettings)
 
-  // Apply on mount + whenever settings change
+  // Load from Supabase on mount (if logged in)
+  useEffect(() => {
+    if (!user) return
+    supabase
+      .from('user_settings')
+      .select('settings')
+      .eq('user_id', user.id)
+      .single()
+      .then(({ data }) => {
+        if (data?.settings?.accessibility) {
+          const merged = { ...DEFAULT_SETTINGS, ...data.settings.accessibility }
+          setSettings(merged)
+        }
+      })
+  }, [user])
+
+  // Apply on mount + whenever settings change, persist to both localStorage and Supabase
   useEffect(() => {
     applyToDocument(settings)
     localStorage.setItem(STORAGE_KEY, JSON.stringify(settings))
     onSettingsChange?.(settings)
-  }, [settings, onSettingsChange])
+
+    // Persist to Supabase
+    if (user) {
+      mergeUserSettings(user.id, { accessibility: settings })
+    }
+  }, [settings, onSettingsChange, user])
 
   // Also respect prefers-reduced-motion on mount
   useEffect(() => {

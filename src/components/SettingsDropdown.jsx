@@ -1,10 +1,14 @@
 import { useState, useEffect, useRef } from 'react'
+import { mergeUserSettings } from '../lib/supabase.js'
+import { useAuth } from '../contexts/AuthContext.jsx'
 
 /**
  * Minimal settings dropdown — hidden in the header.
  * Currently contains: dark mode toggle, reset onboarding.
+ * Dark mode stays in localStorage for instant load before auth completes.
  */
 export default function SettingsDropdown() {
+  const { user } = useAuth()
   const [open, setOpen] = useState(false)
   const [darkMode, setDarkMode] = useState(() => {
     return localStorage.getItem('skillcascade_dark_mode') === 'true'
@@ -19,7 +23,12 @@ export default function SettingsDropdown() {
       document.documentElement.classList.remove('dark')
     }
     localStorage.setItem('skillcascade_dark_mode', darkMode)
-  }, [darkMode])
+
+    // Also sync to Supabase
+    if (user) {
+      mergeUserSettings(user.id, { dark_mode: darkMode })
+    }
+  }, [darkMode, user])
 
   // Load on mount
   useEffect(() => {

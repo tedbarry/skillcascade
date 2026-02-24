@@ -601,6 +601,7 @@ export default function HomePractice({ assessments = {}, clientName = 'your chil
   const [scopeFilter, setScopeFilter] = useState('all')
   const [difficultyFilter, setDifficultyFilter] = useState('all')
   const [timeFilter, setTimeFilter] = useState('all')
+  const [triedActivities, setTriedActivities] = useState(new Set())
 
   const priorityDomains = useMemo(() => getPriorityDomains(assessments), [assessments])
 
@@ -837,24 +838,28 @@ export default function HomePractice({ assessments = {}, clientName = 'your chil
                   </div>
 
                   {/* Try This button */}
-                  <button
-                    className="inline-flex items-center gap-1.5 text-xs font-medium px-3 py-1.5 rounded-lg transition-colors"
-                    style={{
-                      backgroundColor: colors.bg,
-                      color: colors.text,
-                    }}
-                    onMouseEnter={(e) => {
-                      e.currentTarget.style.backgroundColor = colors.border
-                      e.currentTarget.style.color = '#fff'
-                    }}
-                    onMouseLeave={(e) => {
-                      e.currentTarget.style.backgroundColor = colors.bg
-                      e.currentTarget.style.color = colors.text
-                    }}
-                  >
-                    {ICONS.play}
-                    Try This
-                  </button>
+                  {(() => {
+                    const actKey = `${domainId}-${activity.title}`
+                    const tried = triedActivities.has(actKey)
+                    return (
+                      <button
+                        onClick={() => setTriedActivities((prev) => {
+                          const next = new Set(prev)
+                          if (tried) next.delete(actKey)
+                          else next.add(actKey)
+                          return next
+                        })}
+                        className="inline-flex items-center gap-1.5 text-xs font-medium px-3 py-1.5 rounded-lg transition-colors"
+                        style={{
+                          backgroundColor: tried ? colors.border : colors.bg,
+                          color: tried ? '#fff' : colors.text,
+                        }}
+                      >
+                        {tried ? ICONS.star : ICONS.play}
+                        {tried ? 'Tried It!' : 'Try This'}
+                      </button>
+                    )
+                  })()}
                 </div>
               </div>
             )

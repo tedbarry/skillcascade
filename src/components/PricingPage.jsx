@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { Link } from 'react-router-dom'
 
 /* ── Inline SVG Icons ─────────────────────────────────────── */
 
@@ -277,9 +278,9 @@ function PricingCard({ tier, isAnnual }) {
         </div>
 
         {/* CTA */}
-        <button
-          type="button"
-          className={`mt-6 w-full rounded-lg py-2.5 text-sm font-semibold transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 ${
+        <Link
+          to={tier.name === 'Enterprise' ? '/signup' : '/signup'}
+          className={`mt-6 w-full rounded-lg py-2.5 text-sm font-semibold transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 block text-center ${
             tier.popular
               ? 'bg-sage-500 text-white hover:bg-sage-600 focus-visible:ring-sage-500'
               : tier.name === 'Enterprise'
@@ -288,7 +289,7 @@ function PricingCard({ tier, isAnnual }) {
           }`}
         >
           {tier.cta}
-        </button>
+        </Link>
         {tier.cta !== 'Contact Sales' && (
           <p className="mt-2 text-center text-xs text-warm-400">
             14-day free trial. No credit card required.
@@ -431,18 +432,18 @@ function CTABanner() {
         days.
       </p>
       <div className="mt-8 flex flex-col items-center gap-3 sm:flex-row sm:justify-center">
-        <button
-          type="button"
+        <Link
+          to="/signup"
           className="rounded-lg bg-white px-8 py-3 text-sm font-semibold text-sage-700 shadow-sm transition-colors hover:bg-sage-50 focus:outline-none focus-visible:ring-2 focus-visible:ring-white focus-visible:ring-offset-2 focus-visible:ring-offset-sage-500"
         >
           Start Free Trial
-        </button>
-        <button
-          type="button"
+        </Link>
+        <Link
+          to="/signup"
           className="rounded-lg border border-white/30 bg-transparent px-8 py-3 text-sm font-semibold text-white transition-colors hover:bg-white/10 focus:outline-none focus-visible:ring-2 focus-visible:ring-white focus-visible:ring-offset-2 focus-visible:ring-offset-sage-500"
         >
           Talk to Sales
-        </button>
+        </Link>
       </div>
     </section>
   )
