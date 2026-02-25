@@ -1,8 +1,12 @@
-import { useRef, useMemo, useState, useCallback } from 'react'
-import { Canvas, useFrame, useThree } from '@react-three/fiber'
-import { OrbitControls, Text, Billboard, Html } from '@react-three/drei'
+import { useRef, useMemo, useState, useCallback, useEffect } from 'react'
+import { Canvas, useFrame } from '@react-three/fiber'
+import { OrbitControls, Text, Billboard } from '@react-three/drei'
 import * as THREE from 'three'
 import { framework, DOMAIN_DEPENDENCIES } from '../data/framework.js'
+
+// Stable constants to avoid re-creating objects on every render
+const ORBIT_TARGET = new THREE.Vector3(0, 3.6, 0)
+const CAMERA_POSITION = [5, 5, 6]
 
 const DOMAIN_COLORS = {
   d1: '#e07b6e', d2: '#d4956a', d3: '#c9a84c', d4: '#8fb570',
@@ -293,7 +297,7 @@ export default function CascadeGraph3D({
   return (
     <div className="w-full h-full relative" style={{ minHeight: 400 }}>
       <Canvas
-        camera={{ position: [5, 5, 6], fov: 45 }}
+        camera={{ position: CAMERA_POSITION, fov: 45 }}
         style={{ background: 'linear-gradient(180deg, #0a0a10 0%, #12121a 50%, #0a0a10 100%)' }}
       >
         <ambientLight intensity={0.3} />
@@ -302,13 +306,16 @@ export default function CascadeGraph3D({
 
         <OrbitControls
           ref={controlsRef}
+          makeDefault
           enableDamping
           dampingFactor={0.05}
           minDistance={4}
           maxDistance={14}
-          target={[0, 3.6, 0]}
+          target={ORBIT_TARGET}
           autoRotate
-          autoRotateSpeed={0.4}
+          autoRotateSpeed={0.3}
+          enableZoom
+          zoomSpeed={0.5}
         />
 
         {/* Tier rings */}
