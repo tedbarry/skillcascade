@@ -9,6 +9,8 @@ import useResponsive from '../hooks/useResponsive.js'
 const WhatIfPanel = lazy(() => import('./WhatIfPanel.jsx'))
 const CascadeTimelineSlider = lazy(() => import('./CascadeTimelineSlider.jsx'))
 const CascadeWarnings = lazy(() => import('./CascadeWarnings.jsx'))
+const CascadeNeuralCanvas = lazy(() => import('./CascadeNeuralCanvas.jsx'))
+const CascadeTerrainMap = lazy(() => import('./CascadeTerrainMap.jsx'))
 const CascadeGraph3D = lazy(() => import('./CascadeGraph3D.jsx'))
 
 /* ─────────────────────────────────────────────
@@ -47,6 +49,8 @@ const MODE_ICONS = {
 const LAYOUTS = {
   TIERED: 'tiered',
   ORBITAL: 'orbital',
+  NEURAL: 'neural',
+  TERRAIN: 'terrain',
   THREE_D: '3d',
 }
 
@@ -104,7 +108,7 @@ export default function CascadeAnimation({
   const [legendOpen, setLegendOpen] = useState(false)
 
   // Layout mode
-  const [layout, setLayout] = useState(LAYOUTS.TIERED)
+  const [layout, setLayout] = useState(LAYOUTS.NEURAL)
 
   // The assessments used for rendering — timeline can override
   const effectiveAssessments = displayAssessments && mode === MODES.TIMELINE
@@ -474,17 +478,19 @@ export default function CascadeAnimation({
   return (
     <div className="flex flex-col h-full">
       {/* Toolbar — frosted glass */}
-      <div className={`flex items-center gap-1.5 ${isPhone ? 'px-2 py-1.5 flex-wrap' : 'px-4 py-2'} bg-[#1a1a1e]/80 backdrop-blur-md border-b border-[#333]/80`}>
+      <div className={`flex items-center gap-1.5 ${isPhone ? 'px-2 py-1.5 overflow-x-auto' : 'px-4 py-2'} bg-[#1a1a1e]/80 backdrop-blur-md border-b border-[#333]/80`}>
         {/* Layout toggle — cycle through layouts */}
         {[
           { key: LAYOUTS.TIERED, icon: '\u2630', label: 'Tiered' },
           { key: LAYOUTS.ORBITAL, icon: '\u25CE', label: 'Orbital' },
+          { key: LAYOUTS.NEURAL, icon: '\u269B', label: 'Neural' },
+          { key: LAYOUTS.TERRAIN, icon: '\u25B2', label: 'Terrain' },
           { key: LAYOUTS.THREE_D, icon: '\u2B21', label: '3D' },
         ].map((l) => (
           <button
             key={l.key}
             onClick={() => setLayout(l.key)}
-            className={`text-[10px] px-2 py-1 rounded-md font-medium transition-all min-h-[44px] flex items-center gap-1 border ${
+            className={`text-[10px] px-2 py-1 rounded-md font-medium transition-all min-h-[44px] flex items-center gap-1 border shrink-0 ${
               layout === l.key
                 ? 'bg-[#2a2a35] text-blue-300 border-blue-500/30'
                 : 'bg-[#2a2a30]/60 text-gray-500 border-[#333] hover:text-gray-400'
@@ -614,18 +620,52 @@ export default function CascadeAnimation({
 
       {/* Main content area */}
       <div className="flex flex-1 min-h-0 overflow-hidden">
-        {/* 3D graph (replaces SVG when in 3D layout) */}
-        {layout === LAYOUTS.THREE_D ? (
+        {/* Canvas / R3F views (replace SVG) */}
+        {[LAYOUTS.NEURAL, LAYOUTS.TERRAIN, LAYOUTS.THREE_D].includes(layout) ? (
           <div className="flex-1 relative">
-            <Suspense fallback={<div className="flex-1 flex items-center justify-center text-gray-500 text-sm">Loading 3D...</div>}>
-              <CascadeGraph3D
-                nodes={nodes}
-                edges={edges}
-                cascadeState={cascadeState}
-                isMasteryCascade={isMasteryCascade}
-                onNodeClick={handleNodeClick}
-                hasData={hasData}
-              />
+            <Suspense fallback={<div className="flex-1 flex items-center justify-center text-gray-500 text-sm">Loading view...</div>}>
+              {layout === LAYOUTS.NEURAL && (
+                <CascadeNeuralCanvas
+                  nodes={nodes}
+                  edges={edges}
+                  cascadeState={cascadeState}
+                  isMasteryCascade={isMasteryCascade}
+                  onNodeClick={handleNodeClick}
+                  mode={mode}
+                  pathChain={pathChain}
+                  pathReadiness={pathChain}
+                  heatmapOn={heatmapOn}
+                  hasData={hasData}
+                />
+              )}
+              {layout === LAYOUTS.TERRAIN && (
+                <CascadeTerrainMap
+                  nodes={nodes}
+                  edges={edges}
+                  cascadeState={cascadeState}
+                  isMasteryCascade={isMasteryCascade}
+                  onNodeClick={handleNodeClick}
+                  mode={mode}
+                  pathChain={pathChain}
+                  pathReadiness={pathChain}
+                  heatmapOn={heatmapOn}
+                  hasData={hasData}
+                />
+              )}
+              {layout === LAYOUTS.THREE_D && (
+                <CascadeGraph3D
+                  nodes={nodes}
+                  edges={edges}
+                  cascadeState={cascadeState}
+                  isMasteryCascade={isMasteryCascade}
+                  onNodeClick={handleNodeClick}
+                  mode={mode}
+                  pathChain={pathChain}
+                  pathReadiness={pathChain}
+                  heatmapOn={heatmapOn}
+                  hasData={hasData}
+                />
+              )}
             </Suspense>
           </div>
         ) : (
