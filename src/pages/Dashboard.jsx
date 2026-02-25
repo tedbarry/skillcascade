@@ -16,7 +16,7 @@ const Sunburst = lazy(() => import('../components/Sunburst.jsx'))
 const RadarChart = lazy(() => import('../components/RadarChart.jsx'))
 const AssessmentPanel = lazy(() => import('../components/AssessmentPanel.jsx'))
 const SkillTree = lazy(() => import('../components/SkillTree.jsx'))
-const CascadeAnimation = lazy(() => import('../components/CascadeAnimation.jsx'))
+const CascadeView = lazy(() => import('../components/cascade/CascadeView.jsx'))
 const ProgressTimeline = lazy(() => import('../components/ProgressTimeline.jsx'))
 const SearchOverlay = lazy(() => import('../components/SearchOverlay.jsx'))
 const OnboardingTour = lazy(() => import('../components/OnboardingTour.jsx'))
@@ -554,7 +554,7 @@ export default function Dashboard() {
           {activeView === VIEWS.CASCADE && (
             <Suspense fallback={<ViewLoader />}>
               <div className="w-full h-full flex flex-col">
-                <CascadeAnimation
+                <CascadeView
                   assessments={assessments}
                   snapshots={snapshots}
                   clientName={clientName}
