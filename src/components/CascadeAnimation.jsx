@@ -254,10 +254,10 @@ export default function CascadeAnimation({ compact = false }) {
       )}
 
       <svg
-        width={width}
-        height={height}
+        viewBox={`0 0 ${width} ${height}`}
+        width="100%"
         className="mx-auto block"
-        style={{ background: compact ? 'transparent' : 'linear-gradient(180deg, #1a1a1e 0%, #1e1e24 50%, #1a1a1e 100%)' }}
+        style={{ maxWidth: width, background: compact ? 'transparent' : 'linear-gradient(180deg, #1a1a1e 0%, #1e1e24 50%, #1a1a1e 100%)' }}
       >
         <defs>
           {/* Red glow for broken nodes */}
@@ -593,7 +593,7 @@ export default function CascadeAnimation({ compact = false }) {
                     triggerCascade(domain.id)
                   }
                 }}
-                className={`text-xs px-3 py-1.5 rounded-md border transition-all font-medium ${
+                className={`text-xs px-3 py-1.5 rounded-md border transition-all font-medium min-h-[44px] ${
                   isSelected
                     ? 'bg-[#3a2020] text-coral-400 border-coral-500 ring-2 ring-coral-500/30 cursor-default opacity-80'
                     : 'bg-[#2a2a30] text-gray-400 hover:bg-[#3a2525] hover:text-coral-300 border-[#444] hover:border-coral-500'

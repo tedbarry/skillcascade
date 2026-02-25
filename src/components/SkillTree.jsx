@@ -111,6 +111,7 @@ export default function SkillTree({ assessments = {}, onSelectDomain }) {
   const svgRef = useRef(null)
   const [expandedDomain, setExpandedDomain] = useState(null)
   const [tooltip, setTooltip] = useState(null)
+  const tooltipTimerRef = useRef(null)
 
   const domainScores = useMemo(() => getDomainScores(assessments), [assessments])
   const recommendedTarget = useMemo(() => getRecommendedTarget(domainScores), [domainScores])
@@ -173,10 +174,10 @@ export default function SkillTree({ assessments = {}, onSelectDomain }) {
     <div className="relative">
       <svg
         ref={svgRef}
-        width={width}
-        height={height}
-        className="mx-auto"
-        style={{ background: 'linear-gradient(180deg, #1a1a1e 0%, #1e1e24 50%, #1a1a1e 100%)' }}
+        viewBox={`0 0 ${width} ${height}`}
+        width="100%"
+        style={{ maxWidth: width, background: 'linear-gradient(180deg, #1a1a1e 0%, #1e1e24 50%, #1a1a1e 100%)' }}
+        className="mx-auto block"
       >
         <defs>
           {/* Glow filters */}
@@ -336,6 +337,24 @@ export default function SkillTree({ assessments = {}, onSelectDomain }) {
                     setTooltip((prev) => prev ? { ...prev, x: e.clientX - rect.left, y: e.clientY - rect.top } : null)
                   }}
                   onMouseLeave={() => setTooltip(null)}
+                  onTouchStart={(e) => {
+                    const touch = e.touches[0]
+                    const rect = e.currentTarget.closest('svg').getBoundingClientRect()
+                    if (tooltipTimerRef.current) clearTimeout(tooltipTimerRef.current)
+                    setTooltip({
+                      x: touch.clientX - rect.left,
+                      y: touch.clientY - rect.top,
+                      domain: domain.name,
+                      question: domain.coreQuestion,
+                      score: score?.score || 0,
+                      assessed: score?.assessed || 0,
+                      total: score?.total || 0,
+                      state,
+                      isRecommended,
+                      keyInsight: domain.keyInsight,
+                    })
+                    tooltipTimerRef.current = setTimeout(() => setTooltip(null), 3000)
+                  }}
                 />
 
                 {/* Domain number badge */}

@@ -12,6 +12,7 @@ import {
 } from 'recharts'
 import RadarChart from './RadarChart.jsx'
 import { framework, getDomainScores, ASSESSMENT_LEVELS } from '../data/framework.js'
+import useResponsive from '../hooks/useResponsive.js'
 
 /**
  * Domain colors for chart lines
@@ -76,8 +77,10 @@ export default function ProgressTimeline({
   clientName = 'Client',
   hasClient = false,
 }) {
+  const { isPhone } = useResponsive()
   const [snapshotLabel, setSnapshotLabel] = useState('')
   const [compareMode, setCompareMode] = useState(false)
+  const [mobileTab, setMobileTab] = useState('chart') // 'chart' | 'snapshots'
   const [compareA, setCompareA] = useState(null)
   const [compareB, setCompareB] = useState(null)
   const [visibleDomains, setVisibleDomains] = useState(
@@ -164,6 +167,351 @@ export default function ProgressTimeline({
   const compareDataA = compareA ? snapshots.find((s) => s.id === compareA)?.assessments : null
   const compareDataB = compareB ? (compareB === 'current' ? currentAssessments : snapshots.find((s) => s.id === compareB)?.assessments) : null
 
+  // Snapshot management panel content (shared between phone and desktop)
+  const snapshotPanel = (
+    <div className={isPhone ? 'p-4' : 'p-4'}>
+      {/* Save snapshot */}
+      <div className="mb-5">
+        <h3 className="text-xs uppercase tracking-wider text-warm-400 font-semibold mb-2">
+          Save Snapshot
+        </h3>
+        {hasClient ? (
+          <>
+            <div className="flex gap-1.5">
+              <input
+                type="text"
+                value={snapshotLabel}
+                onChange={(e) => setSnapshotLabel(e.target.value)}
+                onKeyDown={(e) => e.key === 'Enter' && handleSaveSnapshot()}
+                placeholder="Label (optional)"
+                className="flex-1 text-xs px-2.5 py-1.5 rounded-md border border-warm-200 focus:outline-none focus:border-sage-400 text-warm-700 placeholder-warm-300"
+              />
+              <button
+                onClick={handleSaveSnapshot}
+                className="text-xs px-3 py-1.5 rounded-md bg-sage-500 text-white hover:bg-sage-600 transition-colors font-medium shrink-0 min-h-[36px]"
+              >
+                Save
+              </button>
+            </div>
+            <p className="text-[10px] text-warm-400 mt-1">
+              Saves a point-in-time copy of all ratings
+            </p>
+          </>
+        ) : (
+          <div className="bg-warm-50 border border-warm-200 rounded-lg p-3">
+            <p className="text-xs text-warm-500">
+              Create or select a client first to save snapshots.
+            </p>
+          </div>
+        )}
+      </div>
+
+      {/* Snapshot list */}
+      <h3 className="text-xs uppercase tracking-wider text-warm-400 font-semibold mb-2">
+        Snapshots ({snapshots.length})
+      </h3>
+      {snapshots.length === 0 ? (
+        <p className="text-xs text-warm-400 italic">
+          No snapshots yet. Save one to start tracking progress.
+        </p>
+      ) : (
+        <div className="space-y-1.5">
+          {[...snapshots].reverse().map((snap) => (
+            <div
+              key={snap.id}
+              className={`rounded-lg p-2.5 text-xs border transition-colors ${
+                compareA === snap.id || compareB === snap.id
+                  ? 'border-sage-300 bg-sage-50'
+                  : 'border-warm-200 hover:bg-warm-50'
+              }`}
+            >
+              <div className="flex items-center justify-between mb-0.5">
+                <span className="font-medium text-warm-700 truncate max-w-[130px]">
+                  {snap.label || 'Untitled'}
+                </span>
+                <button
+                  onClick={() => onDeleteSnapshot && onDeleteSnapshot(snap.id)}
+                  className="text-warm-300 hover:text-red-400 text-[10px] transition-colors min-h-[28px] min-w-[28px] flex items-center justify-center"
+                  title="Delete snapshot"
+                >
+                  {'×'}
+                </button>
+              </div>
+              <div className="text-[10px] text-warm-400">
+                {formatDate(snap.timestamp)} at {formatTime(snap.timestamp)}
+              </div>
+              {compareMode && (
+                <div className="flex gap-1 mt-1.5">
+                  <button
+                    onClick={() => setCompareA(snap.id)}
+                    className={`text-[9px] px-2 py-0.5 rounded font-medium ${
+                      compareA === snap.id ? 'bg-sage-500 text-white' : 'bg-warm-100 text-warm-500 hover:bg-warm-200'
+                    }`}
+                  >
+                    A
+                  </button>
+                  <button
+                    onClick={() => setCompareB(snap.id)}
+                    className={`text-[9px] px-2 py-0.5 rounded font-medium ${
+                      compareB === snap.id ? 'bg-sage-500 text-white' : 'bg-warm-100 text-warm-500 hover:bg-warm-200'
+                    }`}
+                  >
+                    B
+                  </button>
+                </div>
+              )}
+            </div>
+          ))}
+        </div>
+      )}
+
+      {/* Compare toggle */}
+      {snapshots.length >= 1 && (
+        <div className="mt-4 pt-4 border-t border-warm-200">
+          <button
+            onClick={() => {
+              setCompareMode(!compareMode)
+              if (compareMode) {
+                setCompareA(null)
+                setCompareB(null)
+              } else if (snapshots.length >= 1) {
+                setCompareA(snapshots[0].id)
+                setCompareB('current')
+              }
+            }}
+            className={`w-full text-xs px-3 py-2 rounded-lg font-medium transition-colors min-h-[36px] ${
+              compareMode
+                ? 'bg-sage-500 text-white'
+                : 'bg-warm-100 text-warm-600 hover:bg-warm-200'
+            }`}
+          >
+            {compareMode ? 'Exit Compare' : 'Compare Snapshots'}
+          </button>
+          {compareMode && (
+            <button
+              onClick={() => setCompareB('current')}
+              className={`w-full mt-1.5 text-[10px] px-3 py-1.5 rounded-md font-medium transition-colors ${
+                compareB === 'current' ? 'bg-sage-100 text-sage-700' : 'bg-warm-50 text-warm-500 hover:bg-warm-100'
+              }`}
+            >
+              Set B = Current State
+            </button>
+          )}
+        </div>
+      )}
+    </div>
+  )
+
+  // Main chart/table content (shared between phone and desktop)
+  const mainContent = (
+    <div className={isPhone ? 'p-4' : 'p-6'}>
+      {/* Compare radar view */}
+      {compareMode && compareDataA && compareDataB ? (
+        <div className="max-w-2xl mx-auto mb-8">
+          <h3 className="text-sm font-semibold text-warm-700 text-center mb-1">
+            Profile Comparison
+          </h3>
+          <p className="text-xs text-warm-400 text-center mb-4">
+            Solid = {compareB === 'current' ? 'Current' : 'Snapshot B'} · Dashed = Snapshot A
+          </p>
+          <RadarChart
+            assessments={compareDataB}
+            compareAssessments={compareDataA}
+            compareLabel="Snapshot A"
+            height={isPhone ? 300 : 400}
+          />
+        </div>
+      ) : (
+        <>
+          {/* Line chart */}
+          {chartData.length > 1 ? (
+            <div className="mb-8">
+              <h3 className="text-sm font-semibold text-warm-700 mb-1">
+                Score Over Time
+              </h3>
+              <p className="text-xs text-warm-400 mb-4">
+                Domain scores across all saved snapshots.
+              </p>
+
+              {/* Domain toggles */}
+              <div className="flex items-center gap-2 mb-4 flex-wrap">
+                <span className="text-[10px] text-warm-400">Show:</span>
+                {framework.map((d) => (
+                  <button
+                    key={d.id}
+                    onClick={() => toggleDomain(d.id)}
+                    className={`text-[10px] px-2 py-1 rounded-md font-medium transition-all border ${
+                      visibleDomains.has(d.id)
+                        ? 'border-transparent opacity-100'
+                        : 'border-warm-200 opacity-30'
+                    }`}
+                    style={{
+                      backgroundColor: visibleDomains.has(d.id) ? DOMAIN_LINE_COLORS[d.id] + '20' : 'transparent',
+                      color: DOMAIN_LINE_COLORS[d.id],
+                    }}
+                  >
+                    {d.name}
+                  </button>
+                ))}
+              </div>
+
+              <ResponsiveContainer width="100%" height={isPhone ? 250 : 350}>
+                <LineChart data={chartData}>
+                  <CartesianGrid strokeDasharray="3 3" stroke="#e8d5c0" strokeOpacity={0.5} />
+                  <XAxis
+                    dataKey="name"
+                    tick={{ fontSize: 10, fill: '#9a6740' }}
+                    tickLine={false}
+                  />
+                  <YAxis
+                    domain={[0, 3]}
+                    ticks={[0, 1, 2, 3]}
+                    tick={{ fontSize: 10, fill: '#9a6740' }}
+                    tickLine={false}
+                    axisLine={false}
+                  />
+                  <Tooltip content={<ChartTooltip />} />
+                  <ReferenceLine y={1.5} stroke="#e8d5c0" strokeDasharray="3 3" strokeOpacity={0.5} />
+                  <ReferenceLine y={2.5} stroke="#e8d5c0" strokeDasharray="3 3" strokeOpacity={0.5} />
+
+                  {framework.map((d) =>
+                    visibleDomains.has(d.id) ? (
+                      <Line
+                        key={d.id}
+                        type="monotone"
+                        dataKey={d.id}
+                        name={d.name}
+                        stroke={DOMAIN_LINE_COLORS[d.id]}
+                        strokeWidth={2}
+                        dot={{ r: 4, fill: DOMAIN_LINE_COLORS[d.id], stroke: '#fff', strokeWidth: 2 }}
+                        activeDot={{ r: 6 }}
+                        connectNulls
+                      />
+                    ) : null
+                  )}
+
+                  {/* Overall line */}
+                  <Line
+                    type="monotone"
+                    dataKey="overall"
+                    name="Overall"
+                    stroke="#3d2a1c"
+                    strokeWidth={2.5}
+                    strokeDasharray="6 3"
+                    dot={{ r: 5, fill: '#3d2a1c', stroke: '#fff', strokeWidth: 2 }}
+                    activeDot={{ r: 7 }}
+                  />
+                </LineChart>
+              </ResponsiveContainer>
+            </div>
+          ) : (
+            <div className="text-center py-12 mb-8">
+              <div className="text-4xl mb-4 text-warm-200">{'📈'}</div>
+              <h3 className="text-lg font-semibold text-warm-700 mb-2">No Timeline Data Yet</h3>
+              <p className="text-sm text-warm-500 max-w-md mx-auto">
+                Save snapshots over time to see how a client's skills profile evolves.
+                Each snapshot captures a point-in-time copy of all ratings.
+              </p>
+            </div>
+          )}
+        </>
+      )}
+
+      {/* Progress summary table */}
+      {progressSummary && snapshots.length > 0 && !compareMode && (
+        <div>
+          <h3 className="text-sm font-semibold text-warm-700 mb-1">
+            Progress Since First Snapshot
+          </h3>
+          <p className="text-xs text-warm-400 mb-3">
+            Comparing {formatDate(snapshots[0].timestamp)} to current.
+          </p>
+          <div className={`grid gap-2 ${isPhone ? 'grid-cols-1' : 'grid-cols-3'}`}>
+            {progressSummary.map((d) => {
+              const changeColor = d.change > 0.2 ? 'text-sage-600' : d.change < -0.2 ? 'text-coral-500' : 'text-warm-400'
+              const changeIcon = d.change > 0.2 ? '↑' : d.change < -0.2 ? '↓' : '→'
+              const bgColor = d.change > 0.2 ? 'bg-sage-50 border-sage-200' : d.change < -0.2 ? 'bg-coral-50 border-coral-200' : 'bg-warm-50 border-warm-200'
+
+              return (
+                <div
+                  key={d.domainId}
+                  className={`rounded-lg px-3 py-2.5 border ${bgColor}`}
+                >
+                  <div className="text-[10px] text-warm-500 truncate">{d.domain}</div>
+                  <div className="flex items-baseline gap-2 mt-0.5">
+                    <span className="text-sm font-bold text-warm-700">
+                      {d.current > 0 ? d.current.toFixed(1) : '—'}
+                    </span>
+                    {d.first > 0 && (
+                      <span className={`text-xs font-semibold ${changeColor}`}>
+                        {changeIcon} {d.change > 0 ? '+' : ''}{d.change.toFixed(1)}
+                      </span>
+                    )}
+                  </div>
+                  {d.first > 0 && (
+                    <div className="flex items-center gap-1.5 mt-1">
+                      <span className="text-[9px] text-warm-400">
+                        {d.first.toFixed(1)}
+                      </span>
+                      <div className="flex-1 h-0.5 bg-warm-200 rounded-full relative">
+                        <div
+                          className="absolute h-full rounded-full"
+                          style={{
+                            width: `${(d.first / 3) * 100}%`,
+                            backgroundColor: '#c49a6c',
+                          }}
+                        />
+                        <div
+                          className="absolute h-full rounded-full"
+                          style={{
+                            width: `${(d.current / 3) * 100}%`,
+                            backgroundColor: d.change > 0 ? '#7fb589' : '#e8928a',
+                            opacity: 0.7,
+                          }}
+                        />
+                      </div>
+                      <span className="text-[9px] text-warm-400">
+                        {d.current.toFixed(1)}
+                      </span>
+                    </div>
+                  )}
+                </div>
+              )
+            })}
+          </div>
+        </div>
+      )}
+    </div>
+  )
+
+  // ── Phone layout: tabbed ──
+  if (isPhone) {
+    return (
+      <div className="flex flex-col h-full">
+        {/* Tab toggle */}
+        <div className="flex border-b border-warm-200 bg-white">
+          {['chart', 'snapshots'].map((tab) => (
+            <button
+              key={tab}
+              onClick={() => setMobileTab(tab)}
+              className={`flex-1 py-3 text-sm font-medium text-center transition-colors min-h-[44px] ${
+                mobileTab === tab
+                  ? 'text-sage-700 border-b-2 border-sage-500'
+                  : 'text-warm-400 hover:text-warm-600'
+              }`}
+            >
+              {tab === 'chart' ? 'Chart' : 'Snapshots'}
+            </button>
+          ))}
+        </div>
+        <div className="flex-1 overflow-y-auto">
+          {mobileTab === 'chart' ? mainContent : snapshotPanel}
+        </div>
+      </div>
+    )
+  }
+
+  // ── Desktop layout (unchanged) ──
   return (
     <div className="flex h-full">
       {/* Left panel — snapshot management */}

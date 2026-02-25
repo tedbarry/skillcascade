@@ -1,6 +1,7 @@
 import { useState, useMemo, useEffect, useCallback, useRef } from 'react'
 import { framework, ASSESSMENT_LEVELS, ASSESSMENT_LABELS, ASSESSMENT_COLORS } from '../data/framework.js'
 import { getSkillDescription } from '../data/skillDescriptions.js'
+import useResponsive from '../hooks/useResponsive.js'
 
 /**
  * Flattened list of all sub-areas with their parent domain for sequential navigation
@@ -53,7 +54,9 @@ function getDomainStats(domain, assessments) {
 }
 
 export default function AssessmentPanel({ assessments, onAssess, initialSubAreaId }) {
+  const { isPhone } = useResponsive()
   const [currentIndex, setCurrentIndex] = useState(0)
+  const [navOverlayOpen, setNavOverlayOpen] = useState(false)
 
   // Jump to a specific sub-area when navigated from elsewhere
   useEffect(() => {
@@ -125,6 +128,142 @@ export default function AssessmentPanel({ assessments, onAssess, initialSubAreaI
     onAssess((prev) => ({ ...prev, ...updates }))
   }
 
+  // ── Phone layout ──
+  if (isPhone) {
+    return (
+      <div className="flex flex-col h-full relative">
+        {/* Navigation overlay */}
+        {navOverlayOpen && (
+          <>
+            <div className="fixed inset-0 bg-black/40 z-40" onClick={() => setNavOverlayOpen(false)} />
+            <div className="fixed inset-0 z-50 bg-white overflow-y-auto">
+              <div className="flex items-center justify-between px-4 py-3 border-b border-warm-200 sticky top-0 bg-white z-10">
+                <h3 className="text-sm font-semibold text-warm-800">Navigate Assessment</h3>
+                <button onClick={() => setNavOverlayOpen(false)} className="p-2 text-warm-400 min-h-[44px] min-w-[44px] flex items-center justify-center">
+                  <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
+                  </svg>
+                </button>
+              </div>
+              {/* Overall progress */}
+              <div className="px-4 py-3 bg-warm-50 border-b border-warm-200">
+                <div className="flex items-center justify-between text-xs mb-1">
+                  <span className="text-warm-500 font-medium">Overall</span>
+                  <span className="text-warm-700 font-semibold">{overallStats.pct}%</span>
+                </div>
+                <div className="w-full h-2 bg-warm-200 rounded-full overflow-hidden">
+                  <div className="h-full rounded-full bg-sage-500 transition-all" style={{ width: `${overallStats.pct}%` }} />
+                </div>
+              </div>
+              <div className="p-4 space-y-1">
+                {framework.map((domain) => {
+                  const dStats = getDomainStats(domain, assessments)
+                  const dPct = dStats.total > 0 ? Math.round((dStats.assessed / dStats.total) * 100) : 0
+                  return (
+                    <div key={domain.id}>
+                      <div className="text-xs font-semibold text-warm-600 px-2 py-2 flex items-center gap-2">
+                        <span className="flex-1">{domain.name}</span>
+                        <span className={`text-[9px] px-1.5 py-0.5 rounded-full ${dPct === 100 ? 'bg-sage-100 text-sage-700' : dPct > 0 ? 'bg-warm-100 text-warm-500' : 'bg-warm-50 text-warm-300'}`}>{dPct}%</span>
+                      </div>
+                      <div className="ml-2 space-y-0.5">
+                        {domain.subAreas.map((sa) => {
+                          const saIndex = ALL_SUB_AREAS.findIndex((x) => x.id === sa.id)
+                          const saStats = getSubAreaStats(sa, assessments)
+                          const saPct = saStats.total > 0 ? Math.round((saStats.assessed / saStats.total) * 100) : 0
+                          const isCurrent = saIndex === currentIndex
+                          return (
+                            <button
+                              key={sa.id}
+                              onClick={() => { goTo(saIndex); setNavOverlayOpen(false) }}
+                              className={`w-full text-left px-3 py-2.5 rounded-lg text-sm flex items-center gap-2 min-h-[44px] transition-colors ${isCurrent ? 'bg-sage-100 text-sage-800 font-medium' : 'text-warm-600 hover:bg-warm-50'}`}
+                            >
+                              {saPct === 100 ? <span className="text-sage-500">&#10003;</span> : saPct > 0 ? <span className="w-2 h-2 rounded-full bg-warm-400 shrink-0" /> : <span className="w-2 h-2 rounded-full bg-warm-200 shrink-0" />}
+                              <span className="flex-1 truncate">{sa.name}</span>
+                              <span className="text-[10px] text-warm-400">{saPct}%</span>
+                            </button>
+                          )
+                        })}
+                      </div>
+                    </div>
+                  )
+                })}
+              </div>
+            </div>
+          </>
+        )}
+
+        {/* Top breadcrumb bar */}
+        <div className="sticky top-0 z-10 bg-white/95 backdrop-blur-sm border-b border-warm-200 px-4 py-2.5">
+          <button
+            onClick={() => setNavOverlayOpen(true)}
+            className="flex items-center gap-1.5 text-sm text-warm-600 min-h-[44px]"
+          >
+            <svg className="w-4 h-4 text-warm-400 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+              <path strokeLinecap="round" strokeLinejoin="round" d="M3.75 6.75h16.5M3.75 12h16.5m-16.5 5.25h16.5" />
+            </svg>
+            <span className="font-medium text-warm-700 truncate">{currentDomain.name}</span>
+            <span className="text-warm-300">{'›'}</span>
+            <span className="text-warm-500 truncate">{currentSubArea.name}</span>
+          </button>
+          {/* Progress bar */}
+          <div className="flex items-center gap-3 mt-1">
+            <div className="flex-1 h-1.5 bg-warm-200 rounded-full overflow-hidden">
+              <div className="h-full rounded-full bg-sage-500 transition-all" style={{ width: `${subAreaStats.total > 0 ? (subAreaStats.assessed / subAreaStats.total) * 100 : 0}%` }} />
+            </div>
+            <span className="text-[10px] text-warm-400 whitespace-nowrap">{subAreaStats.assessed}/{subAreaStats.total}</span>
+          </div>
+        </div>
+
+        {/* Skill rating content */}
+        <div className="flex-1 overflow-y-auto px-4 py-4 pb-20" ref={contentRef}>
+          {/* Bulk actions */}
+          <div className="flex items-center gap-1.5 mb-4 pb-4 border-b border-warm-200 overflow-x-auto scrollbar-hide">
+            <span className="text-[10px] text-warm-400 shrink-0">Quick:</span>
+            {[ASSESSMENT_LEVELS.NOT_ASSESSED, ASSESSMENT_LEVELS.NEEDS_WORK, ASSESSMENT_LEVELS.DEVELOPING, ASSESSMENT_LEVELS.SOLID].map(
+              (level) => (
+                <button
+                  key={level}
+                  onClick={() => bulkRate(level)}
+                  className="text-[10px] px-2 py-1.5 rounded-md font-medium border border-warm-200 whitespace-nowrap min-h-[36px]"
+                  style={{ backgroundColor: ASSESSMENT_COLORS[level] + '20', color: level === ASSESSMENT_LEVELS.NOT_ASSESSED ? '#777' : undefined }}
+                >
+                  All "{ASSESSMENT_LABELS[level]}"
+                </button>
+              )
+            )}
+          </div>
+
+          {/* Skill groups */}
+          <div className="space-y-6">
+            {currentSubArea.skillGroups.map((sg) => (
+              <SkillGroupRater key={sg.id} skillGroup={sg} assessments={assessments} onAssess={onAssess} />
+            ))}
+          </div>
+        </div>
+
+        {/* Bottom prev/next navigation */}
+        <div className="sticky bottom-0 z-10 bg-white border-t border-warm-200 flex items-center px-4 py-2 gap-3">
+          <button
+            onClick={() => goTo(currentIndex - 1)}
+            disabled={currentIndex === 0}
+            className={`flex-1 flex items-center justify-center gap-1 py-2.5 rounded-lg text-sm font-medium min-h-[44px] transition-colors ${currentIndex === 0 ? 'text-warm-300' : 'text-warm-600 bg-warm-100 hover:bg-warm-200'}`}
+          >
+            {'\u2190'} Prev
+          </button>
+          <span className="text-[10px] text-warm-400 whitespace-nowrap">{currentIndex + 1}/{ALL_SUB_AREAS.length}</span>
+          <button
+            onClick={() => goTo(currentIndex + 1)}
+            disabled={currentIndex === ALL_SUB_AREAS.length - 1}
+            className={`flex-1 flex items-center justify-center gap-1 py-2.5 rounded-lg text-sm font-medium min-h-[44px] transition-colors ${currentIndex === ALL_SUB_AREAS.length - 1 ? 'text-warm-300' : 'bg-sage-500 text-white hover:bg-sage-600'}`}
+          >
+            Next {'\u2192'}
+          </button>
+        </div>
+      </div>
+    )
+  }
+
+  // ── Desktop layout (unchanged) ──
   return (
     <div className="flex h-full">
       {/* Left nav — domain/sub-area list */}

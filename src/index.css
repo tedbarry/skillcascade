@@ -138,6 +138,11 @@ body {
   scrollbar-width: none;
 }
 
+/* Safe-area padding for iOS home indicator */
+@supports (padding-bottom: env(safe-area-inset-bottom)) {
+  .pb-safe { padding-bottom: env(safe-area-inset-bottom); }
+}
+
 /* Print — always light mode */
 @media print {
   @page {

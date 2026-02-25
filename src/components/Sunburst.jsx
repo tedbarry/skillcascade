@@ -91,6 +91,7 @@ export default function Sunburst({ data, assessments = {}, width = 800, height =
   const assessmentsRef = useRef(assessments)
   const currentNodeRef = useRef(null)  // Currently zoomed-to node
   const [tooltip, setTooltip] = useState(null)
+  const touchTimerRef = useRef(null)
   const [breadcrumb, setBreadcrumb] = useState([{ name: 'Client', depth: 0, node: null }])
 
   // Keep assessments ref current
@@ -271,6 +272,60 @@ export default function Sunburst({ data, assessments = {}, width = 800, height =
           .style('stroke', '#fdf8f0')
           .style('stroke-width', '0.5px')
       })
+      .on('touchstart', (event, d) => {
+        event.preventDefault()
+        const svgRect = svgRef.current.getBoundingClientRect()
+        const touch = event.touches[0]
+
+        const trail = []
+        let node = d
+        while (node.parent) {
+          trail.unshift(node.data.name)
+          node = node.parent
+        }
+
+        const leaves = d.leaves ? d.leaves() : [d]
+        const assessed = leaves.filter((l) => {
+          const level = assessmentsRef.current[l.data.id]
+          return level !== undefined && level !== ASSESSMENT_LEVELS.NOT_ASSESSED
+        })
+        const avgLevel =
+          assessed.length > 0
+            ? assessed.reduce((sum, l) => sum + assessmentsRef.current[l.data.id], 0) / assessed.length
+            : null
+
+        const skillLevel = assessmentsRef.current[d.data.id]
+
+        setTooltip({
+          x: touch.clientX - svgRect.left,
+          y: touch.clientY - svgRect.top,
+          name: d.data.name,
+          path: trail.join(' \u2192 '),
+          depth: d.depth,
+          level:
+            skillLevel !== undefined && skillLevel !== ASSESSMENT_LEVELS.NOT_ASSESSED
+              ? ASSESSMENT_LABELS[skillLevel]
+              : avgLevel !== null
+                ? `Avg: ${avgLevel.toFixed(1)}/3`
+                : 'Not assessed',
+          childCount: leaves.length,
+          assessedCount: assessed.length,
+        })
+
+        d3.select(event.currentTarget)
+          .attr('fill-opacity', 1)
+          .style('stroke', '#3d2a1c')
+          .style('stroke-width', '1.5px')
+
+        if (touchTimerRef.current) clearTimeout(touchTimerRef.current)
+        touchTimerRef.current = setTimeout(() => {
+          setTooltip(null)
+          d3.select(event.currentTarget)
+            .attr('fill-opacity', d.children ? 0.85 : 0.7)
+            .style('stroke', '#fdf8f0')
+            .style('stroke-width', '0.5px')
+        }, 3000)
+      }, { passive: false })
 
     // Click to zoom in
     path.on('click', (event, d) => zoomTo(d))
@@ -289,6 +344,7 @@ export default function Sunburst({ data, assessments = {}, width = 800, height =
       .attr('transform', (d) => labelTransform(d.current, radius))
       .style('font-size', (d) => (d.depth === 1 ? '11px' : d.depth === 2 ? '9px' : '7.5px'))
       .style('font-weight', (d) => (d.depth === 1 ? '600' : '400'))
+      .style('display', (d) => (d.depth >= 3 && width < 400) ? 'none' : null)
       .text((d) => {
         const maxLen = d.depth === 1 ? 16 : d.depth === 2 ? 14 : 12
         return truncateLabel(d.data.name, maxLen)

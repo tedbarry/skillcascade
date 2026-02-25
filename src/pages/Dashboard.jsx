@@ -7,6 +7,9 @@ import Toast from '../components/Toast.jsx'
 import SettingsDropdown from '../components/SettingsDropdown.jsx'
 import ErrorBoundary from '../components/ErrorBoundary.jsx'
 import useUndoRedo from '../hooks/useUndoRedo.js'
+import useResponsive from '../hooks/useResponsive.js'
+import MobileTabBar from '../components/MobileTabBar.jsx'
+import ResponsiveSVG from '../components/ResponsiveSVG.jsx'
 
 // Lazy-loaded view components — each gets its own chunk, loaded on-demand
 const Sunburst = lazy(() => import('../components/Sunburst.jsx'))
@@ -53,7 +56,7 @@ function ViewLoader() {
   )
 }
 
-const VIEWS = {
+export const VIEWS = {
   SUNBURST: 'sunburst',
   RADAR: 'radar',
   TREE: 'tree',
@@ -82,6 +85,7 @@ const VIEWS = {
 
 export default function Dashboard() {
   const { user } = useAuth()
+  const { isPhone, isTablet, isDesktop } = useResponsive()
   const [assessments, setAssessments, { undo, redo, canUndo, canRedo, resetState: resetAssessments }] = useUndoRedo({})
   const [selectedNode, setSelectedNode] = useState(null)
   const [sidebarOpen, setSidebarOpen] = useState(true)
@@ -124,15 +128,8 @@ export default function Dashboard() {
 
   // Auto-close sidebars on narrow viewports
   useEffect(() => {
-    function handleResize() {
-      if (window.innerWidth < 1024) {
-        setSidebarOpen(false)
-      }
-    }
-    handleResize()
-    window.addEventListener('resize', handleResize)
-    return () => window.removeEventListener('resize', handleResize)
-  }, [])
+    if (!isDesktop) setSidebarOpen(false)
+  }, [isDesktop])
 
   // Close "More" menu when clicking outside
   useEffect(() => {
@@ -387,19 +384,32 @@ export default function Dashboard() {
       <div className="flex flex-1 overflow-hidden">
         {/* Sidebar — Domain Navigator (only for viz views) */}
         {showSidePanels && sidebarOpen && (
-          <aside className="w-80 bg-white border-r border-warm-200 overflow-y-auto shrink-0">
-            <DomainNavigator
-              assessments={assessments}
-              selectedId={selectedNode?.id}
-              onSelect={setSelectedNode}
-            />
-          </aside>
+          isTablet ? (
+            <>
+              <div className="fixed inset-0 bg-black/40 z-30" onClick={() => setSidebarOpen(false)} />
+              <aside className="fixed left-0 top-0 bottom-0 z-40 w-80 bg-white shadow-xl overflow-y-auto mt-[49px]">
+                <DomainNavigator
+                  assessments={assessments}
+                  selectedId={selectedNode?.id}
+                  onSelect={setSelectedNode}
+                />
+              </aside>
+            </>
+          ) : (
+            <aside className="w-80 bg-white border-r border-warm-200 overflow-y-auto shrink-0">
+              <DomainNavigator
+                assessments={assessments}
+                selectedId={selectedNode?.id}
+                onSelect={setSelectedNode}
+              />
+            </aside>
+          )
         )}
 
         {/* Center content */}
-        <main className={`flex-1 overflow-auto ${fullWidthViews.includes(activeView) ? '' : 'flex flex-col items-center p-3 sm:p-8'}`}>
-          {/* View toggle */}
-          <div data-tour="view-tabs" className={`flex items-center gap-1 bg-warm-100 rounded-lg p-1 mb-6 overflow-x-auto scrollbar-hide sm:flex-wrap ${!showSidePanels ? 'mx-auto mt-6 sm:w-fit' : ''}`}>
+        <main className={`flex-1 overflow-auto ${fullWidthViews.includes(activeView) ? '' : 'flex flex-col items-center p-3 sm:p-8'} ${isPhone ? 'pb-24' : ''}`}>
+          {/* View toggle — hidden on phone (MobileTabBar replaces it) */}
+          {!isPhone && (<div data-tour="view-tabs" className={`flex items-center gap-1 bg-warm-100 rounded-lg p-1 mb-6 overflow-x-auto scrollbar-hide sm:flex-wrap ${!showSidePanels ? 'mx-auto mt-6 sm:w-fit' : ''}`}>
             {[
               { key: VIEWS.SUNBURST, label: 'Sunburst' },
               { key: VIEWS.RADAR, label: 'Radar' },
@@ -438,7 +448,7 @@ export default function Dashboard() {
                 {v.label}
               </button>
             ))}
-          </div>
+          </div>)}
 
           <ErrorBoundary key={activeView} fallback={({ error, reset }) => (
             <div className="flex flex-col items-center justify-center py-16 px-6 text-center">
@@ -463,18 +473,22 @@ export default function Dashboard() {
           {/* Sunburst view */}
           {activeView === VIEWS.SUNBURST && (
             <Suspense fallback={<ViewLoader />}>
-              <div className="flex flex-col items-center">
+              <div className="flex flex-col items-center w-full">
                 <h2 className="text-lg font-semibold text-warm-800 font-display mb-1">
                   Skills Profile — Sunburst View
                 </h2>
                 <p className="text-sm text-warm-500 mb-4">Click any segment to zoom in. Click center to zoom out.</p>
-                <Sunburst
-                  data={hierarchyData}
-                  assessments={assessments}
-                  width={700}
-                  height={700}
-                  onSelect={setSelectedNode}
-                />
+                <ResponsiveSVG aspectRatio={1} maxWidth={700}>
+                  {({ width, height }) => (
+                    <Sunburst
+                      data={hierarchyData}
+                      assessments={assessments}
+                      width={width}
+                      height={height}
+                      onSelect={setSelectedNode}
+                    />
+                  )}
+                </ResponsiveSVG>
               </div>
             </Suspense>
           )}
@@ -796,9 +810,18 @@ export default function Dashboard() {
 
         {/* Right panel — Detail View (only for viz views) */}
         {showSidePanels && sidebarOpen && selectedDetail && (
-          <aside className="w-80 bg-white border-l border-warm-200 overflow-y-auto shrink-0 p-5">
-            <DetailPanel detail={selectedDetail} assessments={assessments} onAssess={setAssessments} onNavigateToAssess={handleNavigateToAssess} />
-          </aside>
+          isTablet ? (
+            <>
+              <div className="fixed inset-0 bg-black/40 z-30" onClick={() => setSidebarOpen(false)} />
+              <aside className="fixed right-0 top-0 bottom-0 z-40 w-80 bg-white shadow-xl overflow-y-auto p-5 mt-[49px]">
+                <DetailPanel detail={selectedDetail} assessments={assessments} onAssess={setAssessments} onNavigateToAssess={handleNavigateToAssess} />
+              </aside>
+            </>
+          ) : (
+            <aside className="w-80 bg-white border-l border-warm-200 overflow-y-auto shrink-0 p-5">
+              <DetailPanel detail={selectedDetail} assessments={assessments} onAssess={setAssessments} onNavigateToAssess={handleNavigateToAssess} />
+            </aside>
+          )
         )}
       </div>
     </div>
@@ -843,6 +866,13 @@ export default function Dashboard() {
         onPrint={() => window.print()}
       />
     </Suspense>
+    {isPhone && (
+      <MobileTabBar
+        activeView={activeView}
+        onChangeView={setActiveView}
+        onOpenAI={() => setAiPanelOpen(true)}
+      />
+    )}
     </>
   )
 }
