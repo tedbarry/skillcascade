@@ -308,16 +308,17 @@ export default function Dashboard() {
               clientName={clientName}
             />
           </span>
-          {/* Mobile "More" dropdown — visible only on small screens */}
+          {/* Mobile "Menu" dropdown — visible only on small screens */}
           <div className="relative sm:hidden">
             <button
               onClick={(e) => { e.stopPropagation(); setMoreMenuOpen(!moreMenuOpen) }}
-              className="p-1.5 rounded-md text-warm-500 hover:text-warm-700 hover:bg-warm-100 transition-colors"
-              title="More actions"
+              className="flex items-center gap-1 px-2 py-1.5 rounded-md text-warm-500 hover:text-warm-700 hover:bg-warm-100 transition-colors"
+              title="Menu"
             >
               <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                <path strokeLinecap="round" strokeLinejoin="round" d="M12 6.75a.75.75 0 110-1.5.75.75 0 010 1.5zM12 12.75a.75.75 0 110-1.5.75.75 0 010 1.5zM12 18.75a.75.75 0 110-1.5.75.75 0 010 1.5z" />
+                <path strokeLinecap="round" strokeLinejoin="round" d="M3.75 6.75h16.5M3.75 12h16.5m-16.5 5.25h16.5" />
               </svg>
+              <span className="text-xs font-medium">Menu</span>
             </button>
             {moreMenuOpen && (
               <div className="absolute right-0 top-full mt-1 w-48 bg-white rounded-lg shadow-lg border border-warm-200 py-1 z-50">
@@ -384,14 +385,14 @@ export default function Dashboard() {
       <div className="flex flex-1 overflow-hidden">
         {/* Sidebar — Domain Navigator (only for viz views) */}
         {showSidePanels && sidebarOpen && (
-          isTablet ? (
+          !isDesktop ? (
             <>
               <div className="fixed inset-0 bg-black/40 z-30" onClick={() => setSidebarOpen(false)} />
-              <aside className="fixed left-0 top-0 bottom-0 z-40 w-80 bg-white shadow-xl overflow-y-auto mt-[49px]">
+              <aside className="fixed left-0 top-0 bottom-0 z-40 w-[85vw] max-w-80 bg-white shadow-xl overflow-y-auto mt-[49px]">
                 <DomainNavigator
                   assessments={assessments}
                   selectedId={selectedNode?.id}
-                  onSelect={setSelectedNode}
+                  onSelect={(node) => { setSelectedNode(node); setSidebarOpen(false) }}
                 />
               </aside>
             </>
@@ -809,19 +810,28 @@ export default function Dashboard() {
         </main>
 
         {/* Right panel — Detail View (only for viz views) */}
-        {showSidePanels && sidebarOpen && selectedDetail && (
-          isTablet ? (
+        {showSidePanels && selectedDetail && (
+          !isDesktop ? (
             <>
-              <div className="fixed inset-0 bg-black/40 z-30" onClick={() => setSidebarOpen(false)} />
-              <aside className="fixed right-0 top-0 bottom-0 z-40 w-80 bg-white shadow-xl overflow-y-auto p-5 mt-[49px]">
+              <div className="fixed inset-0 bg-black/40 z-30" onClick={() => setSelectedNode(null)} />
+              <aside className="fixed right-0 top-0 bottom-0 z-40 w-[85vw] max-w-80 bg-white shadow-xl overflow-y-auto p-5 mt-[49px]">
+                <button
+                  onClick={() => setSelectedNode(null)}
+                  className="absolute top-3 right-3 p-2 rounded-lg text-warm-400 hover:text-warm-600 hover:bg-warm-100 transition-colors"
+                  aria-label="Close detail panel"
+                >
+                  <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
+                  </svg>
+                </button>
                 <DetailPanel detail={selectedDetail} assessments={assessments} onAssess={setAssessments} onNavigateToAssess={handleNavigateToAssess} />
               </aside>
             </>
-          ) : (
+          ) : sidebarOpen ? (
             <aside className="w-80 bg-white border-l border-warm-200 overflow-y-auto shrink-0 p-5">
               <DetailPanel detail={selectedDetail} assessments={assessments} onAssess={setAssessments} onNavigateToAssess={handleNavigateToAssess} />
             </aside>
-          )
+          ) : null
         )}
       </div>
     </div>

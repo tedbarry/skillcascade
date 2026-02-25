@@ -157,7 +157,7 @@ export default function BrandingSettings({ onBrandingChange }) {
   /* ── Render ──────────────────────────────── */
 
   return (
-    <div className="max-w-2xl mx-auto space-y-8">
+    <div className="max-w-2xl mx-auto px-4 sm:px-0 space-y-8">
       {/* ── Header ──────────────────────────── */}
       <div className="flex items-start gap-3">
         <div className="p-2 rounded-lg bg-sage-50 text-sage-600 shrink-0">{Icons.building}</div>

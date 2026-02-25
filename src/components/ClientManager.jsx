@@ -132,25 +132,25 @@ export default function ClientManager({ currentClientId, onSelectClient, assessm
   return (
     <div className="relative">
       {/* Trigger button */}
-      <div ref={triggerRef} className="flex items-center gap-2">
+      <div ref={triggerRef} className="flex items-center gap-1.5 min-w-0">
         <button
           onClick={() => setIsOpen(!isOpen)}
-          className="flex items-center gap-2 px-3 py-1.5 rounded-lg hover:bg-warm-100 transition-colors text-sm"
+          className="flex items-center gap-1.5 px-2 py-1.5 rounded-lg hover:bg-warm-100 transition-colors text-sm min-w-0"
         >
-          <span className="w-6 h-6 rounded-full bg-sage-100 text-sage-700 flex items-center justify-center text-xs font-bold">
+          <span className="w-6 h-6 rounded-full bg-sage-100 text-sage-700 flex items-center justify-center text-xs font-bold shrink-0">
             {(currentClient?.name || 'S')[0].toUpperCase()}
           </span>
-          <span className="text-warm-700 font-medium max-w-[140px] truncate">
+          <span className="text-warm-700 font-medium max-w-[80px] sm:max-w-[140px] truncate">
             {currentClient?.name || 'Sample Client'}
           </span>
-          <span className="text-warm-400 text-xs">{'▾'}</span>
+          <span className="text-warm-400 text-xs shrink-0">{'▾'}</span>
         </button>
 
         {/* Save button */}
         {currentClientId && (
           <button
             onClick={handleSave}
-            className="text-xs px-3 py-1.5 rounded-md bg-sage-500 text-white hover:bg-sage-600 transition-colors font-medium"
+            className="text-xs px-2.5 py-1.5 rounded-md bg-sage-500 text-white hover:bg-sage-600 transition-colors font-medium shrink-0"
           >
             Save
           </button>
@@ -309,13 +309,13 @@ export default function ClientManager({ currentClientId, onSelectClient, assessm
                             <div className="flex gap-1">
                               <button
                                 onClick={() => handleDelete(client.id)}
-                                className="text-[10px] px-2 py-1 rounded bg-red-500 text-white hover:bg-red-600"
+                                className="text-[10px] px-2.5 py-1.5 rounded bg-red-500 text-white hover:bg-red-600 min-h-[32px]"
                               >
                                 Delete
                               </button>
                               <button
                                 onClick={() => setConfirmDelete(null)}
-                                className="text-[10px] px-2 py-1 rounded bg-warm-200 text-warm-600 hover:bg-warm-300"
+                                className="text-[10px] px-2.5 py-1.5 rounded bg-warm-200 text-warm-600 hover:bg-warm-300 min-h-[32px]"
                               >
                                 Cancel
                               </button>
@@ -323,10 +323,12 @@ export default function ClientManager({ currentClientId, onSelectClient, assessm
                           ) : (
                             <button
                               onClick={() => setConfirmDelete(client.id)}
-                              className="text-warm-300 hover:text-red-400 transition-colors text-xs p-1"
+                              className="text-warm-300 hover:text-red-400 transition-colors p-2 min-h-[36px] min-w-[36px] flex items-center justify-center"
                               title="Delete client"
                             >
-                              {'×'}
+                              <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                                <path strokeLinecap="round" strokeLinejoin="round" d="M14.74 9l-.346 9m-4.788 0L9.26 9m9.968-3.21c.342.052.682.107 1.022.166m-1.022-.165L18.16 19.673a2.25 2.25 0 01-2.244 2.077H8.084a2.25 2.25 0 01-2.244-2.077L4.772 5.79m14.456 0a48.108 48.108 0 00-3.478-.397m-12 .562c.34-.059.68-.114 1.022-.165m0 0a48.11 48.11 0 013.478-.397m7.5 0v-.916c0-1.18-.91-2.164-2.09-2.201a51.964 51.964 0 00-3.32 0c-1.18.037-2.09 1.022-2.09 2.201v.916m7.5 0a48.667 48.667 0 00-7.5 0" />
+                              </svg>
                             </button>
                           )}
                         </div>

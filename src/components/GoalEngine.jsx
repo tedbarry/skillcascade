@@ -489,7 +489,7 @@ export default function GoalEngine({ assessments = {}, onNavigateToAssess }) {
 
   return (
     <div className="flex-1 overflow-y-auto">
-      <div className="max-w-4xl mx-auto px-6 py-6">
+      <div className="max-w-4xl mx-auto px-4 py-6 sm:px-6">
         {/* Page header */}
         <div className="mb-6">
           <h2 className="text-xl font-bold text-warm-800 font-display">
@@ -528,7 +528,7 @@ export default function GoalEngine({ assessments = {}, onNavigateToAssess }) {
         {hasAssessments && (
           <>
             {/* Summary cards */}
-            <div className="grid grid-cols-4 gap-3 mb-8">
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-8">
               <SummaryCard
                 label="Total Gaps"
                 count={totalGaps}

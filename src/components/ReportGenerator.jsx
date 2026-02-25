@@ -496,7 +496,7 @@ export default function ReportGenerator({ assessments, clientName, snapshots, on
   }
 
   return (
-    <div className="max-w-4xl mx-auto p-6">
+    <div className="max-w-4xl mx-auto px-4 py-6 sm:px-6">
       <div className="mb-6">
         <h2 className="text-xl font-bold text-warm-800 font-display">Report Generator</h2>
         <p className="text-sm text-warm-500 mt-1">
@@ -542,7 +542,7 @@ export default function ReportGenerator({ assessments, clientName, snapshots, on
           </div>
 
           {/* Quick stats */}
-          <div className="flex items-center gap-6 text-xs text-warm-500 mb-4 bg-warm-100 rounded-lg px-4 py-3">
+          <div className="flex flex-wrap items-center gap-x-6 gap-y-1 text-xs text-warm-500 mb-4 bg-warm-100 rounded-lg px-4 py-3">
             <span><strong className="text-warm-700">{analysis.assessed}</strong> skills assessed</span>
             <span><strong className="text-warm-700 text-sage-600">{analysis.solid}</strong> solid</span>
             <span><strong className="text-warm-700" style={{ color: '#e5b76a' }}>{analysis.developing}</strong> developing</span>
@@ -599,7 +599,7 @@ export default function ReportGenerator({ assessments, clientName, snapshots, on
       {previewHTML && (
         <div>
           {/* Action bar */}
-          <div className="flex items-center gap-3 mb-4">
+          <div className="flex flex-wrap items-center gap-3 mb-4">
             <button
               onClick={handleDownload}
               className="flex items-center gap-2 px-4 py-2 bg-sage-500 text-white rounded-lg text-sm font-medium hover:bg-sage-600 transition-colors"
@@ -632,7 +632,7 @@ export default function ReportGenerator({ assessments, clientName, snapshots, on
               srcDoc={previewHTML}
               title="Report Preview"
               className="w-full border-0"
-              style={{ height: '700px' }}
+              style={{ height: 'calc(100vh - 200px)', minHeight: '400px', maxHeight: '700px' }}
               sandbox="allow-same-origin"
             />
           </div>

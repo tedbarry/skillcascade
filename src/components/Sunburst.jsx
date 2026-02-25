@@ -272,10 +272,9 @@ export default function Sunburst({ data, assessments = {}, width = 800, height =
           .style('stroke', '#fdf8f0')
           .style('stroke-width', '0.5px')
       })
-      .on('touchstart', (event, d) => {
-        event.preventDefault()
+      .on('touchend', (event, d) => {
         const svgRect = svgRef.current.getBoundingClientRect()
-        const touch = event.touches[0]
+        const touch = event.changedTouches[0]
 
         const trail = []
         let node = d
@@ -325,7 +324,7 @@ export default function Sunburst({ data, assessments = {}, width = 800, height =
             .style('stroke', '#fdf8f0')
             .style('stroke-width', '0.5px')
         }, 3000)
-      }, { passive: false })
+      })
 
     // Click to zoom in
     path.on('click', (event, d) => zoomTo(d))

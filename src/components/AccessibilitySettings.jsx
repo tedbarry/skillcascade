@@ -158,7 +158,7 @@ export default function AccessibilitySettings({ onSettingsChange }) {
   const activeColorSet = ASSESSMENT_COLORS[settings.colorBlindMode] || ASSESSMENT_COLORS.none
 
   return (
-    <div className="space-y-6">
+    <div className="px-4 sm:px-0 space-y-6">
       {/* ── Header ───────────────────────────────────────── */}
       <div>
         <h3 className="font-display text-lg font-semibold text-warm-800 flex items-center gap-2">
