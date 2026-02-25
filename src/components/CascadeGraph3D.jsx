@@ -313,8 +313,7 @@ export default function CascadeGraph3D({
           maxDistance={14}
           target={ORBIT_TARGET}
           autoRotate={false}
-          enableZoom
-          zoomSpeed={0.5}
+          enableZoom={false}
         />
 
         {/* Tier rings */}
