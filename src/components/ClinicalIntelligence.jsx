@@ -1,4 +1,4 @@
-import { useState, useMemo, memo, lazy, Suspense } from 'react'
+import { useState, useMemo, useCallback, memo, lazy, Suspense } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import useClinicalIntelligence from '../hooks/useClinicalIntelligence.js'
 import useResponsive from '../hooks/useResponsive.js'
@@ -185,15 +185,18 @@ function TargetSkillCard({ skill, index, isExpanded, onToggle, onAssess, isPhone
   )
 }
 
-function DomainPill({ domainId, state, avg, assessed, isPhone }) {
+function DomainPill({ domainId, state, avg, assessed, isPhone, isExpanded, onToggle }) {
   const color = DOMAIN_COLORS[domainId] || '#888'
   const dotColor = STATE_DOT_COLORS[state] || '#555'
   const domain = framework.find(d => d.id === domainId)
   const hasData = assessed > 0
 
   return (
-    <div
-      className={`${isPhone ? 'px-2 py-1.5' : 'px-3 py-2'} rounded-lg bg-[#16161e] flex items-center gap-2 shrink-0`}
+    <button
+      onClick={onToggle}
+      className={`${isPhone ? 'px-2 py-1.5' : 'px-3 py-2'} rounded-lg flex items-center gap-2 shrink-0 text-left transition-colors min-h-[44px] ${
+        isExpanded ? 'bg-[#1c1a28] ring-1 ring-white/10' : 'bg-[#16161e] hover:bg-[#1a1a24]'
+      }`}
       style={{ borderLeft: `3px solid ${color}` }}
     >
       <div className="w-2 h-2 rounded-full shrink-0" style={{ backgroundColor: dotColor }} />
@@ -205,7 +208,177 @@ function DomainPill({ domainId, state, avg, assessed, isPhone }) {
           {hasData ? `${avg.toFixed(1)}/3 \u00B7 ${STATE_LABELS[state]}` : 'Not assessed'}
         </p>
       </div>
-    </div>
+    </button>
+  )
+}
+
+function LearningPath({ steps, isPhone }) {
+  if (!steps || steps.length === 0) return null
+
+  return (
+    <motion.div
+      initial={{ height: 0, opacity: 0 }}
+      animate={{ height: 'auto', opacity: 1 }}
+      exit={{ height: 0, opacity: 0 }}
+      transition={{ duration: 0.2 }}
+      className="overflow-hidden"
+    >
+      <div className={`${isPhone ? 'px-3 py-2' : 'px-4 py-3'} mt-2 rounded-lg bg-[#12121a]`}>
+        <p className="text-[9px] font-mono tracking-widest text-gray-600 uppercase mb-2">Prerequisite Path</p>
+        <div className="flex flex-wrap items-center gap-1">
+          {steps.map((step, i) => {
+            const color = DOMAIN_COLORS[step.domainId] || '#888'
+            const statusColor = step.status === 'met' ? '#7fb589'
+              : step.status === 'close' ? '#e5b76a' : '#e8928a'
+
+            return (
+              <div key={step.domainId} className="flex items-center gap-1">
+                {i > 0 && (
+                  <span className="text-gray-700 text-[10px]">{'\u2192'}</span>
+                )}
+                <div
+                  className="flex items-center gap-1.5 px-2 py-1 rounded-md"
+                  style={{ backgroundColor: `${color}15`, border: `1px solid ${color}30` }}
+                >
+                  <div
+                    className="w-1.5 h-1.5 rounded-full shrink-0"
+                    style={{ backgroundColor: statusColor }}
+                  />
+                  <span className="text-[10px] text-gray-300 font-medium whitespace-nowrap">
+                    D{step.domainNumber}
+                  </span>
+                  <span className="text-[9px] text-gray-500">
+                    {step.avg.toFixed(1)}
+                  </span>
+                </div>
+              </div>
+            )
+          })}
+        </div>
+        {/* Legend */}
+        <div className="flex items-center gap-3 mt-2 text-[9px] text-gray-600">
+          <span className="flex items-center gap-1">
+            <span className="w-1.5 h-1.5 rounded-full bg-[#7fb589]" /> Met
+          </span>
+          <span className="flex items-center gap-1">
+            <span className="w-1.5 h-1.5 rounded-full bg-[#e5b76a]" /> Close
+          </span>
+          <span className="flex items-center gap-1">
+            <span className="w-1.5 h-1.5 rounded-full bg-[#e8928a]" /> Gap
+          </span>
+        </div>
+      </div>
+    </motion.div>
+  )
+}
+
+function DomainDetail({ domainId, insight, isPhone, onAssess, onGoal, onShowPath, pathSteps }) {
+  const color = DOMAIN_COLORS[domainId] || '#888'
+  const domain = framework.find(d => d.id === domainId)
+  if (!insight) return null
+
+  const hasRisks = insight.risks?.length > 0
+  const readyCount = insight.readySkills?.length || 0
+  const blockedCount = insight.blockedSkills?.length || 0
+
+  return (
+    <motion.div
+      initial={{ height: 0, opacity: 0 }}
+      animate={{ height: 'auto', opacity: 1 }}
+      exit={{ height: 0, opacity: 0 }}
+      transition={{ duration: 0.2 }}
+      className="overflow-hidden"
+    >
+      <div
+        className={`${isPhone ? 'px-3 py-3' : 'px-4 py-3'} rounded-lg mt-1.5`}
+        style={{ backgroundColor: `${color}08`, borderLeft: `3px solid ${color}` }}
+      >
+        {/* Narrative */}
+        <p className="text-[11px] text-gray-400 leading-relaxed mb-2">
+          {insight.narrative}
+        </p>
+
+        {/* Stats row */}
+        <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-[10px] mb-2">
+          {insight.leverageScore > 0 && (
+            <span className="text-gray-500">
+              Leverage: <span className="text-gray-300 font-medium">{insight.leverageScore.toFixed(1)}</span>
+            </span>
+          )}
+          {insight.downstreamDomains > 0 && (
+            <span className="text-gray-500">
+              Affects {insight.downstreamDomains} domain{insight.downstreamDomains !== 1 ? 's' : ''} downstream
+            </span>
+          )}
+          {insight.rank > 0 && (
+            <span className="text-gray-500">
+              Rank #{insight.rank} by leverage
+            </span>
+          )}
+        </div>
+
+        {/* Ready / Blocked sub-areas */}
+        {(readyCount > 0 || blockedCount > 0) && (
+          <div className="flex flex-wrap gap-2 mb-2">
+            {readyCount > 0 && (
+              <span className="text-[9px] bg-green-900/20 text-green-400 px-2 py-0.5 rounded">
+                {readyCount} sub-area{readyCount !== 1 ? 's' : ''} ready
+              </span>
+            )}
+            {blockedCount > 0 && (
+              <span className="text-[9px] bg-red-900/20 text-red-400 px-2 py-0.5 rounded">
+                {blockedCount} sub-area{blockedCount !== 1 ? 's' : ''} blocked
+              </span>
+            )}
+          </div>
+        )}
+
+        {/* Risks for this domain */}
+        {hasRisks && (
+          <div className="space-y-1 mb-2">
+            {insight.risks.slice(0, 3).map((risk, i) => (
+              <div key={i} className="text-[10px] text-gray-500 flex items-center gap-1.5">
+                <span className="w-1 h-1 rounded-full bg-red-500 shrink-0" />
+                {risk.type?.replace(/-/g, ' ')}: {risk.description || risk.message || ''}
+              </div>
+            ))}
+          </div>
+        )}
+
+        {/* Action buttons */}
+        <div className="flex items-center gap-2">
+          {onAssess && (
+            <button
+              onClick={() => onAssess(domainId + '-sa1')}
+              className="text-[10px] font-medium bg-amber-600/20 text-amber-400 hover:bg-amber-600/30 px-2.5 py-1 rounded-md transition-colors min-h-[32px]"
+            >
+              Assess
+            </button>
+          )}
+          {onGoal && (
+            <button
+              onClick={() => onGoal(domainId)}
+              className="text-[10px] font-medium bg-[#2a2a33] text-gray-400 hover:text-gray-300 px-2.5 py-1 rounded-md transition-colors min-h-[32px]"
+            >
+              Set Goal
+            </button>
+          )}
+          {onShowPath && (
+            <button
+              onClick={() => onShowPath(domainId)}
+              className="text-[10px] font-medium bg-[#2a2a33] text-gray-400 hover:text-gray-300 px-2.5 py-1 rounded-md transition-colors min-h-[32px]"
+            >
+              {pathSteps ? 'Hide Path' : 'Show Path'}
+            </button>
+          )}
+        </div>
+
+        {/* Learning path inline */}
+        <AnimatePresence>
+          {pathSteps && <LearningPath steps={pathSteps} isPhone={isPhone} />}
+        </AnimatePresence>
+      </div>
+    </motion.div>
   )
 }
 
@@ -246,6 +419,7 @@ export default memo(function ClinicalIntelligence({
   snapshots = [],
   clientName = '',
   onNavigateToAssess,
+  onNavigateToGoals,
   onSelectNode,
 }) {
   const { isPhone, isTablet } = useResponsive()
@@ -258,16 +432,39 @@ export default memo(function ClinicalIntelligence({
     narratives,
     domainHealth,
     hasData,
+    getPrerequisiteChain,
+    getPathReadiness,
   } = intelligence
 
   const [mode, setMode] = useState('directive') // 'directive' | 'discovery'
   const [expandedSkill, setExpandedSkill] = useState(null)
+  const [expandedDomain, setExpandedDomain] = useState(null)
+  const [pathDomain, setPathDomain] = useState(null)
   const [showDetailedViews, setShowDetailedViews] = useState(false)
 
   // Toggle skill expansion
   const handleSkillToggle = (index) => {
     setExpandedSkill(prev => prev === index ? null : index)
   }
+
+  // Toggle domain detail expansion
+  const handleDomainToggle = useCallback((domainId) => {
+    setExpandedDomain(prev => prev === domainId ? null : domainId)
+    setPathDomain(null) // reset path when switching domains
+  }, [])
+
+  // Toggle learning path for a domain
+  const handleShowPath = useCallback((domainId) => {
+    setPathDomain(prev => prev === domainId ? null : domainId)
+  }, [])
+
+  // Compute path steps when a path is requested
+  const pathSteps = useMemo(() => {
+    if (!pathDomain || !getPrerequisiteChain || !getPathReadiness) return null
+    const chain = getPrerequisiteChain(pathDomain)
+    if (!chain || chain.length <= 1) return null
+    return getPathReadiness(chain)
+  }, [pathDomain, getPrerequisiteChain, getPathReadiness])
 
   // Domain pills ordered by leverage
   const domainPills = useMemo(() => {
@@ -316,6 +513,7 @@ export default memo(function ClinicalIntelligence({
         headline={headline}
         narratives={narratives}
         onAssess={onNavigateToAssess}
+        onGoal={onNavigateToGoals}
         isPhone={isPhone}
       />
 
@@ -359,13 +557,35 @@ export default memo(function ClinicalIntelligence({
               </div>
             )}
 
-            {/* Domain status — horizontal scroll */}
+            {/* Domain status — horizontal scroll with inline detail */}
             <Section title="Domain Status">
               <div className="flex gap-2 overflow-x-auto pb-1 -mx-3 px-3 scrollbar-none">
                 {domainPills.map(d => (
-                  <DomainPill key={d.id} domainId={d.id} state={d.state} avg={d.avg} assessed={d.assessed} isPhone />
+                  <DomainPill
+                    key={d.id}
+                    domainId={d.id}
+                    state={d.state}
+                    avg={d.avg}
+                    assessed={d.assessed}
+                    isPhone
+                    isExpanded={expandedDomain === d.id}
+                    onToggle={() => handleDomainToggle(d.id)}
+                  />
                 ))}
               </div>
+              <AnimatePresence>
+                {expandedDomain && domainInsights[expandedDomain] && (
+                  <DomainDetail
+                    domainId={expandedDomain}
+                    insight={domainInsights[expandedDomain]}
+                    isPhone
+                    onAssess={onNavigateToAssess}
+                    onGoal={onNavigateToGoals}
+                    onShowPath={handleShowPath}
+                    pathSteps={pathDomain === expandedDomain ? pathSteps : null}
+                  />
+                )}
+              </AnimatePresence>
             </Section>
 
             {/* Risks */}
@@ -448,7 +668,28 @@ export default memo(function ClinicalIntelligence({
               <Section title="Domain Status">
                 <div className="space-y-1.5">
                   {domainPills.map(d => (
-                    <DomainPill key={d.id} domainId={d.id} state={d.state} avg={d.avg} assessed={d.assessed} />
+                    <div key={d.id}>
+                      <DomainPill
+                        domainId={d.id}
+                        state={d.state}
+                        avg={d.avg}
+                        assessed={d.assessed}
+                        isExpanded={expandedDomain === d.id}
+                        onToggle={() => handleDomainToggle(d.id)}
+                      />
+                      <AnimatePresence>
+                        {expandedDomain === d.id && domainInsights[d.id] && (
+                          <DomainDetail
+                            domainId={d.id}
+                            insight={domainInsights[d.id]}
+                            onAssess={onNavigateToAssess}
+                            onGoal={onNavigateToGoals}
+                            onShowPath={handleShowPath}
+                            pathSteps={pathDomain === d.id ? pathSteps : null}
+                          />
+                        )}
+                      </AnimatePresence>
+                    </div>
                   ))}
                 </div>
               </Section>

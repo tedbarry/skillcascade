@@ -1,6 +1,7 @@
 import { useState, useMemo, memo } from 'react'
 import { computeDomainHealth } from '../../data/cascadeModel.js'
 import { framework } from '../../data/framework.js'
+import { generateParentSummary, generateDomainNarrative } from '../../lib/narratives.js'
 import ProgressBar from './ProgressBar.jsx'
 import BeforeAfterComparison from './BeforeAfterComparison.jsx'
 import useResponsive from '../../hooks/useResponsive.js'
@@ -73,6 +74,12 @@ export default memo(function ProgressStoryView({
 
   const displayName = clientName || 'this learner'
 
+  // Personalized parent summary
+  const parentSummary = useMemo(
+    () => hasData ? generateParentSummary(domainHealth, displayName) : '',
+    [domainHealth, displayName, hasData]
+  )
+
   // Expanded domain detail
   const expandedInfo = useMemo(() => {
     if (!expandedDomain) return null
@@ -81,7 +88,9 @@ export default memo(function ProgressStoryView({
     return {
       name: d?.name || '',
       color: DOMAIN_COLORS[expandedDomain] || '#888',
-      description: DOMAIN_DESCRIPTIONS[expandedDomain] || '',
+      description: health.assessed > 0
+        ? generateDomainNarrative(expandedDomain, domainHealth, [], [])
+        : DOMAIN_DESCRIPTIONS[expandedDomain] || '',
       healthPct: health.healthPct,
       statusLabel: getStatusLabel(health.healthPct),
       pctText: health.assessed > 0 ? `Strong in ${Math.round(health.healthPct * 100)}% of skills` : 'Not yet assessed',
@@ -114,6 +123,11 @@ export default memo(function ProgressStoryView({
           {!hasData && (
             <p className="text-sm text-gray-400 mt-1">
               Add assessment data to see progress.
+            </p>
+          )}
+          {hasData && parentSummary && (
+            <p className="text-sm text-gray-600 mt-3 max-w-2xl mx-auto leading-relaxed">
+              {parentSummary}
             </p>
           )}
         </div>

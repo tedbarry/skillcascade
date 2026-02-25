@@ -464,8 +464,20 @@ function TierSection({ priority, recommendations, onNavigateToAssess, defaultExp
    Main component
    ───────────────────────────────────────────── */
 
-export default function GoalEngine({ assessments = {}, onNavigateToAssess }) {
-  const recommendations = useMemo(() => analyzeGaps(assessments), [assessments])
+export default function GoalEngine({ assessments = {}, onNavigateToAssess, focusDomain = null, onClearFocus }) {
+  const allRecommendations = useMemo(() => analyzeGaps(assessments), [assessments])
+
+  // Filter by focus domain if set
+  const recommendations = useMemo(() => {
+    if (!focusDomain) return allRecommendations
+    return allRecommendations.filter(r => r.domainId === focusDomain)
+  }, [allRecommendations, focusDomain])
+
+  const focusDomainName = useMemo(() => {
+    if (!focusDomain) return null
+    const d = framework.find(f => f.id === focusDomain)
+    return d?.name || focusDomain
+  }, [focusDomain])
 
   // Split into tiers
   const tier1 = useMemo(() => recommendations.filter((r) => r.priority === 1), [recommendations])
@@ -528,6 +540,23 @@ export default function GoalEngine({ assessments = {}, onNavigateToAssess }) {
         {/* Dashboard content */}
         {hasAssessments && (
           <>
+            {/* Focus domain banner */}
+            {focusDomain && focusDomainName && (
+              <div className="flex items-center gap-3 mb-4 px-4 py-3 rounded-xl bg-amber-50 border border-amber-200">
+                <span className="text-sm text-amber-800">
+                  Showing goals for <strong>{focusDomainName}</strong>
+                </span>
+                {onClearFocus && (
+                  <button
+                    onClick={onClearFocus}
+                    className="text-xs text-amber-600 hover:text-amber-800 ml-auto transition-colors min-h-[32px]"
+                  >
+                    Show all domains
+                  </button>
+                )}
+              </div>
+            )}
+
             {/* Summary cards */}
             <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-8">
               <SummaryCard

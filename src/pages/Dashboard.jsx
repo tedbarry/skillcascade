@@ -150,6 +150,12 @@ export default function Dashboard() {
     setActiveView(VIEWS.ASSESS)
   }, [])
 
+  const [goalFocusDomain, setGoalFocusDomain] = useState(null)
+  const handleNavigateToGoals = useCallback((domainId) => {
+    setGoalFocusDomain(domainId)
+    setActiveView(VIEWS.GOALS)
+  }, [])
+
   // Load sample data on mount (only if no saved client)
   useEffect(() => {
     if (!clientId) {
@@ -561,6 +567,7 @@ export default function Dashboard() {
                   clientName={clientName}
                   onSelectNode={(node) => setSelectedNode({ id: node.id, name: node.name })}
                   onNavigateToAssess={handleNavigateToAssess}
+                  onNavigateToGoals={handleNavigateToGoals}
                 />
               </div>
             </Suspense>
@@ -616,6 +623,8 @@ export default function Dashboard() {
                 <GoalEngine
                   assessments={assessments}
                   onNavigateToAssess={handleNavigateToAssess}
+                  focusDomain={goalFocusDomain}
+                  onClearFocus={() => setGoalFocusDomain(null)}
                 />
               </Suspense>
             </div>
