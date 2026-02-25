@@ -9,6 +9,7 @@ import useResponsive from '../hooks/useResponsive.js'
 const WhatIfPanel = lazy(() => import('./WhatIfPanel.jsx'))
 const CascadeTimelineSlider = lazy(() => import('./CascadeTimelineSlider.jsx'))
 const CascadeWarnings = lazy(() => import('./CascadeWarnings.jsx'))
+const CascadeGraph3D = lazy(() => import('./CascadeGraph3D.jsx'))
 
 /* ─────────────────────────────────────────────
    Constants
@@ -46,20 +47,21 @@ const MODE_ICONS = {
 const LAYOUTS = {
   TIERED: 'tiered',
   ORBITAL: 'orbital',
+  THREE_D: '3d',
 }
 
-// Orbital layout: curated ring assignments for each domain
-// ring 0 = center core, rings 1-3 = concentric orbits, 1.5 = floating independent
+// Orbital layout: curated ring + angle for each domain
+// Ring 0 = center core. Rings 1-3 = concentric orbits. Evenly spaced within each ring.
 const ORBITAL_RINGS = {
   d1: { ring: 0, angle: 0 },
-  d2: { ring: 1, angle: -Math.PI * 2 / 3 },    // upper-left
-  d3: { ring: 1, angle: -Math.PI / 3 },         // upper-right
-  d4: { ring: 2, angle: -Math.PI / 2 },         // top
-  d5: { ring: 2, angle: Math.PI / 6 },          // lower-right
-  d6: { ring: 2, angle: Math.PI * 5 / 6 },      // lower-left
-  d7: { ring: 3, angle: -Math.PI / 2 },         // top (crown)
-  d8: { ring: 1.5, angle: Math.PI * 5 / 8 },    // lower-left floating
-  d9: { ring: 1.5, angle: -Math.PI / 8 },       // upper-right floating
+  d2: { ring: 1, angle: -Math.PI / 2 - 0.5 },   // upper-left
+  d3: { ring: 1, angle: -Math.PI / 2 + 0.5 },   // upper-right
+  d4: { ring: 2, angle: -Math.PI / 2 },          // top center
+  d5: { ring: 2, angle: -Math.PI / 2 + 2.1 },   // lower-right
+  d6: { ring: 2, angle: -Math.PI / 2 - 2.1 },   // lower-left
+  d7: { ring: 3, angle: -Math.PI / 2 },          // crown (top)
+  d8: { ring: 2, angle: Math.PI / 2 - 0.4 },     // bottom-left
+  d9: { ring: 2, angle: Math.PI / 2 + 0.4 },     // bottom-right
 }
 
 // Heatmap color scale (cool blue → warm red)
@@ -164,9 +166,9 @@ export default function CascadeAnimation({
 
   const centerX = width / 2
   const bottomY = height - (isPhone ? 50 : 70)
-  const orbitalCenterY = height / 2 + (isPhone ? 10 : 20)
-  const orbitalBaseRadius = isPhone ? 65 : isTablet ? 85 : 105
-  const orbitalRingGap = isPhone ? 65 : isTablet ? 85 : 105
+  const orbitalCenterY = height / 2
+  const orbitalBaseRadius = isPhone ? 90 : isTablet ? 115 : 140
+  const orbitalRingGap = isPhone ? 80 : isTablet ? 100 : 120
 
   const positions = useMemo(() => {
     const pos = {}
@@ -473,19 +475,25 @@ export default function CascadeAnimation({
     <div className="flex flex-col h-full">
       {/* Toolbar — frosted glass */}
       <div className={`flex items-center gap-1.5 ${isPhone ? 'px-2 py-1.5 flex-wrap' : 'px-4 py-2'} bg-[#1a1a1e]/80 backdrop-blur-md border-b border-[#333]/80`}>
-        {/* Layout toggle */}
-        <button
-          onClick={() => setLayout(layout === LAYOUTS.TIERED ? LAYOUTS.ORBITAL : LAYOUTS.TIERED)}
-          className={`text-[10px] px-2 py-1 rounded-md font-medium transition-all min-h-[44px] flex items-center gap-1 border ${
-            layout === LAYOUTS.ORBITAL
-              ? 'bg-[#2a2a35] text-blue-300 border-blue-500/30'
-              : 'bg-[#2a2a30]/60 text-gray-500 border-[#333] hover:text-gray-400'
-          }`}
-          title={`Switch to ${layout === LAYOUTS.TIERED ? 'orbital' : 'tiered'} layout`}
-        >
-          {layout === LAYOUTS.ORBITAL ? '\u25CE' : '\u2630'}
-          <span className="hidden sm:inline">{layout === LAYOUTS.ORBITAL ? 'Orbital' : 'Tiered'}</span>
-        </button>
+        {/* Layout toggle — cycle through layouts */}
+        {[
+          { key: LAYOUTS.TIERED, icon: '\u2630', label: 'Tiered' },
+          { key: LAYOUTS.ORBITAL, icon: '\u25CE', label: 'Orbital' },
+          { key: LAYOUTS.THREE_D, icon: '\u2B21', label: '3D' },
+        ].map((l) => (
+          <button
+            key={l.key}
+            onClick={() => setLayout(l.key)}
+            className={`text-[10px] px-2 py-1 rounded-md font-medium transition-all min-h-[44px] flex items-center gap-1 border ${
+              layout === l.key
+                ? 'bg-[#2a2a35] text-blue-300 border-blue-500/30'
+                : 'bg-[#2a2a30]/60 text-gray-500 border-[#333] hover:text-gray-400'
+            }`}
+          >
+            {l.icon}
+            <span className="hidden sm:inline">{l.label}</span>
+          </button>
+        ))}
 
         <span className="w-px h-5 bg-[#333] mx-0.5" />
 
@@ -606,7 +614,21 @@ export default function CascadeAnimation({
 
       {/* Main content area */}
       <div className="flex flex-1 min-h-0 overflow-hidden">
-        {/* SVG graph */}
+        {/* 3D graph (replaces SVG when in 3D layout) */}
+        {layout === LAYOUTS.THREE_D ? (
+          <div className="flex-1 relative">
+            <Suspense fallback={<div className="flex-1 flex items-center justify-center text-gray-500 text-sm">Loading 3D...</div>}>
+              <CascadeGraph3D
+                nodes={nodes}
+                edges={edges}
+                cascadeState={cascadeState}
+                isMasteryCascade={isMasteryCascade}
+                onNodeClick={handleNodeClick}
+                hasData={hasData}
+              />
+            </Suspense>
+          </div>
+        ) : (
         <div className="flex-1 overflow-auto relative">
           <svg
             viewBox={`0 0 ${width} ${height}`}
@@ -722,10 +744,15 @@ export default function CascadeAnimation({
                 <feGaussianBlur stdDeviation="3" />
               </filter>
 
-              {/* Orbital center core gradient */}
+              {/* Orbital center core gradients */}
               <radialGradient id="orbital-core-gradient">
-                <stop offset="0%" stopColor="#6889b5" stopOpacity="0.12" />
-                <stop offset="60%" stopColor="#4a5568" stopOpacity="0.06" />
+                <stop offset="0%" stopColor="#6889b5" stopOpacity="0.1" />
+                <stop offset="40%" stopColor="#4a5568" stopOpacity="0.05" />
+                <stop offset="100%" stopColor="#1a1a1e" stopOpacity="0" />
+              </radialGradient>
+              <radialGradient id="orbital-core-inner">
+                <stop offset="0%" stopColor="#6889b5" stopOpacity="0.2" />
+                <stop offset="70%" stopColor="#3a4a5a" stopOpacity="0.08" />
                 <stop offset="100%" stopColor="#1a1a1e" stopOpacity="0" />
               </radialGradient>
 
@@ -757,37 +784,84 @@ export default function CascadeAnimation({
               `}</style>
             </defs>
 
-            {/* Background grid — ambient breathing */}
-            <g className="ambient-grid">
-              {Array.from({ length: Math.ceil(width / 40) }, (_, i) => (
-                <line key={`v${i}`} x1={i * 40} y1={0} x2={i * 40} y2={height} stroke="#fff" strokeWidth="0.5" />
-              ))}
-              {Array.from({ length: Math.ceil(height / 40) }, (_, i) => (
-                <line key={`h${i}`} x1={0} y1={i * 40} x2={width} y2={i * 40} stroke="#fff" strokeWidth="0.5" />
-              ))}
-            </g>
-
-            {/* Orbital layout: ring lines and center core */}
-            {layout === LAYOUTS.ORBITAL && (
-              <g>
-                {/* Concentric orbital ring lines */}
-                {[1, 2, 3].map((ring) => (
-                  <circle
-                    key={`ring-${ring}`}
-                    cx={centerX}
-                    cy={orbitalCenterY}
-                    r={orbitalBaseRadius + (ring - 1) * orbitalRingGap}
-                    fill="none"
-                    stroke="#fff"
-                    strokeWidth="0.5"
-                    opacity="0.06"
-                    strokeDasharray="4,6"
-                  />
+            {/* Background — grid for tiered, radial for orbital */}
+            {layout !== LAYOUTS.ORBITAL ? (
+              <g className="ambient-grid">
+                {Array.from({ length: Math.ceil(width / 40) }, (_, i) => (
+                  <line key={`v${i}`} x1={i * 40} y1={0} x2={i * 40} y2={height} stroke="#fff" strokeWidth="0.5" />
                 ))}
+                {Array.from({ length: Math.ceil(height / 40) }, (_, i) => (
+                  <line key={`h${i}`} x1={0} y1={i * 40} x2={width} y2={i * 40} stroke="#fff" strokeWidth="0.5" />
+                ))}
+              </g>
+            ) : (
+              <g>
+                {/* Orbital zone bands — subtle colored rings between orbits */}
+                {[3, 2, 1].map((ring) => {
+                  const r = orbitalBaseRadius + (ring - 1) * orbitalRingGap
+                  return (
+                    <circle
+                      key={`zone-${ring}`}
+                      cx={centerX} cy={orbitalCenterY}
+                      r={r + orbitalRingGap * 0.45}
+                      fill="none"
+                      stroke={ring === 1 ? '#4a6a8a' : ring === 2 ? '#5a5a7a' : '#6a4a6a'}
+                      strokeWidth={orbitalRingGap * 0.7}
+                      opacity="0.03"
+                    />
+                  )
+                })}
 
-                {/* Center core glow */}
-                <circle cx={centerX} cy={orbitalCenterY} r={orbitalBaseRadius * 0.4} fill="url(#orbital-core-gradient)" />
-                <circle cx={centerX} cy={orbitalCenterY} r={orbitalBaseRadius * 0.15} fill="#2a2a35" stroke="#556" strokeWidth="1" opacity="0.8" />
+                {/* Orbital ring lines — animated dashed circles */}
+                {[1, 2, 3].map((ring) => {
+                  const r = orbitalBaseRadius + (ring - 1) * orbitalRingGap
+                  const circumference = 2 * Math.PI * r
+                  return (
+                    <circle
+                      key={`ring-${ring}`}
+                      cx={centerX} cy={orbitalCenterY}
+                      r={r}
+                      fill="none"
+                      stroke={ring === 1 ? '#4a7a9a' : ring === 2 ? '#6a6a8a' : '#8a5a7a'}
+                      strokeWidth="1"
+                      opacity="0.15"
+                      strokeDasharray={`${circumference * 0.02},${circumference * 0.03}`}
+                    >
+                      <animateTransform
+                        attributeName="transform"
+                        type="rotate"
+                        from={`0 ${centerX} ${orbitalCenterY}`}
+                        to={`${ring % 2 === 0 ? 360 : -360} ${centerX} ${orbitalCenterY}`}
+                        dur={`${60 + ring * 20}s`}
+                        repeatCount="indefinite"
+                      />
+                    </circle>
+                  )
+                })}
+
+                {/* Radial spoke lines — very faint */}
+                {[0, 60, 120, 180, 240, 300].map((deg) => {
+                  const rad = deg * Math.PI / 180
+                  const outerR = orbitalBaseRadius + orbitalRingGap * 2.5
+                  return (
+                    <line
+                      key={`spoke-${deg}`}
+                      x1={centerX + Math.cos(rad) * 30}
+                      y1={orbitalCenterY + Math.sin(rad) * 30}
+                      x2={centerX + Math.cos(rad) * outerR}
+                      y2={orbitalCenterY + Math.sin(rad) * outerR}
+                      stroke="#fff" strokeWidth="0.5" opacity="0.03"
+                    />
+                  )
+                })}
+
+                {/* Center core — multi-layered glow */}
+                <circle cx={centerX} cy={orbitalCenterY} r={orbitalBaseRadius * 0.6} fill="url(#orbital-core-gradient)" />
+                <circle cx={centerX} cy={orbitalCenterY} r={orbitalBaseRadius * 0.35} fill="url(#orbital-core-inner)" />
+                <circle cx={centerX} cy={orbitalCenterY} r={6} fill="#6889b5" opacity="0.4">
+                  <animate attributeName="r" values="4;8;4" dur="4s" repeatCount="indefinite" />
+                  <animate attributeName="opacity" values="0.3;0.6;0.3" dur="4s" repeatCount="indefinite" />
+                </circle>
               </g>
             )}
 
@@ -822,9 +896,11 @@ export default function CascadeAnimation({
             )}
             {/* Orbital ring labels */}
             {layout === LAYOUTS.ORBITAL && (
-              <g>
-                <text x={centerX} y={orbitalCenterY + orbitalBaseRadius * 0.15 + 14} textAnchor="middle" fill="#556" fontSize="7" fontFamily="monospace" letterSpacing="1">CORE</text>
-                <text x={centerX + orbitalBaseRadius + orbitalRingGap * 2 + 16} y={orbitalCenterY + 4} fill="#444" fontSize="7" fontFamily="monospace" letterSpacing="1">OUTER</text>
+              <g opacity="0.3">
+                <text x={centerX} y={orbitalCenterY + 18} textAnchor="middle" fill="#6889b5" fontSize="7" fontFamily="monospace" letterSpacing="2">FOUNDATION</text>
+                <text x={centerX + orbitalBaseRadius + 4} y={orbitalCenterY - 10} fill="#4a7a9a" fontSize="6" fontFamily="monospace" letterSpacing="1">INNER</text>
+                <text x={centerX + orbitalBaseRadius + orbitalRingGap + 4} y={orbitalCenterY - 10} fill="#6a6a8a" fontSize="6" fontFamily="monospace" letterSpacing="1">MID</text>
+                <text x={centerX + orbitalBaseRadius + orbitalRingGap * 2 + 4} y={orbitalCenterY - 10} fill="#8a5a7a" fontSize="6" fontFamily="monospace" letterSpacing="1">OUTER</text>
               </g>
             )}
 
@@ -1058,12 +1134,23 @@ export default function CascadeAnimation({
                       </circle>
                     )}
 
+                    {/* Orbital node halo */}
+                    {layout === LAYOUTS.ORBITAL && (
+                      <ellipse
+                        cx={pos.x} cy={pos.y}
+                        rx={nodeW / 2 + 8} ry={nodeH / 2 + 8}
+                        fill={domainColor}
+                        opacity={0.04}
+                        pointerEvents="none"
+                      />
+                    )}
+
                     {/* Node rect — CSS-transitioned fills for smooth state changes */}
                     <rect
                       className="node-rect"
                       x={pos.x - nodeW / 2} y={pos.y - nodeH / 2}
                       width={nodeW} height={nodeH}
-                      rx={isPhone ? 8 : isTablet ? 9 : 10}
+                      rx={layout === LAYOUTS.ORBITAL ? nodeH / 2 : (isPhone ? 8 : isTablet ? 9 : 10)}
                       fill={style.fill}
                       stroke={style.stroke}
                       strokeWidth={isSource || isAffected || isExpanded ? 2.5 : 1.5}
@@ -1342,6 +1429,7 @@ export default function CascadeAnimation({
             )}
           </AnimatePresence>
         </div>
+        )}
 
         {/* Side panels */}
         <Suspense fallback={null}>
