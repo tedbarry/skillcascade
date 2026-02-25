@@ -174,13 +174,13 @@ export default function Sunburst({ data, assessments = {}, width = 800, height =
       .attrTween('transform', (d) => () => labelTransform(d.current, radius))
 
     // Update label text for new arc sizes after zoom
+    // Labels run radially — constrained by ring thickness, not arc length
     label.text((d) => {
       const target = d.target || d.current
-      const angularSpan = target.x1 - target.x0
-      const midRadius = ((target.y0 + target.y1) / 2) * radius
-      const arcLength = angularSpan * midRadius
-      const charWidth = d.depth === 1 ? 7 : d.depth === 2 ? 5.5 : 4.5
-      const maxLen = Math.max(0, Math.floor(arcLength / charWidth) - 1)
+      const ringThickness = (target.y1 - target.y0) * radius
+      const charWidth = d.depth === 1 ? 6.5 : d.depth === 2 ? 5 : 4.3
+      const defaultMax = d.depth === 1 ? 16 : d.depth === 2 ? 14 : 12
+      const maxLen = Math.min(defaultMax, Math.floor(ringThickness * 0.9 / charWidth))
       if (maxLen < 3) return ''
       return truncateLabel(d.data.name, maxLen)
     })
@@ -356,12 +356,11 @@ export default function Sunburst({ data, assessments = {}, width = 800, height =
       .style('font-size', (d) => (d.depth === 1 ? '11px' : d.depth === 2 ? '9px' : '7.5px'))
       .style('font-weight', (d) => (d.depth === 1 ? '600' : '400'))
       .text((d) => {
-        // Compute available arc length in pixels for this label
-        const angularSpan = d.current.x1 - d.current.x0
-        const midRadius = ((d.current.y0 + d.current.y1) / 2) * radius
-        const arcLength = angularSpan * midRadius
-        const charWidth = d.depth === 1 ? 7 : d.depth === 2 ? 5.5 : 4.5
-        const maxLen = Math.max(0, Math.floor(arcLength / charWidth) - 1)
+        // Labels run radially — constrained by ring thickness, not arc length
+        const ringThickness = (d.current.y1 - d.current.y0) * radius
+        const charWidth = d.depth === 1 ? 6.5 : d.depth === 2 ? 5 : 4.3
+        const defaultMax = d.depth === 1 ? 16 : d.depth === 2 ? 14 : 12
+        const maxLen = Math.min(defaultMax, Math.floor(ringThickness * 0.9 / charWidth))
         if (maxLen < 3) return ''
         return truncateLabel(d.data.name, maxLen)
       })

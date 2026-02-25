@@ -8,7 +8,7 @@ import { useAuth } from '../contexts/AuthContext.jsx'
  * Dark mode stays in localStorage for instant load before auth completes.
  */
 export default function SettingsDropdown() {
-  const { user } = useAuth()
+  const { user, signOut } = useAuth()
   const [open, setOpen] = useState(false)
   const [darkMode, setDarkMode] = useState(() => {
     return localStorage.getItem('skillcascade_dark_mode') === 'true'
@@ -102,6 +102,26 @@ export default function SettingsDropdown() {
             </svg>
             <span>Replay Onboarding Tour</span>
           </button>
+
+          {/* Sign out */}
+          {user && (
+            <>
+              <div className="border-t border-warm-100 my-1" />
+              <div className="px-3 py-1.5 text-xs text-warm-400 truncate">{user.email}</div>
+              <button
+                onClick={async () => {
+                  setOpen(false)
+                  await signOut()
+                }}
+                className="w-full flex items-center gap-2 px-3 py-2 text-sm text-coral-600 hover:bg-coral-50 transition-colors"
+              >
+                <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
+                </svg>
+                <span>Sign Out</span>
+              </button>
+            </>
+          )}
         </div>
       )}
     </div>

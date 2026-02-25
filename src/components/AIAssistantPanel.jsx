@@ -800,28 +800,15 @@ export default function AIAssistantPanel({ isOpen, onClose, clientName, assessme
 
   const selectedTool = AI_TOOLS.find((t) => t.id === selectedToolId)
 
-  // Load API key from Supabase (migrate from localStorage if needed)
+  // Check API key status when panel opens (AuthContext syncs Supabase→localStorage on login)
   useEffect(() => {
     if (!isOpen) return
     const localKey = localStorage.getItem('skillcascade_ai_api_key')
-    if (localKey) setIsApiConnected(true)
-
-    if (!userId) return
-    supabase
-      .from('user_settings')
-      .select('settings')
-      .eq('user_id', userId)
-      .single()
-      .then(({ data }) => {
-        const savedKey = data?.settings?.ai_api_key
-        if (savedKey) {
-          localStorage.setItem('skillcascade_ai_api_key', savedKey)
-          setIsApiConnected(true)
-        } else if (localKey) {
-          // Migrate localStorage key to Supabase
-          mergeUserSettings(userId, { ai_api_key: localKey })
-        }
-      })
+    if (localKey) {
+      setIsApiConnected(true)
+      // Migrate localStorage-only key to Supabase if not yet synced
+      if (userId) mergeUserSettings(userId, { ai_api_key: localKey })
+    }
   }, [isOpen, userId])
 
   // Compute overall assessment progress
