@@ -4,8 +4,8 @@ import { useState } from 'react'
 const TAB_GROUPS = {
   dashboard: {
     label: 'Dashboard',
-    views: ['sunburst', 'radar', 'tree', 'cascade', 'timeline'],
-    viewLabels: { sunburst: 'Sunburst', radar: 'Radar', tree: 'Skill Tree', cascade: 'Intelligence', timeline: 'Timeline' },
+    views: ['sunburst', 'radar', 'tree', 'cascade', 'explorer', 'timeline'],
+    viewLabels: { sunburst: 'Sunburst', radar: 'Radar', tree: 'Skill Tree', cascade: 'Intelligence', explorer: 'Explorer', timeline: 'Timeline' },
   },
   assess: {
     label: 'Assess',

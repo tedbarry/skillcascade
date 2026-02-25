@@ -41,6 +41,7 @@ const Marketplace = lazy(() => import('../components/Marketplace.jsx'))
 const OutcomeCertification = lazy(() => import('../components/OutcomeCertification.jsx'))
 const ComparisonView = lazy(() => import('../components/ComparisonView.jsx'))
 const KeyboardShortcuts = lazy(() => import('../components/KeyboardShortcuts.jsx'))
+const DependencyExplorer = lazy(() => import('../components/explorer/DependencyExplorer.jsx'))
 import { framework, toHierarchy, ASSESSMENT_LABELS, ASSESSMENT_COLORS, ASSESSMENT_LEVELS } from '../data/framework.js'
 import { generateSampleAssessments } from '../data/sampleAssessments.js'
 import { saveSnapshot, getSnapshots, deleteSnapshot, getAssessments, saveAssessment } from '../data/storage.js'
@@ -82,6 +83,7 @@ export const VIEWS = {
   MARKETPLACE: 'marketplace',
   CERTIFICATIONS: 'certifications',
   COMPARE: 'compare',
+  EXPLORER: 'explorer',
 }
 
 export default function Dashboard() {
@@ -236,7 +238,7 @@ export default function Dashboard() {
   }
 
   // Assessment, tree, cascade, and timeline views are full-width — no side panels
-  const fullWidthViews = [VIEWS.ASSESS, VIEWS.TREE, VIEWS.CASCADE, VIEWS.TIMELINE, VIEWS.QUICK_ASSESS, VIEWS.GOALS, VIEWS.ALERTS, VIEWS.REPORTS, VIEWS.PARENT, VIEWS.CASELOAD, VIEWS.MILESTONES, VIEWS.PRACTICE, VIEWS.ORG_ANALYTICS, VIEWS.PREDICTIONS, VIEWS.BRANDING, VIEWS.MESSAGES, VIEWS.DATA, VIEWS.ACCESSIBILITY, VIEWS.PRICING, VIEWS.MARKETPLACE, VIEWS.CERTIFICATIONS, VIEWS.COMPARE]
+  const fullWidthViews = [VIEWS.ASSESS, VIEWS.TREE, VIEWS.CASCADE, VIEWS.EXPLORER, VIEWS.TIMELINE, VIEWS.QUICK_ASSESS, VIEWS.GOALS, VIEWS.ALERTS, VIEWS.REPORTS, VIEWS.PARENT, VIEWS.CASELOAD, VIEWS.MILESTONES, VIEWS.PRACTICE, VIEWS.ORG_ANALYTICS, VIEWS.PREDICTIONS, VIEWS.BRANDING, VIEWS.MESSAGES, VIEWS.DATA, VIEWS.ACCESSIBILITY, VIEWS.PRICING, VIEWS.MARKETPLACE, VIEWS.CERTIFICATIONS, VIEWS.COMPARE]
   const showSidePanels = !fullWidthViews.includes(activeView)
 
   return (
@@ -424,6 +426,7 @@ export default function Dashboard() {
               { key: VIEWS.RADAR, label: 'Radar' },
               { key: VIEWS.TREE, label: 'Skill Tree' },
               { key: VIEWS.CASCADE, label: 'Intelligence' },
+              { key: VIEWS.EXPLORER, label: 'Explorer' },
               { key: VIEWS.TIMELINE, label: 'Timeline' },
               { key: VIEWS.ASSESS, label: 'Assess' },
               { key: VIEWS.QUICK_ASSESS, label: 'Quick Assess' },
@@ -816,6 +819,11 @@ export default function Dashboard() {
                 <PricingPage />
               </Suspense>
             </div>
+          )}
+          {activeView === VIEWS.EXPLORER && (
+            <Suspense fallback={<ViewLoader />}>
+              <DependencyExplorer assessments={assessments} />
+            </Suspense>
           )}
           </ErrorBoundary>
         </main>

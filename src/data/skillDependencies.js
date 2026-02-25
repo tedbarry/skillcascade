@@ -1170,6 +1170,61 @@ export function findCrossDomainBottlenecks(assessments, framework) {
 }
 
 /**
+ * Build a 9×9 matrix counting cross-domain sub-area dependency links.
+ * matrix[i][j] = number of sub-areas in domain i that depend on sub-areas in domain j.
+ * Domain indices: d1=0, d2=1, ..., d9=8.
+ */
+export function buildDomainChordMatrix() {
+  const DOMAIN_IDS = ['d1', 'd2', 'd3', 'd4', 'd5', 'd6', 'd7', 'd8', 'd9']
+  const idx = Object.fromEntries(DOMAIN_IDS.map((d, i) => [d, i]))
+  const matrix = Array.from({ length: 9 }, () => Array(9).fill(0))
+
+  for (const [saId, prereqs] of Object.entries(SUB_AREA_DEPS)) {
+    const fromDomain = getDomainFromId(saId)
+    if (!fromDomain) continue
+    for (const prereqSa of prereqs) {
+      const toDomain = getDomainFromId(prereqSa)
+      if (!toDomain || fromDomain === toDomain) continue // skip same-domain
+      matrix[idx[fromDomain]][idx[toDomain]]++
+    }
+  }
+
+  return { matrix, domainIds: DOMAIN_IDS }
+}
+
+/**
+ * Build reverse map of SKILL_PREREQUISITES: for each prerequisite skill,
+ * list the skills that depend on it.
+ * Returns { prereqSkillId: [dependentSkillId, ...], ... }
+ */
+export function buildReversePrereqMap() {
+  const reverse = {}
+  for (const [skillId, prereqs] of Object.entries(SKILL_PREREQUISITES)) {
+    for (const prereqId of prereqs) {
+      if (!reverse[prereqId]) reverse[prereqId] = []
+      reverse[prereqId].push(skillId)
+    }
+  }
+  return reverse
+}
+
+/**
+ * Build reverse map of SUB_AREA_DEPS: for each prerequisite sub-area,
+ * list the sub-areas that depend on it.
+ * Returns { prereqSubAreaId: [dependentSubAreaId, ...], ... }
+ */
+export function buildReverseSubAreaDeps() {
+  const reverse = {}
+  for (const [saId, prereqs] of Object.entries(SUB_AREA_DEPS)) {
+    for (const prereqSa of prereqs) {
+      if (!reverse[prereqSa]) reverse[prereqSa] = []
+      reverse[prereqSa].push(saId)
+    }
+  }
+  return reverse
+}
+
+/**
  * Get tier distribution for a sub-area.
  * Returns { 1: { total, met }, 2: { total, met }, ... }
  */
