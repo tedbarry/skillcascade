@@ -1,14 +1,13 @@
 import { useState, useCallback, useMemo, memo } from 'react'
-import TieredGraph from './TieredGraph.jsx'
+import StatusTile from './StatusTile.jsx'
 import SubAreaPanel from './SubAreaPanel.jsx'
-import useTieredPositions from '../../hooks/useTieredPositions.js'
 import useCascadeGraph from '../../hooks/useCascadeGraph.js'
 import useResponsive from '../../hooks/useResponsive.js'
 
 /**
  * StatusMapView — "Where are we?"
- * Quick 2-second overview of all 9 domains.
- * Click a domain to see sub-area detail. No cascade, no modes.
+ * 9-tile dashboard grid with radial health gauges.
+ * Glanceable in 2 seconds. Click tile → sub-area detail.
  */
 export default memo(function StatusMapView({
   assessments = {},
@@ -16,13 +15,12 @@ export default memo(function StatusMapView({
   clientName = '',
   onNavigateToAssess,
 }) {
-  const { isPhone } = useResponsive()
-  const { nodes, edges, domainHealth, getSubAreaHealth } = useCascadeGraph(assessments, snapshots)
-  const { positions, dims } = useTieredPositions(nodes)
+  const { isPhone, isTablet } = useResponsive()
+  const { nodes, getSubAreaHealth } = useCascadeGraph(assessments, snapshots)
   const [expandedDomain, setExpandedDomain] = useState(null)
   const hasData = useMemo(() => Object.keys(assessments).length > 0, [assessments])
 
-  const handleNodeClick = useCallback((domainId) => {
+  const handleTileClick = useCallback((domainId) => {
     setExpandedDomain(prev => prev === domainId ? null : domainId)
   }, [])
 
@@ -31,47 +29,68 @@ export default memo(function StatusMapView({
     return getSubAreaHealth(expandedDomain)
   }, [expandedDomain, getSubAreaHealth])
 
-  // Default edge styling — colored by source health
-  const edgeStyleFn = useCallback((edge) => {
-    const healthPct = edge.sourceHealthPct || 0
-    if (edge.isWeak) {
-      return { stroke: '#e8928a', opacity: 0.7, width: 2.5 }
-    }
-    if (hasData && healthPct > 0) {
-      const green = Math.round(100 + healthPct * 155)
-      return {
-        stroke: `rgb(${80 - healthPct * 30}, ${green}, ${100 - healthPct * 10})`,
-        opacity: 0.4 + healthPct * 0.4,
-        width: 1 + healthPct,
-      }
-    }
-    return { stroke: '#556', opacity: 0.4, width: 1.5 }
-  }, [hasData])
-
-  // Highlight selected domain
-  const nodeHighlightFn = useCallback((node) => {
-    if (expandedDomain && expandedDomain !== node.id) return 'dimmed'
-    if (expandedDomain === node.id) return 'selected'
-    return null
-  }, [expandedDomain])
-
-  const title = hasData
-    ? 'STATUS OVERVIEW'
-    : 'DEVELOPMENTAL CONNECTOME · NO DATA YET'
+  // Status counts for summary
+  const statusCounts = useMemo(() => {
+    let mastered = 0, developing = 0, needsWork = 0, unassessed = 0
+    nodes.forEach(n => {
+      if (n.assessed === 0) { unassessed++; return }
+      if (n.state === 'mastered') mastered++
+      else if (n.state === 'developing') developing++
+      else needsWork++
+    })
+    return { mastered, developing, needsWork, unassessed }
+  }, [nodes])
 
   return (
     <div className="flex flex-1 min-h-0 overflow-hidden">
-      <TieredGraph
-        nodes={nodes}
-        edges={edges}
-        positions={positions}
-        dims={dims}
-        isPhone={isPhone}
-        onNodeClick={handleNodeClick}
-        edgeStyleFn={edgeStyleFn}
-        nodeHighlightFn={nodeHighlightFn}
-        title={title}
-      />
+      <div className="flex-1 overflow-auto">
+        {/* Summary header */}
+        <div className={`${isPhone ? 'px-4 py-3' : 'px-6 py-4'} border-b border-[#333]/40`}>
+          <h2 className="text-xs font-mono tracking-widest text-gray-500 uppercase mb-1">
+            Status Overview
+          </h2>
+          {hasData ? (
+            <p className="text-xs text-gray-400">
+              {statusCounts.mastered > 0 && <span className="text-[#7fb589]">{statusCounts.mastered} mastered</span>}
+              {statusCounts.developing > 0 && <span>{statusCounts.mastered > 0 ? ' · ' : ''}<span className="text-[#e5b76a]">{statusCounts.developing} developing</span></span>}
+              {statusCounts.needsWork > 0 && <span>{(statusCounts.mastered + statusCounts.developing) > 0 ? ' · ' : ''}<span className="text-[#e8928a]">{statusCounts.needsWork} needs work</span></span>}
+              {statusCounts.unassessed > 0 && <span className="text-gray-600"> · {statusCounts.unassessed} not assessed</span>}
+            </p>
+          ) : (
+            <p className="text-xs text-gray-600">Add assessment data to see domain status.</p>
+          )}
+        </div>
+
+        {/* Tile grid */}
+        <div className={`${isPhone ? 'px-3 py-3' : 'px-6 py-5'}`}>
+          {isPhone ? (
+            // Phone: single-column compact rows
+            <div className="space-y-2">
+              {nodes.map(node => (
+                <StatusTile
+                  key={node.id}
+                  node={node}
+                  selected={expandedDomain === node.id}
+                  onClick={() => handleTileClick(node.id)}
+                  isCompact
+                />
+              ))}
+            </div>
+          ) : (
+            // Desktop/Tablet: 3×3 grid
+            <div className={`grid grid-cols-3 ${isTablet ? 'gap-3' : 'gap-4'} max-w-3xl mx-auto`}>
+              {nodes.map(node => (
+                <StatusTile
+                  key={node.id}
+                  node={node}
+                  selected={expandedDomain === node.id}
+                  onClick={() => handleTileClick(node.id)}
+                />
+              ))}
+            </div>
+          )}
+        </div>
+      </div>
 
       {/* Sub-area panel */}
       {expandedDomain && (

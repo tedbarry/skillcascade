@@ -1,25 +1,24 @@
 import { useState, useCallback, useMemo, memo } from 'react'
 import { AnimatePresence } from 'framer-motion'
-import TieredGraph from './TieredGraph.jsx'
-import RiskPanel from './RiskPanel.jsx'
-import DomainSparkline from './DomainSparkline.jsx'
-import useTieredPositions from '../../hooks/useTieredPositions.js'
+import RiskBanner from './RiskBanner.jsx'
+import TrendCard from './TrendCard.jsx'
+import SubAreaPanel from './SubAreaPanel.jsx'
 import useCascadeGraph from '../../hooks/useCascadeGraph.js'
 import useResponsive from '../../hooks/useResponsive.js'
 import { framework } from '../../data/framework.js'
 import { computeDomainHealth } from '../../data/cascadeModel.js'
 
-const RISK_NODE_ICONS = {
-  inversion: { symbol: '\u26A0', color: '#e8928a' },
-  regression: { symbol: '\u2193', color: '#ff6666' },
-  bottleneck: { symbol: '\u29B8', color: '#e5b76a' },
-  stalling: { symbol: '\u23F8', color: '#999' },
+const RISK_BORDER_COLORS = {
+  inversion: '#e8928a',
+  regression: '#ff6666',
+  bottleneck: '#e5b76a',
+  stalling: '#aaa',
 }
 
 /**
  * RiskMonitorView — "What's at risk?"
- * Clear alerts about regression, stalling, inversions.
- * Risk badges on nodes, sparklines for trends, risk card panel.
+ * Alert-first layout: risk banners at top, 3×3 sparkline trend grid below.
+ * A monitoring station / hospital vitals dashboard.
  */
 export default memo(function RiskMonitorView({
   assessments = {},
@@ -28,10 +27,9 @@ export default memo(function RiskMonitorView({
   onNavigateToAssess,
 }) {
   const { isPhone, isTablet } = useResponsive()
-  const { nodes, edges, cascadeRisks, domainHealth } = useCascadeGraph(assessments, snapshots)
-  const { positions, dims } = useTieredPositions(nodes)
+  const { nodes, cascadeRisks, domainHealth, getSubAreaHealth } = useCascadeGraph(assessments, snapshots)
   const [selectedRisk, setSelectedRisk] = useState(null)
-  const [showPanel, setShowPanel] = useState(true)
+  const [expandedDomain, setExpandedDomain] = useState(null)
   const hasData = useMemo(() => Object.keys(assessments).length > 0, [assessments])
 
   // Build domain score history from snapshots for sparklines
@@ -53,199 +51,145 @@ export default memo(function RiskMonitorView({
     return history
   }, [snapshots, domainHealth])
 
-  // Map risks to affected domains for node badge rendering
-  const domainRiskMap = useMemo(() => {
-    const map = {}
-    cascadeRisks.forEach((risk, i) => {
-      risk.affectedDomains.forEach(dId => {
-        if (!map[dId]) map[dId] = []
-        // Only add primary risk type per domain
-        if (!map[dId].find(r => r.type === risk.type)) {
-          map[dId].push({ type: risk.type, riskIndex: i, severity: risk.severity })
-        }
-      })
-    })
-    return map
-  }, [cascadeRisks])
-
   // Domains highlighted by selected risk
   const highlightedDomains = useMemo(() => {
     if (selectedRisk === null || !cascadeRisks[selectedRisk]) return new Set()
     return new Set(cascadeRisks[selectedRisk].affectedDomains)
   }, [selectedRisk, cascadeRisks])
 
-  const handleNodeClick = useCallback((domainId) => {
-    // Find first risk involving this domain and select it
-    const riskIdx = cascadeRisks.findIndex(r => r.affectedDomains.includes(domainId))
-    if (riskIdx >= 0) {
-      setSelectedRisk(prev => prev === riskIdx ? null : riskIdx)
-      setShowPanel(true)
-    }
-  }, [cascadeRisks])
+  // Get highlight color for a domain
+  const getDomainHighlight = useCallback((domainId) => {
+    if (highlightedDomains.size === 0) return null
+    if (!highlightedDomains.has(domainId)) return null
+    const risk = cascadeRisks[selectedRisk]
+    return RISK_BORDER_COLORS[risk?.type] || '#e5b76a'
+  }, [highlightedDomains, selectedRisk, cascadeRisks])
 
-  // Node styling: highlight risk-affected domains
-  const nodeStyleFn = useCallback((node) => {
-    if (!hasData) return null
-    if (highlightedDomains.size > 0 && highlightedDomains.has(node.id)) {
-      const risk = domainRiskMap[node.id]?.[0]
-      if (risk) {
-        const iconCfg = RISK_NODE_ICONS[risk.type] || RISK_NODE_ICONS.bottleneck
-        return { fill: '#2a1a1a', stroke: iconCfg.color, textColor: iconCfg.color }
-      }
-    }
-    return null
-  }, [hasData, highlightedDomains, domainRiskMap])
+  const handleRiskClick = useCallback((index) => {
+    setSelectedRisk(prev => prev === index ? null : index)
+  }, [])
 
-  const nodeHighlightFn = useCallback((node) => {
-    if (highlightedDomains.size > 0 && !highlightedDomains.has(node.id)) return 'dimmed'
-    return null
-  }, [highlightedDomains])
+  const handleTrendClick = useCallback((domainId) => {
+    setExpandedDomain(prev => prev === domainId ? null : domainId)
+  }, [])
 
-  const nodeBadgesFn = useCallback((node) => {
-    const badges = []
-    const risks = domainRiskMap[node.id] || []
-    risks.forEach(risk => {
-      const iconCfg = RISK_NODE_ICONS[risk.type] || RISK_NODE_ICONS.bottleneck
-      badges.push({
-        text: `${iconCfg.symbol} ${risk.type.charAt(0).toUpperCase() + risk.type.slice(1)}`,
-        color: iconCfg.color,
-        bg: '#1a1a22',
-      })
-    })
-    return badges
-  }, [domainRiskMap])
-
-  // Sparkline rendered inside each node
-  const nodeChildrenFn = useCallback((node, pos) => {
-    const scores = domainScoreHistory[node.id]
-    if (!scores || scores.length < 2) return null
-
-    const sparkW = Math.min(dims.nodeW - 20, 60)
-    const sparkH = 14
-    const x = pos.x - sparkW / 2
-    const y = pos.y + dims.nodeH / 2 - sparkH - 4
-
-    // Build sparkline points directly in SVG
-    const maxScore = 3
-    const pad = 1
-    const w = sparkW - pad * 2
-    const h = sparkH - pad * 2
-
-    const points = scores.map((score, i) => {
-      const px = x + pad + (i / (scores.length - 1)) * w
-      const py = y + pad + h - (score / maxScore) * h
-      return `${px},${py}`
-    }).join(' ')
-
-    const lastScore = scores[scores.length - 1]
-    const trend = lastScore - scores[0]
-    const lineColor = trend >= 0 ? '#7fb589' : '#e8928a'
-
-    return (
-      <g>
-        <polyline
-          points={points}
-          fill="none"
-          stroke={lineColor}
-          strokeWidth="1"
-          strokeLinecap="round"
-          strokeLinejoin="round"
-          opacity="0.7"
-        />
-        <circle
-          cx={x + sparkW - pad}
-          cy={y + pad + h - (lastScore / maxScore) * h}
-          r="1.5"
-          fill={lineColor}
-        />
-      </g>
-    )
-  }, [domainScoreHistory, dims])
-
-  // Edge styling
-  const edgeStyleFn = useCallback((edge) => {
-    if (highlightedDomains.size > 0) {
-      if (highlightedDomains.has(edge.from) && highlightedDomains.has(edge.to)) {
-        return { stroke: '#e8928a', opacity: 0.7, width: 2.5 }
-      }
-      return { stroke: '#445', opacity: 0.15, width: 1 }
-    }
-    if (edge.isWeak) {
-      return { stroke: '#e8928a', opacity: 0.6, width: 2 }
-    }
-    return { stroke: '#556', opacity: 0.4, width: 1.5 }
-  }, [highlightedDomains])
+  const subAreas = useMemo(() => {
+    if (!expandedDomain) return []
+    return getSubAreaHealth(expandedDomain)
+  }, [expandedDomain, getSubAreaHealth])
 
   // Summary
   const summaryText = useMemo(() => {
     if (!hasData) return 'Add assessment data to monitor risks.'
     if (cascadeRisks.length === 0) return 'No risks detected. All domains are stable.'
-    const inversions = cascadeRisks.filter(r => r.type === 'inversion').length
-    const regressions = cascadeRisks.filter(r => r.type === 'regression').length
-    const bottlenecks = cascadeRisks.filter(r => r.type === 'bottleneck').length
-    const parts = []
-    if (inversions > 0) parts.push(`${inversions} inversion${inversions !== 1 ? 's' : ''}`)
-    if (regressions > 0) parts.push(`${regressions} regression${regressions !== 1 ? 's' : ''}`)
-    if (bottlenecks > 0) parts.push(`${bottlenecks} bottleneck${bottlenecks !== 1 ? 's' : ''}`)
-    return `${cascadeRisks.length} risk${cascadeRisks.length !== 1 ? 's' : ''} detected: ${parts.join(', ')}.`
+    const types = {}
+    cascadeRisks.forEach(r => { types[r.type] = (types[r.type] || 0) + 1 })
+    const parts = Object.entries(types).map(([type, count]) => `${count} ${type}${count !== 1 ? 's' : ''}`)
+    return `${cascadeRisks.length} risk${cascadeRisks.length !== 1 ? 's' : ''}: ${parts.join(', ')}`
   }, [hasData, cascadeRisks])
 
   return (
-    <div className="flex flex-col flex-1 min-h-0 overflow-hidden">
-      {/* Summary banner */}
-      <div className={`${isPhone ? 'px-3 py-2' : 'px-4 py-2'} bg-[#1a1a1e]/90 border-b border-[#333]/60`}>
-        <div className="flex items-center justify-between">
-          <p className={`text-xs ${cascadeRisks.length > 0 ? 'text-orange-300' : 'text-green-400'}`}>
+    <div className="flex flex-1 min-h-0 overflow-hidden">
+      <div className="flex-1 overflow-auto">
+        {/* Summary header */}
+        <div className={`${isPhone ? 'px-3 py-2' : 'px-5 py-3'} border-b border-[#333]/40`}>
+          <h2 className="text-[10px] font-mono tracking-widest text-gray-600 uppercase">
+            Risk Monitor
+          </h2>
+          <p className={`text-xs mt-0.5 ${cascadeRisks.length > 0 ? 'text-orange-300' : 'text-green-400'}`}>
             {summaryText}
           </p>
-          {cascadeRisks.length > 0 && !isPhone && (
-            <button
-              onClick={() => setShowPanel(p => !p)}
-              className="text-[10px] text-gray-500 hover:text-gray-300 px-2 py-1 min-h-[44px] flex items-center"
-            >
-              {showPanel ? 'Hide Panel' : 'Show Panel'}
-            </button>
+        </div>
+
+        {/* Risk banners */}
+        <div className={`${isPhone ? 'px-3 pt-3' : 'px-5 pt-4'} space-y-2`}>
+          <AnimatePresence>
+            {cascadeRisks.length === 0 && hasData ? (
+              <div className="rounded-lg bg-[#1a2a1a] border-l-4 border-[#7fb589] px-4 py-3">
+                <div className="flex items-center gap-2">
+                  <span className="text-green-400 text-sm">{'\u2713'}</span>
+                  <span className="text-sm font-medium text-green-300">All Clear</span>
+                </div>
+                <p className="text-[11px] text-green-400/60 mt-0.5">
+                  No inversions, regressions, or bottlenecks detected.
+                </p>
+              </div>
+            ) : (
+              cascadeRisks.map((risk, i) => (
+                <RiskBanner
+                  key={`${risk.type}-${i}`}
+                  risk={risk}
+                  isSelected={selectedRisk === i}
+                  onClick={() => handleRiskClick(i)}
+                  onAssess={onNavigateToAssess ? () => onNavigateToAssess(risk.actionDomainId + '-sa1') : null}
+                  isCompact={isPhone}
+                />
+              ))
+            )}
+          </AnimatePresence>
+        </div>
+
+        {/* Trend grid */}
+        <div className={`${isPhone ? 'px-3 py-3' : 'px-5 py-4'}`}>
+          <div className="flex items-center justify-between mb-3">
+            <span className="text-[10px] font-mono tracking-widest text-gray-600 uppercase">
+              Domain Trends
+            </span>
+            <span className="text-[9px] text-gray-600">
+              {snapshots.length} snapshot{snapshots.length !== 1 ? 's' : ''} + current
+            </span>
+          </div>
+
+          {isPhone ? (
+            // Phone: single-column
+            <div className="space-y-2">
+              {nodes.map(node => {
+                const highlight = getDomainHighlight(node.id)
+                return (
+                  <TrendCard
+                    key={node.id}
+                    node={node}
+                    scores={domainScoreHistory[node.id] || []}
+                    isHighlighted={!!highlight}
+                    highlightColor={highlight}
+                    isDimmed={highlightedDomains.size > 0 && !highlightedDomains.has(node.id)}
+                    onClick={() => handleTrendClick(node.id)}
+                    isCompact
+                  />
+                )
+              })}
+            </div>
+          ) : (
+            // Desktop/Tablet: 3×3 grid
+            <div className={`grid grid-cols-3 ${isTablet ? 'gap-2' : 'gap-3'} max-w-4xl`}>
+              {nodes.map(node => {
+                const highlight = getDomainHighlight(node.id)
+                return (
+                  <TrendCard
+                    key={node.id}
+                    node={node}
+                    scores={domainScoreHistory[node.id] || []}
+                    isHighlighted={!!highlight}
+                    highlightColor={highlight}
+                    isDimmed={highlightedDomains.size > 0 && !highlightedDomains.has(node.id)}
+                    onClick={() => handleTrendClick(node.id)}
+                  />
+                )
+              })}
+            </div>
           )}
         </div>
       </div>
 
-      <div className="flex flex-1 min-h-0 overflow-hidden">
-        <TieredGraph
-          nodes={nodes}
-          edges={edges}
-          positions={positions}
-          dims={dims}
-          isPhone={isPhone}
-          onNodeClick={handleNodeClick}
-          nodeStyleFn={nodeStyleFn}
-          nodeHighlightFn={nodeHighlightFn}
-          nodeBadgesFn={nodeBadgesFn}
-          nodeChildrenFn={nodeChildrenFn}
-          edgeStyleFn={edgeStyleFn}
-          title="RISK MONITOR"
-          footer={cascadeRisks.length > 0
-            ? 'Click a domain to see its risks'
-            : snapshots.length === 0
-              ? 'Save snapshots to enable trend tracking'
-              : 'All clear \u2014 no risks detected'
-          }
+      {/* Sub-area panel */}
+      {expandedDomain && (
+        <SubAreaPanel
+          domainId={expandedDomain}
+          subAreas={subAreas}
+          onClose={() => setExpandedDomain(null)}
+          onNavigateToAssess={onNavigateToAssess}
         />
-
-        {/* Risk panel */}
-        <AnimatePresence>
-          {showPanel && cascadeRisks.length > 0 && (
-            <RiskPanel
-              risks={cascadeRisks}
-              domainScoreHistory={domainScoreHistory}
-              selectedRisk={selectedRisk}
-              onSelectRisk={setSelectedRisk}
-              onNavigateToAssess={onNavigateToAssess}
-              onClose={() => setShowPanel(false)}
-              isBottomSheet={isPhone}
-            />
-          )}
-        </AnimatePresence>
-      </div>
+      )}
     </div>
   )
 })
