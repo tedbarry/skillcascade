@@ -16,7 +16,7 @@ export default memo(function StatusMapView({
   onNavigateToAssess,
 }) {
   const { isPhone, isTablet } = useResponsive()
-  const { nodes, getSubAreaHealth } = useCascadeGraph(assessments, snapshots)
+  const { nodes, getEnhancedSubAreaHealth } = useCascadeGraph(assessments, snapshots)
   const [expandedDomain, setExpandedDomain] = useState(null)
   const hasData = useMemo(() => Object.keys(assessments).length > 0, [assessments])
 
@@ -26,8 +26,8 @@ export default memo(function StatusMapView({
 
   const subAreas = useMemo(() => {
     if (!expandedDomain) return []
-    return getSubAreaHealth(expandedDomain)
-  }, [expandedDomain, getSubAreaHealth])
+    return getEnhancedSubAreaHealth(expandedDomain)
+  }, [expandedDomain, getEnhancedSubAreaHealth])
 
   // Status counts for summary
   const statusCounts = useMemo(() => {
@@ -99,6 +99,7 @@ export default memo(function StatusMapView({
           subAreas={subAreas}
           onClose={() => setExpandedDomain(null)}
           onNavigateToAssess={onNavigateToAssess}
+          showPrereqs
         />
       )}
     </div>

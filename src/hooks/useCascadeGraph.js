@@ -9,6 +9,10 @@ import {
   findPrerequisiteChain,
   computePathReadiness,
   simulateCascade,
+  findSkillBottlenecks,
+  computeEnhancedSubAreaHealth,
+  computeSubAreaReadiness,
+  detectLearningBarriers,
 } from '../data/cascadeModel.js'
 
 /**
@@ -22,19 +26,28 @@ const NODE_LAYOUT = {
   d5: { col: 1, tier: 4 },
   d6: { col: 1, tier: 5 },
   d7: { col: 1, tier: 6 },
-  d8: { col: 0, tier: 3 },
-  d9: { col: 2, tier: 3 },
+  d8: { col: 0, tier: 3 },  // Left branch off D1/D3
+  d9: { col: 2, tier: 4 },  // Right branch off D1/D2/D5
 }
 
 const EDGES = [
-  { from: 'd1', to: 'd2', type: 'primary' },
-  { from: 'd2', to: 'd3', type: 'primary' },
-  { from: 'd3', to: 'd4', type: 'primary' },
-  { from: 'd4', to: 'd5', type: 'primary' },
-  { from: 'd5', to: 'd6', type: 'primary' },
-  { from: 'd6', to: 'd7', type: 'primary' },
-  { from: 'd2', to: 'd6', type: 'secondary' },
-  { from: 'd3', to: 'd7', type: 'secondary' },
+  // Main cascade chain (all 'requires')
+  { from: 'd1', to: 'd2', type: 'requires' },
+  { from: 'd2', to: 'd3', type: 'requires' },
+  { from: 'd3', to: 'd4', type: 'requires' },
+  { from: 'd4', to: 'd5', type: 'requires' },
+  { from: 'd5', to: 'd6', type: 'requires' },
+  { from: 'd6', to: 'd7', type: 'requires' },
+  // Cross-chain links
+  { from: 'd2', to: 'd6', type: 'supports' },
+  { from: 'd3', to: 'd7', type: 'requires' },
+  // D8: Safety branch (left fork)
+  { from: 'd1', to: 'd8', type: 'requires' },
+  { from: 'd3', to: 'd8', type: 'supports' },
+  // D9: Support Utilization branch (right fork)
+  { from: 'd1', to: 'd9', type: 'requires' },
+  { from: 'd2', to: 'd9', type: 'supports' },
+  { from: 'd5', to: 'd9', type: 'requires' },
 ]
 
 /**
@@ -88,7 +101,6 @@ export default function useCascadeGraph(assessments = {}, snapshots = [], whatIf
         leverageScore: ranking?.leverageScore ?? 0,
         downstreamDomains: ranking?.downstreamDomains ?? 0,
         downstreamSkills: ranking?.downstreamSkills ?? 0,
-        independent: domain.id === 'd8' || domain.id === 'd9',
       }
     })
   }, [domainHealth, impactRanking])
@@ -190,6 +202,29 @@ export default function useCascadeGraph(assessments = {}, snapshots = [], whatIf
     [effectiveAssessments]
   )
 
+  // ─── Skill-Level Dependencies ───
+
+  const skillBottlenecks = useMemo(
+    () => findSkillBottlenecks(effectiveAssessments, 20),
+    [effectiveAssessments]
+  )
+
+  const subAreaReadiness = useMemo(
+    () => computeSubAreaReadiness(effectiveAssessments),
+    [effectiveAssessments]
+  )
+
+  const getEnhancedSubAreaHealth = useCallback(
+    (domainId) => computeEnhancedSubAreaHealth(domainId, effectiveAssessments),
+    [effectiveAssessments]
+  )
+
+  // Learning barriers (VB-MAPP-style pattern detection)
+  const learningBarriers = useMemo(
+    () => detectLearningBarriers(effectiveAssessments, snapshots),
+    [effectiveAssessments, snapshots]
+  )
+
   return {
     nodes,
     edges,
@@ -202,5 +237,9 @@ export default function useCascadeGraph(assessments = {}, snapshots = [], whatIf
     getSubAreaHealth,
     getPrerequisiteChain,
     getPathReadiness,
+    skillBottlenecks,
+    subAreaReadiness,
+    getEnhancedSubAreaHealth,
+    learningBarriers,
   }
 }

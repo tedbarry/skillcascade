@@ -16,14 +16,19 @@ const STATE_COLORS = {
 }
 
 const EDGES_DEF = [
-  { from: 'd1', to: 'd2', type: 'primary' },
-  { from: 'd2', to: 'd3', type: 'primary' },
-  { from: 'd3', to: 'd4', type: 'primary' },
-  { from: 'd4', to: 'd5', type: 'primary' },
-  { from: 'd5', to: 'd6', type: 'primary' },
-  { from: 'd6', to: 'd7', type: 'primary' },
-  { from: 'd2', to: 'd6', type: 'secondary' },
-  { from: 'd3', to: 'd7', type: 'secondary' },
+  { from: 'd1', to: 'd2', type: 'requires' },
+  { from: 'd2', to: 'd3', type: 'requires' },
+  { from: 'd3', to: 'd4', type: 'requires' },
+  { from: 'd4', to: 'd5', type: 'requires' },
+  { from: 'd5', to: 'd6', type: 'requires' },
+  { from: 'd6', to: 'd7', type: 'requires' },
+  { from: 'd2', to: 'd6', type: 'supports' },
+  { from: 'd3', to: 'd7', type: 'requires' },
+  { from: 'd1', to: 'd8', type: 'requires' },
+  { from: 'd3', to: 'd8', type: 'supports' },
+  { from: 'd1', to: 'd9', type: 'requires' },
+  { from: 'd2', to: 'd9', type: 'supports' },
+  { from: 'd5', to: 'd9', type: 'requires' },
 ]
 
 // Tier-based Y positions to preserve hierarchy (foundation at bottom)
@@ -314,7 +319,7 @@ export default memo(function CascadeNeuralCanvas({
       ctx.strokeStyle = lineColor
       ctx.globalAlpha = lineAlpha
       ctx.lineWidth = lineWidth
-      if (link.type === 'secondary' && !isActiveEdge && !isPathEdge) {
+      if (link.type === 'supports' && !isActiveEdge && !isPathEdge) {
         ctx.setLineDash([8, 4])
       }
       ctx.stroke()
@@ -429,7 +434,7 @@ export default memo(function CascadeNeuralCanvas({
           ringColor = isMasteryCascade
             ? d3.interpolateRgb(domainColor, '#ffd700')(impact)
             : d3.interpolateRgb(domainColor, '#ff4444')(impact)
-        } else if (!node.independent) {
+        } else {
           fillAlpha = 0.3
           labelAlpha = 0.3
         }
@@ -446,7 +451,7 @@ export default memo(function CascadeNeuralCanvas({
 
       // Heatmap override
       let fillColor = stateColor
-      if (heatmapOn && !node.independent) {
+      if (heatmapOn) {
         const ht = (node.leverageScore || 0) / maxLeverage
         const hc = d3.color(heatmapScale(ht * 0.85 + 0.15))
         if (hc) fillColor = hc.formatHex()
@@ -511,7 +516,7 @@ export default memo(function CascadeNeuralCanvas({
       ctx.fillText(scoreText, node.x, node.y + r + 4)
 
       // Heatmap badge
-      if (heatmapOn && !node.independent && node.downstreamSkills > 0) {
+      if (heatmapOn && node.downstreamSkills > 0) {
         ctx.fillStyle = 'rgba(255,255,255,0.7)'
         ctx.font = `bold ${isPhone ? 7 : 8}px system-ui, sans-serif`
         ctx.fillText(`Unlocks ${node.downstreamSkills} skills`, node.x, node.y + r + (isPhone ? 14 : 18))

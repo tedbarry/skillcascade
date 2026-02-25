@@ -25,12 +25,12 @@ export default memo(function DomainEdge({
   const stroke = style.stroke || '#556'
   const opacity = style.opacity ?? 0.4
   const lineWidth = style.width || 1.5
-  const dash = style.dash || (edge.type === 'secondary' ? '6,4' : 'none')
+  const dash = style.dash || (edge.type === 'supports' ? '6,4' : 'none')
 
   // Compute path
   let d
-  const isPrimary = edge.type === 'primary'
-  if (isPrimary) {
+  const isRequires = edge.type === 'requires'
+  if (isRequires) {
     d = `M${from.x},${from.y - nodeH / 2} L${to.x},${to.y + nodeH / 2}`
   } else {
     const midY = (from.y - nodeH / 2 + to.y + nodeH / 2) / 2
@@ -39,7 +39,7 @@ export default memo(function DomainEdge({
   }
 
   // Annotation midpoint
-  const midX = (from.x + to.x) / 2 + (isPrimary ? 0 : (edge.from === 'd2' ? -25 : 25))
+  const midX = (from.x + to.x) / 2 + (isRequires ? 0 : (edge.from === 'd2' ? -25 : 25))
   const midY = (from.y - nodeH / 2 + to.y + nodeH / 2) / 2
 
   return (

@@ -31,14 +31,19 @@ const NODE_LAYOUT_3D = {
 }
 
 const EDGES = [
-  { from: 'd1', to: 'd2', type: 'primary' },
-  { from: 'd2', to: 'd3', type: 'primary' },
-  { from: 'd3', to: 'd4', type: 'primary' },
-  { from: 'd4', to: 'd5', type: 'primary' },
-  { from: 'd5', to: 'd6', type: 'primary' },
-  { from: 'd6', to: 'd7', type: 'primary' },
-  { from: 'd2', to: 'd6', type: 'secondary' },
-  { from: 'd3', to: 'd7', type: 'secondary' },
+  { from: 'd1', to: 'd2', type: 'requires' },
+  { from: 'd2', to: 'd3', type: 'requires' },
+  { from: 'd3', to: 'd4', type: 'requires' },
+  { from: 'd4', to: 'd5', type: 'requires' },
+  { from: 'd5', to: 'd6', type: 'requires' },
+  { from: 'd6', to: 'd7', type: 'requires' },
+  { from: 'd2', to: 'd6', type: 'supports' },
+  { from: 'd3', to: 'd7', type: 'requires' },
+  { from: 'd1', to: 'd8', type: 'requires' },
+  { from: 'd3', to: 'd8', type: 'supports' },
+  { from: 'd1', to: 'd9', type: 'requires' },
+  { from: 'd2', to: 'd9', type: 'supports' },
+  { from: 'd5', to: 'd9', type: 'requires' },
 ]
 
 /* ─── Custom CameraRig — no OrbitControls, no zoom bug ─── */
@@ -306,7 +311,7 @@ const SceneContent = memo(function SceneContent({ nodes, cascadeState, isMastery
 
         const edgeColor = isActive
           ? (isMasteryCascade ? '#ffd700' : '#ff4444')
-          : edge.type === 'secondary' ? '#445' : '#556'
+          : edge.type === 'supports' ? '#445' : '#556'
 
         return (
           <CinematicEdge

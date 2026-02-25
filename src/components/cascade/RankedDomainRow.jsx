@@ -18,7 +18,6 @@ const LEVERAGE_COLOR = '#6b5ce7'
  *   maxLeverage    — max leverage score for normalizing bars
  *   isRecommended  — boolean (gold treatment for #1)
  *   isSelected     — boolean (currently selected for what-if)
- *   isIndependent  — boolean (D8/D9)
  *   onClick        — () => void
  *   isCompact      — boolean (phone)
  *   delta          — { healthDelta, newState } from what-if simulation (optional)
@@ -30,7 +29,6 @@ export default memo(function RankedDomainRow({
   maxLeverage = 1,
   isRecommended = false,
   isSelected = false,
-  isIndependent = false,
   onClick,
   isCompact = false,
   delta = null,
@@ -61,7 +59,7 @@ export default memo(function RankedDomainRow({
             className={`text-lg font-bold font-mono w-7 shrink-0 ${isRecommended ? '' : 'text-gray-600'}`}
             style={isRecommended ? { color: '#ffd700' } : undefined}
           >
-            {isIndependent ? '—' : rank}
+            {rank}
           </span>
 
           {/* Domain color dot */}
@@ -118,8 +116,8 @@ export default memo(function RankedDomainRow({
             </div>
           </div>
 
-          {/* Leverage bar (not for independents) */}
-          {!isIndependent && ranking && (
+          {/* Leverage bar */}
+          {ranking && (
             <div className="flex items-center gap-2">
               <span className="text-[9px] text-gray-600 w-12 shrink-0">Leverage</span>
               <div className="flex-1 h-1.5 bg-[#2a2a33] rounded-full overflow-hidden">
@@ -135,14 +133,9 @@ export default memo(function RankedDomainRow({
           )}
 
           {/* Stats line */}
-          {!isCompact && !isIndependent && ranking && (
+          {!isCompact && ranking && (
             <div className="text-[10px] text-gray-600">
               Affects {ranking.downstreamDomains} domain{ranking.downstreamDomains !== 1 ? 's' : ''}, {ranking.downstreamSkills} skills downstream
-            </div>
-          )}
-          {!isCompact && isIndependent && (
-            <div className="text-[10px] text-gray-600">
-              Independent — no downstream dependencies
             </div>
           )}
         </div>

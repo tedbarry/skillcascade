@@ -299,9 +299,6 @@ export default function CascadeAnimation({
           domainColor,
         }
       }
-      if (node.independent) {
-        return { fill: '#252530', stroke: '#667', textColor: '#aab', glow: false, domainColor }
-      }
       if (isMasteryCascade) {
         return { fill: '#1e2520', stroke: '#5a8a5a', textColor: '#8ab88a', glow: false, domainColor }
       }
@@ -309,7 +306,7 @@ export default function CascadeAnimation({
     }
 
     // Heatmap overlay — proper d3 color scale
-    if (heatmapOn && !node.independent) {
+    if (heatmapOn) {
       const maxLeverage = Math.max(1, ...impactRanking.map((r) => r.leverageScore))
       const t = node.leverageScore / maxLeverage
       const heatColor = d3.color(heatmapScale(t * 0.85 + 0.15)) // offset to avoid near-white
@@ -327,10 +324,6 @@ export default function CascadeAnimation({
       return { fill: config.fill, stroke: config.stroke, textColor: config.textColor, glow: node.state === 'mastered', domainColor }
     }
 
-    // No data or independent
-    if (node.independent) {
-      return { fill: '#252530', stroke: '#667', textColor: '#aab', glow: false, domainColor }
-    }
     return { fill: config.fill, stroke: config.stroke, textColor: config.textColor, glow: false, domainColor }
   }
 
@@ -377,7 +370,7 @@ export default function CascadeAnimation({
         stroke: `rgb(${80 - healthPct * 30}, ${green}, ${100 - healthPct * 10})`,
         opacity: 0.4 + healthPct * 0.4,
         width: 1 + healthPct,
-        dash: edge.type === 'secondary' ? '6,4' : 'none',
+        dash: edge.type === 'supports' ? '6,4' : 'none',
         animate: false,
         arrowId: 'arrow-green',
       }
@@ -386,8 +379,8 @@ export default function CascadeAnimation({
     return {
       stroke: '#556',
       opacity: 0.4,
-      width: edge.type === 'primary' ? 1.5 : 1,
-      dash: edge.type === 'secondary' ? '6,4' : 'none',
+      width: edge.type === 'requires' ? 1.5 : 1,
+      dash: edge.type === 'supports' ? '6,4' : 'none',
       animate: false,
       arrowId: 'arrow-default',
     }
@@ -460,8 +453,8 @@ export default function CascadeAnimation({
         }
       } else {
         // Tiered: vertical flow
-        const isPrimary = edge.type === 'primary'
-        if (isPrimary) {
+        const isRequires = edge.type === 'requires'
+        if (isRequires) {
           d = `M${from.x},${from.y - nodeH / 2} L${to.x},${to.y + nodeH / 2}`
         } else {
           const midY = (from.y - nodeH / 2 + to.y + nodeH / 2) / 2
@@ -1151,22 +1144,6 @@ export default function CascadeAnimation({
                       />
                     )}
 
-                    {/* INDEPENDENT badge */}
-                    {node.independent && (
-                      <>
-                        <rect
-                          x={pos.x - 38} y={pos.y - nodeH / 2 - 16}
-                          width={76} height={14} rx={7}
-                          fill="#444" opacity={0.6}
-                        />
-                        <text
-                          x={pos.x} y={pos.y - nodeH / 2 - 9}
-                          textAnchor="middle" dominantBaseline="middle"
-                          fill="#999" fontSize="8" fontWeight="700" fontFamily="monospace"
-                        >INDEPENDENT</text>
-                      </>
-                    )}
-
                     {/* Warning dot */}
                     {hasWarning && !cascadeState.active && (
                       <circle cx={pos.x + nodeW / 2 - 8} cy={pos.y - nodeH / 2 + 8} r={5} fill="#ff8800">
@@ -1194,8 +1171,8 @@ export default function CascadeAnimation({
                       fill={style.fill}
                       stroke={style.stroke}
                       strokeWidth={isSource || isAffected || isExpanded ? 2.5 : 1.5}
-                      strokeDasharray={node.independent ? '6,4' : 'none'}
-                      opacity={node.independent ? 0.7 : 1}
+                      strokeDasharray="none"
+                      opacity={1}
                       filter={glowFilter}
                     />
 
@@ -1280,16 +1257,14 @@ export default function CascadeAnimation({
                           ? (isMasteryCascade
                               ? `\u2191 Enabled ${(impactData.impactStrength * 100).toFixed(0)}%`
                               : `\u2191 Impact ${(impactData.impactStrength * 100).toFixed(0)}%`)
-                          : heatmapOn && !node.independent
+                          : heatmapOn
                             ? `Leverage: ${node.leverageScore.toFixed(0)}`
                             : mode === MODES.PATHTRACE && pathGoal && pathDomainIds.has(node.id)
                               ? (() => {
                                   const step = pathChain?.find((s) => s.domainId === node.id)
                                   return step ? `Step ${step.step}: ${step.status === 'met' ? '\u2713 Met' : step.gap.toFixed(1) + ' gap'}` : ''
                                 })()
-                              : node.independent
-                                ? 'Independent'
-                                : hasData && node.assessed > 0
+                              : hasData && node.assessed > 0
                                   ? STATE_CONFIG[node.state]?.label
                                   : node.subtitle
                       }
@@ -1347,7 +1322,7 @@ export default function CascadeAnimation({
                     )}
 
                     {/* Heatmap leverage overlay badge */}
-                    {heatmapOn && !node.independent && node.downstreamSkills > 0 && (
+                    {heatmapOn && node.downstreamSkills > 0 && (
                       <g pointerEvents="none">
                         <rect
                           x={pos.x - nodeW / 2 + 2}

@@ -1,7 +1,23 @@
-import { memo } from 'react'
+import { memo, useState } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { framework } from '../../data/framework.js'
 import useResponsive from '../../hooks/useResponsive.js'
+
+const TIER_LABELS = {
+  1: 'Reflexive',
+  2: 'Recognition',
+  3: 'Management',
+  4: 'Integration',
+  5: 'Abstract',
+}
+
+const TIER_COLORS = {
+  1: '#7fb589',
+  2: '#5da87a',
+  3: '#e5b76a',
+  4: '#d4956a',
+  5: '#e07b6e',
+}
 
 const DOMAIN_COLORS = {
   d1: '#e07b6e', d2: '#d4956a', d3: '#c9a84c', d4: '#8fb570',
@@ -34,12 +50,14 @@ function getStateLabel(avg) {
  * Phone: full-screen overlay.
  *
  * Props:
- *   domainId         — e.g. 'd3'
- *   subAreas         — [{ subAreaId, name, avg, assessed, total, healthPct }]
- *   onClose          — () => void
+ *   domainId          — e.g. 'd3'
+ *   subAreas          — [{ subAreaId, name, avg, assessed, total, healthPct,
+ *                          tierBreakdown?, prerequisiteReadiness? }]
+ *   onClose           — () => void
  *   onNavigateToAssess — (subAreaId) => void
- *   sortBy           — 'default' | 'weakness' (for bottleneck view)
+ *   sortBy            — 'default' | 'weakness' (for bottleneck view)
  *   criticalThreshold — number (sub-areas below this avg get "Critical" tag)
+ *   showPrereqs       — boolean (show prerequisite readiness indicators)
  */
 export default memo(function SubAreaPanel({
   domainId,
@@ -48,6 +66,7 @@ export default memo(function SubAreaPanel({
   onNavigateToAssess,
   sortBy = 'default',
   criticalThreshold = 0,
+  showPrereqs = false,
 }) {
   const { isPhone, isTablet } = useResponsive()
   const domain = framework.find(d => d.id === domainId)
@@ -95,6 +114,7 @@ export default memo(function SubAreaPanel({
                 domainColor={domainColor}
                 isCritical={criticalThreshold > 0 && sa.avg > 0 && sa.avg < criticalThreshold}
                 onNavigateToAssess={onNavigateToAssess}
+                showPrereqs={showPrereqs}
               />
             ))}
           </div>
@@ -154,48 +174,141 @@ export default memo(function SubAreaPanel({
   )
 })
 
-function SubAreaCard({ subArea, domainColor, isCritical, onNavigateToAssess }) {
+function SubAreaCard({ subArea, domainColor, isCritical, onNavigateToAssess, showPrereqs = false }) {
   const stateInfo = getStateLabel(subArea.avg)
+  const [expanded, setExpanded] = useState(false)
+  const prereqs = subArea.prerequisiteReadiness
+  const hasPrereqs = showPrereqs && prereqs && prereqs.prereqSubAreas.length > 0
+  const prereqReadiness = hasPrereqs ? prereqs.readiness : 1
+  const isBlocked = hasPrereqs && prereqReadiness < 0.5
 
   return (
-    <button
-      onClick={() => onNavigateToAssess?.(subArea.subAreaId)}
-      className="w-full text-left bg-[#1a1a22] hover:bg-[#22222e] border border-[#2a2a33] rounded-lg p-3 transition-colors min-h-[44px]"
-    >
-      <div className="flex items-start justify-between gap-2">
-        <div className="text-xs text-gray-200 font-medium leading-tight flex-1">
-          {subArea.name}
-          {isCritical && (
-            <span className="ml-2 text-[9px] font-bold text-red-400 bg-red-900/30 px-1.5 py-0.5 rounded">
-              CRITICAL
+    <div className="rounded-lg overflow-hidden">
+      <button
+        onClick={() => {
+          if (hasPrereqs) setExpanded(e => !e)
+          else onNavigateToAssess?.(subArea.subAreaId)
+        }}
+        className={`w-full text-left bg-[#1a1a22] hover:bg-[#22222e] border rounded-lg p-3 transition-colors min-h-[44px] ${
+          isBlocked ? 'border-red-900/40' : 'border-[#2a2a33]'
+        }`}
+      >
+        <div className="flex items-start justify-between gap-2">
+          <div className="text-xs text-gray-200 font-medium leading-tight flex-1">
+            {subArea.name}
+            {isCritical && (
+              <span className="ml-2 text-[9px] font-bold text-red-400 bg-red-900/30 px-1.5 py-0.5 rounded">
+                CRITICAL
+              </span>
+            )}
+            {isBlocked && (
+              <span className="ml-2 text-[9px] font-bold text-orange-400 bg-orange-900/30 px-1.5 py-0.5 rounded">
+                PREREQS UNMET
+              </span>
+            )}
+          </div>
+          <div className="text-[10px] font-mono text-gray-500 shrink-0">
+            {subArea.avg > 0 ? subArea.avg.toFixed(1) : '—'}/3
+          </div>
+        </div>
+
+        {/* Health bar */}
+        <div className="mt-2 h-1.5 bg-[#12121a] rounded-full overflow-hidden">
+          <div
+            className="h-full rounded-full transition-all duration-500"
+            style={{
+              width: `${(subArea.healthPct || 0) * 100}%`,
+              backgroundColor: domainColor,
+              opacity: 0.7,
+            }}
+          />
+        </div>
+
+        {/* Prerequisite readiness bar (when showPrereqs) */}
+        {hasPrereqs && (
+          <div className="mt-1 h-1 bg-[#12121a] rounded-full overflow-hidden">
+            <div
+              className="h-full rounded-full transition-all duration-500"
+              style={{
+                width: `${prereqReadiness * 100}%`,
+                backgroundColor: prereqReadiness >= 0.8 ? '#7fb589' : prereqReadiness >= 0.5 ? '#e5b76a' : '#e8928a',
+              }}
+            />
+          </div>
+        )}
+
+        <div className="flex items-center justify-between mt-1.5">
+          <div className="flex items-center gap-2">
+            <span className="text-[9px]" style={{ color: stateInfo.color }}>
+              {stateInfo.label}
             </span>
+            {hasPrereqs && (
+              <span className="text-[9px] text-gray-600">
+                · prereqs {Math.round(prereqReadiness * 100)}%
+              </span>
+            )}
+          </div>
+          <div className="flex items-center gap-2">
+            {/* Tier dots */}
+            {subArea.tierBreakdown && (
+              <div className="flex gap-0.5">
+                {Object.entries(subArea.tierBreakdown).sort(([a], [b]) => a - b).map(([tier, data]) => (
+                  <div
+                    key={tier}
+                    className="w-1.5 h-1.5 rounded-full"
+                    title={`Tier ${tier} (${TIER_LABELS[tier]}): ${data.met}/${data.total}`}
+                    style={{
+                      backgroundColor: data.met === data.total ? '#7fb589' : data.met > 0 ? '#e5b76a' : '#444',
+                    }}
+                  />
+                ))}
+              </div>
+            )}
+            <span className="text-[9px] text-gray-600">
+              {subArea.assessed}/{subArea.total} assessed
+            </span>
+          </div>
+        </div>
+      </button>
+
+      {/* Expanded: show unmet prerequisites */}
+      {expanded && hasPrereqs && prereqs.unmetPrereqs.length > 0 && (
+        <div className="bg-[#16161e] border-x border-b border-[#2a2a33] rounded-b-lg px-3 py-2 space-y-1">
+          <div className="text-[9px] font-mono text-gray-500 uppercase tracking-wider mb-1">
+            Unmet prerequisites ({prereqs.unmetPrereqs.length})
+          </div>
+          {prereqs.unmetPrereqs.slice(0, 8).map(prereq => (
+            <div key={prereq.skillId} className="flex items-center gap-2 text-[10px]">
+              <span
+                className="w-1.5 h-1.5 rounded-full shrink-0"
+                style={{ backgroundColor: TIER_COLORS[prereq.tier] || '#666' }}
+              />
+              <span className="text-gray-400 truncate flex-1">{prereq.skillName}</span>
+              <span className="text-[9px] text-gray-600 shrink-0">
+                {prereq.domainId.toUpperCase()} · T{prereq.tier}
+              </span>
+              <span className="text-[9px] shrink-0" style={{
+                color: prereq.currentLevel === 0 ? '#666' : prereq.currentLevel < 2 ? '#e8928a' : '#e5b76a'
+              }}>
+                {prereq.currentLevel === 0 ? '—' : prereq.currentLevel.toFixed(0)}
+              </span>
+            </div>
+          ))}
+          {prereqs.unmetPrereqs.length > 8 && (
+            <div className="text-[9px] text-gray-600">
+              +{prereqs.unmetPrereqs.length - 8} more
+            </div>
+          )}
+          {onNavigateToAssess && (
+            <button
+              onClick={() => onNavigateToAssess(subArea.subAreaId)}
+              className="mt-1 text-[10px] text-blue-400 hover:text-blue-300 min-h-[44px] flex items-center"
+            >
+              View in assessment →
+            </button>
           )}
         </div>
-        <div className="text-[10px] font-mono text-gray-500 shrink-0">
-          {subArea.avg > 0 ? subArea.avg.toFixed(1) : '—'}/3
-        </div>
-      </div>
-
-      {/* Health bar */}
-      <div className="mt-2 h-1.5 bg-[#12121a] rounded-full overflow-hidden">
-        <div
-          className="h-full rounded-full transition-all duration-500"
-          style={{
-            width: `${(subArea.healthPct || 0) * 100}%`,
-            backgroundColor: domainColor,
-            opacity: 0.7,
-          }}
-        />
-      </div>
-
-      <div className="flex items-center justify-between mt-1.5">
-        <span className="text-[9px]" style={{ color: stateInfo.color }}>
-          {stateInfo.label}
-        </span>
-        <span className="text-[9px] text-gray-600">
-          {subArea.assessed}/{subArea.total} assessed
-        </span>
-      </div>
-    </button>
+      )}
+    </div>
   )
 }

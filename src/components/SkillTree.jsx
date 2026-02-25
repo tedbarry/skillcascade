@@ -23,14 +23,19 @@ const NODE_LAYOUT = {
  * Direct (non-transitive) dependency edges for visual clarity
  */
 const EDGES = [
-  { from: 'd1', to: 'd2', type: 'primary' },
-  { from: 'd2', to: 'd3', type: 'primary' },
-  { from: 'd3', to: 'd4', type: 'primary' },
-  { from: 'd4', to: 'd5', type: 'primary' },
-  { from: 'd5', to: 'd6', type: 'primary' },
-  { from: 'd6', to: 'd7', type: 'primary' },
-  { from: 'd2', to: 'd6', type: 'secondary' },
-  { from: 'd3', to: 'd7', type: 'secondary' },
+  { from: 'd1', to: 'd2', type: 'requires' },
+  { from: 'd2', to: 'd3', type: 'requires' },
+  { from: 'd3', to: 'd4', type: 'requires' },
+  { from: 'd4', to: 'd5', type: 'requires' },
+  { from: 'd5', to: 'd6', type: 'requires' },
+  { from: 'd6', to: 'd7', type: 'requires' },
+  { from: 'd2', to: 'd6', type: 'supports' },
+  { from: 'd3', to: 'd7', type: 'requires' },
+  { from: 'd1', to: 'd8', type: 'requires' },
+  { from: 'd3', to: 'd8', type: 'supports' },
+  { from: 'd1', to: 'd9', type: 'requires' },
+  { from: 'd2', to: 'd9', type: 'supports' },
+  { from: 'd5', to: 'd9', type: 'requires' },
 ]
 
 /**
@@ -241,11 +246,11 @@ export default function SkillTree({ assessments = {}, onSelectDomain }) {
             // Check if the prerequisite is weak — makes the edge red
             const fromScore = scoreMap[edge.from]
             const isWeak = fromScore && fromScore.assessed > 0 && fromScore.score < 1.5
-            const isPrimary = edge.type === 'primary'
+            const isRequires = edge.type === 'requires'
 
-            // Curved path for secondary edges
+            // Curved path for supports edges
             let path
-            if (isPrimary) {
+            if (isRequires) {
               path = `M${from.x},${from.y - nodeH / 2} L${to.x},${to.y + nodeH / 2}`
             } else {
               const midY = (from.y - nodeH / 2 + to.y + nodeH / 2) / 2
@@ -259,10 +264,10 @@ export default function SkillTree({ assessments = {}, onSelectDomain }) {
                 d={path}
                 fill="none"
                 stroke={isWeak ? '#8b4444' : '#444'}
-                strokeWidth={isPrimary ? 2 : 1}
-                strokeDasharray={isPrimary ? 'none' : '6,4'}
+                strokeWidth={isRequires ? 2 : 1}
+                strokeDasharray={isRequires ? 'none' : '6,4'}
                 markerEnd={isWeak ? 'url(#arrow-weak)' : 'url(#arrow)'}
-                opacity={isPrimary ? 0.8 : 0.4}
+                opacity={isRequires ? 0.8 : 0.4}
               />
             )
           })}

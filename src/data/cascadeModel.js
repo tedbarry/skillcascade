@@ -6,6 +6,17 @@
  */
 
 import { framework, DOMAIN_DEPENDENCIES, ASSESSMENT_LEVELS } from './framework.js'
+import {
+  getSkillTier,
+  getSubAreaPrereqs,
+  getSkillPrereqs,
+  getAllPrerequisites,
+  computeSkillReadiness,
+  findCrossDomainBottlenecks,
+  getSubAreaTierBreakdown,
+  getDomainFromId,
+  getDepType,
+} from './skillDependencies.js'
 
 /* ─────────────────────────────────────────────
    Domain Health
@@ -39,21 +50,37 @@ export function computeDomainHealth(assessments = {}) {
     const avg = assessed > 0 ? scoreSum / assessed : 0
     const healthPct = avg / 3 // 0-1 normalized
 
-    // State classification (matches SkillTree getNodeState)
+    // State classification — respects dependency types:
+    // 'requires' deps must meet threshold to avoid 'blocked' state
+    // 'supports' deps contribute a health adjustment but never block
     const deps = DOMAIN_DEPENDENCIES[domain.id] || []
-    const prereqsSolid = deps.length === 0 || deps.every((depId) => {
+    const requiredDeps = deps.filter(depId => getDepType(depId, domain.id) === 'requires')
+    const supportsDeps = deps.filter(depId => getDepType(depId, domain.id) === 'supports')
+
+    const requiredMet = requiredDeps.length === 0 || requiredDeps.every((depId) => {
       const dep = health[depId]
       return dep && dep.assessed > 0 && dep.avg >= 2.0
     })
 
+    // Supports deps contribute a small bonus/penalty (±0.1 per dep)
+    let supportsAdjustment = 0
+    supportsDeps.forEach(depId => {
+      const dep = health[depId]
+      if (dep && dep.assessed > 0) {
+        supportsAdjustment += (dep.avg - 2.0) * 0.05 // ±0.05 per supports dep
+      }
+    })
+
     let state
     if (assessed === 0) state = 'locked'
-    else if (!prereqsSolid && avg < 2.0) state = 'blocked'
+    else if (!requiredMet && avg < 2.0) state = 'blocked'
     else if (avg < 1.5) state = 'needs-work'
     else if (avg < 2.5) state = 'developing'
     else state = 'mastered'
 
-    health[domain.id] = { avg, assessed, total, healthPct, state }
+    // Clamp adjusted health to 0-1 range
+    const adjustedHealthPct = Math.max(0, Math.min(1, healthPct + supportsAdjustment))
+    health[domain.id] = { avg, assessed, total, healthPct: adjustedHealthPct, state }
   })
 
   return health
@@ -85,7 +112,10 @@ export function computeCascadeStrength(sourceDomainId, assessments = {}) {
         if (deps.includes(current) && !visited.has(domainId)) {
           visited.add(domainId)
           const tier = tierNum + 1
-          const impactStrength = baseImpact * Math.pow(0.85, tier)
+          // 'supports' edges propagate at 50% strength
+          const depType = getDepType(current, domainId)
+          const typeWeight = depType === 'supports' ? 0.5 : 1.0
+          const impactStrength = baseImpact * Math.pow(0.85, tier) * typeWeight
 
           // Build path from source
           const parentPath = result[current]?.pathFromSource || [sourceDomainId]
@@ -407,4 +437,238 @@ export function interpolateAssessments(assessmentA = {}, assessmentB = {}, t) {
   })
 
   return result
+}
+
+/* ─────────────────────────────────────────────
+   Learning Barrier Detection (VB-MAPP-style)
+   ───────────────────────────────────────────── */
+
+/**
+ * Detect learning barrier patterns from existing assessment data.
+ * Inspired by VB-MAPP Barriers Assessment — identifies patterns that
+ * indicate underlying obstacles to skill acquisition.
+ *
+ * Returns array of { type, severity, affectedDomains, description }
+ * Types: 'score-inversion', 'prerequisite-gap', 'uneven-profile', 'plateau'
+ */
+export function detectLearningBarriers(assessments = {}, snapshots = []) {
+  const health = computeDomainHealth(assessments)
+  const barriers = []
+
+  // 1. Score inversions within a domain: higher-tier skills rated above lower-tier ones
+  framework.forEach(domain => {
+    const tierScores = {} // tier → { sum, count }
+    domain.subAreas.forEach(sa => {
+      sa.skillGroups.forEach(sg => {
+        sg.skills.forEach(skill => {
+          const level = assessments[skill.id]
+          const tier = getSkillTier(skill.id)
+          if (level !== undefined && level > 0 && tier > 0) {
+            if (!tierScores[tier]) tierScores[tier] = { sum: 0, count: 0 }
+            tierScores[tier].sum += level
+            tierScores[tier].count++
+          }
+        })
+      })
+    })
+
+    const tiers = Object.keys(tierScores).map(Number).sort((a, b) => a - b)
+    for (let i = 0; i < tiers.length - 1; i++) {
+      const lowerTier = tiers[i]
+      const higherTier = tiers[i + 1]
+      const lowerAvg = tierScores[lowerTier].sum / tierScores[lowerTier].count
+      const higherAvg = tierScores[higherTier].sum / tierScores[higherTier].count
+
+      if (higherAvg > lowerAvg + 0.5) {
+        barriers.push({
+          type: 'score-inversion',
+          severity: higherAvg - lowerAvg,
+          affectedDomains: [domain.id],
+          description: `${domain.name}: Tier ${higherTier} skills (${higherAvg.toFixed(1)}) rated higher than Tier ${lowerTier} (${lowerAvg.toFixed(1)}) — possible splinter skills or assessment gap`,
+        })
+      }
+    }
+  })
+
+  // 2. Prerequisite gaps: downstream skill rated higher than its direct prerequisites
+  Object.entries(DOMAIN_DEPENDENCIES).forEach(([domainId, deps]) => {
+    const domainH = health[domainId]
+    if (!domainH || domainH.assessed === 0) return
+
+    deps.forEach(depId => {
+      const depH = health[depId]
+      if (!depH || depH.assessed === 0) return
+
+      if (domainH.avg > depH.avg + 0.8) {
+        const domain = framework.find(d => d.id === domainId)
+        const depDomain = framework.find(d => d.id === depId)
+        barriers.push({
+          type: 'prerequisite-gap',
+          severity: domainH.avg - depH.avg,
+          affectedDomains: [domainId, depId],
+          description: `${domain?.name} (${domainH.avg.toFixed(1)}) significantly exceeds prerequisite ${depDomain?.name} (${depH.avg.toFixed(1)}) — foundation may be unstable`,
+        })
+      }
+    })
+  })
+
+  // 3. Uneven profiles: large variance within a domain suggests scattered skills
+  framework.forEach(domain => {
+    const scores = []
+    domain.subAreas.forEach(sa => {
+      sa.skillGroups.forEach(sg => {
+        sg.skills.forEach(skill => {
+          const level = assessments[skill.id]
+          if (level !== undefined && level > 0) scores.push(level)
+        })
+      })
+    })
+
+    if (scores.length >= 4) {
+      const mean = scores.reduce((a, b) => a + b, 0) / scores.length
+      const variance = scores.reduce((sum, s) => sum + Math.pow(s - mean, 2), 0) / scores.length
+      const stdDev = Math.sqrt(variance)
+
+      if (stdDev > 0.9) {
+        barriers.push({
+          type: 'uneven-profile',
+          severity: stdDev,
+          affectedDomains: [domain.id],
+          description: `${domain.name}: High variability (SD=${stdDev.toFixed(2)}) across skills — may indicate scattered acquisition or inconsistent generalization`,
+        })
+      }
+    }
+  })
+
+  // 4. Plateau patterns: no growth across recent snapshots
+  if (snapshots.length >= 2) {
+    const recent = snapshots.slice(-3)
+    framework.forEach(domain => {
+      const healthOverTime = recent.map(snap => {
+        const h = computeDomainHealth(snap.assessments || {})
+        return h[domain.id]?.avg ?? 0
+      })
+      // Add current
+      healthOverTime.push(health[domain.id]?.avg ?? 0)
+
+      const allAssessed = healthOverTime.every(h => h > 0)
+      if (!allAssessed) return
+
+      const maxDelta = Math.max(...healthOverTime) - Math.min(...healthOverTime)
+      if (maxDelta < 0.15 && healthOverTime[0] < 2.5) {
+        barriers.push({
+          type: 'plateau',
+          severity: 2.5 - healthOverTime[healthOverTime.length - 1],
+          affectedDomains: [domain.id],
+          description: `${domain.name}: Minimal change (±${maxDelta.toFixed(2)}) across ${healthOverTime.length} assessments — possible plateau`,
+        })
+      }
+    })
+  }
+
+  return barriers.sort((a, b) => b.severity - a.severity)
+}
+
+/* ─────────────────────────────────────────────
+   Skill-Level Dependencies (Cross-Domain)
+   ───────────────────────────────────────────── */
+
+/**
+ * Re-export skill dependency functions for convenient single-import usage.
+ */
+export {
+  getSkillTier,
+  getSubAreaPrereqs,
+  getSkillPrereqs,
+  getAllPrerequisites,
+  computeSkillReadiness,
+  findCrossDomainBottlenecks,
+  getSubAreaTierBreakdown,
+  getDomainFromId,
+}
+
+/**
+ * Compute sub-area readiness: for each sub-area, how ready are its
+ * cross-domain prerequisites?
+ *
+ * Returns Map<subAreaId, { readiness: 0-1, prereqSubAreas, unmetPrereqs[] }>
+ */
+export function computeSubAreaReadiness(assessments = {}) {
+  const result = {}
+
+  framework.forEach(domain => {
+    domain.subAreas.forEach(sa => {
+      const prereqSaIds = getSubAreaPrereqs(sa.id)
+      if (prereqSaIds.length === 0) {
+        result[sa.id] = { readiness: 1, prereqSubAreas: [], unmetPrereqs: [] }
+        return
+      }
+
+      let totalSkills = 0
+      let metSkills = 0
+      const unmetPrereqs = []
+
+      prereqSaIds.forEach(prereqSaId => {
+        const prereqDomainId = getDomainFromId(prereqSaId)
+        const prereqDomain = framework.find(d => d.id === prereqDomainId)
+        if (!prereqDomain) return
+
+        const prereqSa = prereqDomain.subAreas.find(s => s.id === prereqSaId)
+        if (!prereqSa) return
+
+        prereqSa.skillGroups.forEach(sg => {
+          sg.skills.forEach(skill => {
+            totalSkills++
+            const level = assessments[skill.id]
+            if (level !== undefined && level >= 2) {
+              metSkills++
+            } else {
+              unmetPrereqs.push({
+                skillId: skill.id,
+                skillName: skill.name,
+                subAreaId: prereqSaId,
+                subAreaName: prereqSa.name,
+                domainId: prereqDomainId,
+                currentLevel: level ?? 0,
+                tier: getSkillTier(skill.id),
+              })
+            }
+          })
+        })
+      })
+
+      result[sa.id] = {
+        readiness: totalSkills > 0 ? metSkills / totalSkills : 1,
+        prereqSubAreas: prereqSaIds,
+        unmetPrereqs: unmetPrereqs.sort((a, b) => a.tier - b.tier),
+      }
+    })
+  })
+
+  return result
+}
+
+/**
+ * Find the most impactful skill-level bottlenecks across all domains.
+ * Wraps findCrossDomainBottlenecks from skillDependencies.js.
+ *
+ * Returns top N bottleneck skills sorted by blocked count.
+ */
+export function findSkillBottlenecks(assessments = {}, limit = 20) {
+  return findCrossDomainBottlenecks(assessments, framework).slice(0, limit)
+}
+
+/**
+ * Enhanced sub-area health with tier breakdown and prerequisite readiness.
+ * Extends computeSubAreaHealth with skill-level dependency data.
+ */
+export function computeEnhancedSubAreaHealth(domainId, assessments = {}) {
+  const baseHealth = computeSubAreaHealth(domainId, assessments)
+  const saReadiness = computeSubAreaReadiness(assessments)
+
+  return baseHealth.map(sa => ({
+    ...sa,
+    tierBreakdown: getSubAreaTierBreakdown(sa.subAreaId, assessments, framework),
+    prerequisiteReadiness: saReadiness[sa.subAreaId] || { readiness: 1, prereqSubAreas: [], unmetPrereqs: [] },
+  }))
 }

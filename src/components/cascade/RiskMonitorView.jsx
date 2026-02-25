@@ -13,6 +13,11 @@ const RISK_BORDER_COLORS = {
   regression: '#ff6666',
   bottleneck: '#e5b76a',
   stalling: '#aaa',
+  // Learning barrier types
+  'score-inversion': '#b594d6',
+  'prerequisite-gap': '#d694b5',
+  'uneven-profile': '#94a8d6',
+  'plateau': '#d6c494',
 }
 
 /**
@@ -27,7 +32,7 @@ export default memo(function RiskMonitorView({
   onNavigateToAssess,
 }) {
   const { isPhone, isTablet } = useResponsive()
-  const { nodes, cascadeRisks, domainHealth, getSubAreaHealth } = useCascadeGraph(assessments, snapshots)
+  const { nodes, cascadeRisks, domainHealth, getEnhancedSubAreaHealth, learningBarriers } = useCascadeGraph(assessments, snapshots)
   const [selectedRisk, setSelectedRisk] = useState(null)
   const [expandedDomain, setExpandedDomain] = useState(null)
   const hasData = useMemo(() => Object.keys(assessments).length > 0, [assessments])
@@ -75,8 +80,8 @@ export default memo(function RiskMonitorView({
 
   const subAreas = useMemo(() => {
     if (!expandedDomain) return []
-    return getSubAreaHealth(expandedDomain)
-  }, [expandedDomain, getSubAreaHealth])
+    return getEnhancedSubAreaHealth(expandedDomain)
+  }, [expandedDomain, getEnhancedSubAreaHealth])
 
   // Summary
   const summaryText = useMemo(() => {
@@ -128,6 +133,40 @@ export default memo(function RiskMonitorView({
             )}
           </AnimatePresence>
         </div>
+
+        {/* Learning barrier banners */}
+        {learningBarriers.length > 0 && (
+          <div className={`${isPhone ? 'px-3 pt-2' : 'px-5 pt-3'} space-y-2`}>
+            <div className="flex items-center gap-2 mb-1">
+              <span className="text-[9px] font-mono tracking-widest text-gray-600 uppercase">Learning Barriers</span>
+              <span className="text-[9px] text-gray-600 bg-[#2a2a33] px-1.5 py-0.5 rounded">{learningBarriers.length}</span>
+            </div>
+            {learningBarriers.slice(0, 5).map((barrier, i) => {
+              const borderColor = RISK_BORDER_COLORS[barrier.type] || '#b594d6'
+              return (
+                <div
+                  key={`barrier-${i}`}
+                  className="rounded-lg px-4 py-2.5"
+                  style={{
+                    backgroundColor: `${borderColor}08`,
+                    borderLeft: `3px solid ${borderColor}`,
+                  }}
+                >
+                  <div className="flex items-center gap-2">
+                    <span className="text-[9px] font-mono font-bold tracking-wider px-1.5 py-0.5 rounded"
+                      style={{ color: borderColor, backgroundColor: `${borderColor}15` }}>
+                      {barrier.type.replace(/-/g, ' ').toUpperCase()}
+                    </span>
+                    <span className="text-[9px] text-gray-600 font-mono">
+                      severity {barrier.severity.toFixed(1)}
+                    </span>
+                  </div>
+                  <p className="text-[11px] text-gray-400 mt-1">{barrier.description}</p>
+                </div>
+              )
+            })}
+          </div>
+        )}
 
         {/* Trend grid */}
         <div className={`${isPhone ? 'px-3 py-3' : 'px-5 py-4'}`}>
@@ -188,6 +227,7 @@ export default memo(function RiskMonitorView({
           subAreas={subAreas}
           onClose={() => setExpandedDomain(null)}
           onNavigateToAssess={onNavigateToAssess}
+          showPrereqs
         />
       )}
     </div>

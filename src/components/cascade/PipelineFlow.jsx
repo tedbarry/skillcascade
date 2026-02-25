@@ -9,7 +9,11 @@ const DOMAIN_COLORS = {
 
 // Main chain order (dependencies flow left to right)
 const CHAIN_ORDER = ['d1', 'd2', 'd3', 'd4', 'd5', 'd6', 'd7']
-const INDEPENDENT = ['d8', 'd9']
+// Branch domains fork off the main chain
+const BRANCHES = [
+  { id: 'd8', forkAfter: 'd3', label: 'Safety', type: 'left' },
+  { id: 'd9', forkAfter: 'd5', label: 'Support', type: 'right' },
+]
 
 const MAX_PIPE = 72
 const MIN_PIPE = 14
@@ -347,23 +351,88 @@ export default memo(function PipelineFlow({
           )
         })}
 
-        {/* Independent domains */}
-        {INDEPENDENT.map((id, i) => {
-          const node = nodeMap[id]
+        {/* Branch domains (D8, D9) — fork off the main chain */}
+        {BRANCHES.map(branch => {
+          const node = nodeMap[branch.id]
           if (!node) return null
-          const color = DOMAIN_COLORS[id] || '#888'
-          const r = 16
-          const cx = isPhone ? (svgWidth / 2) + (i === 0 ? -40 : 40) : 40 + totalChainWidth / 2 + (i === 0 ? -60 : 60)
-          const cy = isPhone ? svgHeight - 30 : svgHeight - 22
+          const color = DOMAIN_COLORS[branch.id] || '#888'
+          const forkIdx = CHAIN_ORDER.indexOf(branch.forkAfter)
+          if (forkIdx < 0) return null
+
+          const h = MIN_PIPE + (node.assessed > 0 ? node.healthPct : 0.3) * (MAX_PIPE - MIN_PIPE)
+          const halfH = h / 2
+          const isLeft = branch.type === 'left'
+
+          // Position: fork off the main chain after the specified domain
+          const forkX = isPhone
+            ? svgWidth / 2
+            : 40 + forkIdx * (segmentWidth + gapWidth) + segmentWidth
+          const forkY = isPhone
+            ? 40 + forkIdx * (segmentWidth + gapWidth) + segmentWidth
+            : svgHeight / 2
+
+          // Branch endpoint position
+          const branchLen = isPhone ? 50 : 60
+          const bx = isPhone ? (isLeft ? forkX - 50 : forkX + 50) : forkX + segmentWidth / 2
+          const by = isPhone ? forkY + 10 : (isLeft ? forkY - 50 : forkY + 50)
+
+          const isBottleneck = branch.id === bottleneckId
+          const isCascadeSource = cascadeState.active && cascadeState.source === branch.id
+          const isCascadeAffected = cascadeState.active && cascadeState.affected[branch.id]
+
+          let fillOpacity = node.assessed > 0 ? 0.15 + node.healthPct * 0.35 : 0.08
+          let fillColor = color
+          if (isCascadeSource) { fillColor = isMasteryCascade ? '#ffd700' : '#ff4444'; fillOpacity = 0.5 }
+          else if (isCascadeAffected) { fillColor = isMasteryCascade ? '#ffd700' : '#ff4444'; fillOpacity = 0.25 }
+          else if (cascadeState.active) { fillOpacity = 0.05 }
 
           return (
-            <g key={id} className="cursor-pointer" onClick={() => onSegmentClick?.(id)}>
-              <circle cx={cx} cy={cy} r={r} fill="#2a2a33" stroke={color} strokeWidth="1.5" strokeDasharray="4,3" />
-              <text x={cx} y={cy + 1} textAnchor="middle" fill={color} fontSize="9" fontWeight="bold" dominantBaseline="middle">
-                D{node.domain}
+            <g key={branch.id}>
+              {/* Connecting line from chain to branch (dashed = supports dep exists) */}
+              <line
+                x1={forkX} y1={forkY}
+                x2={bx} y2={by}
+                stroke={color} strokeWidth="1.5"
+                strokeDasharray="5,3" opacity="0.5"
+              />
+              {/* Branch node */}
+              <rect
+                x={bx - (isPhone ? halfH : segmentWidth * 0.4)}
+                y={by - (isPhone ? segmentWidth * 0.3 : halfH)}
+                width={isPhone ? h : segmentWidth * 0.8}
+                height={isPhone ? segmentWidth * 0.6 : h}
+                rx={6}
+                fill={fillColor}
+                opacity={fillOpacity}
+                stroke={isBottleneck ? '#ff8800' : color}
+                strokeWidth={isBottleneck ? 2 : 1}
+                className="cursor-pointer"
+                onClick={() => onSegmentClick?.(branch.id)}
+                onMouseEnter={(e) => handleTooltip(e, node)}
+                onTouchStart={(e) => handleTooltip(e, node)}
+                onMouseLeave={() => setTooltip(null)}
+              />
+              {/* Bottleneck pulse */}
+              {isBottleneck && !cascadeState.active && (
+                <rect
+                  x={bx - (isPhone ? halfH : segmentWidth * 0.4)}
+                  y={by - (isPhone ? segmentWidth * 0.3 : halfH)}
+                  width={isPhone ? h : segmentWidth * 0.8}
+                  height={isPhone ? segmentWidth * 0.6 : h}
+                  rx={6} fill="none" stroke="#ff8800" strokeWidth="2">
+                  <animate attributeName="opacity" values="0.4;0.9;0.4" dur="2s" repeatCount="indefinite" />
+                </rect>
+              )}
+              {/* Label */}
+              <text
+                x={bx} y={by + (isPhone ? segmentWidth * 0.3 + 14 : halfH + 14)}
+                textAnchor="middle" fill="#ccc" fontSize="10" fontWeight="600">
+                D{node.domain} {branch.label}
               </text>
-              <text x={cx} y={cy + r + 12} textAnchor="middle" fill="#666" fontSize="8">
-                {node.name.split(' ')[0]}
+              <text
+                x={bx} y={by + (isPhone ? segmentWidth * 0.3 + 26 : halfH + 26)}
+                textAnchor="middle" fill="#888" fontSize="8">
+                {node.avg > 0 ? `${node.avg.toFixed(1)}/3` : '—'}
               </text>
             </g>
           )

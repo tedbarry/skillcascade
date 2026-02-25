@@ -1,8 +1,10 @@
 import { useMemo, memo } from 'react'
 import { motion } from 'framer-motion'
 import { framework, DOMAIN_DEPENDENCIES } from '../../data/framework.js'
-import { computeDomainHealth, simulateCascade, findPrerequisiteChain, computePathReadiness } from '../../data/cascadeModel.js'
+import { computeDomainHealth, simulateCascade, findPrerequisiteChain, computePathReadiness, findSkillBottlenecks } from '../../data/cascadeModel.js'
 import useResponsive from '../../hooks/useResponsive.js'
+
+const TIER_LABELS = { 1: 'Reflexive', 2: 'Recognition', 3: 'Management', 4: 'Integration', 5: 'Abstract' }
 
 const DOMAIN_COLORS = {
   d1: '#e07b6e', d2: '#d4956a', d3: '#c9a84c', d4: '#8fb570',
@@ -44,6 +46,15 @@ export default memo(function PlannerSidebar({
     const readiness = computePathReadiness(chain, assessments)
     return readiness.filter(step => step.domainId !== selectedDomain)
   }, [selectedDomain, assessments])
+
+  // Skill-level bottlenecks for this domain
+  const skillBottlenecks = useMemo(() => {
+    const allBottlenecks = findSkillBottlenecks(assessments, 50)
+    // Filter to only show bottlenecks IN this domain (prerequisite skills that are weak)
+    return allBottlenecks
+      .filter(b => b.domainId === selectedDomain && b.currentLevel < 2)
+      .slice(0, 5)
+  }, [assessments, selectedDomain])
 
   // Cascade effects when slider is moved
   const cascadeEffects = useMemo(() => {
@@ -175,17 +186,44 @@ export default memo(function PlannerSidebar({
             <div className="space-y-1.5">
               {prerequisites.map(step => {
                 const d = framework.find(f => f.id === step.domainId)
-                const status = step.status === 'met' ? '✓' : step.status === 'close' ? '⚠' : '✗'
+                const status = step.status === 'met' ? '\u2713' : step.status === 'close' ? '\u26A0' : '\u2717'
                 const statusColor = step.status === 'met' ? 'text-green-400' : step.status === 'close' ? 'text-yellow-400' : 'text-red-400'
                 return (
                   <div key={step.domainId} className="flex items-center justify-between text-xs">
                     <span className="text-gray-300">{d?.name || step.domainId}</span>
                     <span className={`${statusColor} font-mono`}>
-                      {status} {step.status !== 'met' && `${(step.currentAvg || 0).toFixed(1)}/3`}
+                      {status} {step.status !== 'met' && `${(step.avg || 0).toFixed(1)}/3`}
                     </span>
                   </div>
                 )
               })}
+            </div>
+          </div>
+        )}
+
+        {/* Skill-level bottlenecks */}
+        {skillBottlenecks.length > 0 && (
+          <div className="bg-[#1a1a22] rounded-lg p-3 border border-[#2a2a33]">
+            <div className="text-[10px] text-gray-500 uppercase tracking-wider mb-2">
+              Key Skill Bottlenecks
+            </div>
+            <div className="space-y-1.5">
+              {skillBottlenecks.map(b => (
+                <div key={b.skillId} className="flex items-start gap-2 text-[11px]">
+                  <span className="text-orange-400 shrink-0 mt-0.5">{'\u25CF'}</span>
+                  <div className="flex-1 min-w-0">
+                    <div className="text-gray-300 leading-tight">{b.skillName}</div>
+                    <div className="text-[9px] text-gray-600 mt-0.5">
+                      {b.domainId.toUpperCase()} · Tier {b.tier} ({TIER_LABELS[b.tier] || '?'}) · Blocks {b.blockedCount} skills
+                    </div>
+                  </div>
+                  <span className="text-[10px] font-mono shrink-0" style={{
+                    color: b.currentLevel === 0 ? '#666' : b.currentLevel < 2 ? '#e8928a' : '#e5b76a'
+                  }}>
+                    {b.currentLevel === 0 ? '—' : b.currentLevel}
+                  </span>
+                </div>
+              ))}
             </div>
           </div>
         )}

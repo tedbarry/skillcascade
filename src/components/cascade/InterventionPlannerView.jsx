@@ -55,25 +55,13 @@ export default memo(function InterventionPlannerView({
     return deltas
   }, [assessments, whatIfOverrides, selectedDomain])
 
-  // Separate ranked (non-independent, assessed) and independent domains
-  const { rankedDomains, independentDomains } = useMemo(() => {
-    const ranked = []
-    const independent = []
-
-    // Sort by leverage score
+  // All domains ranked by leverage score
+  const rankedDomains = useMemo(() => {
     const sorted = [...impactRanking].sort((a, b) => b.leverageScore - a.leverageScore)
-
-    sorted.forEach(r => {
+    return sorted.map(r => {
       const node = nodes.find(n => n.id === r.domainId)
-      if (!node) return
-      if (node.independent) {
-        independent.push({ node, ranking: r })
-      } else {
-        ranked.push({ node, ranking: r })
-      }
-    })
-
-    return { rankedDomains: ranked, independentDomains: independent }
+      return node ? { node, ranking: r } : null
+    }).filter(Boolean)
   }, [impactRanking, nodes])
 
   const maxLeverage = useMemo(() =>
@@ -136,31 +124,6 @@ export default memo(function InterventionPlannerView({
               ranking={ranking}
               maxLeverage={maxLeverage}
               isRecommended={node.id === recommendedId && !selectedDomain}
-              isSelected={node.id === selectedDomain}
-              onClick={() => handleRowClick(node.id)}
-              isCompact={isPhone}
-              delta={whatIfDeltas[node.id] || null}
-            />
-          ))}
-
-          {/* Separator */}
-          {independentDomains.length > 0 && (
-            <div className="flex items-center gap-3 py-2">
-              <div className="flex-1 h-px bg-[#333]" />
-              <span className="text-[9px] text-gray-600 font-mono">INDEPENDENT</span>
-              <div className="flex-1 h-px bg-[#333]" />
-            </div>
-          )}
-
-          {/* Independent domains */}
-          {independentDomains.map(({ node, ranking }) => (
-            <RankedDomainRow
-              key={node.id}
-              rank={0}
-              node={node}
-              ranking={ranking}
-              maxLeverage={maxLeverage}
-              isIndependent
               isSelected={node.id === selectedDomain}
               onClick={() => handleRowClick(node.id)}
               isCompact={isPhone}

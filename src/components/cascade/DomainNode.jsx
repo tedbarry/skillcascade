@@ -17,7 +17,7 @@ const STATE_CONFIG = {
  * DomainNode — A single domain node in the tiered SVG graph.
  *
  * Props:
- *   node       — { id, name, domain, state, avg, assessed, total, healthPct, independent }
+ *   node       — { id, name, domain, state, avg, assessed, total, healthPct }
  *   pos        — { x, y }
  *   dims       — { nodeW, nodeH, fontSize, subFontSize }
  *   style      — override { fill, stroke, textColor } or null for default
@@ -97,22 +97,6 @@ export default memo(function DomainNode({
         </g>
       ))}
 
-      {/* INDEPENDENT badge */}
-      {node.independent && badges.length === 0 && (
-        <>
-          <rect
-            x={pos.x - 38} y={pos.y - nodeH / 2 - 16}
-            width={76} height={14} rx={7}
-            fill="#444" opacity={0.6}
-          />
-          <text
-            x={pos.x} y={pos.y - nodeH / 2 - 9}
-            textAnchor="middle" dominantBaseline="middle"
-            fill="#999" fontSize="8" fontWeight="700" fontFamily="monospace"
-          >INDEPENDENT</text>
-        </>
-      )}
-
       {/* Node rect */}
       <rect
         x={pos.x - nodeW / 2} y={pos.y - nodeH / 2}
@@ -121,8 +105,8 @@ export default memo(function DomainNode({
         fill={style.fill}
         stroke={highlight === 'bottleneck' ? '#ff8800' : style.stroke}
         strokeWidth={strokeWidth}
-        strokeDasharray={node.independent ? '6,4' : 'none'}
-        opacity={node.independent ? 0.7 : 1}
+        strokeDasharray="none"
+        opacity={1}
       />
 
       {/* Domain color accent — left edge strip */}
@@ -193,7 +177,7 @@ export default memo(function DomainNode({
         opacity={0.6}
         fontFamily="Inter, sans-serif"
         pointerEvents="none"
-      >{node.independent ? 'Independent' : hasData ? config.label : node.subtitle}</text>
+      >{hasData ? config.label : node.subtitle}</text>
 
       {/* Health bar */}
       {hasData && (

@@ -19,17 +19,18 @@ export default memo(function BottleneckFinderView({
   const { isPhone } = useResponsive()
   const {
     nodes, impactRanking, cascadeState,
-    triggerCascade, resetCascade, getSubAreaHealth,
+    triggerCascade, resetCascade, getEnhancedSubAreaHealth,
+    skillBottlenecks,
   } = useCascadeGraph(assessments, snapshots)
   const [expandedDomain, setExpandedDomain] = useState(null)
   const hasData = useMemo(() => Object.keys(assessments).length > 0, [assessments])
 
-  // Identify bottleneck: highest leverage score among weak non-independent domains
+  // Identify bottleneck: highest leverage score among weak domains
   const bottleneck = useMemo(() => {
     if (!hasData) return null
     const candidates = impactRanking.filter(r => {
       const node = nodes.find(n => n.id === r.domainId)
-      return node && !node.independent && node.assessed > 0 && node.avg < 2.0
+      return node && node.assessed > 0 && node.avg < 2.0
     })
     return candidates.length > 0 ? candidates[0] : null
   }, [impactRanking, nodes, hasData])
@@ -45,8 +46,8 @@ export default memo(function BottleneckFinderView({
 
   const subAreas = useMemo(() => {
     if (!expandedDomain) return []
-    return getSubAreaHealth(expandedDomain)
-  }, [expandedDomain, getSubAreaHealth])
+    return getEnhancedSubAreaHealth(expandedDomain)
+  }, [expandedDomain, getEnhancedSubAreaHealth])
 
   // Mastery cascade detection
   const isMasteryCascade = useMemo(() => {
@@ -61,20 +62,27 @@ export default memo(function BottleneckFinderView({
       resetCascade()
       return
     }
-    // Trigger cascade for non-independent domains
-    if (!nodes.find(n => n.id === domainId)?.independent) {
-      resetCascade()
-      setTimeout(() => triggerCascade(domainId), 50)
-    }
+    resetCascade()
+    setTimeout(() => triggerCascade(domainId), 50)
     setExpandedDomain(domainId)
   }, [expandedDomain, resetCascade, triggerCascade, nodes])
+
+  // Top skill-level bottleneck
+  const topSkillBottleneck = useMemo(() => {
+    if (!hasData || skillBottlenecks.length === 0) return null
+    return skillBottlenecks[0]
+  }, [hasData, skillBottlenecks])
 
   // Summary sentence
   const summaryText = useMemo(() => {
     if (!bottleneck) return hasData ? 'No significant bottlenecks detected.' : 'Add assessment data to identify bottlenecks.'
     const domain = framework.find(d => d.id === bottleneck.domainId)
-    return `Weakness in ${domain?.name || ''} affects ${bottleneck.downstreamDomains} downstream domain${bottleneck.downstreamDomains !== 1 ? 's' : ''}, limiting ${bottleneck.downstreamSkills} skills.`
-  }, [bottleneck, hasData])
+    const base = `Weakness in ${domain?.name || ''} affects ${bottleneck.downstreamDomains} downstream domain${bottleneck.downstreamDomains !== 1 ? 's' : ''}, limiting ${bottleneck.downstreamSkills} skills.`
+    if (topSkillBottleneck && topSkillBottleneck.blockedCount > 3) {
+      return `${base} Top skill bottleneck: "${topSkillBottleneck.skillName}" blocks ${topSkillBottleneck.blockedCount} skills.`
+    }
+    return base
+  }, [bottleneck, hasData, topSkillBottleneck])
 
   const footerText = useMemo(() => {
     if (cascadeState.active) {
@@ -121,6 +129,7 @@ export default memo(function BottleneckFinderView({
             onNavigateToAssess={onNavigateToAssess}
             sortBy="weakness"
             criticalThreshold={1.5}
+            showPrereqs
           />
         )}
       </div>

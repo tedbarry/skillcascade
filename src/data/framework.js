@@ -910,6 +910,32 @@ export const framework = [
     coreQuestion: 'Can I understand that others have thoughts, feelings, expectations, and rules too?',
     subAreas: [
       {
+        id: 'd6-sa0',
+        name: 'Shared Attention',
+        skillGroups: [
+          {
+            id: 'd6-sa0-sg1',
+            name: 'Joint Attention Foundations',
+            skills: [
+              { id: 'd6-sa0-sg1-s1', name: 'Respond to bid for attention' },
+              { id: 'd6-sa0-sg1-s2', name: 'Follow point or gaze to shared referent' },
+              { id: 'd6-sa0-sg1-s3', name: 'Initiate joint attention (pointing to share)' },
+              { id: 'd6-sa0-sg1-s4', name: 'Coordinate attention between person and object' },
+            ],
+          },
+          {
+            id: 'd6-sa0-sg2',
+            name: 'Shared Engagement',
+            skills: [
+              { id: 'd6-sa0-sg2-s1', name: 'Sustain shared activity for 2+ exchanges' },
+              { id: 'd6-sa0-sg2-s2', name: 'Reference partner reaction during activity' },
+              { id: 'd6-sa0-sg2-s3', name: 'Modify own behavior based on partner engagement' },
+              { id: 'd6-sa0-sg2-s4', name: 'Co-construct play sequences with partner' },
+            ],
+          },
+        ],
+      },
+      {
         id: 'd6-sa1',
         name: 'Perspective-Taking',
         skillGroups: [
@@ -1271,7 +1297,7 @@ export const framework = [
     name: 'Safety & Survival Skills',
     subtitle: 'Override Skills',
     coreQuestion: 'Can I keep myself and others safe in high-stakes moments?',
-    keyInsight: 'This domain activates under threat and temporarily overrides autonomy, preference, and identity. These are override skills, not habits.',
+    keyInsight: 'Safety skills build on regulation and executive function foundations. While clinically urgent, they require baseline arousal control and procedural compliance — override skills, not habits.',
     subAreas: [
       {
         id: 'd8-sa1',
@@ -1398,179 +1424,143 @@ export const framework = [
   {
     id: 'd9',
     domain: 9,
-    name: 'Support System Skills',
-    subtitle: 'Caregivers & Environment',
-    coreQuestion: 'Does the environment know how to support the individual correctly?',
-    keyInsight: 'These are learned competencies of the system, not passive conditions. Poor system skills actively create client failure.',
+    name: 'Support Utilization',
+    subtitle: 'Using Help Effectively',
+    coreQuestion: 'Can the client recognize, request, accept, and benefit from support?',
+    keyInsight: 'The ability to utilize support is a learnable skill set. Clients who can engage with helpers, respond to prompts, and communicate about their needs progress faster across all domains.',
     subAreas: [
       {
         id: 'd9-sa1',
-        name: 'Consistency',
+        name: 'Accepting Co-Regulation',
         skillGroups: [
           {
             id: 'd9-sa1-sg1',
-            name: 'Respond predictably',
+            name: 'Tolerate supporter proximity',
             skills: [
-              { id: 'd9-sa1-sg1-s1', name: 'Match responses to behavior reliably' },
-              { id: 'd9-sa1-sg1-s2', name: 'Avoid emotional or situational drift' },
+              { id: 'd9-sa1-sg1-s1', name: 'Accept physical proximity of supporter during distress' },
+              { id: 'd9-sa1-sg1-s2', name: 'Allow supporter to use calming strategies' },
+              { id: 'd9-sa1-sg1-s3', name: 'Signal need for support (any modality)' },
             ],
           },
           {
             id: 'd9-sa1-sg2',
-            name: 'Maintain stable expectations',
+            name: 'Accept and differentiate support',
             skills: [
-              { id: 'd9-sa1-sg2-s1', name: 'Hold rules across time and staff' },
-              { id: 'd9-sa1-sg2-s2', name: 'Prevent moving goalposts' },
-            ],
-          },
-          {
-            id: 'd9-sa1-sg3',
-            name: 'Reduce ambiguity',
-            skills: [
-              { id: 'd9-sa1-sg3-s1', name: 'Clarify consequences and supports' },
-              { id: 'd9-sa1-sg3-s2', name: 'Minimize guesswork for the client' },
+              { id: 'd9-sa1-sg2-s1', name: 'Tolerate redirection from supporter' },
+              { id: 'd9-sa1-sg2-s2', name: 'Differentiate support levels needed' },
             ],
           },
         ],
       },
       {
         id: 'd9-sa2',
-        name: 'Reinforcement',
+        name: 'Responding to Prompts & Cues',
         skillGroups: [
           {
             id: 'd9-sa2-sg1',
-            name: 'Identify effective reinforcers',
+            name: 'Follow prompts in context',
             skills: [
-              { id: 'd9-sa2-sg1-s1', name: 'Select meaningful, motivating outcomes' },
-              { id: 'd9-sa2-sg1-s2', name: 'Adjust based on response' },
+              { id: 'd9-sa2-sg1-s1', name: 'Attend to gestural prompts' },
+              { id: 'd9-sa2-sg1-s2', name: 'Follow verbal prompts in familiar routines' },
+              { id: 'd9-sa2-sg1-s3', name: 'Respond to visual supports and schedules' },
             ],
           },
           {
             id: 'd9-sa2-sg2',
-            name: 'Deliver contingently',
+            name: 'Generalize prompt responsiveness',
             skills: [
-              { id: 'd9-sa2-sg2-s1', name: 'Reinforce specific behaviors' },
-              { id: 'd9-sa2-sg2-s2', name: 'Avoid reinforcing dysregulation or avoidance' },
-            ],
-          },
-          {
-            id: 'd9-sa2-sg3',
-            name: 'Fade strategically',
-            skills: [
-              { id: 'd9-sa2-sg3-s1', name: 'Reduce external reinforcement as skills stabilize' },
-              { id: 'd9-sa2-sg3-s2', name: 'Prevent collapse during fading' },
+              { id: 'd9-sa2-sg2-s1', name: 'Fade from physical to gestural to verbal prompts' },
+              { id: 'd9-sa2-sg2-s2', name: 'Generalize prompt-following across supporters' },
             ],
           },
         ],
       },
       {
         id: 'd9-sa3',
-        name: 'Prompting',
+        name: 'Requesting & Accepting Help',
         skillGroups: [
           {
             id: 'd9-sa3-sg1',
-            name: 'Select prompt type',
+            name: 'Initiate help-seeking',
             skills: [
-              { id: 'd9-sa3-sg1-s1', name: 'Match prompt to skill level and layer' },
-              { id: 'd9-sa3-sg1-s2', name: 'Avoid over- or under-prompting' },
+              { id: 'd9-sa3-sg1-s1', name: 'Indicate need for help (any modality)' },
+              { id: 'd9-sa3-sg1-s2', name: 'Accept offered assistance without resistance' },
+              { id: 'd9-sa3-sg1-s3', name: 'Request specific type of help' },
             ],
           },
           {
             id: 'd9-sa3-sg2',
-            name: 'Time prompts effectively',
+            name: 'Evaluate and advocate',
             skills: [
-              { id: 'd9-sa3-sg2-s1', name: 'Prompt before failure, not after escalation' },
-              { id: 'd9-sa3-sg2-s2', name: 'Avoid interrupting productive struggle' },
-            ],
-          },
-          {
-            id: 'd9-sa3-sg3',
-            name: 'Fade without abandonment',
-            skills: [
-              { id: 'd9-sa3-sg3-s1', name: 'Remove prompts gradually' },
-              { id: 'd9-sa3-sg3-s2', name: 'Monitor independence stability' },
+              { id: 'd9-sa3-sg2-s1', name: 'Evaluate whether help received was sufficient' },
+              { id: 'd9-sa3-sg2-s2', name: 'Advocate for different support strategy' },
             ],
           },
         ],
       },
       {
         id: 'd9-sa4',
-        name: 'Modeling',
+        name: 'Learning from Models',
         skillGroups: [
           {
             id: 'd9-sa4-sg1',
-            name: 'Demonstrate target behaviors',
+            name: 'Observe and imitate',
             skills: [
-              { id: 'd9-sa4-sg1-s1', name: 'Show regulation, repair, flexibility' },
-              { id: 'd9-sa4-sg1-s2', name: 'Normalize imperfection and recovery' },
+              { id: 'd9-sa4-sg1-s1', name: 'Attend to demonstration' },
+              { id: 'd9-sa4-sg1-s2', name: 'Imitate modeled action immediately' },
+              { id: 'd9-sa4-sg1-s3', name: 'Reproduce modeled behavior after delay' },
             ],
           },
           {
             id: 'd9-sa4-sg2',
-            name: 'Model emotional responses',
+            name: 'Generalize from models',
             skills: [
-              { id: 'd9-sa4-sg2-s1', name: 'Display calm under stress' },
-              { id: 'd9-sa4-sg2-s2', name: 'Repair mistakes openly' },
+              { id: 'd9-sa4-sg2-s1', name: 'Adapt modeled strategy to new context' },
+              { id: 'd9-sa4-sg2-s2', name: 'Select which models to learn from' },
             ],
           },
         ],
       },
       {
         id: 'd9-sa5',
-        name: 'Emotional Co-Regulation',
+        name: 'Providing Feedback to Supporters',
         skillGroups: [
           {
             id: 'd9-sa5-sg1',
-            name: 'Read arousal accurately',
+            name: 'Communicate support preferences',
             skills: [
-              { id: 'd9-sa5-sg1-s1', name: 'Detect early dysregulation' },
-              { id: 'd9-sa5-sg1-s2', name: 'Match support to intensity' },
+              { id: 'd9-sa5-sg1-s1', name: 'Indicate preference between support options' },
+              { id: 'd9-sa5-sg1-s2', name: 'Communicate when support is or is not helping' },
             ],
           },
           {
             id: 'd9-sa5-sg2',
-            name: 'Provide stabilizing presence',
+            name: 'Collaborate on strategy',
             skills: [
-              { id: 'd9-sa5-sg2-s1', name: 'Regulate tone, pace, proximity' },
-              { id: 'd9-sa5-sg2-s2', name: 'Avoid escalating the client' },
-            ],
-          },
-          {
-            id: 'd9-sa5-sg3',
-            name: 'Withdraw support appropriately',
-            skills: [
-              { id: 'd9-sa5-sg3-s1', name: 'Fade co-regulation as self-regulation improves' },
-              { id: 'd9-sa5-sg3-s2', name: 'Prevent learned dependence' },
+              { id: 'd9-sa5-sg2-s1', name: 'Explain what kind of support works best' },
+              { id: 'd9-sa5-sg2-s2', name: 'Collaborate with supporter on strategy adjustment' },
             ],
           },
         ],
       },
       {
         id: 'd9-sa6',
-        name: 'Data-Based Adjustment',
+        name: 'Maintaining Support Relationships',
         skillGroups: [
           {
             id: 'd9-sa6-sg1',
-            name: 'Track response to intervention',
+            name: 'Recognize and trust supporters',
             skills: [
-              { id: 'd9-sa6-sg1-s1', name: 'Monitor progress and breakdowns' },
-              { id: 'd9-sa6-sg1-s2', name: 'Identify patterns over time' },
+              { id: 'd9-sa6-sg1-s1', name: 'Recognize familiar supporters' },
+              { id: 'd9-sa6-sg1-s2', name: 'Show trust differentiation across supporters' },
             ],
           },
           {
             id: 'd9-sa6-sg2',
-            name: 'Adjust supports dynamically',
+            name: 'Sustain support engagement',
             skills: [
-              { id: 'd9-sa6-sg2-s1', name: 'Modify environment before blaming the client' },
-              { id: 'd9-sa6-sg2-s2', name: 'Shift layer focus when progress stalls' },
-            ],
-          },
-          {
-            id: 'd9-sa6-sg3',
-            name: 'Prevent plan rigidity',
-            skills: [
-              { id: 'd9-sa6-sg3-s1', name: 'Avoid defending ineffective strategies' },
-              { id: 'd9-sa6-sg3-s2', name: 'Update hypotheses based on evidence' },
+              { id: 'd9-sa6-sg2-s1', name: 'Repair ruptures in support relationships' },
+              { id: 'd9-sa6-sg2-s2', name: 'Maintain engagement with support system over time' },
             ],
           },
         ],
@@ -1681,6 +1671,6 @@ export const DOMAIN_DEPENDENCIES = {
   d5: ['d1', 'd2', 'd3', 'd4'],   // Needs all below
   d6: ['d1', 'd2', 'd5'],         // Needs regulation, awareness, communication
   d7: ['d1', 'd2', 'd3', 'd6'],   // Builds on most domains
-  d8: [],                          // Override — independent, activates under threat
-  d9: [],                          // System-level — independent of individual skills
+  d8: ['d1', 'd3'],               // Safety requires regulation (D1) + executive function (D3)
+  d9: ['d1', 'd2', 'd5'],         // Utilizing support requires regulation (D1), self-awareness (D2), communication (D5)
 }
