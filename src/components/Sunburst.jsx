@@ -172,6 +172,18 @@ export default function Sunburst({ data, assessments = {}, width = 800, height =
       .transition(t)
       .attr('fill-opacity', (d) => +labelVisible(d.target))
       .attrTween('transform', (d) => () => labelTransform(d.current, radius))
+
+    // Update label text for new arc sizes after zoom
+    label.text((d) => {
+      const target = d.target || d.current
+      const angularSpan = target.x1 - target.x0
+      const midRadius = ((target.y0 + target.y1) / 2) * radius
+      const arcLength = angularSpan * midRadius
+      const charWidth = d.depth === 1 ? 7 : d.depth === 2 ? 5.5 : 4.5
+      const maxLen = Math.max(0, Math.floor(arcLength / charWidth) - 1)
+      if (maxLen < 3) return ''
+      return truncateLabel(d.data.name, maxLen)
+    })
   }
 
   // ---- Build D3 chart (only when structure or dimensions change) ----
@@ -343,9 +355,14 @@ export default function Sunburst({ data, assessments = {}, width = 800, height =
       .attr('transform', (d) => labelTransform(d.current, radius))
       .style('font-size', (d) => (d.depth === 1 ? '11px' : d.depth === 2 ? '9px' : '7.5px'))
       .style('font-weight', (d) => (d.depth === 1 ? '600' : '400'))
-      .style('display', (d) => (d.depth >= 3 && width < 400) ? 'none' : null)
       .text((d) => {
-        const maxLen = d.depth === 1 ? 16 : d.depth === 2 ? 14 : 12
+        // Compute available arc length in pixels for this label
+        const angularSpan = d.current.x1 - d.current.x0
+        const midRadius = ((d.current.y0 + d.current.y1) / 2) * radius
+        const arcLength = angularSpan * midRadius
+        const charWidth = d.depth === 1 ? 7 : d.depth === 2 ? 5.5 : 4.5
+        const maxLen = Math.max(0, Math.floor(arcLength / charWidth) - 1)
+        if (maxLen < 3) return ''
         return truncateLabel(d.data.name, maxLen)
       })
 
