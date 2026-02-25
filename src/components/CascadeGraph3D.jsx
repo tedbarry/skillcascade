@@ -312,8 +312,7 @@ export default function CascadeGraph3D({
           minDistance={4}
           maxDistance={14}
           target={ORBIT_TARGET}
-          autoRotate
-          autoRotateSpeed={0.3}
+          autoRotate={false}
           enableZoom
           zoomSpeed={0.5}
         />
