@@ -43,6 +43,25 @@ const MODE_ICONS = {
   [MODES.TIMELINE]: '\u25F7',   // ◷
 }
 
+const LAYOUTS = {
+  TIERED: 'tiered',
+  ORBITAL: 'orbital',
+}
+
+// Orbital layout: curated ring assignments for each domain
+// ring 0 = center core, rings 1-3 = concentric orbits, 1.5 = floating independent
+const ORBITAL_RINGS = {
+  d1: { ring: 0, angle: 0 },
+  d2: { ring: 1, angle: -Math.PI * 2 / 3 },    // upper-left
+  d3: { ring: 1, angle: -Math.PI / 3 },         // upper-right
+  d4: { ring: 2, angle: -Math.PI / 2 },         // top
+  d5: { ring: 2, angle: Math.PI / 6 },          // lower-right
+  d6: { ring: 2, angle: Math.PI * 5 / 6 },      // lower-left
+  d7: { ring: 3, angle: -Math.PI / 2 },         // top (crown)
+  d8: { ring: 1.5, angle: Math.PI * 5 / 8 },    // lower-left floating
+  d9: { ring: 1.5, angle: -Math.PI / 8 },       // upper-right floating
+}
+
 // Heatmap color scale (cool blue → warm red)
 const heatmapScale = d3.scaleSequential(d3.interpolateYlOrRd).domain([0, 1])
 
@@ -81,6 +100,9 @@ export default function CascadeAnimation({
 
   // Legend visibility
   const [legendOpen, setLegendOpen] = useState(false)
+
+  // Layout mode
+  const [layout, setLayout] = useState(LAYOUTS.TIERED)
 
   // The assessments used for rendering — timeline can override
   const effectiveAssessments = displayAssessments && mode === MODES.TIMELINE
@@ -142,17 +164,36 @@ export default function CascadeAnimation({
 
   const centerX = width / 2
   const bottomY = height - (isPhone ? 50 : 70)
+  const orbitalCenterY = height / 2 + (isPhone ? 10 : 20)
+  const orbitalBaseRadius = isPhone ? 65 : isTablet ? 85 : 105
+  const orbitalRingGap = isPhone ? 65 : isTablet ? 85 : 105
 
   const positions = useMemo(() => {
     const pos = {}
-    nodes.forEach((node) => {
-      pos[node.id] = {
-        x: centerX + (node.col - 1) * colSpacing,
-        y: bottomY - node.tier * tierSpacing,
-      }
-    })
+    if (layout === LAYOUTS.ORBITAL) {
+      nodes.forEach((node) => {
+        const config = ORBITAL_RINGS[node.id]
+        if (!config) return
+        if (config.ring === 0) {
+          pos[node.id] = { x: centerX, y: orbitalCenterY }
+        } else {
+          const radius = orbitalBaseRadius + (config.ring - 1) * orbitalRingGap
+          pos[node.id] = {
+            x: centerX + radius * Math.cos(config.angle),
+            y: orbitalCenterY + radius * Math.sin(config.angle),
+          }
+        }
+      })
+    } else {
+      nodes.forEach((node) => {
+        pos[node.id] = {
+          x: centerX + (node.col - 1) * colSpacing,
+          y: bottomY - node.tier * tierSpacing,
+        }
+      })
+    }
     return pos
-  }, [nodes, centerX, bottomY, colSpacing, tierSpacing])
+  }, [nodes, layout, centerX, bottomY, colSpacing, tierSpacing, orbitalCenterY, orbitalBaseRadius, orbitalRingGap])
 
   // ─── Mode switching ───
 
@@ -383,18 +424,48 @@ export default function CascadeAnimation({
       const to = positions[edge.to]
       if (!from || !to) return null
 
-      const isPrimary = edge.type === 'primary'
       let d
-      if (isPrimary) {
-        d = `M${from.x},${from.y - nodeH / 2} L${to.x},${to.y + nodeH / 2}`
+      if (layout === LAYOUTS.ORBITAL) {
+        // Orbital: radial edge endpoints + curved arcs
+        const dx = to.x - from.x
+        const dy = to.y - from.y
+        const angle = Math.atan2(dy, dx)
+        const nodeR = Math.min(nodeW, nodeH) / 2 + 2
+        const isFromCenter = edge.from === 'd1'
+        const startX = from.x + Math.cos(angle) * (isFromCenter ? 10 : nodeR)
+        const startY = from.y + Math.sin(angle) * (isFromCenter ? 10 : nodeR)
+        const endX = to.x - Math.cos(angle) * nodeR
+        const endY = to.y - Math.sin(angle) * nodeR
+
+        if (isFromCenter) {
+          // Radial edges from center: gentle curve
+          d = `M${startX},${startY} L${endX},${endY}`
+        } else {
+          // Inter-ring & same-ring: arc toward center
+          const midX = (startX + endX) / 2
+          const midY = (startY + endY) / 2
+          const toCenterX = centerX - midX
+          const toCenterY = orbitalCenterY - midY
+          const dist = Math.sqrt(dx * dx + dy * dy)
+          const curveFactor = Math.min(0.4, dist * 0.001 + 0.15)
+          const ctrlX = midX + toCenterX * curveFactor
+          const ctrlY = midY + toCenterY * curveFactor
+          d = `M${startX},${startY} Q${ctrlX},${ctrlY} ${endX},${endY}`
+        }
       } else {
-        const midY = (from.y - nodeH / 2 + to.y + nodeH / 2) / 2
-        const curveX = from.x + (to.x - from.x) * 0.5 + (edge.from === 'd2' ? -50 : 50)
-        d = `M${from.x},${from.y - nodeH / 2} Q${curveX},${midY} ${to.x},${to.y + nodeH / 2}`
+        // Tiered: vertical flow
+        const isPrimary = edge.type === 'primary'
+        if (isPrimary) {
+          d = `M${from.x},${from.y - nodeH / 2} L${to.x},${to.y + nodeH / 2}`
+        } else {
+          const midY = (from.y - nodeH / 2 + to.y + nodeH / 2) / 2
+          const curveX = from.x + (to.x - from.x) * 0.5 + (edge.from === 'd2' ? -50 : 50)
+          d = `M${from.x},${from.y - nodeH / 2} Q${curveX},${midY} ${to.x},${to.y + nodeH / 2}`
+        }
       }
       return { id: `edge-path-${i}`, d, edge }
     }).filter(Boolean)
-  }, [edges, positions, nodeH])
+  }, [edges, positions, nodeH, nodeW, layout, centerX, orbitalCenterY])
 
   // ─── Render ───
 
@@ -402,6 +473,22 @@ export default function CascadeAnimation({
     <div className="flex flex-col h-full">
       {/* Toolbar — frosted glass */}
       <div className={`flex items-center gap-1.5 ${isPhone ? 'px-2 py-1.5 flex-wrap' : 'px-4 py-2'} bg-[#1a1a1e]/80 backdrop-blur-md border-b border-[#333]/80`}>
+        {/* Layout toggle */}
+        <button
+          onClick={() => setLayout(layout === LAYOUTS.TIERED ? LAYOUTS.ORBITAL : LAYOUTS.TIERED)}
+          className={`text-[10px] px-2 py-1 rounded-md font-medium transition-all min-h-[44px] flex items-center gap-1 border ${
+            layout === LAYOUTS.ORBITAL
+              ? 'bg-[#2a2a35] text-blue-300 border-blue-500/30'
+              : 'bg-[#2a2a30]/60 text-gray-500 border-[#333] hover:text-gray-400'
+          }`}
+          title={`Switch to ${layout === LAYOUTS.TIERED ? 'orbital' : 'tiered'} layout`}
+        >
+          {layout === LAYOUTS.ORBITAL ? '\u25CE' : '\u2630'}
+          <span className="hidden sm:inline">{layout === LAYOUTS.ORBITAL ? 'Orbital' : 'Tiered'}</span>
+        </button>
+
+        <span className="w-px h-5 bg-[#333] mx-0.5" />
+
         <ToolbarButton
           active={mode === MODES.LIVE && !heatmapOn}
           onClick={() => { switchMode(MODES.LIVE); setHeatmapOn(false) }}
@@ -635,6 +722,13 @@ export default function CascadeAnimation({
                 <feGaussianBlur stdDeviation="3" />
               </filter>
 
+              {/* Orbital center core gradient */}
+              <radialGradient id="orbital-core-gradient">
+                <stop offset="0%" stopColor="#6889b5" stopOpacity="0.12" />
+                <stop offset="60%" stopColor="#4a5568" stopOpacity="0.06" />
+                <stop offset="100%" stopColor="#1a1a1e" stopOpacity="0" />
+              </radialGradient>
+
               {/* Flow animation CSS */}
               <style>{`
                 @keyframes cascadeShake {
@@ -673,6 +767,30 @@ export default function CascadeAnimation({
               ))}
             </g>
 
+            {/* Orbital layout: ring lines and center core */}
+            {layout === LAYOUTS.ORBITAL && (
+              <g>
+                {/* Concentric orbital ring lines */}
+                {[1, 2, 3].map((ring) => (
+                  <circle
+                    key={`ring-${ring}`}
+                    cx={centerX}
+                    cy={orbitalCenterY}
+                    r={orbitalBaseRadius + (ring - 1) * orbitalRingGap}
+                    fill="none"
+                    stroke="#fff"
+                    strokeWidth="0.5"
+                    opacity="0.06"
+                    strokeDasharray="4,6"
+                  />
+                ))}
+
+                {/* Center core glow */}
+                <circle cx={centerX} cy={orbitalCenterY} r={orbitalBaseRadius * 0.4} fill="url(#orbital-core-gradient)" />
+                <circle cx={centerX} cy={orbitalCenterY} r={orbitalBaseRadius * 0.15} fill="#2a2a35" stroke="#556" strokeWidth="1" opacity="0.8" />
+              </g>
+            )}
+
             {/* Cascade ambient glow halos behind affected nodes */}
             {cascadeState.active && (
               <g>
@@ -695,11 +813,20 @@ export default function CascadeAnimation({
               </g>
             )}
 
-            {/* Tier labels */}
-            <g>
-              <text x={15} y={bottomY + 12} fill="#444" fontSize="9" fontFamily="monospace">FOUNDATION</text>
-              <text x={15} y={bottomY - 6 * tierSpacing + 12} fill="#444" fontSize="9" fontFamily="monospace">HIGHEST ORDER</text>
-            </g>
+            {/* Tier labels (tiered layout only) */}
+            {layout === LAYOUTS.TIERED && (
+              <g>
+                <text x={15} y={bottomY + 12} fill="#444" fontSize="9" fontFamily="monospace">FOUNDATION</text>
+                <text x={15} y={bottomY - 6 * tierSpacing + 12} fill="#444" fontSize="9" fontFamily="monospace">HIGHEST ORDER</text>
+              </g>
+            )}
+            {/* Orbital ring labels */}
+            {layout === LAYOUTS.ORBITAL && (
+              <g>
+                <text x={centerX} y={orbitalCenterY + orbitalBaseRadius * 0.15 + 14} textAnchor="middle" fill="#556" fontSize="7" fontFamily="monospace" letterSpacing="1">CORE</text>
+                <text x={centerX + orbitalBaseRadius + orbitalRingGap * 2 + 16} y={orbitalCenterY + 4} fill="#444" fontSize="7" fontFamily="monospace" letterSpacing="1">OUTER</text>
+              </g>
+            )}
 
             {/* Path trace highway glow — wide blurred backdrop under path edges */}
             {mode === MODES.PATHTRACE && pathGoal && (
