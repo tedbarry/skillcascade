@@ -295,10 +295,14 @@ export default function CascadeGraph3D({
   }, [onNodeClick])
 
   return (
-    <div className="w-full h-full relative" style={{ minHeight: 400 }}>
+    <div
+      className="w-full h-full relative"
+      style={{ minHeight: 400, touchAction: 'none' }}
+      onWheel={(e) => e.stopPropagation()}
+    >
       <Canvas
         camera={{ position: CAMERA_POSITION, fov: 45 }}
-        style={{ background: 'linear-gradient(180deg, #0a0a10 0%, #12121a 50%, #0a0a10 100%)' }}
+        style={{ background: 'linear-gradient(180deg, #0a0a10 0%, #12121a 50%, #0a0a10 100%)', touchAction: 'none' }}
       >
         <ambientLight intensity={0.3} />
         <pointLight position={[5, 10, 5]} intensity={0.8} color="#6889b5" />
@@ -307,13 +311,11 @@ export default function CascadeGraph3D({
         <OrbitControls
           ref={controlsRef}
           makeDefault
-          enableDamping
-          dampingFactor={0.05}
-          minDistance={4}
-          maxDistance={14}
-          target={ORBIT_TARGET}
-          autoRotate={false}
+          enableDamping={false}
           enableZoom={false}
+          enablePan={false}
+          enableRotate
+          target={ORBIT_TARGET}
         />
 
         {/* Tier rings */}
