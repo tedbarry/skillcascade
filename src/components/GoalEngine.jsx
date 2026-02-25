@@ -220,9 +220,10 @@ function analyzeGaps(assessments) {
     })
   })
 
-  // Sort within each priority: by domain number, then by level (lowest first)
+  // Sort within each priority: by downstream impact (highest first), then domain, then level
   recommendations.sort((a, b) => {
     if (a.priority !== b.priority) return a.priority - b.priority
+    if (a.downstreamSkills !== b.downstreamSkills) return b.downstreamSkills - a.downstreamSkills
     if (a.domainNumber !== b.domainNumber) return a.domainNumber - b.domainNumber
     if (a.level !== b.level) return a.level - b.level
     return 0
@@ -320,10 +321,10 @@ function SkillCard({ rec, onNavigateToAssess }) {
             {rec.rationale}
           </span>
 
-          {/* Downstream count */}
-          {rec.downstream > 0 && rec.priority === 1 && (
+          {/* Downstream count — show for all priorities with downstream impact */}
+          {rec.downstreamSkills > 0 && (
             <span className="text-[10px] text-warm-400 whitespace-nowrap shrink-0">
-              Unblocks {rec.downstreamSkills} skill{rec.downstreamSkills !== 1 ? 's' : ''}
+              Unlocks {rec.downstreamSkills} skill{rec.downstreamSkills !== 1 ? 's' : ''}
             </span>
           )}
         </div>

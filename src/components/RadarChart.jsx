@@ -10,6 +10,13 @@ import {
   Tooltip,
 } from 'recharts'
 import { getDomainScores, ASSESSMENT_COLORS, ASSESSMENT_LEVELS } from '../data/framework.js'
+import { computeDomainHealth } from '../data/cascadeModel.js'
+
+const STATE_INDICATORS = {
+  blocked: { symbol: '\u25BC', color: '#8b4444', label: 'Blocked' },
+  'needs-work': { symbol: '\u25CF', color: '#e8928a', label: 'Needs Work' },
+  mastered: { symbol: '\u2713', color: '#7fb589', label: 'Mastered' },
+}
 
 /**
  * Custom tooltip for the radar chart
@@ -57,26 +64,43 @@ function CustomTooltip({ active, payload }) {
 /**
  * Custom axis tick — wraps long domain names
  */
-function CustomTick({ payload, x, y, textAnchor }) {
+function CustomTick({ payload, x, y, textAnchor, stateMap }) {
   const name = payload.value
   const parts = name.length > 14 ? name.split(/[\s&]+/, 2) : [name]
+  const state = stateMap?.[payload.index]
+  const indicator = state ? STATE_INDICATORS[state] : null
 
   return (
-    <text
-      x={x}
-      y={y}
-      textAnchor={textAnchor}
-      fill="#5f3e2a"
-      fontSize={11}
-      fontWeight={500}
-      fontFamily="Plus Jakarta Sans, Inter, sans-serif"
-    >
-      {parts.map((part, i) => (
-        <tspan key={i} x={x} dy={i === 0 ? 0 : 14}>
-          {part}
-        </tspan>
-      ))}
-    </text>
+    <g>
+      <text
+        x={x}
+        y={y}
+        textAnchor={textAnchor}
+        fill="#5f3e2a"
+        fontSize={11}
+        fontWeight={500}
+        fontFamily="Plus Jakarta Sans, Inter, sans-serif"
+      >
+        {parts.map((part, i) => (
+          <tspan key={i} x={x} dy={i === 0 ? 0 : 14}>
+            {part}
+          </tspan>
+        ))}
+      </text>
+      {indicator && (
+        <text
+          x={x}
+          y={y + (parts.length > 1 ? 26 : 14)}
+          textAnchor={textAnchor}
+          fill={indicator.color}
+          fontSize={9}
+          fontWeight={700}
+          fontFamily="system-ui, sans-serif"
+        >
+          {indicator.symbol} {indicator.label}
+        </text>
+      )}
+    </g>
   )
 }
 
@@ -123,6 +147,17 @@ export default function RadarChart({
   const totalSkills = scores.reduce((sum, s) => sum + s.total, 0)
   const overallCompletion = totalSkills > 0 ? Math.round((totalAssessed / totalSkills) * 100) : 0
   const overallColor = scoreColor(overallAvg, totalAssessed)
+
+  // State map for axis indicators (only show blocked/needs-work/mastered)
+  const stateMap = useMemo(() => {
+    const health = computeDomainHealth(assessments)
+    return scores.map(s => {
+      const h = health[s.domainId]
+      if (!h || h.assessed === 0) return null
+      if (h.state === 'blocked' || h.state === 'needs-work' || h.state === 'mastered') return h.state
+      return null
+    })
+  }, [assessments, scores])
 
   return (
     <div>
@@ -174,7 +209,7 @@ export default function RadarChart({
           />
           <PolarAngleAxis
             dataKey="domain"
-            tick={<CustomTick />}
+            tick={<CustomTick stateMap={stateMap} />}
             tickLine={false}
           />
           <PolarRadiusAxis

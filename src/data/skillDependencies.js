@@ -976,16 +976,19 @@ export const DEP_TYPES = {
   'd5→d3': 'supports',
   'd5→d4': 'supports',
 
-  // D6 ← D1 (hard gate), D2 (facilitative), D5 (hard gate for social cognition)
+  // D6 ← D1 (hard gate), D2 (facilitative), D5 (hard gate for social cognition), D8/D9 (facilitative)
   'd6→d1': 'requires',
   'd6→d2': 'supports',
   'd6→d5': 'requires',
+  'd6→d8': 'supports',  // Safety supports social functioning
+  'd6→d9': 'supports',  // Support utilization supports social cognition
 
-  // D7 ← D1/D2/D3 (hard gates), D6 (facilitative — identity can form without full social cognition)
+  // D7 ← D1/D2/D3 (hard gates), D6 (facilitative), D8 (facilitative — safety supports identity development)
   'd7→d1': 'requires',
   'd7→d2': 'requires',
   'd7→d3': 'requires',
   'd7→d6': 'supports',
+  'd7→d8': 'supports',  // Safety supports identity development
 
   // D8 ← D1 (hard gate — safety requires regulation), D3 (facilitative — procedures benefit from EF)
   'd8→d1': 'requires',

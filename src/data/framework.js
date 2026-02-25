@@ -1669,8 +1669,8 @@ export const DOMAIN_DEPENDENCIES = {
   d3: ['d1', 'd2'],               // Needs regulation + self-awareness
   d4: ['d1', 'd2', 'd3'],         // Needs all below
   d5: ['d1', 'd2', 'd3', 'd4'],   // Needs all below
-  d6: ['d1', 'd2', 'd5'],         // Needs regulation, awareness, communication
-  d7: ['d1', 'd2', 'd3', 'd6'],   // Builds on most domains
+  d6: ['d1', 'd2', 'd5', 'd8', 'd9'], // Needs regulation, awareness, communication; safety + support utilization facilitate social cognition
+  d7: ['d1', 'd2', 'd3', 'd6', 'd8'], // Builds on most domains; safety supports identity development
   d8: ['d1', 'd3'],               // Safety requires regulation (D1) + executive function (D3)
   d9: ['d1', 'd2', 'd5'],         // Utilizing support requires regulation (D1), self-awareness (D2), communication (D5)
 }

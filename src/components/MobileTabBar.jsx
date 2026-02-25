@@ -5,7 +5,7 @@ const TAB_GROUPS = {
   dashboard: {
     label: 'Dashboard',
     views: ['sunburst', 'radar', 'tree', 'cascade', 'timeline'],
-    viewLabels: { sunburst: 'Sunburst', radar: 'Radar', tree: 'Skill Tree', cascade: 'Cascade', timeline: 'Timeline' },
+    viewLabels: { sunburst: 'Sunburst', radar: 'Radar', tree: 'Skill Tree', cascade: 'Intelligence', timeline: 'Timeline' },
   },
   assess: {
     label: 'Assess',

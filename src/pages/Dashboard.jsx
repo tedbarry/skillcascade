@@ -17,6 +17,7 @@ const RadarChart = lazy(() => import('../components/RadarChart.jsx'))
 const AssessmentPanel = lazy(() => import('../components/AssessmentPanel.jsx'))
 const SkillTree = lazy(() => import('../components/SkillTree.jsx'))
 const CascadeView = lazy(() => import('../components/cascade/CascadeView.jsx'))
+const ClinicalIntelligence = lazy(() => import('../components/ClinicalIntelligence.jsx'))
 const ProgressTimeline = lazy(() => import('../components/ProgressTimeline.jsx'))
 const SearchOverlay = lazy(() => import('../components/SearchOverlay.jsx'))
 const OnboardingTour = lazy(() => import('../components/OnboardingTour.jsx'))
@@ -416,7 +417,7 @@ export default function Dashboard() {
               { key: VIEWS.SUNBURST, label: 'Sunburst' },
               { key: VIEWS.RADAR, label: 'Radar' },
               { key: VIEWS.TREE, label: 'Skill Tree' },
-              { key: VIEWS.CASCADE, label: 'Cascade' },
+              { key: VIEWS.CASCADE, label: 'Intelligence' },
               { key: VIEWS.TIMELINE, label: 'Timeline' },
               { key: VIEWS.ASSESS, label: 'Assess' },
               { key: VIEWS.QUICK_ASSESS, label: 'Quick Assess' },
@@ -550,11 +551,11 @@ export default function Dashboard() {
             </Suspense>
           )}
 
-          {/* Cascade view — Developmental Connectome */}
+          {/* Clinical Intelligence — replaces old Cascade view */}
           {activeView === VIEWS.CASCADE && (
             <Suspense fallback={<ViewLoader />}>
               <div className="w-full h-full flex flex-col">
-                <CascadeView
+                <ClinicalIntelligence
                   assessments={assessments}
                   snapshots={snapshots}
                   clientName={clientName}

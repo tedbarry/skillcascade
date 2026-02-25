@@ -29,6 +29,9 @@ const EDGES_DEF = [
   { from: 'd1', to: 'd9', type: 'requires' },
   { from: 'd2', to: 'd9', type: 'supports' },
   { from: 'd5', to: 'd9', type: 'requires' },
+  { from: 'd8', to: 'd6', type: 'supports' },
+  { from: 'd8', to: 'd7', type: 'supports' },
+  { from: 'd9', to: 'd6', type: 'supports' },
 ]
 
 // Tier-based Y positions to preserve hierarchy (foundation at bottom)
