@@ -264,22 +264,6 @@ function AmbientParticles({ count = 60 }) {
   )
 }
 
-/* ─── Scene auto-rotate ─── */
-function AutoRotate({ enabled }) {
-  const { camera } = useThree()
-
-  useFrame((state) => {
-    if (!enabled) return
-    const t = state.clock.elapsedTime * 0.05
-    const radius = 6
-    camera.position.x = Math.sin(t) * radius
-    camera.position.z = Math.cos(t) * radius
-    camera.lookAt(0, 3.6, 0)
-  })
-
-  return null
-}
-
 /* ─── Main 3D graph component ─── */
 export default function CascadeGraph3D({
   nodes = [],
@@ -289,7 +273,7 @@ export default function CascadeGraph3D({
   onNodeClick,
   hasData = false,
 }) {
-  const [autoRotate, setAutoRotate] = useState(true)
+  const controlsRef = useRef()
 
   const nodePositions = useMemo(() => {
     const pos = {}
@@ -303,28 +287,28 @@ export default function CascadeGraph3D({
   }, [nodes])
 
   const handleClick = useCallback((domainId) => {
-    setAutoRotate(false)
     onNodeClick?.(domainId)
   }, [onNodeClick])
 
   return (
     <div className="w-full h-full relative" style={{ minHeight: 400 }}>
       <Canvas
-        camera={{ position: [4, 4, 5], fov: 50 }}
+        camera={{ position: [5, 5, 6], fov: 45 }}
         style={{ background: 'linear-gradient(180deg, #0a0a10 0%, #12121a 50%, #0a0a10 100%)' }}
       >
         <ambientLight intensity={0.3} />
         <pointLight position={[5, 10, 5]} intensity={0.8} color="#6889b5" />
         <pointLight position={[-5, 5, -5]} intensity={0.4} color="#a86e9a" />
 
-        <AutoRotate enabled={autoRotate} />
         <OrbitControls
+          ref={controlsRef}
           enableDamping
           dampingFactor={0.05}
-          minDistance={3}
-          maxDistance={12}
+          minDistance={4}
+          maxDistance={14}
           target={[0, 3.6, 0]}
-          onStart={() => setAutoRotate(false)}
+          autoRotate
+          autoRotateSpeed={0.4}
         />
 
         {/* Tier rings */}
