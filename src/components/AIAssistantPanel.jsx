@@ -2,6 +2,7 @@ import { useState, useEffect, useRef, useMemo, useCallback } from 'react'
 import { framework, ASSESSMENT_LEVELS, ASSESSMENT_LABELS } from '../data/framework.js'
 import { useAuth } from '../contexts/AuthContext.jsx'
 import { getAiChats, saveAiChat, deleteAiChat } from '../data/storage.js'
+import { supabase, mergeUserSettings } from '../lib/supabase.js'
 import {
   findSimilarMessage,
   rebuildSearchIndex as rebuildIndex,
@@ -799,11 +800,29 @@ export default function AIAssistantPanel({ isOpen, onClose, clientName, assessme
 
   const selectedTool = AI_TOOLS.find((t) => t.id === selectedToolId)
 
-  // Check API connection status
+  // Load API key from Supabase (migrate from localStorage if needed)
   useEffect(() => {
-    const key = localStorage.getItem('skillcascade_ai_api_key')
-    setIsApiConnected(!!key && key.length > 0)
-  }, [isOpen])
+    if (!isOpen) return
+    const localKey = localStorage.getItem('skillcascade_ai_api_key')
+    if (localKey) setIsApiConnected(true)
+
+    if (!userId) return
+    supabase
+      .from('user_settings')
+      .select('settings')
+      .eq('user_id', userId)
+      .single()
+      .then(({ data }) => {
+        const savedKey = data?.settings?.ai_api_key
+        if (savedKey) {
+          localStorage.setItem('skillcascade_ai_api_key', savedKey)
+          setIsApiConnected(true)
+        } else if (localKey) {
+          // Migrate localStorage key to Supabase
+          mergeUserSettings(userId, { ai_api_key: localKey })
+        }
+      })
+  }, [isOpen, userId])
 
   // Compute overall assessment progress
   const assessmentProgress = useMemo(() => {
@@ -1167,9 +1186,11 @@ export default function AIAssistantPanel({ isOpen, onClose, clientName, assessme
     if (key) {
       localStorage.setItem('skillcascade_ai_api_key', key)
       setIsApiConnected(true)
+      if (userId) mergeUserSettings(userId, { ai_api_key: key })
     } else {
       localStorage.removeItem('skillcascade_ai_api_key')
       setIsApiConnected(false)
+      if (userId) mergeUserSettings(userId, { ai_api_key: null })
     }
     setShowKeyInput(false)
     setKeyDraft('')
