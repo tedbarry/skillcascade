@@ -106,6 +106,7 @@ export default function Dashboard() {
   const [searchOpen, setSearchOpen] = useState(false)
   const [aiPanelOpen, setAiPanelOpen] = useState(false)
   const [moreMenuOpen, setMoreMenuOpen] = useState(false)
+  const [detailPanelOpen, setDetailPanelOpen] = useState(false)
   const [shortcutsOpen, setShortcutsOpen] = useState(false)
   const [branding, setBranding] = useState(() => {
     try {
@@ -387,7 +388,7 @@ export default function Dashboard() {
         {showSidePanels && sidebarOpen && (
           !isDesktop ? (
             <>
-              <div className="fixed inset-0 bg-black/40 z-30" onClick={() => setSidebarOpen(false)} />
+              <div className="fixed inset-0 bg-black/40 z-30" onClick={() => { setSidebarOpen(false); if (selectedNode) setDetailPanelOpen(true) }} />
               <aside className="fixed left-0 top-0 bottom-0 z-40 w-[85vw] max-w-80 bg-white shadow-xl overflow-y-auto mt-[49px]">
                 <DomainNavigator
                   assessments={assessments}
@@ -478,7 +479,7 @@ export default function Dashboard() {
                 <h2 className="text-lg font-semibold text-warm-800 font-display mb-1">
                   Skills Profile — Sunburst View
                 </h2>
-                <p className="text-sm text-warm-500 mb-4">{isDesktop ? 'Click any segment to zoom in. Click center to zoom out.' : 'Tap to zoom in. Tap center to zoom out.'}</p>
+                <p className="text-sm text-warm-500 mb-4">Click any segment to zoom in. Click center to zoom out.</p>
                 <ResponsiveSVG aspectRatio={1} maxWidth={700}>
                   {({ width, height }) => (
                     <Sunburst
@@ -486,7 +487,7 @@ export default function Dashboard() {
                       assessments={assessments}
                       width={width}
                       height={height}
-                      onSelect={isDesktop ? setSelectedNode : undefined}
+                      onSelect={setSelectedNode}
                     />
                   )}
                 </ResponsiveSVG>
@@ -811,12 +812,12 @@ export default function Dashboard() {
 
         {/* Right panel — Detail View (only for viz views) */}
         {showSidePanels && selectedDetail && (
-          !isDesktop && !sidebarOpen ? (
+          !isDesktop && detailPanelOpen && !sidebarOpen ? (
             <>
-              <div className="fixed inset-0 bg-black/40 z-30" onClick={() => setSelectedNode(null)} />
+              <div className="fixed inset-0 bg-black/40 z-30" onClick={() => { setSelectedNode(null); setDetailPanelOpen(false) }} />
               <aside className="fixed right-0 top-0 bottom-0 z-40 w-[85vw] max-w-80 bg-white shadow-xl overflow-y-auto p-5 mt-[49px]">
                 <button
-                  onClick={() => setSelectedNode(null)}
+                  onClick={() => { setSelectedNode(null); setDetailPanelOpen(false) }}
                   className="absolute top-3 right-3 p-2 rounded-lg text-warm-400 hover:text-warm-600 hover:bg-warm-100 transition-colors"
                   aria-label="Close detail panel"
                 >
