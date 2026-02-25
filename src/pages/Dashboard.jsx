@@ -236,8 +236,8 @@ export default function Dashboard() {
     <div className="min-h-screen bg-warm-50 flex flex-col print:hidden">
       {/* Top bar */}
       <header className="bg-white border-b border-warm-200 px-3 sm:px-6 py-2 sm:py-3 flex items-center justify-between shrink-0 relative z-40">
-        <div className="flex items-center gap-2 sm:gap-4 min-w-0">
-          <Link to="/" className="text-lg sm:text-xl font-bold text-warm-800 font-display whitespace-nowrap">
+        <div className="flex items-center gap-2 sm:gap-4 min-w-0 flex-1">
+          <Link to="/" className="text-lg sm:text-xl font-bold text-warm-800 font-display whitespace-nowrap min-w-0 truncate">
             Skill<span className="text-sage-500">Cascade</span>
           </Link>
           <span className="text-warm-200 hidden sm:inline">|</span>
@@ -248,7 +248,7 @@ export default function Dashboard() {
             onSaveSuccess={() => showToast('Assessment saved', 'success')}
           /></span>
         </div>
-        <div className="flex items-center gap-1 sm:gap-3">
+        <div className="flex items-center gap-1 sm:gap-3 shrink-0">
           {/* Undo/Redo — hidden on mobile */}
           <div className="hidden sm:flex items-center gap-1 mr-1">
             <button
@@ -312,13 +312,13 @@ export default function Dashboard() {
           <div className="relative sm:hidden">
             <button
               onClick={(e) => { e.stopPropagation(); setMoreMenuOpen(!moreMenuOpen) }}
-              className="flex items-center gap-1 px-2 py-1.5 rounded-md text-warm-500 hover:text-warm-700 hover:bg-warm-100 transition-colors"
+              className="p-2 rounded-md text-warm-500 hover:text-warm-700 hover:bg-warm-100 transition-colors"
               title="Menu"
+              aria-label="Menu"
             >
               <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
                 <path strokeLinecap="round" strokeLinejoin="round" d="M3.75 6.75h16.5M3.75 12h16.5m-16.5 5.25h16.5" />
               </svg>
-              <span className="text-xs font-medium">Menu</span>
             </button>
             {moreMenuOpen && (
               <div className="absolute right-0 top-full mt-1 w-48 bg-white rounded-lg shadow-lg border border-warm-200 py-1 z-50">
@@ -392,7 +392,7 @@ export default function Dashboard() {
                 <DomainNavigator
                   assessments={assessments}
                   selectedId={selectedNode?.id}
-                  onSelect={(node) => { setSelectedNode(node); setSidebarOpen(false) }}
+                  onSelect={setSelectedNode}
                 />
               </aside>
             </>
@@ -811,7 +811,7 @@ export default function Dashboard() {
 
         {/* Right panel — Detail View (only for viz views) */}
         {showSidePanels && selectedDetail && (
-          !isDesktop ? (
+          !isDesktop && !sidebarOpen ? (
             <>
               <div className="fixed inset-0 bg-black/40 z-30" onClick={() => setSelectedNode(null)} />
               <aside className="fixed right-0 top-0 bottom-0 z-40 w-[85vw] max-w-80 bg-white shadow-xl overflow-y-auto p-5 mt-[49px]">
