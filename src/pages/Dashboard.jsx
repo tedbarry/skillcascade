@@ -478,7 +478,7 @@ export default function Dashboard() {
                 <h2 className="text-lg font-semibold text-warm-800 font-display mb-1">
                   Skills Profile — Sunburst View
                 </h2>
-                <p className="text-sm text-warm-500 mb-4">Click any segment to zoom in. Click center to zoom out.</p>
+                <p className="text-sm text-warm-500 mb-4">{isDesktop ? 'Click any segment to zoom in. Click center to zoom out.' : 'Tap to zoom in. Tap center to zoom out.'}</p>
                 <ResponsiveSVG aspectRatio={1} maxWidth={700}>
                   {({ width, height }) => (
                     <Sunburst
@@ -486,7 +486,7 @@ export default function Dashboard() {
                       assessments={assessments}
                       width={width}
                       height={height}
-                      onSelect={setSelectedNode}
+                      onSelect={isDesktop ? setSelectedNode : undefined}
                     />
                   )}
                 </ResponsiveSVG>
