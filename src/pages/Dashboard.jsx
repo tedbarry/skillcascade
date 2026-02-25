@@ -550,17 +550,17 @@ export default function Dashboard() {
             </Suspense>
           )}
 
-          {/* Cascade view */}
+          {/* Cascade view — Developmental Connectome */}
           {activeView === VIEWS.CASCADE && (
             <Suspense fallback={<ViewLoader />}>
-              <div className="w-full max-w-4xl mx-auto">
-                <h2 className="text-lg font-semibold text-warm-800 font-display mb-1 text-center">
-                  Cascade Animation — Why Foundations Matter
-                </h2>
-                <p className="text-sm text-warm-500 mb-6 text-center">
-                  See how weakness in one domain ripples upward through the entire system.
-                </p>
-                <CascadeAnimation />
+              <div className="w-full h-full flex flex-col">
+                <CascadeAnimation
+                  assessments={assessments}
+                  snapshots={snapshots}
+                  clientName={clientName}
+                  onSelectNode={(node) => setSelectedNode({ id: node.id, name: node.name })}
+                  onNavigateToAssess={handleNavigateToAssess}
+                />
               </div>
             </Suspense>
           )}
