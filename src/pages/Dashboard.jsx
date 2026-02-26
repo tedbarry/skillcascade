@@ -821,9 +821,11 @@ export default function Dashboard() {
             </div>
           )}
           {activeView === VIEWS.EXPLORER && (
-            <Suspense fallback={<ViewLoader />}>
-              <DependencyExplorer assessments={assessments} />
-            </Suspense>
+            <div className="w-full h-full flex flex-col">
+              <Suspense fallback={<ViewLoader />}>
+                <DependencyExplorer assessments={assessments} />
+              </Suspense>
+            </div>
           )}
           </ErrorBoundary>
         </main>
