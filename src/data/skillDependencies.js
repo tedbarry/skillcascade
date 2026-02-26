@@ -1171,7 +1171,9 @@ export function findCrossDomainBottlenecks(assessments, framework) {
 
 /**
  * Build a 9×9 matrix counting cross-domain sub-area dependency links.
- * matrix[i][j] = number of sub-areas in domain i that depend on sub-areas in domain j.
+ * Bidirectional: matrix[i][j] counts links where domain i depends on domain j.
+ * Also counts reverse (j is depended upon by i) so prerequisite-only domains
+ * like D1 get proper arc space in chord diagrams.
  * Domain indices: d1=0, d2=1, ..., d9=8.
  */
 export function buildDomainChordMatrix() {
@@ -1185,7 +1187,9 @@ export function buildDomainChordMatrix() {
     for (const prereqSa of prereqs) {
       const toDomain = getDomainFromId(prereqSa)
       if (!toDomain || fromDomain === toDomain) continue // skip same-domain
+      // Count both directions so prerequisite domains get arc space
       matrix[idx[fromDomain]][idx[toDomain]]++
+      matrix[idx[toDomain]][idx[fromDomain]]++
     }
   }
 
