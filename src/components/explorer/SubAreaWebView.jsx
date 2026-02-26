@@ -15,9 +15,9 @@ const DOMAIN_COLUMN = {
 }
 
 const NODE_W = 160
-const NODE_H = 56
-const COL_GAP = 200
-const ROW_GAP = 72
+const NODE_H = 52
+const COL_GAP = 190
+const ROW_GAP = 20
 const PADDING = 40
 
 /**
@@ -169,6 +169,13 @@ export default memo(function SubAreaWebView({
 
     return (
       <div ref={containerRef} className="flex-1 overflow-auto p-4 relative">
+        <div className="mb-3">
+          <p className="text-[11px] text-gray-500">
+            Lines show which sub-areas must develop before others can progress.
+            <span className="text-gray-400 font-medium"> Tap any sub-area to see its skills.</span>
+          </p>
+        </div>
+
         {graphData.nodes.length === 0 && (
           <div className="text-center py-12 text-gray-500 text-sm">No sub-area data available</div>
         )}
@@ -230,13 +237,19 @@ export default memo(function SubAreaWebView({
   // Desktop/Tablet: SVG DAG
   return (
     <div ref={containerRef} className="flex-1 overflow-auto relative">
+      <div className="px-5 pt-3 pb-1">
+        <p className="text-[11px] text-gray-500">
+          Each box is a sub-area. Lines show prerequisite relationships between them.
+          <span className="text-gray-400 font-medium"> Click any sub-area to explore its individual skills.</span>
+          {' '}Hover to highlight connections.
+        </p>
+      </div>
       {graphData.nodes.length === 0 ? (
         <div className="text-center py-12 text-gray-500 text-sm">No sub-area data available</div>
       ) : (
         <svg
           width="100%"
           viewBox={`0 0 ${svgWidth} ${svgHeight}`}
-          style={{ minHeight: Math.min(svgHeight, 600) }}
           className="w-full"
         >
           {/* Edges */}

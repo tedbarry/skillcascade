@@ -86,7 +86,10 @@ export default memo(function DomainChordView({
       <div ref={containerRef} className="flex-1 overflow-auto p-4 relative">
         <div className="text-center mb-4">
           <h3 className="text-sm font-semibold text-gray-300">Domain Dependencies</h3>
-          <p className="text-[11px] text-gray-500 mt-1">Tap a row to explore that domain</p>
+          <p className="text-[11px] text-gray-500 mt-1">
+            Each number shows how many sub-areas in the row depend on the column.
+            <span className="text-gray-400 font-medium"> Tap any row to zoom in.</span>
+          </p>
         </div>
 
         {/* Column headers */}
@@ -170,7 +173,10 @@ export default memo(function DomainChordView({
     <div ref={containerRef} className="flex-1 overflow-auto flex flex-col items-center justify-center p-6 relative">
       <div className="text-center mb-4">
         <h3 className="text-sm font-semibold text-gray-300">Domain Dependencies</h3>
-        <p className="text-[11px] text-gray-500 mt-1">Click a domain arc to explore its sub-area connections</p>
+        <p className="text-[11px] text-gray-500 mt-1">
+          Ribbons connect domains that share developmental prerequisites.
+          <span className="text-gray-400 font-medium"> Click any domain to zoom in.</span>
+        </p>
       </div>
 
       <svg width="100%" viewBox={`0 0 ${size} ${size}`} style={{ maxWidth: size, maxHeight: size }}>

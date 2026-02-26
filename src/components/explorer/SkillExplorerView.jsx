@@ -276,7 +276,7 @@ export default memo(function SkillExplorerView({
 
   return (
     <div ref={containerRef} className="flex-1 overflow-auto relative">
-      <svg width="100%" viewBox={`0 0 ${treeWidth} ${svgHeight}`} style={{ minHeight: Math.min(svgHeight, 500) }}>
+      <svg width="100%" viewBox={`0 0 ${treeWidth} ${svgHeight}`}>
         {/* Upstream links */}
         {upstreamLayout.map(skill => {
           const path = d3.linkHorizontal()({

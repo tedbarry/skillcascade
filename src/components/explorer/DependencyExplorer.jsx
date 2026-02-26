@@ -3,6 +3,7 @@ import { AnimatePresence, motion } from 'framer-motion'
 import { framework } from '../../data/framework.js'
 import useDependencyExplorer from '../../hooks/useDependencyExplorer.js'
 import useResponsive from '../../hooks/useResponsive.js'
+import ExplorerGuide, { STORAGE_KEY as GUIDE_STORAGE_KEY } from './ExplorerGuide.jsx'
 
 const DomainChordView = lazy(() => import('./DomainChordView.jsx'))
 const SubAreaWebView = lazy(() => import('./SubAreaWebView.jsx'))
@@ -31,6 +32,11 @@ function ViewLoader() {
 export default memo(function DependencyExplorer({ assessments = {} }) {
   const { isPhone, isTablet } = useResponsive()
   const explorer = useDependencyExplorer(assessments)
+
+  // Guide state
+  const [showGuide, setShowGuide] = useState(
+    () => !localStorage.getItem(GUIDE_STORAGE_KEY)
+  )
 
   // Navigation state: level + context
   const [level, setLevel] = useState(1) // 1=chord, 2=sub-area web, 3=skill explorer
@@ -141,19 +147,33 @@ export default memo(function DependencyExplorer({ assessments = {} }) {
           )
         })}
 
-        {/* "Full Web" toggle when at Level 2 with a domain filter */}
-        {level === 2 && focusDomainId && (
+        {/* Right-side actions */}
+        <div className="ml-auto flex items-center gap-2">
+          {level === 2 && focusDomainId && (
+            <button
+              onClick={handleShowFullWeb}
+              className="text-[10px] text-gray-500 hover:text-gray-300 border border-gray-700 rounded px-2 py-1 transition-colors min-h-[28px]"
+            >
+              Show All
+            </button>
+          )}
           <button
-            onClick={handleShowFullWeb}
-            className="ml-auto text-[10px] text-gray-500 hover:text-gray-300 border border-gray-700 rounded px-2 py-1 transition-colors min-h-[28px]"
+            onClick={() => setShowGuide(true)}
+            className="text-gray-500 hover:text-gray-300 transition-colors min-h-[28px] min-w-[28px] flex items-center justify-center"
+            title="How to use the Explorer"
           >
-            Show All
+            <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+              <path strokeLinecap="round" strokeLinejoin="round" d="M9.879 7.519c1.171-1.025 3.071-1.025 4.242 0 1.172 1.025 1.172 2.687 0 3.712-.203.179-.43.326-.67.442-.745.361-1.45.999-1.45 1.827v.75M12 18h.01" />
+            </svg>
           </button>
-        )}
+        </div>
       </div>
 
       {/* Level content */}
       <div className="flex-1 overflow-hidden relative">
+        {/* Onboarding guide */}
+        {showGuide && <ExplorerGuide onDismiss={() => setShowGuide(false)} />}
+
         <AnimatePresence mode="wait">
           <motion.div
             key={level + '-' + (focusDomainId || '') + '-' + (focusSubAreaId || '') + '-' + (focusSkillId || '')}
