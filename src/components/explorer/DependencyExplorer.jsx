@@ -1,9 +1,9 @@
-import { useState, useCallback, useMemo, lazy, Suspense, memo } from 'react'
+import { useState, useCallback, useMemo, useEffect, lazy, Suspense, memo } from 'react'
 import { AnimatePresence, motion } from 'framer-motion'
 import { framework } from '../../data/framework.js'
 import useDependencyExplorer from '../../hooks/useDependencyExplorer.js'
 import useResponsive from '../../hooks/useResponsive.js'
-import ExplorerGuide, { STORAGE_KEY as GUIDE_STORAGE_KEY } from './ExplorerGuide.jsx'
+import ExplorerCoachMark, { COACH_STEPS } from './ExplorerCoachMark.jsx'
 
 const DomainChordView = lazy(() => import('./DomainChordView.jsx'))
 const SubAreaWebView = lazy(() => import('./SubAreaWebView.jsx'))
@@ -13,6 +13,8 @@ const DOMAIN_COLORS = {
   d1: '#e07b6e', d2: '#d4956a', d3: '#c9a84c', d4: '#8fb570',
   d5: '#5da87a', d6: '#4a9e9e', d7: '#6889b5', d8: '#8b7bb5', d9: '#a86e9a',
 }
+
+const GUIDE_KEY = 'skillcascade_explorer_coach_v2'
 
 function ViewLoader() {
   return (
@@ -33,16 +35,61 @@ export default memo(function DependencyExplorer({ assessments = {} }) {
   const { isPhone, isTablet } = useResponsive()
   const explorer = useDependencyExplorer(assessments)
 
-  // Guide state
-  const [showGuide, setShowGuide] = useState(
-    () => !localStorage.getItem(GUIDE_STORAGE_KEY)
+  // Coach mark guide state (-1 = dismissed, 0-4 = active step)
+  const [guideStep, setGuideStep] = useState(
+    () => localStorage.getItem(GUIDE_KEY) ? -1 : 0
   )
+  const guideActive = guideStep >= 0 && guideStep < COACH_STEPS.length
 
   // Navigation state: level + context
   const [level, setLevel] = useState(1) // 1=chord, 2=sub-area web, 3=skill explorer
   const [focusDomainId, setFocusDomainId] = useState(null)
   const [focusSubAreaId, setFocusSubAreaId] = useState(null)
   const [focusSkillId, setFocusSkillId] = useState(null)
+
+  // Auto-advance guide based on navigation state
+  useEffect(() => {
+    if (!guideActive) return
+
+    // Forward advancement
+    if (guideStep === 0 && level === 2) {
+      setGuideStep(1)
+      return
+    }
+    if (guideStep === 1 && level === 3) {
+      setGuideStep(2)
+      return
+    }
+    if (guideStep === 2 && focusSkillId) {
+      setGuideStep(3)
+      return
+    }
+
+    // Step 3 → 4: auto-advance after 4 seconds
+    if (guideStep === 3) {
+      const timer = setTimeout(() => setGuideStep(4), 4000)
+      return () => clearTimeout(timer)
+    }
+
+    // Backward regression
+    if (guideStep >= 1 && level === 1) {
+      setGuideStep(0)
+      return
+    }
+    if (guideStep >= 2 && level === 2 && !focusSkillId) {
+      setGuideStep(1)
+      return
+    }
+  }, [guideStep, guideActive, level, focusSkillId])
+
+  const handleGuideDismiss = useCallback(() => {
+    setGuideStep(-1)
+    localStorage.setItem(GUIDE_KEY, 'true')
+  }, [])
+
+  const handleGuideRestart = useCallback(() => {
+    setGuideStep(0)
+  }, [])
 
   // Drill-down handlers
   const handleDrillToDomain = useCallback((domainId) => {
@@ -119,7 +166,6 @@ export default memo(function DependencyExplorer({ assessments = {} }) {
       {/* Breadcrumb bar */}
       <div className={`flex items-center gap-1 ${isPhone ? 'px-3 py-2' : 'px-5 py-3'} bg-gray-900 border-b border-gray-800 min-h-[44px] flex-shrink-0`}>
         {breadcrumbs.map((crumb, i) => {
-          const isLast = i === breadcrumbs.length - 1
           const isCurrent = crumb.level === level
           return (
             <span key={i} className="flex items-center gap-1">
@@ -158,7 +204,7 @@ export default memo(function DependencyExplorer({ assessments = {} }) {
             </button>
           )}
           <button
-            onClick={() => setShowGuide(true)}
+            onClick={handleGuideRestart}
             className="text-gray-500 hover:text-gray-300 transition-colors min-h-[28px] min-w-[28px] flex items-center justify-center"
             title="How to use the Explorer"
           >
@@ -171,9 +217,6 @@ export default memo(function DependencyExplorer({ assessments = {} }) {
 
       {/* Level content */}
       <div className="flex-1 overflow-hidden relative">
-        {/* Onboarding guide */}
-        {showGuide && <ExplorerGuide onDismiss={() => setShowGuide(false)} />}
-
         <AnimatePresence mode="wait">
           <motion.div
             key={level + '-' + (focusDomainId || '') + '-' + (focusSubAreaId || '') + '-' + (focusSkillId || '')}
@@ -181,7 +224,7 @@ export default memo(function DependencyExplorer({ assessments = {} }) {
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: -12 }}
             transition={{ duration: 0.2 }}
-            className="absolute inset-0"
+            className="absolute inset-0 flex flex-col"
           >
             <Suspense fallback={<ViewLoader />}>
               {level === 1 && (
@@ -216,6 +259,15 @@ export default memo(function DependencyExplorer({ assessments = {} }) {
           </motion.div>
         </AnimatePresence>
       </div>
+
+      {/* Floating coach mark guide */}
+      {guideActive && (
+        <ExplorerCoachMark
+          step={guideStep}
+          onDismiss={handleGuideDismiss}
+          isPhone={isPhone}
+        />
+      )}
     </div>
   )
 })
