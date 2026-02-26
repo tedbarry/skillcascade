@@ -277,6 +277,15 @@ export default memo(function SkillExplorerView({
   return (
     <div ref={containerRef} className="flex-1 overflow-auto relative">
       <svg width="100%" viewBox={`0 0 ${treeWidth} ${svgHeight}`}>
+        <defs>
+          <marker id="arrow-to-root" viewBox="0 0 6 6" refX={5} refY={3} markerWidth={5} markerHeight={5} orient="auto">
+            <path d="M 0 0 L 6 3 L 0 6 z" fill="#888" />
+          </marker>
+          <marker id="arrow-from-root" viewBox="0 0 6 6" refX={5} refY={3} markerWidth={5} markerHeight={5} orient="auto">
+            <path d="M 0 0 L 6 3 L 0 6 z" fill="#888" />
+          </marker>
+        </defs>
+
         {/* Upstream links */}
         {upstreamLayout.map(skill => {
           const path = d3.linkHorizontal()({
@@ -291,6 +300,7 @@ export default memo(function SkillExplorerView({
               stroke={DOMAIN_COLORS[skill.domainId] || '#666'}
               strokeWidth={1.2}
               opacity={0.4}
+              markerEnd="url(#arrow-to-root)"
             />
           )
         })}
@@ -309,6 +319,7 @@ export default memo(function SkillExplorerView({
               stroke={DOMAIN_COLORS[skill.domainId] || '#666'}
               strokeWidth={1.2}
               opacity={0.4}
+              markerEnd="url(#arrow-from-root)"
             />
           )
         })}

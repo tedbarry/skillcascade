@@ -269,7 +269,7 @@ export default memo(function SubAreaWebView({
                 strokeDasharray={edge.crossDomain ? undefined : '4 2'}
                 opacity={isHighlighted ? 0.6 : 0.12}
                 className="transition-all duration-200"
-                markerEnd={isHighlighted ? undefined : undefined}
+                markerEnd={`url(#arrow-${fromDomain})`}
               />
             )
           })}
