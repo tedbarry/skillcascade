@@ -62,7 +62,9 @@ export function AuthProvider({ children }) {
       })
   }, [user])
 
-  // Listen to auth state changes
+  // Restore session via onAuthStateChange — the reliable path in Supabase v2.
+  // getSession() can return null before the SDK finishes restoring from storage,
+  // causing a false redirect to /login. INITIAL_SESSION is the canonical event.
   useEffect(() => {
     // Safety timeout — never hang on the loading spinner forever
     const timeout = setTimeout(() => {
@@ -72,29 +74,18 @@ export function AuthProvider({ children }) {
       })
     }, 10000)
 
-    // Check existing session
-    supabase.auth.getSession().then(async ({ data: { session } }) => {
-      try {
-        if (session?.user) {
-          setUser(session.user)
-          const prof = await fetchProfile(session.user.id)
-          setProfile(prof)
-        }
-      } catch (err) {
-        console.error('Session restore failed:', err.message)
-      } finally {
-        clearTimeout(timeout)
-        setLoading(false)
-      }
-    }).catch((err) => {
-      console.error('getSession() failed:', err.message)
-      clearTimeout(timeout)
-      setLoading(false)
-    })
-
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       async (event, session) => {
-        if ((event === 'SIGNED_IN' || event === 'INITIAL_SESSION' || event === 'TOKEN_REFRESHED') && session?.user) {
+        if (event === 'INITIAL_SESSION') {
+          // First event on page load — contains the restored session (or null)
+          if (session?.user) {
+            setUser(session.user)
+            const prof = await fetchProfile(session.user.id)
+            setProfile(prof)
+          }
+          clearTimeout(timeout)
+          setLoading(false)
+        } else if ((event === 'SIGNED_IN' || event === 'TOKEN_REFRESHED') && session?.user) {
           setUser(session.user)
           const prof = await fetchProfile(session.user.id)
           setProfile(prof)
