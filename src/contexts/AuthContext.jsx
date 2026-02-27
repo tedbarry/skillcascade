@@ -62,33 +62,45 @@ export function AuthProvider({ children }) {
       })
   }, [user])
 
+  // Load profile in the background — never blocks the auth loading gate
+  const loadProfile = useCallback((userId) => {
+    fetchProfile(userId).then(setProfile).catch(() => setProfile(null))
+  }, [fetchProfile])
+
   // Restore session via onAuthStateChange — the reliable path in Supabase v2.
-  // getSession() can return null before the SDK finishes restoring from storage,
-  // causing a false redirect to /login. INITIAL_SESSION is the canonical event.
+  // IMPORTANT: setUser + setLoading must be synchronous (no awaits before them)
+  // so ProtectedRoute resolves immediately once the session is known.
   useEffect(() => {
-    // Safety timeout — never hang on the loading spinner forever
+    // Safety timeout — never hang on the loading spinner
     const timeout = setTimeout(() => {
       setLoading((prev) => {
-        if (prev) console.warn('Auth loading timed out after 10s')
+        if (prev) console.warn('Auth loading timed out after 8s')
         return false
       })
-    }, 10000)
+    }, 8000)
+
+    let initialResolved = false
 
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
-      async (event, session) => {
+      (event, session) => {
         if (event === 'INITIAL_SESSION') {
-          // First event on page load — contains the restored session (or null)
+          // First event on page load — resolve loading immediately
           if (session?.user) {
             setUser(session.user)
-            const prof = await fetchProfile(session.user.id)
-            setProfile(prof)
+            loadProfile(session.user.id)
           }
           clearTimeout(timeout)
           setLoading(false)
+          initialResolved = true
         } else if ((event === 'SIGNED_IN' || event === 'TOKEN_REFRESHED') && session?.user) {
           setUser(session.user)
-          const prof = await fetchProfile(session.user.id)
-          setProfile(prof)
+          loadProfile(session.user.id)
+          // If INITIAL_SESSION never fired, resolve loading here
+          if (!initialResolved) {
+            clearTimeout(timeout)
+            setLoading(false)
+            initialResolved = true
+          }
         } else if (event === 'SIGNED_OUT') {
           setUser(null)
           setProfile(null)
@@ -97,7 +109,7 @@ export function AuthProvider({ children }) {
     )
 
     return () => { subscription.unsubscribe(); clearTimeout(timeout) }
-  }, [fetchProfile])
+  }, [loadProfile])
 
   const signIn = useCallback(async (email, password) => {
     const { data, error } = await supabase.auth.signInWithPassword({ email, password })
