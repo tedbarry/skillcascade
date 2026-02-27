@@ -18,7 +18,21 @@ Comprehensive 11-round UX/design/performance overhaul. See [overhaul-worklog.md]
 - **Navigation**: 404 catch-all, "Next Unrated" assessment jump, onboarding tour fix
 - **SEO**: Meta description, OG tags, Twitter cards, theme-color
 
-### NOT yet committed — 37 modified + 11 new files awaiting user review
+### Committed as 8de898d, pushed to origin/master
+
+## Tools Deep Dive (2026-02-27)
+Comprehensive audit + improvement of all 15 functional tools. See [tools-deepdive-plan.md](./tools-deepdive-plan.md).
+**15 files modified, 34 issues fixed, net -110 lines (removed duplication).**
+
+### Key Changes Summary
+- **Bug fixes**: ClinicalIntelligence assess-to-correct-subarea, PatternAlerts snapshot sort, MilestoneCelebrations null safety, OrgAnalytics improvement metric (earliest vs latest), OrgAnalytics trend bucketing (weekly)
+- **Accessibility**: aria-live in AssessmentPanel, aria-expanded/pressed across GoalEngine/ComparisonView/HomePractice, role="menu" on ExportMenu, role="list" on MilestoneCelebrations, ARIA labels on CaseloadDashboard selects
+- **Touch targets (44px)**: AssessmentPanel SkillRater, GoalEngine buttons, HomePractice filters, ProgressTimeline delete/compare, PatternAlerts action buttons, AdaptiveAssessment buttons
+- **Mobile layouts**: AdaptiveAssessment, GoalEngine (collapsed tiers), PatternAlerts, OrgAnalytics (chart adaptation), ComparisonView (responsive grid)
+- **UX**: Bulk rate confirmation dialog, CaseloadDashboard client search, ClinicalIntelligence "show all risks" + scroll affordance, MilestoneCelebrations "Copy as text", AdaptiveAssessment skill descriptions
+- **Code health**: ProgressTimeline dedup (820→522 lines), ExportMenu print timing fix (useEffect vs setTimeout), AIAssistantPanel focus trap removal (sidebar not modal), DependencyExplorer animation key fix
+
+### NOT yet committed — 15 modified files awaiting user review
 
 ## Architecture
 - Supabase backend

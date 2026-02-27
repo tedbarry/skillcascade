@@ -3,7 +3,7 @@ import { framework, ASSESSMENT_LEVELS, ASSESSMENT_LABELS } from '../data/framewo
 import { useAuth } from '../contexts/AuthContext.jsx'
 import { getAiChats, saveAiChat, deleteAiChat } from '../data/storage.js'
 import { supabase, mergeUserSettings } from '../lib/supabase.js'
-import useFocusTrap from '../hooks/useFocusTrap.js'
+// Focus trap removed — sidebar is not a modal dialog; trapping would block main content access
 import {
   findSimilarMessage,
   rebuildSearchIndex as rebuildIndex,
@@ -798,7 +798,7 @@ export default function AIAssistantPanel({ isOpen, onClose, clientName, assessme
   const toolScrollRef = useRef(null)
   const quickParamRef = useRef(null)
   const saveTimerRef = useRef(null)
-  const trapRef = useFocusTrap(isOpen)
+  const trapRef = useRef(null)
 
   const selectedTool = AI_TOOLS.find((t) => t.id === selectedToolId)
 

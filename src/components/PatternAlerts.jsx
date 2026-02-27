@@ -6,6 +6,7 @@ import {
   ASSESSMENT_COLORS,
 } from '../data/framework.js'
 import EmptyState from './EmptyState.jsx'
+import useResponsive from '../hooks/useResponsive.js'
 
 /* ─────────────────────────────────────────────
    Constants & Config
@@ -142,7 +143,9 @@ function getDomainStats(domain, assessments) {
 function detectRegressions(assessments, snapshots) {
   if (snapshots.length === 0) return []
 
-  const latest = snapshots[snapshots.length - 1]
+  // Sort by timestamp descending so [0] is always the most recent
+  const sorted = [...snapshots].sort((a, b) => (b.timestamp || 0) - (a.timestamp || 0))
+  const latest = sorted[0]
   const prev = latest.assessments || {}
   const alerts = []
 
@@ -534,7 +537,7 @@ function RegressionCard({ alert, onNavigateToAssess }) {
             {onNavigateToAssess && (
               <button
                 onClick={() => onNavigateToAssess(skill.subAreaId)}
-                className="text-warm-300 hover:text-sage-600 transition-colors shrink-0 opacity-0 group-hover:opacity-100"
+                className="text-warm-300 hover:text-sage-600 transition-colors shrink-0 sm:opacity-0 sm:group-hover:opacity-100 min-h-[44px] min-w-[44px] flex items-center justify-center"
                 title={`Jump to ${skill.subAreaName}`}
               >
                 {ICONS.jumpTo}
@@ -599,7 +602,7 @@ function PlateauCard({ alert, onNavigateToAssess }) {
       {onNavigateToAssess && alert.subAreaId && (
         <button
           onClick={() => onNavigateToAssess(alert.subAreaId)}
-          className="flex items-center gap-1 text-[10px] font-medium px-2.5 py-1.5 rounded-md bg-warm-50 text-warm-500 hover:bg-warm-100 hover:text-warm-700 transition-colors shrink-0"
+          className="flex items-center gap-1 text-[10px] font-medium px-2.5 py-1.5 min-h-[44px] rounded-md bg-warm-50 text-warm-500 hover:bg-warm-100 hover:text-warm-700 transition-colors shrink-0"
         >
           {ICONS.jumpTo}
           <span>Assess</span>
@@ -673,7 +676,7 @@ function FoundationCard({ alert, onNavigateToAssess }) {
         {onNavigateToAssess && alert.subAreaId && (
           <button
             onClick={() => onNavigateToAssess(alert.subAreaId)}
-            className="flex items-center gap-1 text-[10px] font-medium px-2.5 py-1.5 rounded-md bg-warm-50 text-warm-500 hover:bg-warm-100 hover:text-warm-700 transition-colors shrink-0 mt-0.5"
+            className="flex items-center gap-1 text-[10px] font-medium px-2.5 py-1.5 min-h-[44px] rounded-md bg-warm-50 text-warm-500 hover:bg-warm-100 hover:text-warm-700 transition-colors shrink-0 mt-0.5"
           >
             {ICONS.jumpTo}
             <span>Assess</span>
@@ -733,7 +736,7 @@ function GapsCard({ alert, onNavigateToAssess }) {
       {onNavigateToAssess && alert.subAreaId && (
         <button
           onClick={() => onNavigateToAssess(alert.subAreaId)}
-          className="flex items-center gap-1 text-[10px] font-medium px-2.5 py-1.5 rounded-md bg-warm-50 text-warm-500 hover:bg-warm-100 hover:text-warm-700 transition-colors shrink-0"
+          className="flex items-center gap-1 text-[10px] font-medium px-2.5 py-1.5 min-h-[44px] rounded-md bg-warm-50 text-warm-500 hover:bg-warm-100 hover:text-warm-700 transition-colors shrink-0"
         >
           {ICONS.jumpTo}
           <span>Assess</span>
@@ -761,6 +764,7 @@ export default function PatternAlerts({
   snapshots = [],
   onNavigateToAssess,
 }) {
+  const { isPhone } = useResponsive()
   const alertGroups = useMemo(
     () => analyzePatterns(assessments, snapshots),
     [assessments, snapshots]

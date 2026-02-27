@@ -1146,11 +1146,15 @@ export function findCrossDomainBottlenecks(assessments, framework) {
       const domainId = getDomainFromId(skillId)
       const domain = framework.find(d => d.id === domainId)
       let skillName = skillId
+      let subAreaId = null
       if (domain) {
         domain.subAreas.forEach(sa => {
           sa.skillGroups.forEach(sg => {
             const found = sg.skills.find(s => s.id === skillId)
-            if (found) skillName = found.name
+            if (found) {
+              skillName = found.name
+              subAreaId = sa.id
+            }
           })
         })
       }
@@ -1160,6 +1164,7 @@ export function findCrossDomainBottlenecks(assessments, framework) {
         skillName,
         tier: getSkillTier(skillId),
         domainId,
+        subAreaId: subAreaId || domainId + '-sa1',
         blockedCount,
         currentLevel: assessments[skillId] ?? 0,
       }

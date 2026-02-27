@@ -219,7 +219,7 @@ export default memo(function DependencyExplorer({ assessments = {} }) {
       <div className="flex-1 overflow-hidden relative">
         <AnimatePresence mode="wait">
           <motion.div
-            key={level + '-' + (focusDomainId || '') + '-' + (focusSubAreaId || '') + '-' + (focusSkillId || '')}
+            key={level + '-' + (focusDomainId || '') + '-' + (focusSubAreaId || '')}
             initial={{ opacity: 0, y: 12 }}
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: -12 }}

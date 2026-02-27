@@ -100,6 +100,9 @@ export default function AssessmentPanel({ assessments, onAssess, initialSubAreaI
     if (contentRef.current) contentRef.current.scrollTop = 0
   }, [currentIndex])
 
+  // aria-live announcement for keyboard navigation
+  const [navAnnouncement, setNavAnnouncement] = useState('')
+
   // Keyboard shortcuts: arrow left/right to navigate
   useEffect(() => {
     function handleKeyDown(e) {
@@ -107,10 +110,18 @@ export default function AssessmentPanel({ assessments, onAssess, initialSubAreaI
       if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA') return
       if (e.key === 'ArrowLeft') {
         e.preventDefault()
-        setCurrentIndex((prev) => Math.max(0, prev - 1))
+        setCurrentIndex((prev) => {
+          const next = Math.max(0, prev - 1)
+          setNavAnnouncement(`Navigated to ${ALL_SUB_AREAS[next]?.name || 'sub-area'}`)
+          return next
+        })
       } else if (e.key === 'ArrowRight') {
         e.preventDefault()
-        setCurrentIndex((prev) => Math.min(ALL_SUB_AREAS.length - 1, prev + 1))
+        setCurrentIndex((prev) => {
+          const next = Math.min(ALL_SUB_AREAS.length - 1, prev + 1)
+          setNavAnnouncement(`Navigated to ${ALL_SUB_AREAS[next]?.name || 'sub-area'}`)
+          return next
+        })
       }
     }
     window.addEventListener('keydown', handleKeyDown)
@@ -128,8 +139,22 @@ export default function AssessmentPanel({ assessments, onAssess, initialSubAreaI
     return -1 // all complete
   }, [currentIndex, assessments])
 
+  // Bulk rate confirmation state
+  const [bulkRatePending, setBulkRatePending] = useState(null)
+
   // Mark all skills in current sub-area to a given level
   function bulkRate(level) {
+    const skillCount = currentSubArea.skillGroups.reduce((n, sg) => n + sg.skills.length, 0)
+    const existingRated = currentSubArea.skillGroups.reduce((n, sg) =>
+      n + sg.skills.filter(s => assessments[s.id] !== undefined && assessments[s.id] !== 0).length, 0)
+    if (existingRated > 0) {
+      setBulkRatePending(level)
+      return
+    }
+    applyBulkRate(level)
+  }
+
+  function applyBulkRate(level) {
     const updates = {}
     currentSubArea.skillGroups.forEach((sg) => {
       sg.skills.forEach((skill) => {
@@ -137,12 +162,27 @@ export default function AssessmentPanel({ assessments, onAssess, initialSubAreaI
       })
     })
     onAssess((prev) => ({ ...prev, ...updates }))
+    setBulkRatePending(null)
   }
+
+  const bulkRateConfirm = bulkRatePending !== null && (
+    <div className="bg-amber-50 border border-amber-200 rounded-lg px-4 py-3 flex items-center justify-between gap-3">
+      <p className="text-sm text-amber-800">
+        Overwrite all ratings in this sub-area?
+      </p>
+      <div className="flex gap-2 shrink-0">
+        <button onClick={() => applyBulkRate(bulkRatePending)} className="text-xs font-semibold px-3 py-1.5 min-h-[44px] rounded-lg bg-amber-500 text-white hover:bg-amber-600 transition-colors">Overwrite</button>
+        <button onClick={() => setBulkRatePending(null)} className="text-xs font-semibold px-3 py-1.5 min-h-[44px] rounded-lg bg-warm-100 text-warm-600 hover:bg-warm-200 transition-colors">Cancel</button>
+      </div>
+    </div>
+  )
 
   // ── Phone layout ──
   if (isPhone) {
     return (
       <div className="flex flex-col h-full relative">
+        <div aria-live="polite" className="sr-only">{navAnnouncement}</div>
+        {bulkRateConfirm}
         {/* Navigation overlay */}
         {navOverlayOpen && (
           <>
@@ -287,6 +327,8 @@ export default function AssessmentPanel({ assessments, onAssess, initialSubAreaI
   // ── Desktop layout (unchanged) ──
   return (
     <div className="flex h-full">
+      <div aria-live="polite" className="sr-only">{navAnnouncement}</div>
+      {bulkRateConfirm}
       {/* Left nav — domain/sub-area list */}
       <div className="w-64 bg-white border-r border-warm-200 overflow-y-auto shrink-0">
         <div className="p-4">
@@ -594,7 +636,7 @@ function SkillRater({ skill, level, onRate }) {
                 onClick={() => onRate(val)}
                 title={ASSESSMENT_LABELS[val]}
                 aria-pressed={level === val}
-                className={`w-8 h-8 rounded-lg text-xs font-bold transition-all ${
+                className={`w-8 h-8 min-w-[44px] min-h-[44px] rounded-lg text-xs font-bold transition-all ${
                   isSelected
                     ? 'ring-2 ring-offset-1 ring-warm-400 scale-110 shadow-sm'
                     : 'opacity-40 hover:opacity-80 hover:scale-105'

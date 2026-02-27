@@ -124,6 +124,7 @@ export default function CaseloadDashboard({ currentClientId, onSelectClient }) {
   const [filterBy, setFilterBy] = useState('all')
   const [clientData, setClientData] = useState([])
   const [dataLoading, setDataLoading] = useState(true)
+  const [searchQuery, setSearchQuery] = useState('')
 
   /* ── Load and enrich client data ── */
 
@@ -191,7 +192,9 @@ export default function CaseloadDashboard({ currentClientId, onSelectClient }) {
 
   const filtered = useMemo(() => {
     const now = Date.now()
+    const q = searchQuery.trim().toLowerCase()
     return clientData.filter((c) => {
+      if (q && !c.name.toLowerCase().includes(q)) return false
       switch (filterBy) {
         case 'attention':
           return c.domainsNeedsWork > 0
@@ -203,7 +206,7 @@ export default function CaseloadDashboard({ currentClientId, onSelectClient }) {
           return true
       }
     })
-  }, [clientData, filterBy])
+  }, [clientData, filterBy, searchQuery])
 
   /* ── Sort ── */
 
@@ -230,7 +233,8 @@ export default function CaseloadDashboard({ currentClientId, onSelectClient }) {
 
   const summary = useMemo(() => {
     const total = clientData.length
-    const withAlerts = clientData.filter((c) => c.domainsNeedsWork > 3).length
+    const HIGH_CONCERN_THRESHOLD = 3
+    const withAlerts = clientData.filter((c) => c.domainsNeedsWork > HIGH_CONCERN_THRESHOLD).length
     const avgCompletion = total > 0
       ? Math.round(clientData.reduce((s, c) => s + c.completion, 0) / total)
       : 0
@@ -333,6 +337,21 @@ export default function CaseloadDashboard({ currentClientId, onSelectClient }) {
         />
       </div>
 
+      {/* ── Search ── */}
+      <div className="relative">
+        <svg className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-warm-300 pointer-events-none" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+          <path strokeLinecap="round" strokeLinejoin="round" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+        </svg>
+        <input
+          type="search"
+          value={searchQuery}
+          onChange={(e) => setSearchQuery(e.target.value)}
+          placeholder="Search clients..."
+          className="w-full pl-9 pr-3 py-2 min-h-[44px] text-sm bg-white border border-warm-200 rounded-lg text-warm-700 placeholder:text-warm-300 focus:outline-none focus:ring-2 focus:ring-sage-300 focus:border-sage-400"
+          aria-label="Search clients by name"
+        />
+      </div>
+
       {/* ── Sort / Filter controls ── */}
       <div className="flex flex-wrap items-center gap-3">
         {/* Sort */}
@@ -341,6 +360,7 @@ export default function CaseloadDashboard({ currentClientId, onSelectClient }) {
           <select
             value={sortBy}
             onChange={(e) => setSortBy(e.target.value)}
+            aria-label="Sort clients by"
             className="bg-white border border-warm-200 rounded-md px-2 py-1 text-xs text-warm-700 focus:outline-none focus:border-sage-400 focus:ring-1 focus:ring-sage-400 cursor-pointer"
           >
             {SORT_OPTIONS.map((o) => (
@@ -357,6 +377,7 @@ export default function CaseloadDashboard({ currentClientId, onSelectClient }) {
           <select
             value={filterBy}
             onChange={(e) => setFilterBy(e.target.value)}
+            aria-label="Filter clients by status"
             className="bg-white border border-warm-200 rounded-md px-2 py-1 text-xs text-warm-700 focus:outline-none focus:border-sage-400 focus:ring-1 focus:ring-sage-400 cursor-pointer"
           >
             {FILTER_OPTIONS.map((o) => (

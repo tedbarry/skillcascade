@@ -709,7 +709,8 @@ export default function HomePractice({ assessments = {}, clientName = 'your chil
                 <button
                   key={opt.value}
                   onClick={() => setScopeFilter(opt.value)}
-                  className={`text-xs px-3 py-1.5 rounded-md transition-colors ${
+                  aria-pressed={scopeFilter === opt.value}
+                  className={`text-xs px-3 py-1.5 min-h-[44px] rounded-md transition-colors inline-flex items-center ${
                     scopeFilter === opt.value
                       ? 'bg-sage-500 text-white'
                       : 'bg-warm-100 text-warm-600 hover:bg-warm-200'
@@ -729,7 +730,8 @@ export default function HomePractice({ assessments = {}, clientName = 'your chil
                 <button
                   key={opt.value}
                   onClick={() => setDifficultyFilter(opt.value)}
-                  className={`text-xs px-3 py-1.5 rounded-md transition-colors ${
+                  aria-pressed={difficultyFilter === opt.value}
+                  className={`text-xs px-3 py-1.5 min-h-[44px] rounded-md transition-colors inline-flex items-center ${
                     difficultyFilter === opt.value
                       ? 'bg-sage-500 text-white'
                       : 'bg-warm-100 text-warm-600 hover:bg-warm-200'
@@ -749,7 +751,8 @@ export default function HomePractice({ assessments = {}, clientName = 'your chil
                 <button
                   key={opt.value}
                   onClick={() => setTimeFilter(opt.value)}
-                  className={`text-xs px-3 py-1.5 rounded-md transition-colors ${
+                  aria-pressed={timeFilter === opt.value}
+                  className={`text-xs px-3 py-1.5 min-h-[44px] rounded-md transition-colors inline-flex items-center ${
                     timeFilter === opt.value
                       ? 'bg-sage-500 text-white'
                       : 'bg-warm-100 text-warm-600 hover:bg-warm-200'

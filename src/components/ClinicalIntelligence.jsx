@@ -146,7 +146,7 @@ function TargetSkillCard({ skill, index, isExpanded, onToggle, onAssess, isPhone
           {/* Assess button */}
           {onAssess && (
             <button
-              onClick={(e) => { e.stopPropagation(); onAssess(skill.domainId + '-sa1') }}
+              onClick={(e) => { e.stopPropagation(); onAssess(skill.subAreaId || skill.domainId + '-sa1') }}
               className="text-[10px] text-gray-500 hover:text-amber-400 px-2 py-1 rounded transition-colors shrink-0 min-h-[32px]"
             >
               Assess
@@ -441,6 +441,7 @@ export default memo(function ClinicalIntelligence({
   const [expandedDomain, setExpandedDomain] = useState(null)
   const [pathDomain, setPathDomain] = useState(null)
   const [showDetailedViews, setShowDetailedViews] = useState(false)
+  const [showAllRisks, setShowAllRisks] = useState(false)
 
   // Toggle skill expansion
   const handleSkillToggle = (index) => {
@@ -559,7 +560,7 @@ export default memo(function ClinicalIntelligence({
 
             {/* Domain status — horizontal scroll with inline detail */}
             <Section title="Domain Status">
-              <div className="flex gap-2 overflow-x-auto pb-1 -mx-3 px-3 scrollbar-none">
+              <div className="flex gap-2 overflow-x-auto pb-1 -mx-3 px-3 scrollbar-none relative [mask-image:linear-gradient(to_right,transparent,black_8px,black_calc(100%-24px),transparent)]">
                 {domainPills.map(d => (
                   <DomainPill
                     key={d.id}
@@ -592,10 +593,18 @@ export default memo(function ClinicalIntelligence({
             {risks.hasActiveRisks && (
               <Section title="Active Risks" count={risks.combined.length}>
                 <div className="space-y-1.5">
-                  {risks.combined.slice(0, 5).map((risk) => (
+                  {(showAllRisks ? risks.combined : risks.combined.slice(0, 5)).map((risk) => (
                     <RiskCard key={`${risk.type}-${risk.actionDomainId || ''}-${risk.affectedDomains?.[0] || ''}`} risk={risk} isPhone />
                   ))}
                 </div>
+                {risks.combined.length > 5 && (
+                  <button
+                    onClick={() => setShowAllRisks(!showAllRisks)}
+                    className="text-[11px] text-gray-500 hover:text-gray-300 mt-2 transition-colors"
+                  >
+                    {showAllRisks ? 'Show fewer' : `Show all ${risks.combined.length} risks`}
+                  </button>
+                )}
               </Section>
             )}
 
@@ -698,10 +707,18 @@ export default memo(function ClinicalIntelligence({
               {risks.hasActiveRisks && (
                 <Section title="Active Risks" count={risks.combined.length}>
                   <div className="space-y-1.5">
-                    {risks.combined.slice(0, 5).map((risk) => (
+                    {(showAllRisks ? risks.combined : risks.combined.slice(0, 5)).map((risk) => (
                       <RiskCard key={`${risk.type}-${risk.actionDomainId || ''}-${risk.affectedDomains?.[0] || ''}`} risk={risk} />
                     ))}
                   </div>
+                  {risks.combined.length > 5 && (
+                    <button
+                      onClick={() => setShowAllRisks(!showAllRisks)}
+                      className="text-[11px] text-gray-500 hover:text-gray-300 mt-2 transition-colors"
+                    >
+                      {showAllRisks ? 'Show fewer' : `Show all ${risks.combined.length} risks`}
+                    </button>
+                  )}
                 </Section>
               )}
             </div>

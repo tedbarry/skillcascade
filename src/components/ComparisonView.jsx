@@ -2,6 +2,7 @@ import { useState, useMemo, useCallback, useEffect } from 'react'
 import { getClients, getAssessments } from '../data/storage.js'
 import { useAuth } from '../contexts/AuthContext.jsx'
 import { framework, ASSESSMENT_LEVELS, getDomainScores, ASSESSMENT_LABELS } from '../data/framework.js'
+import useResponsive from '../hooks/useResponsive.js'
 import {
   RadarChart as ReRadarChart,
   PolarGrid,
@@ -155,6 +156,8 @@ export default function ComparisonView({
   snapshots = [],
 }) {
   const { profile } = useAuth()
+  const { isPhone } = useResponsive()
+  const gridCols = isPhone ? 'grid-cols-[1fr_55px_55px_60px]' : 'grid-cols-[1fr_80px_80px_90px]'
   const [mode, setMode] = useState(MODES.CLIENTS)
   const [rightClientId, setRightClientId] = useState('')
   const [leftSnapshotId, setLeftSnapshotId] = useState('current')
@@ -285,9 +288,11 @@ export default function ComparisonView({
       </div>
 
       {/* ── Mode selector tabs ── */}
-      <div className="flex gap-1 bg-warm-100 rounded-lg p-1">
+      <div className="flex gap-1 bg-warm-100 rounded-lg p-1" role="tablist" aria-label="Comparison mode">
         <button
           onClick={() => setMode(MODES.CLIENTS)}
+          role="tab"
+          aria-selected={mode === MODES.CLIENTS}
           className={`flex-1 text-sm font-medium px-4 py-2 rounded-md transition-colors ${
             mode === MODES.CLIENTS
               ? 'bg-white text-warm-800 shadow-sm'
@@ -306,6 +311,8 @@ export default function ComparisonView({
         </button>
         <button
           onClick={() => setMode(MODES.SNAPSHOTS)}
+          role="tab"
+          aria-selected={mode === MODES.SNAPSHOTS}
           className={`flex-1 text-sm font-medium px-4 py-2 rounded-md transition-colors ${
             mode === MODES.SNAPSHOTS
               ? 'bg-white text-warm-800 shadow-sm'
@@ -465,7 +472,7 @@ export default function ComparisonView({
               </div>
 
               {/* Table header */}
-              <div className="grid grid-cols-[1fr_80px_80px_90px] gap-2 px-4 py-2 bg-warm-50 text-[10px] uppercase tracking-wider text-warm-400 font-semibold border-b border-warm-100">
+              <div className={`grid ${gridCols} gap-2 px-4 py-2 bg-warm-50 text-[10px] uppercase tracking-wider text-warm-400 font-semibold border-b border-warm-100`}>
                 <div>Domain</div>
                 <div className="text-center">{leftLabel}</div>
                 <div className="text-center">{rightLabel}</div>
@@ -483,7 +490,9 @@ export default function ComparisonView({
                     {/* Domain row */}
                     <button
                       onClick={() => toggleDomain(row.domainId)}
-                      className={`w-full grid grid-cols-[1fr_80px_80px_90px] gap-2 px-4 py-2.5 text-sm items-center text-left hover:bg-warm-50 transition-colors border-b border-warm-100 ${
+                      aria-expanded={isExpanded}
+                      aria-label={`${row.domain} — expand for sub-area details`}
+                      className={`w-full grid ${gridCols} gap-2 px-4 py-2.5 text-sm items-center text-left hover:bg-warm-50 transition-colors border-b border-warm-100 ${
                         isBiggest ? 'bg-coral-50/40' : ''
                       }`}
                     >
@@ -523,7 +532,7 @@ export default function ComparisonView({
                             return (
                               <div
                                 key={lsa.id}
-                                className="grid grid-cols-[1fr_80px_80px_90px] gap-2 px-4 py-2 text-xs items-center border-b border-warm-100/60 last:border-b-0"
+                                className={`grid ${gridCols} gap-2 px-4 py-2 text-xs items-center border-b border-warm-100/60 last:border-b-0`}
                               >
                                 <div className="pl-7 text-warm-600">{lsa.name}</div>
                                 <div className="text-center">

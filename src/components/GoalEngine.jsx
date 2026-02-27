@@ -7,6 +7,7 @@ import {
   DOMAIN_DEPENDENCIES,
 } from '../data/framework.js'
 import EmptyState from './EmptyState.jsx'
+import useResponsive from '../hooks/useResponsive.js'
 
 /* ─────────────────────────────────────────────
    Constants
@@ -333,7 +334,7 @@ function SkillCard({ rec, onNavigateToAssess }) {
         {/* Navigate button */}
         <button
           onClick={() => onNavigateToAssess(rec.subAreaId)}
-          className="text-[11px] font-semibold px-3 py-1.5 rounded-lg transition-all whitespace-nowrap shrink-0 opacity-70 group-hover:opacity-100"
+          className="text-[11px] font-semibold px-3 py-1.5 min-h-[44px] rounded-lg transition-all whitespace-nowrap shrink-0 flex items-center"
           style={{
             backgroundColor: config.color + '15',
             color: config.badgeText,
@@ -383,6 +384,8 @@ function TierSection({ priority, recommendations, onNavigateToAssess, defaultExp
         onClick={() => setExpanded(!expanded)}
         className="w-full flex items-center gap-3 px-5 py-3.5 rounded-xl border transition-all text-left group hover:shadow-sm"
         style={{ backgroundColor: config.bg, borderColor: config.border }}
+        aria-expanded={expanded}
+        aria-label={`${config?.label || priority} priority — ${count} skill${count !== 1 ? 's' : ''}`}
       >
         {/* Expand/collapse chevron */}
         <span
@@ -466,6 +469,7 @@ function TierSection({ priority, recommendations, onNavigateToAssess, defaultExp
    ───────────────────────────────────────────── */
 
 export default function GoalEngine({ assessments = {}, onNavigateToAssess, focusDomain = null, onClearFocus }) {
+  const { isPhone } = useResponsive()
   const allRecommendations = useMemo(() => analyzeGaps(assessments), [assessments])
 
   // Filter by focus domain if set
@@ -532,7 +536,7 @@ export default function GoalEngine({ assessments = {}, onNavigateToAssess, focus
                 {onClearFocus && (
                   <button
                     onClick={onClearFocus}
-                    className="text-xs text-amber-600 hover:text-amber-800 ml-auto transition-colors min-h-[32px]"
+                    className="text-xs text-amber-600 hover:text-amber-800 ml-auto transition-colors min-h-[44px] flex items-center"
                   >
                     Show all domains
                   </button>
@@ -600,13 +604,13 @@ export default function GoalEngine({ assessments = {}, onNavigateToAssess, focus
                   priority={1}
                   recommendations={tier1}
                   onNavigateToAssess={handleNavigate}
-                  defaultExpanded={true}
+                  defaultExpanded={isPhone ? false : true}
                 />
                 <TierSection
                   priority={2}
                   recommendations={tier2}
                   onNavigateToAssess={handleNavigate}
-                  defaultExpanded={tier1.length === 0}
+                  defaultExpanded={isPhone ? false : tier1.length === 0}
                 />
                 <TierSection
                   priority={3}

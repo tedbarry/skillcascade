@@ -1,4 +1,4 @@
-import { useMemo } from 'react'
+import { useMemo, useState, useCallback } from 'react'
 import { framework, ASSESSMENT_LEVELS, getDomainScores } from '../data/framework.js'
 
 /* ─────────────────────────────────────────────
@@ -267,7 +267,7 @@ function detectMilestones(assessments, snapshots) {
         const prevDomain = prevScores.find((d) => d.domainId === domain.id)
         const currDomain = currScores.find((d) => d.domainId === domain.id)
 
-        if (prevDomain.assessed > 0 && currDomain.assessed > 0 && currDomain.score > prevDomain.score) {
+        if (prevDomain?.assessed > 0 && currDomain?.assessed > 0 && currDomain.score > prevDomain.score) {
           streak++
         } else {
           streak = 0
@@ -282,7 +282,7 @@ function detectMilestones(assessments, snapshots) {
         const lastDomain = lastSnapScores.find((d) => d.domainId === domain.id)
         const currDomain = currentScores.find((d) => d.domainId === domain.id)
 
-        if (lastDomain.assessed > 0 && currDomain.assessed > 0 && currDomain.score > lastDomain.score) {
+        if (lastDomain?.assessed > 0 && currDomain?.assessed > 0 && currDomain.score > lastDomain.score) {
           streak++
         } else {
           streak = 0
@@ -352,7 +352,7 @@ function MilestoneCard({ milestone, index }) {
   const theme = CATEGORY_THEMES[milestone.category] || CATEGORY_THEMES['Progress']
 
   return (
-    <div className="relative flex gap-4 pb-8 last:pb-0">
+    <div className="relative flex gap-4 pb-8 last:pb-0" role="listitem">
       {/* Timeline connector line */}
       <div className="flex flex-col items-center">
         <div
@@ -456,10 +456,20 @@ export default function MilestoneCelebrations({
   snapshots = [],
   clientName = 'Client',
 }) {
+  const [copied, setCopied] = useState(false)
   const milestones = useMemo(
     () => detectMilestones(assessments, snapshots),
     [assessments, snapshots]
   )
+
+  const copyAsText = useCallback(() => {
+    const lines = milestones.map(m => `- ${m.title} (${m.when}): ${m.description}`)
+    const text = `Milestones for ${clientName}\n${'─'.repeat(30)}\n${lines.join('\n')}`
+    navigator.clipboard.writeText(text).then(() => {
+      setCopied(true)
+      setTimeout(() => setCopied(false), 2000)
+    })
+  }, [milestones, clientName])
 
   return (
     <div className="bg-white rounded-2xl border border-warm-200 shadow-sm overflow-hidden">
@@ -484,14 +494,29 @@ export default function MilestoneCelebrations({
           </div>
         </div>
 
-        {milestones.length > 0 && (
-          <span
-            className="text-xs font-semibold px-2.5 py-1 rounded-full"
-            style={{ backgroundColor: '#f5ebe0', color: '#c49a6c' }}
-          >
-            {milestones.length} milestone{milestones.length !== 1 ? 's' : ''}
-          </span>
-        )}
+        <div className="flex items-center gap-2">
+          {milestones.length > 0 && (
+            <>
+              <button
+                onClick={copyAsText}
+                className="text-[11px] text-warm-400 hover:text-warm-600 px-2 py-1 min-h-[44px] rounded-lg hover:bg-warm-100 transition-colors flex items-center gap-1"
+                title="Copy milestones as text for progress notes"
+              >
+                <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                  <rect x="9" y="9" width="13" height="13" rx="2" />
+                  <path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1" />
+                </svg>
+                {copied ? 'Copied!' : 'Copy'}
+              </button>
+              <span
+                className="text-xs font-semibold px-2.5 py-1 rounded-full"
+                style={{ backgroundColor: '#f5ebe0', color: '#c49a6c' }}
+              >
+                {milestones.length} milestone{milestones.length !== 1 ? 's' : ''}
+              </span>
+            </>
+          )}
+        </div>
       </div>
 
       {/* Body */}
@@ -507,7 +532,7 @@ export default function MilestoneCelebrations({
             />
 
             {/* Milestone cards */}
-            <div className="relative">
+            <div className="relative" role="list" aria-label="Milestones achieved">
               {milestones.map((milestone, index) => (
                 <MilestoneCard
                   key={milestone.id}

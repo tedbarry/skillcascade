@@ -1,5 +1,7 @@
 import { useState, useMemo, useCallback, useRef, useEffect } from 'react'
 import { framework, ASSESSMENT_LEVELS, ASSESSMENT_LABELS, ASSESSMENT_COLORS } from '../data/framework.js'
+import { getSkillDescription } from '../data/skillDescriptions.js'
+import useResponsive from '../hooks/useResponsive.js'
 
 /**
  * AdaptiveAssessment — Quick screening mode for SkillCascade
@@ -108,6 +110,8 @@ export default function AdaptiveAssessment({ assessments, onAssess, onComplete }
   const [skillRatings, setSkillRatings] = useState(() => savedDraft.current?.skillRatings || {})
   const [transitioning, setTransitioning] = useState(false)
   const [applied, setApplied] = useState(false)
+
+  const { isPhone } = useResponsive()
 
   const contentRef = useRef(null)
 
@@ -457,7 +461,7 @@ export default function AdaptiveAssessment({ assessments, onAssess, onComplete }
           <button
             onClick={handleBack}
             disabled={phase === 1}
-            className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
+            className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-colors min-h-[44px] ${
               phase === 1
                 ? 'text-warm-300 cursor-not-allowed'
                 : 'text-warm-600 hover:bg-warm-100 hover:text-warm-800'
@@ -475,7 +479,7 @@ export default function AdaptiveAssessment({ assessments, onAssess, onComplete }
             <button
               onClick={handleNext}
               disabled={!canAdvance}
-              className={`flex items-center gap-2 px-5 py-2 rounded-lg text-sm font-medium transition-all ${
+              className={`flex items-center gap-2 px-5 py-2 rounded-lg text-sm font-medium transition-all min-h-[44px] ${
                 canAdvance
                   ? 'bg-sage-500 text-white hover:bg-sage-600 shadow-sm hover:shadow'
                   : 'bg-warm-200 text-warm-400 cursor-not-allowed'
@@ -488,7 +492,7 @@ export default function AdaptiveAssessment({ assessments, onAssess, onComplete }
             !applied && (
               <button
                 onClick={handleApply}
-                className="flex items-center gap-2 px-5 py-2 rounded-lg text-sm font-bold bg-sage-500 text-white hover:bg-sage-600 shadow-sm hover:shadow transition-all"
+                className="flex items-center gap-2 px-5 py-2 rounded-lg text-sm font-bold bg-sage-500 text-white hover:bg-sage-600 shadow-sm hover:shadow transition-all min-h-[44px]"
               >
                 <span>Apply to Full Assessment</span>
                 <span>{'\u2192'}</span>
@@ -518,7 +522,7 @@ function Phase1DomainScreening({ domainRatings, onRate }) {
         </p>
       </div>
 
-      <div className="grid gap-4 sm:grid-cols-1 md:grid-cols-1 lg:grid-cols-1">
+      <div className="grid gap-3">
         {framework.map((domain) => {
           const currentRating = domainRatings[domain.id]
           const skillCount = countSkillsInDomain(domain)
@@ -555,7 +559,7 @@ function Phase1DomainScreening({ domainRatings, onRate }) {
                 </div>
 
                 {/* Rating buttons */}
-                <div className="flex gap-2 shrink-0 sm:pt-1">
+                <div className="flex flex-wrap gap-2 shrink-0 sm:pt-1">
                   {SCREENING_RATINGS.map((rating) => {
                     const isSelected = currentRating === rating
                     const colors = SCREENING_COLORS[rating]
@@ -564,7 +568,7 @@ function Phase1DomainScreening({ domainRatings, onRate }) {
                       <button
                         key={rating}
                         onClick={() => onRate(domain.id, rating)}
-                        className={`px-4 py-2.5 rounded-lg text-sm font-semibold transition-all duration-150 min-w-[72px] ${
+                        className={`px-4 py-2.5 rounded-lg text-sm font-semibold transition-all duration-150 min-w-[72px] min-h-[44px] ${
                           isSelected
                             ? `${colors.bg} ${colors.text} ring-2 ring-offset-2 ${colors.ring} scale-105 shadow-md`
                             : 'bg-warm-100 text-warm-500 hover:bg-warm-200 hover:text-warm-700 hover:scale-[1.02]'
@@ -673,7 +677,7 @@ function Phase2SubAreaDrillDown({ subAreas, subAreaRatings, domainRatings, onRat
                         </p>
                       </div>
 
-                      <div className="flex gap-2 shrink-0">
+                      <div className="flex flex-wrap gap-2 shrink-0">
                         {SCREENING_RATINGS.map((rating) => {
                           const isSelected = currentRating === rating
                           const colors = SCREENING_COLORS[rating]
@@ -682,7 +686,7 @@ function Phase2SubAreaDrillDown({ subAreas, subAreaRatings, domainRatings, onRat
                             <button
                               key={rating}
                               onClick={() => onRate(sa.id, rating)}
-                              className={`px-3 py-2 rounded-lg text-xs font-semibold transition-all duration-150 min-w-[60px] ${
+                              className={`px-3 py-2 rounded-lg text-xs font-semibold transition-all duration-150 min-w-[60px] min-h-[44px] ${
                                 isSelected
                                   ? `${colors.bg} ${colors.text} ring-2 ring-offset-1 ${colors.ring} scale-105 shadow-sm`
                                   : 'bg-warm-100 text-warm-500 hover:bg-warm-200 hover:text-warm-700'
@@ -759,7 +763,7 @@ function Phase3SkillDetail({ subAreas, skillRatings, onRate }) {
               {/* Sub-area header — collapsible */}
               <button
                 onClick={() => setExpandedSA(isExpanded ? null : sa.id)}
-                className="w-full text-left px-5 py-4 flex items-center gap-3 hover:bg-warm-50 transition-colors"
+                className="w-full text-left px-5 py-4 flex items-center gap-3 hover:bg-warm-50 transition-colors min-h-[44px]"
               >
                 <span className="text-xs text-warm-400 w-4">
                   {isExpanded ? '\u25BE' : '\u25B8'}
@@ -796,7 +800,7 @@ function Phase3SkillDetail({ subAreas, skillRatings, onRate }) {
               {isExpanded && (
                 <div className="border-t border-warm-100 px-5 py-4">
                   {/* Bulk actions */}
-                  <div className="flex items-center gap-2 mb-4 pb-4 border-b border-warm-100">
+                  <div className="flex flex-wrap items-center gap-2 mb-4 pb-4 border-b border-warm-100">
                     <span className="text-xs text-warm-400 mr-1">Quick fill:</span>
                     {[
                       ASSESSMENT_LEVELS.NOT_ASSESSED,
@@ -813,7 +817,7 @@ function Phase3SkillDetail({ subAreas, skillRatings, onRate }) {
                             })
                           })
                         }}
-                        className="text-[10px] px-2.5 py-1 rounded-md font-medium transition-all hover:scale-105 border border-warm-200 hover:border-warm-300"
+                        className="text-[10px] px-2.5 py-1 rounded-md font-medium transition-all hover:scale-105 border border-warm-200 hover:border-warm-300 min-h-[44px]"
                         style={{
                           backgroundColor: ASSESSMENT_COLORS[level] + '20',
                           color:
@@ -862,12 +866,35 @@ function Phase3SkillDetail({ subAreas, skillRatings, onRate }) {
  * Individual skill rating row — matches AssessmentPanel SkillRater
  */
 function SkillRater({ skill, level, onRate }) {
+  const [showDesc, setShowDesc] = useState(false)
+  const desc = getSkillDescription(skill.id)
+
   return (
     <div className="flex items-start gap-4 py-2 px-3 rounded-lg hover:bg-warm-50 transition-colors group">
       <div className="flex-1 min-w-0">
-        <div className="text-sm text-warm-700 leading-snug group-hover:text-warm-900 transition-colors">
-          {skill.name}
+        <div className="flex items-center gap-1.5">
+          <div className="text-sm text-warm-700 leading-snug group-hover:text-warm-900 transition-colors">
+            {skill.name}
+          </div>
+          {desc && (
+            <button
+              onClick={() => setShowDesc(!showDesc)}
+              className="text-warm-300 hover:text-warm-500 transition-colors shrink-0"
+              title="Show description"
+            >
+              <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                <path strokeLinecap="round" strokeLinejoin="round" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+              </svg>
+            </button>
+          )}
         </div>
+        {showDesc && desc && (
+          <div className="mt-2 ml-0.5 text-xs space-y-1 border-l-2 border-warm-200 pl-3">
+            <p className="text-warm-600">{desc.description}</p>
+            {desc.looks_like && <p className="text-sage-600"><span className="font-medium">Present:</span> {desc.looks_like}</p>}
+            {desc.absence && <p className="text-coral-600"><span className="font-medium">Absent:</span> {desc.absence}</p>}
+          </div>
+        )}
       </div>
       <div className="flex gap-1.5 shrink-0">
         {[
@@ -889,7 +916,7 @@ function SkillRater({ skill, level, onRate }) {
               onClick={() => onRate(val)}
               title={ASSESSMENT_LABELS[val]}
               aria-pressed={level === val}
-              className={`w-8 h-8 rounded-lg text-xs font-bold transition-all ${
+              className={`w-8 h-8 min-w-[44px] min-h-[44px] rounded-lg text-xs font-bold transition-all ${
                 isSelected
                   ? 'ring-2 ring-offset-1 ring-warm-400 scale-110 shadow-sm'
                   : 'opacity-40 hover:opacity-80 hover:scale-105'
@@ -1048,7 +1075,7 @@ function Phase4Summary({ summaryStats, applied, onApply }) {
           </p>
           <button
             onClick={onApply}
-            className="inline-flex items-center gap-2 px-8 py-3 rounded-xl text-base font-bold bg-sage-500 text-white hover:bg-sage-600 shadow-md hover:shadow-lg transition-all hover:scale-[1.02]"
+            className="inline-flex items-center gap-2 px-8 py-3 rounded-xl text-base font-bold bg-sage-500 text-white hover:bg-sage-600 shadow-md hover:shadow-lg transition-all hover:scale-[1.02] min-h-[44px]"
           >
             <span>Apply to Full Assessment</span>
             <span>{'\u2192'}</span>

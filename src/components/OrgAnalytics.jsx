@@ -6,6 +6,7 @@ import {
 import { getClients, getAssessments, getSnapshots } from '../data/storage.js'
 import { framework, ASSESSMENT_LEVELS, getDomainScores } from '../data/framework.js'
 import { useAuth } from '../contexts/AuthContext.jsx'
+import useResponsive from '../hooks/useResponsive.js'
 
 /* ─────────────────────────────────────────────
    Constants
@@ -157,6 +158,7 @@ function ChartTooltip({ active, payload, label, suffix }) {
 
 export default function OrgAnalytics() {
   const { profile } = useAuth()
+  const { isPhone } = useResponsive()
   const [tableSortKey, setTableSortKey] = useState('name')
   const [tableSortDir, setTableSortDir] = useState('asc')
   const [orgData, setOrgData] = useState([])
@@ -321,7 +323,8 @@ export default function OrgAnalytics() {
 
       clientsWithSnapshots.forEach((client) => {
         const sorted = [...client.snapshots].sort((a, b) => a.timestamp - b.timestamp)
-        const prev = sorted[sorted.length - 2].assessments
+        // Compare earliest vs latest for full-span improvement
+        const prev = sorted[0].assessments
         const latest = sorted[sorted.length - 1].assessments
 
         const prevScores = getDomainScores(prev).find((d) => d.domainId === domain.id)
@@ -350,22 +353,30 @@ export default function OrgAnalytics() {
   const trendData = useMemo(() => {
     const allPoints = new Map()
 
+    // Bucket by ISO week (YYYY-WNN) to avoid conflating same-day multi-client averages
+    function getWeekKey(ts) {
+      const d = new Date(ts)
+      const jan1 = new Date(d.getFullYear(), 0, 1)
+      const week = Math.ceil(((d - jan1) / 86400000 + jan1.getDay() + 1) / 7)
+      return `${d.getFullYear()}-W${String(week).padStart(2, '0')}`
+    }
+
     orgData.forEach((client) => {
       client.snapshots.forEach((snap) => {
-        const dateKey = new Date(snap.timestamp).toISOString().slice(0, 10)
+        const weekKey = getWeekKey(snap.timestamp)
         const avg = computeAvgScore(snap.assessments)
         if (avg > 0) {
-          if (!allPoints.has(dateKey)) {
-            allPoints.set(dateKey, { scores: [], timestamp: snap.timestamp })
+          if (!allPoints.has(weekKey)) {
+            allPoints.set(weekKey, { scores: [], timestamp: snap.timestamp })
           }
-          allPoints.get(dateKey).scores.push(avg)
+          allPoints.get(weekKey).scores.push(avg)
         }
       })
     })
 
     const sorted = [...allPoints.entries()]
       .sort(([a], [b]) => a.localeCompare(b))
-      .map(([dateKey, { scores, timestamp }]) => ({
+      .map(([, { scores, timestamp }]) => ({
         date: formatShortDate(timestamp),
         avgScore: parseFloat(
           (scores.reduce((s, v) => s + v, 0) / scores.length).toFixed(2)
@@ -525,15 +536,15 @@ export default function OrgAnalytics() {
                 <XAxis
                   type="number"
                   domain={[0, 3]}
-                  ticks={[0, 0.5, 1, 1.5, 2, 2.5, 3]}
-                  tick={{ fontSize: 10, fill: '#9c8b7a' }}
+                  ticks={isPhone ? [0, 1, 2, 3] : [0, 0.5, 1, 1.5, 2, 2.5, 3]}
+                  tick={{ fontSize: isPhone ? 9 : 10, fill: '#9c8b7a' }}
                   axisLine={{ stroke: '#d4c9be' }}
                 />
                 <YAxis
                   type="category"
                   dataKey="domain"
-                  width={110}
-                  tick={{ fontSize: 10, fill: '#6b5d50' }}
+                  width={isPhone ? 70 : 110}
+                  tick={{ fontSize: isPhone ? 9 : 10, fill: '#6b5d50' }}
                   axisLine={false}
                   tickLine={false}
                 />
@@ -780,12 +791,12 @@ export default function OrgAnalytics() {
                     <CartesianGrid strokeDasharray="3 3" stroke="#e8e0d8" vertical={false} />
                     <XAxis
                       dataKey="domain"
-                      tick={{ fontSize: 9, fill: '#9c8b7a' }}
+                      tick={{ fontSize: isPhone ? 7 : 9, fill: '#9c8b7a' }}
                       axisLine={{ stroke: '#d4c9be' }}
                       interval={0}
-                      angle={-30}
+                      angle={isPhone ? -45 : -30}
                       textAnchor="end"
-                      height={60}
+                      height={isPhone ? 70 : 60}
                     />
                     <YAxis
                       tick={{ fontSize: 10, fill: '#9c8b7a' }}
@@ -852,7 +863,7 @@ export default function OrgAnalytics() {
                     <CartesianGrid strokeDasharray="3 3" stroke="#e8e0d8" />
                     <XAxis
                       dataKey="date"
-                      tick={{ fontSize: 10, fill: '#9c8b7a' }}
+                      tick={{ fontSize: isPhone ? 8 : 10, fill: '#9c8b7a' }}
                       axisLine={{ stroke: '#d4c9be' }}
                     />
                     <YAxis

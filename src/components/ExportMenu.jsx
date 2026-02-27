@@ -1,15 +1,24 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { generateCSV, generateJSON, downloadFile } from '../data/exportUtils.js'
 
 export default function ExportMenu({ assessments, snapshots, clientName }) {
   const [isOpen, setIsOpen] = useState(false)
   const [includeSnapshots, setIncludeSnapshots] = useState(true)
+  const [printQueued, setPrintQueued] = useState(false)
 
   const safeName = (clientName || 'client').replace(/[^a-zA-Z0-9]/g, '-').toLowerCase()
 
+  // Trigger print after render cycle (reliable alternative to setTimeout)
+  useEffect(() => {
+    if (printQueued) {
+      window.print()
+      setPrintQueued(false)
+    }
+  }, [printQueued])
+
   function handlePrint() {
     setIsOpen(false)
-    setTimeout(() => window.print(), 150)
+    setPrintQueued(true)
   }
 
   function handleCSV() {
@@ -40,7 +49,17 @@ export default function ExportMenu({ assessments, snapshots, clientName }) {
         <>
           <div className="fixed inset-0 z-20" onClick={() => setIsOpen(false)} />
 
-          <div className="absolute top-full right-0 mt-2 w-56 bg-white border border-warm-200 rounded-xl shadow-xl z-30 overflow-hidden">
+          <div
+            className="absolute top-full right-0 mt-2 w-56 bg-white border border-warm-200 rounded-xl shadow-xl z-30 overflow-hidden"
+            role="menu"
+            aria-label="Export options"
+            onKeyDown={(e) => {
+              if (e.key === 'Escape') {
+                e.preventDefault()
+                setIsOpen(false)
+              }
+            }}
+          >
             <div className="text-[10px] uppercase tracking-wider text-warm-400 font-semibold px-4 pt-3 pb-1">
               Export Options
             </div>
