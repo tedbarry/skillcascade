@@ -3,7 +3,7 @@ import { framework, ASSESSMENT_LEVELS, ASSESSMENT_LABELS, getDomainScores, DOMAI
 import { downloadFile } from '../data/exportUtils.js'
 import { computeDomainHealth, computeImpactRanking, detectCascadeRisks } from '../data/cascadeModel.js'
 import { generateClinicalSummary } from '../lib/narratives.js'
-import { generateDomainBarChart, generateRadarChart, generateMasteryGrid } from '../lib/reportCharts.js'
+import { generateDomainBarChart, generateRadarChart, generateMasteryGrid, generateScoreSummaryProfile } from '../lib/reportCharts.js'
 
 const REPORT_TYPES = {
   SCHOOL: 'school',
@@ -233,6 +233,8 @@ function generateReportHTML(type, clientName, assessments, analysis, snapshotCom
     .composite-badge { display: inline-block; padding: 4px 16px; border-radius: 12px; font-size: 12px; font-weight: 600; }
     .chart-container { margin: 12px 0 20px; }
     .chart-container svg { max-width: 100%; height: auto; }
+    .score-profile-grid { display: grid; grid-template-columns: auto 1fr; gap: 12px; align-items: start; }
+    @media (max-width: 700px) { .score-profile-grid { grid-template-columns: 1fr; } }
     .signature-block { margin-top: 40px; padding-top: 24px; }
     .sig-line { width: 280px; border-top: 1px solid #3d2a1c; margin-bottom: 8px; }
     .signature-block p { margin: 2px 0; font-size: 12px; color: #3d2a1c; }
@@ -552,9 +554,33 @@ function generateInsuranceReport(clientName, date, analysis, assessments, clinic
   html += `<tr><td>Needs Work (Score = 1)</td><td style="text-align:center">${needsWork} (${assessed > 0 ? Math.round((needsWork / assessed) * 100) : 0}%)</td></tr>`
   html += `</table>`
 
+  // ── Section 2B: Score Summary Profile (Vineland-style) ──
+  {
+    // Compute sub-area scores for the profile
+    const saScores = []
+    for (const domain of framework) {
+      for (const sa of domain.subAreas) {
+        let saTotal = 0, saCount = 0
+        for (const sg of sa.skillGroups) {
+          for (const skill of sg.skills) {
+            const lv = assessments[skill.id] ?? 0
+            if (lv > 0) { saCount++; saTotal += lv }
+          }
+        }
+        saScores.push({ name: sa.name, domainName: domain.name, score: saCount > 0 ? saTotal / saCount : 0, assessed: saCount })
+      }
+    }
+    const profile = generateScoreSummaryProfile(scores, saScores, compositeScore)
+    html += `<h2>Score Summary Profile</h2>`
+    html += `<div class="score-profile-grid">`
+    html += `<div class="chart-container">${profile.domainPanel}</div>`
+    html += `<div class="chart-container">${profile.subAreaPanel}</div>`
+    html += `</div>`
+  }
+
   // ── Section 3: Domain Bar Chart ──
   if (showDomainBarChart && scores.length > 0) {
-    html += `<h2>Domain Score Profile</h2>`
+    html += `<h2>Domain Score Profile (Bar)</h2>`
     html += `<div class="chart-container">${generateDomainBarChart(scores)}</div>`
   }
 

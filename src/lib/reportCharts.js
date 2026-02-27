@@ -249,3 +249,240 @@ export function generateMasteryGrid(assessments, frameworkData) {
   svg += '</svg>'
   return svg
 }
+
+/* ─────────────────────────────────────────────
+   Score Summary Profile (Vineland-style two-panel)
+   Left: Domain scores as connected-dot profile
+   Right: Sub-area scores as connected-dot profile
+   Both with banded backgrounds + score tables
+   ───────────────────────────────────────────── */
+
+function getAdaptiveBandLabel(score) {
+  if (score >= 2.5) return 'High'
+  if (score >= 1.5) return 'Adeq.'
+  if (score >= 1.0) return 'Mod.Lo'
+  return 'Low'
+}
+
+export function generateScoreSummaryProfile(scores, subAreaScores, compositeScore) {
+  const maxScore = 3
+
+  // ── Left Panel: Domain Score Profile ──
+  function buildDomainPanel() {
+    const items = [{ label: 'Composite', score: compositeScore, isComposite: true }, ...scores.map(s => ({ label: s.domain, score: s.score }))]
+    const colW = 34
+    const W = 10 + items.length * colW + 10
+    const H = 400
+    const leftM = 10, topM = 40, bottomM = 140
+    const chartW = items.length * colW
+    const chartH = H - topM - bottomM
+
+    let svg = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${W} ${H}" width="100%" style="max-width:${W}px;font-family:'Segoe UI',system-ui,sans-serif;">`
+
+    // Title
+    svg += `<text x="${leftM + chartW / 2}" y="16" text-anchor="middle" font-size="11" fill="#3d2a1c" font-weight="700">Domain Score Profile</text>`
+    svg += `<text x="${leftM + chartW / 2}" y="28" text-anchor="middle" font-size="8" fill="#9a8a7a" font-style="italic">Criterion-referenced, 0\u20133 scale</text>`
+
+    // Background bands
+    for (const band of ADAPTIVE_BANDS) {
+      const y1 = topM + (1 - band.max / maxScore) * chartH
+      const y2 = topM + (1 - band.min / maxScore) * chartH
+      svg += `<rect x="${leftM}" y="${y1}" width="${chartW}" height="${y2 - y1}" fill="${band.color}" opacity="0.45"/>`
+    }
+
+    // Band labels (right edge)
+    for (const band of ADAPTIVE_BANDS) {
+      const y = topM + (1 - (band.min + band.max) / 2 / maxScore) * chartH
+      svg += `<text x="${leftM + chartW + 3}" y="${y + 3}" font-size="7" fill="${band.textColor}" font-weight="600">${band.label}</text>`
+    }
+
+    // Y-axis gridlines + labels
+    for (let v = 0; v <= 3; v += 0.5) {
+      const y = topM + (1 - v / maxScore) * chartH
+      const isDashed = v % 1 !== 0
+      svg += `<line x1="${leftM}" y1="${y}" x2="${leftM + chartW}" y2="${y}" stroke="#d4c4b0" stroke-width="${isDashed ? 0.3 : 0.5}" ${isDashed ? 'stroke-dasharray="2,2"' : ''}/>`
+      if (v % 1 === 0) svg += `<text x="${leftM - 3}" y="${y + 3}" text-anchor="end" font-size="8" fill="#7d5235">${v}</text>`
+    }
+
+    // Vertical divider after composite
+    const divX = leftM + colW
+    svg += `<line x1="${divX}" y1="${topM}" x2="${divX}" y2="${topM + chartH}" stroke="#3d2a1c" stroke-width="0.8"/>`
+
+    // Build points
+    const points = items.map((item, i) => ({
+      x: leftM + i * colW + colW / 2,
+      y: topM + (1 - Math.min(item.score, maxScore) / maxScore) * chartH,
+      item,
+    }))
+
+    // Domain line (skip composite)
+    if (points.length > 2) {
+      let domainPath = ''
+      for (let i = 1; i < points.length; i++) {
+        domainPath += (i === 1 ? 'M' : 'L') + `${points[i].x.toFixed(1)},${points[i].y.toFixed(1)}`
+      }
+      svg += `<path d="${domainPath}" fill="none" stroke="#3d2a1c" stroke-width="1.5"/>`
+    }
+
+    // Dots
+    for (const p of points) {
+      const r = p.item.isComposite ? 5 : 3.5
+      svg += `<circle cx="${p.x.toFixed(1)}" cy="${p.y.toFixed(1)}" r="${r}" fill="${p.item.isComposite ? '#3d2a1c' : '#4f8460'}" stroke="white" stroke-width="1.5"/>`
+    }
+
+    // Border
+    svg += `<rect x="${leftM}" y="${topM}" width="${chartW}" height="${chartH}" fill="none" stroke="#d4c4b0" stroke-width="0.5"/>`
+
+    // ── Score table below chart ──
+    const tableY = topM + chartH + 10
+
+    // Column labels (rotated)
+    for (let i = 0; i < items.length; i++) {
+      const x = leftM + i * colW + colW / 2
+      let label = items[i].label
+      if (label.length > 16) label = label.substring(0, 15) + '\u2026'
+      svg += `<g transform="translate(${x + 3},${tableY}) rotate(55)">`
+      svg += `<text font-size="7.5" fill="#3d2a1c" font-weight="${items[i].isComposite ? '700' : '500'}">${escapeHtml(label)}</text>`
+      svg += `</g>`
+    }
+
+    // "Score" row label + values
+    const scoreRowY = tableY + 68
+    svg += `<text x="${leftM - 3}" y="${scoreRowY}" font-size="7.5" fill="#5f3e2a" font-weight="700" text-anchor="end">Score</text>`
+    for (let i = 0; i < items.length; i++) {
+      const x = leftM + i * colW + colW / 2
+      if (items[i].isComposite) svg += `<rect x="${x - 13}" y="${scoreRowY - 9}" width="26" height="13" rx="2" fill="#e0d6cc"/>`
+      svg += `<text x="${x}" y="${scoreRowY}" text-anchor="middle" font-size="8.5" fill="#3d2a1c" font-weight="${items[i].isComposite ? '700' : '600'}">${items[i].score.toFixed(2)}</text>`
+    }
+
+    // "Level" row
+    const levelRowY = scoreRowY + 14
+    svg += `<text x="${leftM - 3}" y="${levelRowY}" font-size="7.5" fill="#5f3e2a" font-weight="700" text-anchor="end">Level</text>`
+    for (let i = 0; i < items.length; i++) {
+      const x = leftM + i * colW + colW / 2
+      svg += `<text x="${x}" y="${levelRowY}" text-anchor="middle" font-size="7" fill="#5f3e2a">${getAdaptiveBandLabel(items[i].score)}</text>`
+    }
+
+    svg += '</svg>'
+    return svg
+  }
+
+  // ── Right Panel: Sub-Area Score Profile ──
+  function buildSubAreaPanel() {
+    const n = subAreaScores.length
+    const colW = 14
+    const W = 10 + n * colW + 20
+    const H = 400
+    const leftM = 10, topM = 40, bottomM = 140
+    const chartW = n * colW
+    const chartH = H - topM - bottomM
+
+    let svg = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${W} ${H}" width="100%" style="max-width:${Math.min(W, 900)}px;font-family:'Segoe UI',system-ui,sans-serif;">`
+
+    // Title
+    svg += `<text x="${leftM + chartW / 2}" y="16" text-anchor="middle" font-size="11" fill="#3d2a1c" font-weight="700">Sub-Area Score Profile</text>`
+    svg += `<text x="${leftM + chartW / 2}" y="28" text-anchor="middle" font-size="8" fill="#9a8a7a" font-style="italic">Criterion-referenced, 0\u20133 scale</text>`
+
+    // Background bands
+    for (const band of ADAPTIVE_BANDS) {
+      const y1 = topM + (1 - band.max / maxScore) * chartH
+      const y2 = topM + (1 - band.min / maxScore) * chartH
+      svg += `<rect x="${leftM}" y="${y1}" width="${chartW}" height="${y2 - y1}" fill="${band.color}" opacity="0.45"/>`
+    }
+
+    // Y-axis gridlines + labels
+    for (let v = 0; v <= 3; v += 0.5) {
+      const y = topM + (1 - v / maxScore) * chartH
+      const isDashed = v % 1 !== 0
+      svg += `<line x1="${leftM}" y1="${y}" x2="${leftM + chartW}" y2="${y}" stroke="#d4c4b0" stroke-width="${isDashed ? 0.3 : 0.5}" ${isDashed ? 'stroke-dasharray="2,2"' : ''}/>`
+      if (v % 1 === 0) svg += `<text x="${leftM - 3}" y="${y + 3}" text-anchor="end" font-size="8" fill="#7d5235">${v}</text>`
+    }
+
+    // Domain group separators
+    let prevDomain = null
+    let domainStartI = 0
+    const domainRanges = []
+    for (let i = 0; i < n; i++) {
+      if (subAreaScores[i].domainName !== prevDomain) {
+        if (prevDomain !== null) {
+          domainRanges.push({ domain: prevDomain, start: domainStartI, end: i - 1 })
+          const sx = leftM + i * colW
+          svg += `<line x1="${sx}" y1="${topM}" x2="${sx}" y2="${topM + chartH}" stroke="#b8a898" stroke-width="0.8"/>`
+        }
+        prevDomain = subAreaScores[i].domainName
+        domainStartI = i
+      }
+    }
+    if (prevDomain !== null) domainRanges.push({ domain: prevDomain, start: domainStartI, end: n - 1 })
+
+    // Build points
+    const points = subAreaScores.map((sa, i) => ({
+      x: leftM + i * colW + colW / 2,
+      y: sa.assessed > 0 ? topM + (1 - Math.min(sa.score, maxScore) / maxScore) * chartH : null,
+      sa,
+    }))
+
+    // Connected lines within each domain group
+    for (const range of domainRanges) {
+      let segPath = ''
+      let hasPoints = false
+      for (let i = range.start; i <= range.end; i++) {
+        if (points[i].y === null) continue
+        segPath += (hasPoints ? 'L' : 'M') + `${points[i].x.toFixed(1)},${points[i].y.toFixed(1)}`
+        hasPoints = true
+      }
+      if (hasPoints) svg += `<path d="${segPath}" fill="none" stroke="#3d2a1c" stroke-width="1.2"/>`
+    }
+
+    // Dots
+    for (const p of points) {
+      if (p.y !== null) {
+        svg += `<circle cx="${p.x.toFixed(1)}" cy="${p.y.toFixed(1)}" r="3" fill="#4f8460" stroke="white" stroke-width="1"/>`
+      } else {
+        svg += `<text x="${p.x.toFixed(1)}" y="${topM + chartH - 4}" text-anchor="middle" font-size="7" fill="#9ca3af">\u2013</text>`
+      }
+    }
+
+    // Border
+    svg += `<rect x="${leftM}" y="${topM}" width="${chartW}" height="${chartH}" fill="none" stroke="#d4c4b0" stroke-width="0.5"/>`
+
+    // ── Labels + scores below chart ──
+    const tableY = topM + chartH + 8
+
+    // Sub-area labels (rotated)
+    for (let i = 0; i < n; i++) {
+      const x = leftM + i * colW + colW / 2
+      let label = subAreaScores[i].name
+      if (label.length > 16) label = label.substring(0, 15) + '\u2026'
+      svg += `<g transform="translate(${x + 3},${tableY}) rotate(55)">`
+      svg += `<text font-size="6" fill="#3d2a1c" font-weight="500">${escapeHtml(label)}</text>`
+      svg += `</g>`
+    }
+
+    // Domain group brackets
+    const bracketY = tableY + 56
+    for (const range of domainRanges) {
+      const x1 = leftM + range.start * colW + 2
+      const x2 = leftM + (range.end + 1) * colW - 2
+      const mid = (x1 + x2) / 2
+      svg += `<line x1="${x1}" y1="${bracketY}" x2="${x2}" y2="${bracketY}" stroke="#5f3e2a" stroke-width="1"/>`
+      let dName = range.domain
+      if (dName.length > 14) dName = dName.substring(0, 13) + '\u2026'
+      svg += `<text x="${mid}" y="${bracketY + 9}" text-anchor="middle" font-size="6.5" fill="#3d2a1c" font-weight="700">${escapeHtml(dName)}</text>`
+    }
+
+    // Score row
+    const scoreRowY = bracketY + 22
+    svg += `<text x="${leftM - 3}" y="${scoreRowY}" font-size="7" fill="#5f3e2a" font-weight="700" text-anchor="end">Score</text>`
+    for (let i = 0; i < n; i++) {
+      const x = leftM + i * colW + colW / 2
+      const sa = subAreaScores[i]
+      svg += `<text x="${x}" y="${scoreRowY}" text-anchor="middle" font-size="7" fill="#3d2a1c" font-weight="600">${sa.assessed > 0 ? sa.score.toFixed(1) : '\u2013'}</text>`
+    }
+
+    svg += '</svg>'
+    return svg
+  }
+
+  return { domainPanel: buildDomainPanel(), subAreaPanel: buildSubAreaPanel() }
+}
