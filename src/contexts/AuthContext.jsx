@@ -5,10 +5,32 @@ const AuthContext = createContext(null)
 
 const INACTIVITY_TIMEOUT = 30 * 60 * 1000 // 30 minutes — HIPAA session timeout
 
+/**
+ * Read the Supabase session from localStorage synchronously.
+ * This runs BEFORE React's first render, so ProtectedRoute never
+ * flashes a redirect to /login when a valid session exists.
+ */
+function getStoredUser() {
+  try {
+    const url = import.meta.env.VITE_SUPABASE_URL
+    if (!url) return null
+    const ref = new URL(url).hostname.split('.')[0]
+    const key = `sb-${ref}-auth-token`
+    const raw = localStorage.getItem(key)
+    if (!raw) return null
+    const parsed = JSON.parse(raw)
+    return parsed?.user ?? null
+  } catch {
+    return null
+  }
+}
+
 export function AuthProvider({ children }) {
-  const [user, setUser] = useState(null)
+  // Sync init from localStorage — no async, no race conditions
+  const [user, setUser] = useState(getStoredUser)
   const [profile, setProfile] = useState(null)
-  const [loading, setLoading] = useState(true)
+  // If we found a user in localStorage, skip loading entirely
+  const [loading, setLoading] = useState(() => !getStoredUser())
   const inactivityTimer = useRef(null)
 
   // Fetch profile from profiles table
@@ -62,54 +84,40 @@ export function AuthProvider({ children }) {
       })
   }, [user])
 
-  // Load profile in the background — never blocks the auth loading gate
-  const loadProfile = useCallback((userId) => {
-    fetchProfile(userId).then(setProfile).catch(() => setProfile(null))
-  }, [fetchProfile])
-
-  // Restore session via onAuthStateChange — the reliable path in Supabase v2.
-  // IMPORTANT: setUser + setLoading must be synchronous (no awaits before them)
-  // so ProtectedRoute resolves immediately once the session is known.
+  // Fetch profile on mount if we have a user (background, non-blocking)
   useEffect(() => {
-    // Safety timeout — never hang on the loading spinner
-    const timeout = setTimeout(() => {
-      setLoading((prev) => {
-        if (prev) console.warn('Auth loading timed out after 8s')
-        return false
-      })
-    }, 8000)
+    if (user) {
+      fetchProfile(user.id).then(setProfile).catch(() => setProfile(null))
+    }
+  }, []) // eslint-disable-line react-hooks/exhaustive-deps
 
-    let initialResolved = false
-
+  // Listen to auth state changes — handles token refresh, sign-in, sign-out.
+  // NOT used for initial session restore (that's handled synchronously above).
+  useEffect(() => {
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       (event, session) => {
-        if (event === 'INITIAL_SESSION') {
-          // First event on page load — resolve loading immediately
-          if (session?.user) {
-            setUser(session.user)
-            loadProfile(session.user.id)
-          }
-          clearTimeout(timeout)
-          setLoading(false)
-          initialResolved = true
-        } else if ((event === 'SIGNED_IN' || event === 'TOKEN_REFRESHED') && session?.user) {
-          setUser(session.user)
-          loadProfile(session.user.id)
-          // If INITIAL_SESSION never fired, resolve loading here
-          if (!initialResolved) {
-            clearTimeout(timeout)
-            setLoading(false)
-            initialResolved = true
-          }
-        } else if (event === 'SIGNED_OUT') {
+        if (event === 'SIGNED_OUT') {
           setUser(null)
           setProfile(null)
+        } else if (session?.user) {
+          setUser(session.user)
+          // Fetch profile in background on sign-in or token refresh
+          if (event === 'SIGNED_IN' || event === 'TOKEN_REFRESHED') {
+            fetchProfile(session.user.id).then(setProfile).catch(() => setProfile(null))
+          }
         }
+        // Always ensure loading is resolved
+        setLoading(false)
       }
     )
 
+    // Safety timeout — in case onAuthStateChange never fires (shouldn't happen)
+    const timeout = setTimeout(() => {
+      setLoading(false)
+    }, 5000)
+
     return () => { subscription.unsubscribe(); clearTimeout(timeout) }
-  }, [loadProfile])
+  }, [fetchProfile])
 
   const signIn = useCallback(async (email, password) => {
     const { data, error } = await supabase.auth.signInWithPassword({ email, password })
