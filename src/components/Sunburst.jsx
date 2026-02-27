@@ -3,6 +3,7 @@ import { hierarchy, partition } from 'd3-hierarchy'
 import { arc } from 'd3-shape'
 import { interpolate } from 'd3-interpolate'
 import { select } from 'd3-selection'
+import 'd3-transition' // side-effect: patches selection.prototype.transition
 import { ASSESSMENT_COLORS, ASSESSMENT_LABELS, ASSESSMENT_LEVELS } from '../data/framework.js'
 
 /**
