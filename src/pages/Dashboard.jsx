@@ -1,17 +1,26 @@
-import { useState, useMemo, useEffect, useCallback, lazy, Suspense } from 'react'
+import { useState, useMemo, useEffect, useCallback, useRef, lazy, Suspense } from 'react'
 import { Link } from 'react-router-dom'
+import { motion, AnimatePresence } from 'framer-motion'
 import ClientManager from '../components/ClientManager.jsx'
 import ExportMenu from '../components/ExportMenu.jsx'
 import PrintReport from '../components/PrintReport.jsx'
-import Toast from '../components/Toast.jsx'
+import { useToast } from '../components/Toast.jsx'
 import SettingsDropdown from '../components/SettingsDropdown.jsx'
-import ErrorBoundary from '../components/ErrorBoundary.jsx'
+import ViewErrorBoundary from '../components/ViewErrorBoundary.jsx'
 import useUndoRedo from '../hooks/useUndoRedo.js'
 import useResponsive from '../hooks/useResponsive.js'
 import MobileTabBar from '../components/MobileTabBar.jsx'
+import MobileFAB from '../components/MobileFAB.jsx'
 import ResponsiveSVG from '../components/ResponsiveSVG.jsx'
+import { detectCascadeRisks } from '../data/cascadeModel.js'
+import SidebarNav from '../components/SidebarNav.jsx'
+import SkeletonLoader, { SkeletonChart, SkeletonDashboard, SkeletonAssessment, SkeletonList, SkeletonGrid } from '../components/SkeletonLoader.jsx'
+import AssessmentCompletionBadge from '../components/AssessmentCompletionBadge.jsx'
+import ViewBreadcrumb from '../components/ViewBreadcrumb.jsx'
+import NotificationBell from '../components/NotificationBell.jsx'
 
 // Lazy-loaded view components — each gets its own chunk, loaded on-demand
+const HomeDashboard = lazy(() => import('../components/HomeDashboard.jsx'))
 const Sunburst = lazy(() => import('../components/Sunburst.jsx'))
 const RadarChart = lazy(() => import('../components/RadarChart.jsx'))
 const AssessmentPanel = lazy(() => import('../components/AssessmentPanel.jsx'))
@@ -47,18 +56,59 @@ import { generateSampleAssessments } from '../data/sampleAssessments.js'
 import { saveSnapshot, getSnapshots, deleteSnapshot, getAssessments, saveAssessment } from '../data/storage.js'
 import { useAuth } from '../contexts/AuthContext.jsx'
 
-function ViewLoader() {
-  return (
-    <div className="flex items-center justify-center py-12 w-full">
-      <div className="flex items-center gap-3 text-warm-400">
-        <div className="w-4 h-4 border-2 border-warm-200 border-t-sage-500 rounded-full animate-spin" />
-        <span className="text-sm">Loading...</span>
-      </div>
-    </div>
-  )
+// Map views to appropriate skeleton variants for better loading UX
+const VIEW_SKELETON = {
+  home: 'dashboard',
+  assess: 'assessment',
+  'quick-assess': 'assessment',
+  timeline: 'list',
+  goals: 'list',
+  alerts: 'list',
+  reports: 'list',
+  caseload: 'grid',
+  cascade: 'grid',
+  milestones: 'list',
+  messages: 'list',
+  data: 'list',
+  branding: 'card',
+  accessibility: 'card',
+  pricing: 'card',
+  marketplace: 'grid',
+  certifications: 'list',
+  compare: 'chart',
+  predictions: 'chart',
+  'org-analytics': 'chart',
+}
+
+function ViewLoader({ view, variant }) {
+  const v = variant || VIEW_SKELETON[view] || 'chart'
+  return <SkeletonLoader variant={v} />
+}
+
+// Keyboard shortcut map: view key → number key (1-9)
+const SHORTCUT_MAP = { home: '1', sunburst: '2', radar: '3', tree: '4', explorer: '5', cascade: '6', timeline: '7', assess: '8', goals: '9' }
+
+// Reverse map: number key → view value for quick lookup
+const SHORTCUT_TO_VIEW = Object.entries(SHORTCUT_MAP).reduce((acc, [viewKey, num]) => {
+  acc[num] = viewKey
+  return acc
+}, {})
+
+// Friendly labels for view error messages
+const VIEW_LABELS = {
+  home: 'Home', sunburst: 'Sunburst', radar: 'Radar Chart', tree: 'Skill Tree',
+  cascade: 'Intelligence', timeline: 'Timeline', assess: 'Assessment',
+  'quick-assess': 'Quick Assessment', goals: 'Goals', alerts: 'Alerts',
+  reports: 'Reports', parent: 'Parent View', caseload: 'Caseload',
+  milestones: 'Milestones', practice: 'Home Practice', 'org-analytics': 'Org Analytics',
+  predictions: 'Predictions', branding: 'Branding', messages: 'Messages',
+  data: 'Data & Export', accessibility: 'Accessibility', pricing: 'Pricing',
+  marketplace: 'Marketplace', certifications: 'Certifications', compare: 'Compare',
+  explorer: 'Explorer',
 }
 
 export const VIEWS = {
+  HOME: 'home',
   SUNBURST: 'sunburst',
   RADAR: 'radar',
   TREE: 'tree',
@@ -88,13 +138,14 @@ export const VIEWS = {
 
 export default function Dashboard() {
   const { user } = useAuth()
+  const { showToast } = useToast()
   const { isPhone, isTablet, isDesktop } = useResponsive()
   const [assessments, setAssessments, { undo, redo, canUndo, canRedo, resetState: resetAssessments }] = useUndoRedo({})
   const [selectedNode, setSelectedNode] = useState(null)
   const [sidebarOpen, setSidebarOpen] = useState(true)
   const [activeView, setActiveViewRaw] = useState(() => {
     const saved = localStorage.getItem('skillcascade_active_view')
-    return saved && Object.values(VIEWS).includes(saved) ? saved : VIEWS.SUNBURST
+    return saved && Object.values(VIEWS).includes(saved) ? saved : VIEWS.HOME
   })
   const setActiveView = useCallback((view) => {
     setActiveViewRaw(view)
@@ -103,7 +154,6 @@ export default function Dashboard() {
   const [clientId, setClientId] = useState(() => localStorage.getItem('skillcascade_selected_client') || null)
   const [snapshots, setSnapshots] = useState([])
   const [clientName, setClientName] = useState(() => localStorage.getItem('skillcascade_selected_client_name') || 'Sample Client')
-  const [toast, setToast] = useState(null)
   const [assessTarget, setAssessTarget] = useState({ subAreaId: null, ts: 0 })
   const [compareSnapshotId, setCompareSnapshotId] = useState(null)
   const [searchOpen, setSearchOpen] = useState(false)
@@ -111,12 +161,116 @@ export default function Dashboard() {
   const [moreMenuOpen, setMoreMenuOpen] = useState(false)
   const [detailPanelOpen, setDetailPanelOpen] = useState(false)
   const [shortcutsOpen, setShortcutsOpen] = useState(false)
+  const [navCollapsed, setNavCollapsed] = useState(() => {
+    try { return localStorage.getItem('skillcascade_nav_collapsed') === 'true' } catch { return false }
+  })
+  const toggleNavCollapse = useCallback(() => {
+    setNavCollapsed(prev => {
+      const next = !prev
+      localStorage.setItem('skillcascade_nav_collapsed', String(next))
+      return next
+    })
+  }, [])
   const [branding, setBranding] = useState(() => {
     try {
       const raw = localStorage.getItem('skillcascade_branding')
       return raw ? JSON.parse(raw) : null
     } catch { return null }
   })
+
+  // Cascade risks for NotificationBell
+  const cascadeRisks = useMemo(
+    () => detectCascadeRisks(assessments, snapshots),
+    [assessments, snapshots]
+  )
+
+  // Scroll tracking for header shadow + scroll-to-top button
+  const mainRef = useRef(null)
+  const [scrolled, setScrolled] = useState(false)
+  const [showScrollTop, setShowScrollTop] = useState(false)
+  const handleMainScroll = useCallback((e) => {
+    const top = e.target.scrollTop
+    setScrolled(top > 0)
+    setShowScrollTop(top > 300)
+  }, [])
+  const scrollToTop = useCallback(() => {
+    mainRef.current?.scrollTo({ top: 0, behavior: 'smooth' })
+  }, [])
+
+  // ─── Auto-save draft to localStorage ──────────────────────
+  const DRAFT_PREFIX = 'skillcascade_draft_'
+  const [draftAvailable, setDraftAvailable] = useState(false)
+  const draftTimerRef = useRef(null)
+
+  // Debounce-save assessments to localStorage whenever they change
+  useEffect(() => {
+    if (!clientId) return
+    const assessmentCount = Object.keys(assessments).filter(k => !k.startsWith('_')).length
+    if (assessmentCount === 0) return
+
+    clearTimeout(draftTimerRef.current)
+    draftTimerRef.current = setTimeout(() => {
+      try {
+        localStorage.setItem(DRAFT_PREFIX + clientId, JSON.stringify({
+          assessments,
+          savedAt: Date.now(),
+        }))
+      } catch { /* quota exceeded — ignore */ }
+    }, 2000) // 2s debounce
+
+    return () => clearTimeout(draftTimerRef.current)
+  }, [assessments, clientId])
+
+  // Check for saved draft when client changes
+  useEffect(() => {
+    if (!clientId) { setDraftAvailable(false); return }
+    try {
+      const raw = localStorage.getItem(DRAFT_PREFIX + clientId)
+      if (raw) {
+        const draft = JSON.parse(raw)
+        const ageMs = Date.now() - (draft.savedAt || 0)
+        // Only offer recovery if draft is less than 7 days old
+        if (ageMs < 7 * 24 * 60 * 60 * 1000 && draft.assessments) {
+          setDraftAvailable(true)
+        } else {
+          localStorage.removeItem(DRAFT_PREFIX + clientId)
+          setDraftAvailable(false)
+        }
+      } else {
+        setDraftAvailable(false)
+      }
+    } catch { setDraftAvailable(false) }
+  }, [clientId])
+
+  function restoreDraft() {
+    try {
+      const raw = localStorage.getItem(DRAFT_PREFIX + clientId)
+      if (raw) {
+        const draft = JSON.parse(raw)
+        if (draft.assessments) {
+          resetAssessments(draft.assessments)
+          showToast('Draft restored', 'success')
+        }
+      }
+    } catch { showToast('Could not restore draft', 'error') }
+    setDraftAvailable(false)
+  }
+
+  function dismissDraft() {
+    if (clientId) localStorage.removeItem(DRAFT_PREFIX + clientId)
+    setDraftAvailable(false)
+  }
+
+  // Warn on tab close when unsaved changes exist
+  const lastSavedRef = useRef(assessments)
+  useEffect(() => {
+    if (!clientId) return
+    const hasUnsaved = JSON.stringify(assessments) !== JSON.stringify(lastSavedRef.current)
+    if (!hasUnsaved) return
+    const handler = (e) => { e.preventDefault(); e.returnValue = '' }
+    window.addEventListener('beforeunload', handler)
+    return () => window.removeEventListener('beforeunload', handler)
+  }, [clientId, assessments])
 
   // Global Ctrl+K / Cmd+K to open search
   useEffect(() => {
@@ -129,6 +283,48 @@ export default function Dashboard() {
     window.addEventListener('keydown', handleKeyDown)
     return () => window.removeEventListener('keydown', handleKeyDown)
   }, [])
+
+  // Global keyboard shortcuts (number keys for views, ? for help, p for print, / for search)
+  useEffect(() => {
+    function handleGlobalShortcut(e) {
+      // Skip if modifier keys are held (don't interfere with browser shortcuts)
+      if (e.metaKey || e.ctrlKey || e.altKey) return
+
+      // Skip if focus is on an input-like element
+      const tag = e.target.tagName
+      if (tag === 'INPUT' || tag === 'TEXTAREA' || tag === 'SELECT' || e.target.isContentEditable) return
+
+      // Number keys 1-9: navigate to views
+      if (SHORTCUT_TO_VIEW[e.key]) {
+        e.preventDefault()
+        setActiveView(SHORTCUT_TO_VIEW[e.key])
+        return
+      }
+
+      // ? key: toggle keyboard shortcuts help
+      if (e.key === '?') {
+        e.preventDefault()
+        setShortcutsOpen(prev => !prev)
+        return
+      }
+
+      // p key: open print
+      if (e.key === 'p') {
+        e.preventDefault()
+        window.print()
+        return
+      }
+
+      // / key: focus search
+      if (e.key === '/') {
+        e.preventDefault()
+        setSearchOpen(true)
+        return
+      }
+    }
+    window.addEventListener('keydown', handleGlobalShortcut)
+    return () => window.removeEventListener('keydown', handleGlobalShortcut)
+  }, [setActiveView])
 
   // Auto-close sidebars on narrow viewports
   useEffect(() => {
@@ -143,9 +339,6 @@ export default function Dashboard() {
     return () => window.removeEventListener('click', handleClick)
   }, [moreMenuOpen])
 
-  const showToast = useCallback((message, type = 'success') => {
-    setToast({ message, type, key: Date.now() })
-  }, [])
 
   const handleNavigateToAssess = useCallback((subAreaId) => {
     setAssessTarget({ subAreaId, ts: Date.now() })
@@ -203,7 +396,7 @@ export default function Dashboard() {
   // Load assessments for restored client on mount
   useEffect(() => {
     if (clientId) {
-      getAssessments(clientId).then((saved) => resetAssessments(saved || {})).catch(() => {})
+      getAssessments(clientId).then((saved) => { const data = saved || {}; resetAssessments(data); lastSavedRef.current = data }).catch(() => showToast('Failed to load assessments', 'error'))
     }
   }, []) // eslint-disable-line react-hooks/exhaustive-deps
 
@@ -238,14 +431,14 @@ export default function Dashboard() {
   }
 
   // Assessment, tree, cascade, and timeline views are full-width — no side panels
-  const fullWidthViews = [VIEWS.ASSESS, VIEWS.TREE, VIEWS.CASCADE, VIEWS.EXPLORER, VIEWS.TIMELINE, VIEWS.QUICK_ASSESS, VIEWS.GOALS, VIEWS.ALERTS, VIEWS.REPORTS, VIEWS.PARENT, VIEWS.CASELOAD, VIEWS.MILESTONES, VIEWS.PRACTICE, VIEWS.ORG_ANALYTICS, VIEWS.PREDICTIONS, VIEWS.BRANDING, VIEWS.MESSAGES, VIEWS.DATA, VIEWS.ACCESSIBILITY, VIEWS.PRICING, VIEWS.MARKETPLACE, VIEWS.CERTIFICATIONS, VIEWS.COMPARE]
+  const fullWidthViews = [VIEWS.HOME, VIEWS.ASSESS, VIEWS.TREE, VIEWS.CASCADE, VIEWS.EXPLORER, VIEWS.TIMELINE, VIEWS.QUICK_ASSESS, VIEWS.GOALS, VIEWS.ALERTS, VIEWS.REPORTS, VIEWS.PARENT, VIEWS.CASELOAD, VIEWS.MILESTONES, VIEWS.PRACTICE, VIEWS.ORG_ANALYTICS, VIEWS.PREDICTIONS, VIEWS.BRANDING, VIEWS.MESSAGES, VIEWS.DATA, VIEWS.ACCESSIBILITY, VIEWS.PRICING, VIEWS.MARKETPLACE, VIEWS.CERTIFICATIONS, VIEWS.COMPARE]
   const showSidePanels = !fullWidthViews.includes(activeView)
 
   return (
     <>
     <div className="min-h-screen bg-warm-50 flex flex-col print:hidden">
       {/* Top bar */}
-      <header className="bg-white border-b border-warm-200 px-3 sm:px-6 py-2 sm:py-3 flex items-center justify-between shrink-0 relative z-40">
+      <header className={`bg-white border-b border-warm-200 px-3 sm:px-6 py-2 sm:py-3 flex items-center justify-between shrink-0 relative z-40 transition-shadow duration-200 ${scrolled ? 'shadow-sm' : ''}`}>
         <div className="flex items-center gap-2 sm:gap-4 min-w-0 flex-1">
           <Link to="/" className="text-lg sm:text-xl font-bold text-warm-800 font-display whitespace-nowrap min-w-0 truncate">
             Skill<span className="text-sage-500">Cascade</span>
@@ -257,6 +450,9 @@ export default function Dashboard() {
             assessments={assessments}
             onSaveSuccess={() => showToast('Assessment saved', 'success')}
           /></span>
+          <span className="hidden sm:inline">
+            <AssessmentCompletionBadge assessments={assessments} onClick={() => setActiveView(VIEWS.ASSESS)} />
+          </span>
         </div>
         <div className="flex items-center gap-1 sm:gap-3 shrink-0">
           {/* Undo/Redo — hidden on mobile */}
@@ -265,6 +461,7 @@ export default function Dashboard() {
               onClick={undo}
               disabled={!canUndo}
               title="Undo (Ctrl+Z)"
+              aria-label="Undo"
               className={`p-1.5 rounded-md transition-colors ${canUndo ? 'text-warm-500 hover:text-warm-700 hover:bg-warm-100' : 'text-warm-200 cursor-not-allowed'}`}
             >
               <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
@@ -275,6 +472,7 @@ export default function Dashboard() {
               onClick={redo}
               disabled={!canRedo}
               title="Redo (Ctrl+Y)"
+              aria-label="Redo"
               className={`p-1.5 rounded-md transition-colors ${canRedo ? 'text-warm-500 hover:text-warm-700 hover:bg-warm-100' : 'text-warm-200 cursor-not-allowed'}`}
             >
               <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
@@ -294,6 +492,7 @@ export default function Dashboard() {
             <span>AI Tools</span>
           </button>
           <button
+            data-tour="search"
             onClick={() => setSearchOpen(true)}
             className="hidden sm:flex items-center gap-2 text-sm text-warm-500 hover:text-warm-700 px-3 py-1.5 rounded-md hover:bg-warm-100 transition-colors border border-warm-200"
           >
@@ -381,6 +580,11 @@ export default function Dashboard() {
               </div>
             )}
           </div>
+          <NotificationBell
+            assessments={assessments}
+            snapshots={snapshots}
+            risks={cascadeRisks}
+          />
           <SettingsDropdown />
           <Link
             to="/"
@@ -390,10 +594,61 @@ export default function Dashboard() {
           </Link>
         </div>
       </header>
+      <div className="header-accent" />
+
+      {/* Draft recovery banner */}
+      <AnimatePresence>
+        {draftAvailable && (
+          <motion.div
+            initial={{ height: 0, opacity: 0 }}
+            animate={{ height: 'auto', opacity: 1 }}
+            exit={{ height: 0, opacity: 0 }}
+            transition={{ duration: 0.2 }}
+            className="overflow-hidden"
+          >
+            <div className="bg-sage-50 border-b border-sage-200 px-4 py-2 flex items-center justify-between gap-3">
+              <div className="flex items-center gap-2 min-w-0">
+                <svg className="w-4 h-4 text-sage-500 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M12 9v3.75m9-.75a9 9 0 11-18 0 9 9 0 0118 0zm-9 3.75h.008v.008H12v-.008z" />
+                </svg>
+                <span className="text-sm text-sage-700 truncate">Unsaved assessment draft found for this client</span>
+              </div>
+              <div className="flex items-center gap-2 shrink-0">
+                <button
+                  onClick={restoreDraft}
+                  className="text-xs font-medium text-sage-700 bg-sage-200 hover:bg-sage-300 px-3 py-1.5 rounded-md transition-colors min-h-[32px]"
+                >
+                  Restore
+                </button>
+                <button
+                  onClick={dismissDraft}
+                  className="text-xs text-warm-500 hover:text-warm-700 px-2 py-1.5 rounded-md transition-colors min-h-[32px]"
+                >
+                  Dismiss
+                </button>
+              </div>
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* Breadcrumb */}
+      <ViewBreadcrumb activeView={activeView} onNavigateHome={() => setActiveView(VIEWS.HOME)} />
 
       {/* Main content */}
       <div className="flex flex-1 overflow-hidden">
-        {/* Sidebar — Domain Navigator (only for viz views) */}
+        {/* Sidebar Navigation — desktop/tablet only */}
+        {!isPhone && (
+          <SidebarNav
+            activeView={activeView}
+            onChangeView={setActiveView}
+            collapsed={navCollapsed}
+            onToggleCollapse={toggleNavCollapse}
+            shortcutMap={SHORTCUT_MAP}
+          />
+        )}
+
+        {/* Legacy Sidebar — Domain Navigator (only for viz views) */}
         {showSidePanels && sidebarOpen && (
           !isDesktop ? (
             <>
@@ -418,61 +673,32 @@ export default function Dashboard() {
         )}
 
         {/* Center content */}
-        <main className={`flex-1 overflow-auto ${fullWidthViews.includes(activeView) ? '' : 'flex flex-col items-center p-3 sm:p-8'} ${isPhone ? 'pb-24' : ''}`}>
-          {/* View toggle — hidden on phone (MobileTabBar replaces it) */}
-          {!isPhone && (<div data-tour="view-tabs" className={`flex items-center gap-1 bg-warm-100 rounded-lg p-1 mb-6 overflow-x-auto scrollbar-hide sm:flex-wrap ${!showSidePanels ? 'mx-auto mt-6 sm:w-fit' : ''}`}>
-            {[
-              { key: VIEWS.SUNBURST, label: 'Sunburst' },
-              { key: VIEWS.RADAR, label: 'Radar' },
-              { key: VIEWS.TREE, label: 'Skill Tree' },
-              { key: VIEWS.CASCADE, label: 'Intelligence' },
-              { key: VIEWS.EXPLORER, label: 'Explorer' },
-              { key: VIEWS.TIMELINE, label: 'Timeline' },
-              { key: VIEWS.ASSESS, label: 'Assess' },
-              { key: VIEWS.QUICK_ASSESS, label: 'Quick Assess' },
-              { key: VIEWS.GOALS, label: 'Goals' },
-              { key: VIEWS.ALERTS, label: 'Alerts' },
-              { key: VIEWS.REPORTS, label: 'Reports' },
-              { key: VIEWS.CASELOAD, label: 'Caseload' },
-              { key: VIEWS.PARENT, label: 'Parent View' },
-              { key: VIEWS.MILESTONES, label: 'Milestones' },
-              { key: VIEWS.PRACTICE, label: 'Home Practice' },
-              { key: VIEWS.PREDICTIONS, label: 'Predictions' },
-              { key: VIEWS.ORG_ANALYTICS, label: 'Org Analytics' },
-              { key: VIEWS.MESSAGES, label: 'Messages' },
-              { key: VIEWS.BRANDING, label: 'Branding' },
-              { key: VIEWS.DATA, label: 'Data' },
-              { key: VIEWS.ACCESSIBILITY, label: 'Access.' },
-              { key: VIEWS.COMPARE, label: 'Compare' },
-              { key: VIEWS.CERTIFICATIONS, label: 'Certs' },
-              { key: VIEWS.MARKETPLACE, label: 'Marketplace' },
-              { key: VIEWS.PRICING, label: 'Pricing' },
-            ].map((v) => (
-              <button
-                key={v.key}
-                onClick={() => setActiveView(v.key)}
-                className={`px-2.5 py-1 sm:px-4 sm:py-1.5 rounded-md text-xs sm:text-sm font-medium transition-all whitespace-nowrap ${
-                  activeView === v.key
-                    ? 'bg-white text-warm-800 shadow-sm'
-                    : 'text-warm-500 hover:text-warm-700'
-                }`}
-              >
-                {v.label}
-              </button>
-            ))}
-          </div>)}
+        <main ref={mainRef} onScroll={handleMainScroll} className={`flex-1 overflow-auto ${fullWidthViews.includes(activeView) ? '' : 'flex flex-col items-center p-3 sm:p-8'} ${isPhone ? 'pb-24' : ''}`}>
+          {/* View tabs removed — SidebarNav handles navigation on desktop/tablet */}
 
-          <ErrorBoundary key={activeView} fallback={({ error, reset }) => (
-            <div className="flex flex-col items-center justify-center py-16 px-6 text-center">
-              <p className="text-warm-600 mb-3">This view encountered an error.</p>
-              <button onClick={reset} className="px-4 py-2 bg-sage-500 text-white rounded-lg hover:bg-sage-600 transition-colors text-sm font-medium">
-                Try again
-              </button>
-              {import.meta.env.DEV && error && (
-                <pre className="mt-3 text-left text-xs text-red-600 bg-red-50 rounded-lg p-3 overflow-auto max-h-32 max-w-lg">{error.message}</pre>
-              )}
-            </div>
-          )}>
+          <ViewErrorBoundary key={activeView} viewName={VIEW_LABELS[activeView] || activeView} onNavigateHome={() => setActiveView(VIEWS.HOME)}>
+          <AnimatePresence mode="wait">
+          <motion.div
+            key={activeView}
+            initial={{ opacity: 0, y: 6 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -6 }}
+            transition={{ duration: 0.2, ease: 'easeOut' }}
+            className="w-full h-full"
+          >
+          {/* Home Dashboard view */}
+          {activeView === VIEWS.HOME && (
+            <Suspense fallback={<ViewLoader view="home" />}>
+              <HomeDashboard
+                assessments={assessments}
+                snapshots={snapshots}
+                clientName={clientName}
+                onChangeView={setActiveView}
+                onNavigateToAssess={handleNavigateToAssess}
+              />
+            </Suspense>
+          )}
+
           {/* Sample data banner */}
           {!clientId && [VIEWS.SUNBURST, VIEWS.RADAR, VIEWS.TREE, VIEWS.CASCADE, VIEWS.ASSESS, VIEWS.QUICK_ASSESS].includes(activeView) && (
             <div className="w-full max-w-2xl mx-auto mb-4 px-4 py-2.5 bg-warm-100 border border-warm-200 rounded-lg text-center">
@@ -484,7 +710,7 @@ export default function Dashboard() {
 
           {/* Sunburst view */}
           {activeView === VIEWS.SUNBURST && (
-            <Suspense fallback={<ViewLoader />}>
+            <Suspense fallback={<ViewLoader view={activeView} />}>
               <div className="flex flex-col items-center w-full">
                 <h2 className="text-lg font-semibold text-warm-800 font-display mb-1">
                   Skills Profile — Sunburst View
@@ -507,7 +733,7 @@ export default function Dashboard() {
 
           {/* Radar view */}
           {activeView === VIEWS.RADAR && (
-            <Suspense fallback={<ViewLoader />}>
+            <Suspense fallback={<ViewLoader view={activeView} />}>
               <div className="w-full max-w-2xl">
                 <h2 className="text-lg font-semibold text-warm-800 font-display mb-1 text-center">
                   Skills Profile — Domain Overview
@@ -536,7 +762,7 @@ export default function Dashboard() {
                   assessments={assessments}
                   compareAssessments={compareSnapshotId ? snapshots.find((s) => s.id === compareSnapshotId)?.assessments : undefined}
                   compareLabel={compareSnapshotId ? (snapshots.find((s) => s.id === compareSnapshotId)?.label || 'Snapshot') : undefined}
-                  height={480}
+                  height={isPhone ? 300 : 480}
                 />
               </div>
             </Suspense>
@@ -544,7 +770,7 @@ export default function Dashboard() {
 
           {/* Skill Tree view */}
           {activeView === VIEWS.TREE && (
-            <Suspense fallback={<ViewLoader />}>
+            <Suspense fallback={<ViewLoader view={activeView} />}>
               <div className="w-full max-w-4xl mx-auto">
                 <h2 className="text-lg font-semibold text-warm-800 font-display mb-1 text-center">
                   Skill Tree — Domain Dependencies
@@ -562,7 +788,7 @@ export default function Dashboard() {
 
           {/* Clinical Intelligence — replaces old Cascade view */}
           {activeView === VIEWS.CASCADE && (
-            <Suspense fallback={<ViewLoader />}>
+            <Suspense fallback={<ViewLoader view={activeView} />}>
               <div className="w-full h-full flex flex-col">
                 <ClinicalIntelligence
                   assessments={assessments}
@@ -578,7 +804,7 @@ export default function Dashboard() {
 
           {/* Timeline view */}
           {activeView === VIEWS.TIMELINE && (
-            <Suspense fallback={<ViewLoader />}>
+            <Suspense fallback={<ViewLoader view={activeView} />}>
               <div className="w-full h-full">
                 <ProgressTimeline
                   snapshots={snapshots}
@@ -594,7 +820,7 @@ export default function Dashboard() {
 
           {/* Assessment view */}
           {activeView === VIEWS.ASSESS && (
-            <Suspense fallback={<ViewLoader />}>
+            <Suspense fallback={<ViewLoader view={activeView} />}>
               <AssessmentPanel
                 assessments={assessments}
                 onAssess={setAssessments}
@@ -606,7 +832,7 @@ export default function Dashboard() {
           {/* Quick Assessment view */}
           {activeView === VIEWS.QUICK_ASSESS && (
             <div className="w-full h-full">
-              <Suspense fallback={<ViewLoader />}>
+              <Suspense fallback={<ViewLoader view={activeView} />}>
                 <AdaptiveAssessment
                   assessments={assessments}
                   onAssess={setAssessments}
@@ -622,7 +848,7 @@ export default function Dashboard() {
           {/* Goals view */}
           {activeView === VIEWS.GOALS && (
             <div className="w-full h-full overflow-y-auto">
-              <Suspense fallback={<ViewLoader />}>
+              <Suspense fallback={<ViewLoader view={activeView} />}>
                 <GoalEngine
                   assessments={assessments}
                   onNavigateToAssess={handleNavigateToAssess}
@@ -636,7 +862,7 @@ export default function Dashboard() {
           {/* Alerts view */}
           {activeView === VIEWS.ALERTS && (
             <div className="w-full h-full overflow-y-auto">
-              <Suspense fallback={<ViewLoader />}>
+              <Suspense fallback={<ViewLoader view={activeView} />}>
                 <PatternAlerts
                   assessments={assessments}
                   snapshots={snapshots}
@@ -649,7 +875,7 @@ export default function Dashboard() {
           {/* Reports view */}
           {activeView === VIEWS.REPORTS && (
             <div className="w-full h-full overflow-y-auto">
-              <Suspense fallback={<ViewLoader />}>
+              <Suspense fallback={<ViewLoader view={activeView} />}>
                 <ReportGenerator
                   assessments={assessments}
                   clientName={clientName}
@@ -664,7 +890,7 @@ export default function Dashboard() {
           {/* Parent view */}
           {activeView === VIEWS.PARENT && (
             <div className="w-full h-full overflow-y-auto">
-              <Suspense fallback={<ViewLoader />}>
+              <Suspense fallback={<ViewLoader view={activeView} />}>
                 <ParentDashboard
                   assessments={assessments}
                   clientName={clientName}
@@ -678,7 +904,7 @@ export default function Dashboard() {
           {/* Caseload view */}
           {activeView === VIEWS.CASELOAD && (
             <div className="w-full h-full overflow-y-auto">
-              <Suspense fallback={<ViewLoader />}>
+              <Suspense fallback={<ViewLoader view={activeView} />}>
                 <CaseloadDashboard
                   currentClientId={clientId}
                   onSelectClient={(id, name, saved) => {
@@ -693,7 +919,7 @@ export default function Dashboard() {
           {/* Milestones view */}
           {activeView === VIEWS.MILESTONES && (
             <div className="w-full h-full overflow-y-auto">
-              <Suspense fallback={<ViewLoader />}>
+              <Suspense fallback={<ViewLoader view={activeView} />}>
                 <MilestoneCelebrations
                   assessments={assessments}
                   snapshots={snapshots}
@@ -706,7 +932,7 @@ export default function Dashboard() {
           {/* Home Practice view */}
           {activeView === VIEWS.PRACTICE && (
             <div className="w-full h-full overflow-y-auto">
-              <Suspense fallback={<ViewLoader />}>
+              <Suspense fallback={<ViewLoader view={activeView} />}>
                 <HomePractice
                   assessments={assessments}
                   clientName={clientName}
@@ -718,7 +944,7 @@ export default function Dashboard() {
           {/* Predictions view */}
           {activeView === VIEWS.PREDICTIONS && (
             <div className="w-full h-full overflow-y-auto">
-              <Suspense fallback={<ViewLoader />}>
+              <Suspense fallback={<ViewLoader view={activeView} />}>
                 <ProgressPrediction
                   assessments={assessments}
                   snapshots={snapshots}
@@ -731,7 +957,7 @@ export default function Dashboard() {
           {/* Org Analytics view */}
           {activeView === VIEWS.ORG_ANALYTICS && (
             <div className="w-full h-full overflow-y-auto">
-              <Suspense fallback={<ViewLoader />}>
+              <Suspense fallback={<ViewLoader view={activeView} />}>
                 <OrgAnalytics />
               </Suspense>
             </div>
@@ -740,7 +966,7 @@ export default function Dashboard() {
           {/* Messages view */}
           {activeView === VIEWS.MESSAGES && (
             <div className="w-full max-w-2xl mx-auto px-4 py-6">
-              <Suspense fallback={<ViewLoader />}>
+              <Suspense fallback={<ViewLoader view={activeView} />}>
                 <Messaging
                   clientId={clientId}
                   clientName={clientName}
@@ -752,7 +978,7 @@ export default function Dashboard() {
           {/* Branding view */}
           {activeView === VIEWS.BRANDING && (
             <div className="w-full h-full overflow-y-auto">
-              <Suspense fallback={<ViewLoader />}>
+              <Suspense fallback={<ViewLoader view={activeView} />}>
                 <BrandingSettings onBrandingChange={setBranding} />
               </Suspense>
             </div>
@@ -761,7 +987,7 @@ export default function Dashboard() {
           {/* Data view */}
           {activeView === VIEWS.DATA && (
             <div className="w-full h-full overflow-y-auto">
-              <Suspense fallback={<ViewLoader />}>
+              <Suspense fallback={<ViewLoader view={activeView} />}>
                 <DataPortability onImportComplete={() => window.location.reload()} />
               </Suspense>
             </div>
@@ -770,7 +996,7 @@ export default function Dashboard() {
           {/* Accessibility view */}
           {activeView === VIEWS.ACCESSIBILITY && (
             <div className="w-full h-full overflow-y-auto">
-              <Suspense fallback={<ViewLoader />}>
+              <Suspense fallback={<ViewLoader view={activeView} />}>
                 <AccessibilitySettings onSettingsChange={() => {}} />
               </Suspense>
             </div>
@@ -779,7 +1005,7 @@ export default function Dashboard() {
           {/* Compare view */}
           {activeView === VIEWS.COMPARE && (
             <div className="w-full h-full overflow-y-auto">
-              <Suspense fallback={<ViewLoader />}>
+              <Suspense fallback={<ViewLoader view={activeView} />}>
                 <ComparisonView
                   assessments={assessments}
                   clientName={clientName}
@@ -793,7 +1019,7 @@ export default function Dashboard() {
           {/* Certifications view */}
           {activeView === VIEWS.CERTIFICATIONS && (
             <div className="w-full h-full overflow-y-auto">
-              <Suspense fallback={<ViewLoader />}>
+              <Suspense fallback={<ViewLoader view={activeView} />}>
                 <OutcomeCertification
                   assessments={assessments}
                   clientName={clientName}
@@ -806,7 +1032,7 @@ export default function Dashboard() {
           {/* Marketplace view */}
           {activeView === VIEWS.MARKETPLACE && (
             <div className="w-full h-full overflow-y-auto">
-              <Suspense fallback={<ViewLoader />}>
+              <Suspense fallback={<ViewLoader view={activeView} />}>
                 <Marketplace />
               </Suspense>
             </div>
@@ -815,19 +1041,21 @@ export default function Dashboard() {
           {/* Pricing view */}
           {activeView === VIEWS.PRICING && (
             <div className="w-full h-full overflow-y-auto">
-              <Suspense fallback={<ViewLoader />}>
+              <Suspense fallback={<ViewLoader view={activeView} />}>
                 <PricingPage />
               </Suspense>
             </div>
           )}
           {activeView === VIEWS.EXPLORER && (
             <div className="w-full h-full flex flex-col">
-              <Suspense fallback={<ViewLoader />}>
+              <Suspense fallback={<ViewLoader view={activeView} />}>
                 <DependencyExplorer assessments={assessments} />
               </Suspense>
             </div>
           )}
-          </ErrorBoundary>
+          </motion.div>
+          </AnimatePresence>
+          </ViewErrorBoundary>
         </main>
 
         {/* Right panel — Detail View (only for viz views) */}
@@ -873,17 +1101,14 @@ export default function Dashboard() {
           handleNavigateToAssess(subAreaId)
         }}
         assessments={assessments}
+        onChangeView={setActiveView}
+        onPrint={() => window.print()}
+        onSaveSnapshot={() => { if (clientId) handleSaveSnapshot('Quick snapshot') }}
+        onOpenAI={() => setAiPanelOpen(true)}
       />
     </Suspense>
-    <PrintReport assessments={assessments} clientName={clientName} />
-    {toast && (
-      <Toast
-        key={toast.key}
-        message={toast.message}
-        type={toast.type}
-        onDismiss={() => setToast(null)}
-      />
-    )}
+    <PrintReport assessments={assessments} clientName={clientName} snapshots={snapshots} branding={branding} />
+    {/* Toasts now handled globally by ToastProvider in App.jsx */}
     <Suspense fallback={null}>
       <OnboardingTour onComplete={() => {}} />
     </Suspense>
@@ -893,10 +1118,37 @@ export default function Dashboard() {
         onClose={() => setShortcutsOpen(false)}
         onToggle={() => setShortcutsOpen(prev => !prev)}
         onSwitchView={(viewKey) => { setActiveView(viewKey); setShortcutsOpen(false) }}
-        onSave={() => { if (clientId && user) { saveAssessment(clientId, assessments, user.id).then(() => showToast('Assessment saved', 'success')).catch(() => showToast('Failed to save', 'error')) } }}
+        onSave={() => { if (clientId && user) { saveAssessment(clientId, assessments, user.id).then(() => { lastSavedRef.current = assessments; showToast('Assessment saved', 'success') }).catch(() => showToast('Failed to save', 'error')) } }}
         onPrint={() => window.print()}
       />
     </Suspense>
+    {/* Scroll-to-top button */}
+    <AnimatePresence>
+      {showScrollTop && (
+        <motion.button
+          initial={{ opacity: 0, scale: 0.8 }}
+          animate={{ opacity: 1, scale: 1 }}
+          exit={{ opacity: 0, scale: 0.8 }}
+          transition={{ duration: 0.2, ease: 'easeOut' }}
+          onClick={scrollToTop}
+          aria-label="Scroll to top"
+          className={`fixed right-4 z-30 w-10 h-10 min-h-[44px] min-w-[44px] rounded-full bg-white shadow-lg border border-warm-200 flex items-center justify-center hover:bg-warm-50 active:bg-warm-100 transition-colors cursor-pointer ${isPhone ? 'bottom-32' : 'bottom-20'}`}
+        >
+          <svg className="w-5 h-5 text-warm-600" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+            <path strokeLinecap="round" strokeLinejoin="round" d="M5 15l7-7 7 7" />
+          </svg>
+        </motion.button>
+      )}
+    </AnimatePresence>
+    {isPhone && (
+      <MobileFAB
+        onStartAssessment={() => setActiveView(VIEWS.ASSESS)}
+        onSaveSnapshot={() => { if (clientId) handleSaveSnapshot('Quick snapshot') }}
+        onSearch={() => setSearchOpen(true)}
+        onAITools={() => setAiPanelOpen(true)}
+        hasClient={!!clientId}
+      />
+    )}
     {isPhone && (
       <MobileTabBar
         activeView={activeView}

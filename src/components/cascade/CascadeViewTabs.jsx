@@ -25,18 +25,20 @@ export default memo(function CascadeViewTabs({
   const { isPhone } = useResponsive()
 
   return (
-    <div className="flex items-center gap-1 px-3 py-1.5 bg-[#12121a] border-b border-[#333]/60 overflow-x-auto scrollbar-hide">
+    <div role="tablist" className="flex items-center gap-1 px-3 py-1.5 bg-[#12121a] border-b border-[#333]/60 overflow-x-auto scrollbar-hide">
       {TABS.map(tab => {
         const isActive = activeTab === tab.id
         return (
           <button
             key={tab.id}
+            role="tab"
+            aria-selected={isActive}
             onClick={() => onTabChange(tab.id)}
             className={`
               relative whitespace-nowrap text-xs font-medium px-3 py-1.5 rounded-full transition-all min-h-[44px] flex items-center
               ${isActive
                 ? 'bg-[#2a2a35] text-gray-200 shadow-sm'
-                : 'text-gray-500 hover:text-gray-300 hover:bg-[#1e1e28]'
+                : 'text-gray-400 hover:text-gray-200 hover:bg-[#1e1e28]'
               }
             `}
           >

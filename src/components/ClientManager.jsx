@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback, useRef } from 'react'
 import { getClients, saveClient, deleteClient, getAssessments, saveAssessment } from '../data/storage.js'
 import { useAuth } from '../contexts/AuthContext.jsx'
+import { useToast } from './Toast.jsx'
 
 export default function ClientManager({ currentClientId, onSelectClient, assessments, onSaveSuccess }) {
   const [isOpen, setIsOpen] = useState(false)
@@ -11,6 +12,7 @@ export default function ClientManager({ currentClientId, onSelectClient, assessm
   const [editingClient, setEditingClient] = useState(null)
   const [editForm, setEditForm] = useState({ name: '', date_of_birth: '', notes: '' })
   const { profile, user } = useAuth()
+  const { showToast } = useToast()
   const triggerRef = useRef(null)
   const [dropdownPos, setDropdownPos] = useState({ top: 0, left: 0 })
 
@@ -23,10 +25,11 @@ export default function ClientManager({ currentClientId, onSelectClient, assessm
       setClients(data)
     } catch (err) {
       console.error('Failed to load clients:', err.message)
+      showToast('Failed to load clients', 'error')
     } finally {
       setLoading(false)
     }
-  }, [orgId])
+  }, [orgId, showToast])
 
   useEffect(() => {
     refreshClients()
@@ -41,6 +44,7 @@ export default function ClientManager({ currentClientId, onSelectClient, assessm
       onSelectClient(client.id, client.name, {})
     } catch (err) {
       console.error('Failed to create client:', err.message)
+      showToast('Failed to create client', 'error')
     }
   }
 
@@ -50,6 +54,7 @@ export default function ClientManager({ currentClientId, onSelectClient, assessm
       onSelectClient(client.id, client.name, saved)
     } catch (err) {
       console.error('Failed to load assessments:', err.message)
+      showToast('Failed to load assessments', 'error')
       // Still select the client even if assessments fail to load
       onSelectClient(client.id, client.name, {})
     }
@@ -64,6 +69,7 @@ export default function ClientManager({ currentClientId, onSelectClient, assessm
       onSaveSuccess?.()
     } catch (err) {
       console.error('Failed to save assessment:', err.message)
+      showToast('Failed to save changes', 'error')
     }
   }
 
@@ -77,6 +83,7 @@ export default function ClientManager({ currentClientId, onSelectClient, assessm
       }
     } catch (err) {
       console.error('Failed to delete client:', err.message)
+      showToast('Failed to delete client', 'error')
     }
   }
 
@@ -106,6 +113,7 @@ export default function ClientManager({ currentClientId, onSelectClient, assessm
       }
     } catch (err) {
       console.error('Failed to update client:', err.message)
+      showToast('Failed to save changes', 'error')
     }
   }
 
@@ -127,6 +135,14 @@ export default function ClientManager({ currentClientId, onSelectClient, assessm
     }
   }, [isOpen, updateDropdownPos])
 
+  // Close on Escape key
+  useEffect(() => {
+    if (!isOpen) return
+    function handleKey(e) { if (e.key === 'Escape') setIsOpen(false) }
+    document.addEventListener('keydown', handleKey)
+    return () => document.removeEventListener('keydown', handleKey)
+  }, [isOpen])
+
   const currentClient = clients.find((c) => c.id === currentClientId)
 
   return (
@@ -135,7 +151,10 @@ export default function ClientManager({ currentClientId, onSelectClient, assessm
       <div ref={triggerRef} className="flex items-center gap-1.5 min-w-0">
         <button
           onClick={() => setIsOpen(!isOpen)}
-          className="flex items-center gap-1.5 px-2 py-1.5 rounded-lg hover:bg-warm-100 transition-colors text-sm min-w-0"
+          className="flex items-center gap-1.5 px-2 py-1.5 rounded-lg hover:bg-warm-100 transition-colors text-sm min-w-0 min-h-[44px] focus:outline-none focus-visible:ring-2 focus-visible:ring-sage-400"
+          aria-expanded={isOpen}
+          aria-haspopup="listbox"
+          aria-label="Switch client"
         >
           <span className="w-6 h-6 rounded-full bg-sage-100 text-sage-700 flex items-center justify-center text-xs font-bold shrink-0">
             {(currentClient?.name || 'S')[0].toUpperCase()}

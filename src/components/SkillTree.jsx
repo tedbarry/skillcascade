@@ -1,5 +1,4 @@
-import { useRef, useEffect, useState, useMemo } from 'react'
-import * as d3 from 'd3'
+import { useRef, useEffect, useState, useMemo, memo } from 'react'
 import { framework, getDomainScores, DOMAIN_DEPENDENCIES, ASSESSMENT_LEVELS, ASSESSMENT_COLORS, ASSESSMENT_LABELS } from '../data/framework.js'
 
 /**
@@ -115,7 +114,7 @@ function getRecommendedTarget(domainScores) {
   return null // All mastered
 }
 
-export default function SkillTree({ assessments = {}, onSelectDomain }) {
+export default memo(function SkillTree({ assessments = {}, onSelectDomain }) {
   const svgRef = useRef(null)
   const [expandedDomain, setExpandedDomain] = useState(null)
   const [tooltip, setTooltip] = useState(null)
@@ -526,7 +525,7 @@ export default function SkillTree({ assessments = {}, onSelectDomain }) {
       </div>
     </div>
   )
-}
+})
 
 /**
  * Expanded sub-area nodes that fan out from a domain

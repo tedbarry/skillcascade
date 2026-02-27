@@ -162,9 +162,9 @@ export default memo(function DependencyExplorer({ assessments = {} }) {
   }, [level, focusDomainId, focusSubAreaId, focusSkillId, isPhone])
 
   return (
-    <div className="flex-1 h-full flex flex-col overflow-hidden bg-gray-950">
+    <div role="navigation" className="flex-1 h-full flex flex-col overflow-hidden bg-gray-950">
       {/* Breadcrumb bar */}
-      <div className={`flex items-center gap-1 ${isPhone ? 'px-3 py-2' : 'px-5 py-3'} bg-gray-900 border-b border-gray-800 min-h-[44px] flex-shrink-0`}>
+      <nav aria-label="Dependency explorer breadcrumb" className={`flex items-center gap-1 ${isPhone ? 'px-3 py-2' : 'px-5 py-3'} bg-gray-900 border-b border-gray-800 min-h-[44px] flex-shrink-0`}>
         {breadcrumbs.map((crumb, i) => {
           const isCurrent = crumb.level === level
           return (
@@ -213,7 +213,7 @@ export default memo(function DependencyExplorer({ assessments = {} }) {
             </svg>
           </button>
         </div>
-      </div>
+      </nav>
 
       {/* Level content */}
       <div className="flex-1 overflow-hidden relative">

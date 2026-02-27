@@ -6,6 +6,7 @@ import {
   ASSESSMENT_COLORS,
   DOMAIN_DEPENDENCIES,
 } from '../data/framework.js'
+import EmptyState from './EmptyState.jsx'
 
 /* ─────────────────────────────────────────────
    Constants
@@ -516,25 +517,7 @@ export default function GoalEngine({ assessments = {}, onNavigateToAssess, focus
 
         {/* Empty state */}
         {!hasAssessments && (
-          <div className="text-center py-16 px-8">
-            <div className="w-16 h-16 rounded-2xl bg-warm-100 flex items-center justify-center mx-auto mb-4">
-              <span className="text-2xl text-warm-400">?</span>
-            </div>
-            <h3 className="text-lg font-semibold text-warm-700 mb-2 font-display">
-              No Assessment Data Yet
-            </h3>
-            <p className="text-sm text-warm-500 max-w-md mx-auto mb-6">
-              Start by assessing skills in the Assessment panel. The Goal Engine
-              will analyze gaps and suggest prioritized treatment targets using
-              cascade dependency logic.
-            </p>
-            <button
-              onClick={() => handleNavigate('d1-sa1')}
-              className="text-sm font-medium px-5 py-2.5 rounded-xl bg-sage-500 text-white hover:bg-sage-600 transition-colors"
-            >
-              Begin Assessment {'\u2192'}
-            </button>
-          </div>
+          <EmptyState preset="no-goals" onAction={() => handleNavigate('d1-sa1')} />
         )}
 
         {/* Dashboard content */}

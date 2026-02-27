@@ -92,15 +92,38 @@ function getSkillsForDetail(subAreaRatings) {
 // Main Component
 // ============================================================================
 
+const ADAPTIVE_DRAFT_KEY = 'skillcascade_adaptive_draft'
+
 export default function AdaptiveAssessment({ assessments, onAssess, onComplete }) {
-  const [phase, setPhase] = useState(1)
-  const [domainRatings, setDomainRatings] = useState({})       // { d1: 'Strong', d2: 'Weak', ... }
-  const [subAreaRatings, setSubAreaRatings] = useState({})      // { 'd1-sa1': 'Strong', ... }
-  const [skillRatings, setSkillRatings] = useState({})          // { 'd1-sa1-sg1-s1': 2, ... }
+  // Restore draft from localStorage if available
+  const savedDraft = useRef(null)
+  try {
+    const raw = localStorage.getItem(ADAPTIVE_DRAFT_KEY)
+    if (raw) savedDraft.current = JSON.parse(raw)
+  } catch { /* ignore */ }
+
+  const [phase, setPhase] = useState(() => savedDraft.current?.phase || 1)
+  const [domainRatings, setDomainRatings] = useState(() => savedDraft.current?.domainRatings || {})
+  const [subAreaRatings, setSubAreaRatings] = useState(() => savedDraft.current?.subAreaRatings || {})
+  const [skillRatings, setSkillRatings] = useState(() => savedDraft.current?.skillRatings || {})
   const [transitioning, setTransitioning] = useState(false)
   const [applied, setApplied] = useState(false)
 
   const contentRef = useRef(null)
+
+  // Auto-save adaptive draft to localStorage on state changes
+  useEffect(() => {
+    const hasData = Object.keys(domainRatings).length > 0 || Object.keys(subAreaRatings).length > 0 || Object.keys(skillRatings).length > 0
+    if (!hasData || applied) {
+      localStorage.removeItem(ADAPTIVE_DRAFT_KEY)
+      return
+    }
+    try {
+      localStorage.setItem(ADAPTIVE_DRAFT_KEY, JSON.stringify({
+        phase, domainRatings, subAreaRatings, skillRatings, savedAt: Date.now(),
+      }))
+    } catch { /* quota — ignore */ }
+  }, [phase, domainRatings, subAreaRatings, skillRatings, applied])
 
   // Scroll to top on phase change
   useEffect(() => {
@@ -865,6 +888,7 @@ function SkillRater({ skill, level, onRate }) {
               key={val}
               onClick={() => onRate(val)}
               title={ASSESSMENT_LABELS[val]}
+              aria-pressed={level === val}
               className={`w-8 h-8 rounded-lg text-xs font-bold transition-all ${
                 isSelected
                   ? 'ring-2 ring-offset-1 ring-warm-400 scale-110 shadow-sm'

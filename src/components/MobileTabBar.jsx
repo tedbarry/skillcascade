@@ -4,8 +4,8 @@ import { useState } from 'react'
 const TAB_GROUPS = {
   dashboard: {
     label: 'Dashboard',
-    views: ['sunburst', 'radar', 'tree', 'cascade', 'explorer', 'timeline'],
-    viewLabels: { sunburst: 'Sunburst', radar: 'Radar', tree: 'Skill Tree', cascade: 'Intelligence', explorer: 'Explorer', timeline: 'Timeline' },
+    views: ['home', 'sunburst', 'radar', 'tree', 'cascade', 'explorer', 'timeline'],
+    viewLabels: { home: 'Home', sunburst: 'Sunburst', radar: 'Radar', tree: 'Skill Tree', cascade: 'Intelligence', explorer: 'Explorer', timeline: 'Timeline' },
   },
   assess: {
     label: 'Assess',
@@ -157,7 +157,7 @@ export default function MobileTabBar({ activeView, onChangeView, onOpenAI }) {
             <button
               key={view}
               onClick={() => onChangeView(view)}
-              className={`px-3 py-1.5 rounded-full text-xs font-medium whitespace-nowrap transition-colors min-h-[32px] ${
+              className={`px-3 py-2 rounded-full text-xs font-medium whitespace-nowrap transition-colors min-h-[44px] flex items-center ${
                 activeView === view
                   ? 'bg-sage-500 text-white'
                   : 'text-warm-500 hover:bg-warm-100'

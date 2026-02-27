@@ -1,5 +1,5 @@
 import { useMemo, useRef, useState, useCallback, memo } from 'react'
-import * as d3 from 'd3'
+import { linkHorizontal } from 'd3-shape'
 import { framework } from '../../data/framework.js'
 import { getDomainFromId } from '../../data/skillDependencies.js'
 import useResponsive from '../../hooks/useResponsive.js'
@@ -288,7 +288,7 @@ export default memo(function SkillExplorerView({
 
         {/* Upstream links */}
         {upstreamLayout.map(skill => {
-          const path = d3.linkHorizontal()({
+          const path = linkHorizontal()({
             source: [skill.x + 80, skill.y],
             target: [centerX - 60, rootY],
           })
@@ -307,7 +307,7 @@ export default memo(function SkillExplorerView({
 
         {/* Downstream links */}
         {downstreamLayout.map(skill => {
-          const path = d3.linkHorizontal()({
+          const path = linkHorizontal()({
             source: [centerX + 60, rootY],
             target: [skill.x - 80, skill.y],
           })

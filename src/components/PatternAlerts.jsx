@@ -5,6 +5,7 @@ import {
   ASSESSMENT_LABELS,
   ASSESSMENT_COLORS,
 } from '../data/framework.js'
+import EmptyState from './EmptyState.jsx'
 
 /* ─────────────────────────────────────────────
    Constants & Config
@@ -747,18 +748,7 @@ function GapsCard({ alert, onNavigateToAssess }) {
  */
 function NoConcerns() {
   return (
-    <div className="text-center py-16">
-      <div className="inline-flex items-center justify-center w-14 h-14 rounded-full bg-sage-50 text-sage-500 mb-4">
-        {ICONS.check}
-      </div>
-      <h3 className="text-lg font-semibold text-warm-700 mb-2">
-        No Concerns Detected
-      </h3>
-      <p className="text-sm text-warm-400 max-w-md mx-auto">
-        No regressions, plateaus, foundation gaps, or significant unassessed areas
-        were found. Continue monitoring with regular snapshots to track progress.
-      </p>
-    </div>
+    <EmptyState preset="no-alerts" />
   )
 }
 

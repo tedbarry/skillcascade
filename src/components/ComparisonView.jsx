@@ -107,8 +107,8 @@ function CompareTooltip({ active, payload }) {
   return (
     <div className="bg-white/95 backdrop-blur-sm border border-warm-200 rounded-lg shadow-lg px-4 py-3 max-w-xs">
       <div className="font-semibold text-warm-800 text-sm mb-1">{data.domain}</div>
-      {payload.map((entry, i) => (
-        <div key={i} className="flex items-center gap-2 text-xs mt-1">
+      {payload.map((entry) => (
+        <div key={entry.name} className="flex items-center gap-2 text-xs mt-1">
           <div className="w-2.5 h-2.5 rounded-full" style={{ backgroundColor: entry.color }} />
           <span className="text-warm-600">{entry.name}:</span>
           <span className="font-medium text-warm-800">{entry.value.toFixed(2)} / 3.0</span>
@@ -125,7 +125,7 @@ function AxisTick({ payload, x, y, textAnchor }) {
   return (
     <text x={x} y={y} textAnchor={textAnchor} fill="#5f3e2a" fontSize={10} fontWeight={500} fontFamily="Plus Jakarta Sans, Inter, sans-serif">
       {parts.map((part, i) => (
-        <tspan key={i} x={x} dy={i === 0 ? 0 : 13}>{part}</tspan>
+        <tspan key={part} x={x} dy={i === 0 ? 0 : 13}>{part}</tspan>
       ))}
     </text>
   )

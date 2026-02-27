@@ -1,4 +1,5 @@
 import { useEffect, useState, useCallback } from 'react'
+import useFocusTrap from '../hooks/useFocusTrap.js'
 
 /**
  * View key mapping for number keys 1-9.
@@ -104,6 +105,7 @@ export default function KeyboardShortcuts({
   onPrint,
 }) {
   const [visible, setVisible] = useState(false)
+  const trapRef = useFocusTrap(isOpen)
 
   // Animate in when isOpen becomes true
   useEffect(() => {
@@ -183,6 +185,7 @@ export default function KeyboardShortcuts({
 
       {/* Modal card */}
       <div
+        ref={trapRef}
         className={`relative w-full max-w-lg mx-4 bg-white rounded-xl shadow-2xl border border-warm-200 overflow-hidden transition-all duration-150 ${
           visible ? 'scale-100 opacity-100' : 'scale-95 opacity-0'
         }`}

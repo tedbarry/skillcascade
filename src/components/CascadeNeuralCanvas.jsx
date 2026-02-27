@@ -1,5 +1,9 @@
 import { useRef, useEffect, useState, useCallback, useMemo, memo } from 'react'
-import * as d3 from 'd3'
+import { scaleSequential } from 'd3-scale'
+import { interpolateYlOrRd } from 'd3-scale-chromatic'
+import { color } from 'd3-color'
+import { interpolateRgb } from 'd3-interpolate'
+import { forceSimulation, forceManyBody, forceLink, forceCenter, forceY, forceCollide, forceX } from 'd3-force'
 import useResponsive from '../hooks/useResponsive.js'
 
 const DOMAIN_COLORS = {
@@ -38,7 +42,7 @@ const EDGES_DEF = [
 const TIER_MAP = { d1: 0, d2: 1, d3: 2, d4: 3, d5: 4, d6: 5, d7: 6, d8: 3, d9: 3 }
 
 // Heatmap color scale
-const heatmapScale = d3.scaleSequential(d3.interpolateYlOrRd).domain([0, 1])
+const heatmapScale = scaleSequential(interpolateYlOrRd).domain([0, 1])
 
 function useNeuralSimulation(nodes, edges, containerSize) {
   const simRef = useRef(null)
@@ -102,12 +106,12 @@ function useNeuralSimulation(nodes, edges, containerSize) {
     // Create d3 force simulation
     if (simRef.current) simRef.current.stop()
 
-    const sim = d3.forceSimulation(simNodes)
-      .force('charge', d3.forceManyBody().strength(-400))
-      .force('link', d3.forceLink(simLinks).distance(150).strength(0.3))
-      .force('center', d3.forceCenter(cx, cy))
-      .force('y', d3.forceY(d => d.targetY).strength(0.15))
-      .force('collision', d3.forceCollide(60))
+    const sim = forceSimulation(simNodes)
+      .force('charge', forceManyBody().strength(-400))
+      .force('link', forceLink(simLinks).distance(150).strength(0.3))
+      .force('center', forceCenter(cx, cy))
+      .force('y', forceY(d => d.targetY).strength(0.15))
+      .force('collision', forceCollide(60))
       .alphaDecay(0.02)
       .velocityDecay(0.4)
       .on('tick', () => {
@@ -120,7 +124,7 @@ function useNeuralSimulation(nodes, edges, containerSize) {
       .on('end', () => { settledRef.current = true })
 
     // Push d8/d9 outward
-    sim.force('xPush', d3.forceX(d => {
+    sim.force('xPush', forceX(d => {
       if (d.id === 'd8') return cx - width * 0.25
       if (d.id === 'd9') return cx + width * 0.25
       return cx
@@ -435,8 +439,8 @@ export default memo(function CascadeNeuralCanvas({
         } else if (cascadeState.affected?.[node.id]) {
           const impact = cascadeState.affected[node.id].impactStrength
           ringColor = isMasteryCascade
-            ? d3.interpolateRgb(domainColor, '#ffd700')(impact)
-            : d3.interpolateRgb(domainColor, '#ff4444')(impact)
+            ? interpolateRgb(domainColor, '#ffd700')(impact)
+            : interpolateRgb(domainColor, '#ff4444')(impact)
         } else {
           fillAlpha = 0.3
           labelAlpha = 0.3
@@ -456,7 +460,7 @@ export default memo(function CascadeNeuralCanvas({
       let fillColor = stateColor
       if (heatmapOn) {
         const ht = (node.leverageScore || 0) / maxLeverage
-        const hc = d3.color(heatmapScale(ht * 0.85 + 0.15))
+        const hc = color(heatmapScale(ht * 0.85 + 0.15))
         if (hc) fillColor = hc.formatHex()
       }
 

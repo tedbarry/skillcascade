@@ -3,6 +3,7 @@ import { framework, ASSESSMENT_LEVELS, ASSESSMENT_LABELS } from '../data/framewo
 import { useAuth } from '../contexts/AuthContext.jsx'
 import { getAiChats, saveAiChat, deleteAiChat } from '../data/storage.js'
 import { supabase, mergeUserSettings } from '../lib/supabase.js'
+import useFocusTrap from '../hooks/useFocusTrap.js'
 import {
   findSimilarMessage,
   rebuildSearchIndex as rebuildIndex,
@@ -797,6 +798,7 @@ export default function AIAssistantPanel({ isOpen, onClose, clientName, assessme
   const toolScrollRef = useRef(null)
   const quickParamRef = useRef(null)
   const saveTimerRef = useRef(null)
+  const trapRef = useFocusTrap(isOpen)
 
   const selectedTool = AI_TOOLS.find((t) => t.id === selectedToolId)
 
@@ -1298,6 +1300,7 @@ export default function AIAssistantPanel({ isOpen, onClose, clientName, assessme
 
       {/* Panel */}
       <div
+        ref={trapRef}
         className={`fixed top-0 right-0 z-50 h-full w-[400px] max-w-[calc(100vw-48px)] bg-warm-50 border-l border-warm-200 shadow-2xl flex flex-col transition-transform duration-300 ease-in-out print:hidden ${
           isOpen ? 'translate-x-0' : 'translate-x-full'
         }`}

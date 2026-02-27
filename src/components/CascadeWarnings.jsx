@@ -60,7 +60,7 @@ export default function CascadeWarnings({ risks = [], onJumpToAssess, onClose })
 
           return (
             <div
-              key={i}
+              key={`${risk.type}-${risk.actionDomainId || ''}-${risk.affectedDomains?.[0] || ''}`}
               className="rounded-lg border px-3 py-3"
               style={{ backgroundColor: colors.bg, borderColor: colors.border + '40' }}
             >

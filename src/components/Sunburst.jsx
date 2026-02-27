@@ -1,5 +1,8 @@
-import { useRef, useEffect, useState } from 'react'
-import * as d3 from 'd3'
+import { useRef, useEffect, useState, memo } from 'react'
+import { hierarchy, partition } from 'd3-hierarchy'
+import { arc } from 'd3-shape'
+import { interpolate } from 'd3-interpolate'
+import { select } from 'd3-selection'
 import { ASSESSMENT_COLORS, ASSESSMENT_LABELS, ASSESSMENT_LEVELS } from '../data/framework.js'
 
 /**
@@ -85,7 +88,7 @@ function truncateLabel(text, maxLen) {
   return text.slice(0, maxLen - 1) + '\u2026'
 }
 
-export default function Sunburst({ data, assessments = {}, width = 800, height = 800, onSelect }) {
+export default memo(function Sunburst({ data, assessments = {}, width = 800, height = 800, onSelect }) {
   const svgRef = useRef(null)
   const chartRef = useRef(null)       // D3 elements: { root, path, label, parentCircle, svg, radius, arcGen }
   const assessmentsRef = useRef(assessments)
@@ -144,7 +147,7 @@ export default function Sunburst({ data, assessments = {}, width = 800, height =
 
     const t = svg.transition().duration(600)
 
-    const makeArc = d3.arc()
+    const makeArc = arc()
       .startAngle((d) => d.current.x0)
       .endAngle((d) => d.current.x1)
       .padAngle((d) => Math.min((d.current.x1 - d.current.x0) / 2, 0.005))
@@ -155,7 +158,7 @@ export default function Sunburst({ data, assessments = {}, width = 800, height =
     path
       .transition(t)
       .tween('data', (d) => {
-        const i = d3.interpolate(d.current, d.target)
+        const i = interpolate(d.current, d.target)
         return (t) => (d.current = i(t))
       })
       .filter(function (d) {
@@ -190,19 +193,18 @@ export default function Sunburst({ data, assessments = {}, width = 800, height =
   useEffect(() => {
     if (!svgRef.current || !data) return
 
-    d3.select(svgRef.current).selectAll('*').remove()
+    select(svgRef.current).selectAll('*').remove()
 
     const radius = Math.min(width, height) / 6
 
-    const hierarchy = d3
-      .hierarchy(data)
+    const root_ = hierarchy(data)
       .sum((d) => d.value || 0)
       .sort((a, b) => b.value - a.value)
 
-    const root = d3.partition().size([2 * Math.PI, hierarchy.height + 1])(hierarchy)
+    const root = partition().size([2 * Math.PI, root_.height + 1])(root_)
     root.each((d) => (d.current = d))
 
-    const arcGen = d3.arc()
+    const arcGen = arc()
       .startAngle((d) => d.current.x0)
       .endAngle((d) => d.current.x1)
       .padAngle((d) => Math.min((d.current.x1 - d.current.x0) / 2, 0.005))
@@ -210,8 +212,7 @@ export default function Sunburst({ data, assessments = {}, width = 800, height =
       .innerRadius((d) => d.current.y0 * radius)
       .outerRadius((d) => Math.max(d.current.y0 * radius, d.current.y1 * radius - 1))
 
-    const svg = d3
-      .select(svgRef.current)
+    const svg = select(svgRef.current)
       .attr('viewBox', [-width / 2, -height / 2, width, height])
       .style('font', '10px Inter, sans-serif')
 
@@ -269,7 +270,7 @@ export default function Sunburst({ data, assessments = {}, width = 800, height =
           assessedCount: assessed.length,
         })
 
-        d3.select(event.currentTarget)
+        select(event.currentTarget)
           .attr('fill-opacity', 1)
           .style('stroke', '#3d2a1c')
           .style('stroke-width', '1.5px')
@@ -279,7 +280,7 @@ export default function Sunburst({ data, assessments = {}, width = 800, height =
       })
       .on('mouseleave', (event, d) => {
         setTooltip(null)
-        d3.select(event.currentTarget)
+        select(event.currentTarget)
           .attr('fill-opacity', d.children ? 0.85 : 0.7)
           .style('stroke', '#fdf8f0')
           .style('stroke-width', '0.5px')
@@ -323,7 +324,7 @@ export default function Sunburst({ data, assessments = {}, width = 800, height =
           assessedCount: assessed.length,
         })
 
-        d3.select(event.currentTarget)
+        select(event.currentTarget)
           .attr('fill-opacity', 1)
           .style('stroke', '#3d2a1c')
           .style('stroke-width', '1.5px')
@@ -331,7 +332,7 @@ export default function Sunburst({ data, assessments = {}, width = 800, height =
         if (touchTimerRef.current) clearTimeout(touchTimerRef.current)
         touchTimerRef.current = setTimeout(() => {
           setTooltip(null)
-          d3.select(event.currentTarget)
+          select(event.currentTarget)
             .attr('fill-opacity', d.children ? 0.85 : 0.7)
             .style('stroke', '#fdf8f0')
             .style('stroke-width', '0.5px')
@@ -430,22 +431,9 @@ export default function Sunburst({ data, assessments = {}, width = 800, height =
         ))}
       </div>
 
-      {/* Legend */}
-      <div className="flex items-center gap-4 mb-4 text-xs text-warm-600">
-        {Object.entries(ASSESSMENT_LABELS).map(([level, label]) => (
-          <div key={level} className="flex items-center gap-1.5">
-            <div
-              className="w-3 h-3 rounded-sm"
-              style={{ backgroundColor: ASSESSMENT_COLORS[level] }}
-            />
-            <span>{label}</span>
-          </div>
-        ))}
-      </div>
-
       {/* Chart */}
       <div className="relative inline-block">
-        <svg ref={svgRef} width={width} height={height} />
+        <svg ref={svgRef} width={width} height={height} role="img" aria-label="Skills sunburst chart showing assessment levels across domains" />
 
         {/* Tooltip */}
         {tooltip && (
@@ -470,6 +458,21 @@ export default function Sunburst({ data, assessments = {}, width = 800, height =
           </div>
         )}
       </div>
+
+      {/* Legend */}
+      <div className="flex items-center justify-center gap-3 mt-2 text-[10px] text-warm-600">
+        {[
+          { label: 'Not Assessed', color: 'var(--color-not-assessed)' },
+          { label: 'Needs Work', color: 'var(--color-needs-work)' },
+          { label: 'Developing', color: 'var(--color-developing)' },
+          { label: 'Solid', color: 'var(--color-solid)' },
+        ].map(({ label, color }) => (
+          <div key={label} className="flex items-center gap-1">
+            <span className="w-2.5 h-2.5 rounded-full inline-block" style={{ backgroundColor: color }} />
+            <span>{label}</span>
+          </div>
+        ))}
+      </div>
     </div>
   )
-}
+})

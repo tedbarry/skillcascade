@@ -1,4 +1,4 @@
-import { useMemo } from 'react'
+import { useMemo, memo } from 'react'
 import {
   Radar,
   RadarChart as RechartsRadarChart,
@@ -111,7 +111,7 @@ function scoreColor(score, assessed) {
   return ASSESSMENT_COLORS[ASSESSMENT_LEVELS.NEEDS_WORK]
 }
 
-export default function RadarChart({
+export default memo(function RadarChart({
   assessments = {},
   compareAssessments = null,
   compareLabel = 'Previous',
@@ -160,7 +160,7 @@ export default function RadarChart({
   }, [assessments, scores])
 
   return (
-    <div>
+    <div role="img" aria-label="Radar chart showing domain scores">
       {/* Summary bar */}
       <div className="flex items-center justify-between mb-4 px-2">
         <div>
@@ -260,7 +260,7 @@ export default function RadarChart({
       </ResponsiveContainer>
 
       {/* Domain breakdown */}
-      <div className="grid grid-cols-3 gap-2 mt-4 px-2">
+      <div className="grid grid-cols-2 sm:grid-cols-3 gap-2 mt-4 px-2">
         {scores.map((s) => {
           const color = scoreColor(s.score, s.assessed)
           const completionPct = s.total > 0 ? Math.round((s.assessed / s.total) * 100) : 0
@@ -313,4 +313,4 @@ export default function RadarChart({
       </div>
     </div>
   )
-}
+})

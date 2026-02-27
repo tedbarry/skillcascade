@@ -11,6 +11,7 @@ import {
   ReferenceLine,
 } from 'recharts'
 import RadarChart from './RadarChart.jsx'
+import EmptyState from './EmptyState.jsx'
 import { framework, getDomainScores, ASSESSMENT_LEVELS } from '../data/framework.js'
 import useResponsive from '../hooks/useResponsive.js'
 
@@ -83,6 +84,7 @@ export default function ProgressTimeline({
   const [mobileTab, setMobileTab] = useState('chart') // 'chart' | 'snapshots'
   const [compareA, setCompareA] = useState(null)
   const [compareB, setCompareB] = useState(null)
+  const [confirmDeleteId, setConfirmDeleteId] = useState(null)
   const [visibleDomains, setVisibleDomains] = useState(
     () => new Set(framework.map((d) => d.id))
   )
@@ -211,9 +213,7 @@ export default function ProgressTimeline({
         Snapshots ({snapshots.length})
       </h3>
       {snapshots.length === 0 ? (
-        <p className="text-xs text-warm-400 italic">
-          No snapshots yet. Save one to start tracking progress.
-        </p>
+        <EmptyState preset="no-snapshots" onAction={onSaveSnapshot} />
       ) : (
         <div className="space-y-1.5">
           {[...snapshots].reverse().map((snap) => (
@@ -229,13 +229,14 @@ export default function ProgressTimeline({
                 <span className="font-medium text-warm-700 truncate max-w-[130px]">
                   {snap.label || 'Untitled'}
                 </span>
-                <button
-                  onClick={() => onDeleteSnapshot && onDeleteSnapshot(snap.id)}
-                  className="text-warm-300 hover:text-red-400 text-[10px] transition-colors min-h-[28px] min-w-[28px] flex items-center justify-center"
-                  title="Delete snapshot"
-                >
-                  {'×'}
-                </button>
+                {confirmDeleteId === snap.id ? (
+                  <span className="flex items-center gap-1">
+                    <button onClick={() => { onDeleteSnapshot?.(snap.id); setConfirmDeleteId(null) }} className="text-[9px] text-coral-600 hover:text-coral-800 font-medium min-h-[28px] px-1">Delete</button>
+                    <button onClick={() => setConfirmDeleteId(null)} className="text-[9px] text-warm-400 hover:text-warm-600 min-h-[28px] px-1">Cancel</button>
+                  </span>
+                ) : (
+                  <button onClick={() => setConfirmDeleteId(snap.id)} className="text-warm-300 hover:text-red-400 text-[10px] transition-colors min-h-[28px] min-w-[28px] flex items-center justify-center" title="Delete snapshot">{'×'}</button>
+                )}
               </div>
               <div className="text-[10px] text-warm-400">
                 {formatDate(snap.timestamp)} at {formatTime(snap.timestamp)}
@@ -405,14 +406,7 @@ export default function ProgressTimeline({
               </ResponsiveContainer>
             </div>
           ) : (
-            <div className="text-center py-12 mb-8">
-              <div className="text-4xl mb-4 text-warm-200">{'📈'}</div>
-              <h3 className="text-lg font-semibold text-warm-700 mb-2">No Timeline Data Yet</h3>
-              <p className="text-sm text-warm-500 max-w-md mx-auto">
-                Save snapshots over time to see how a client's skills profile evolves.
-                Each snapshot captures a point-in-time copy of all ratings.
-              </p>
-            </div>
+            <EmptyState preset="no-snapshots" onAction={onSaveSnapshot} className="mb-8" />
           )}
         </>
       )}
@@ -558,9 +552,7 @@ export default function ProgressTimeline({
             Snapshots ({snapshots.length})
           </h3>
           {snapshots.length === 0 ? (
-            <p className="text-xs text-warm-400 italic">
-              No snapshots yet. Save one to start tracking progress.
-            </p>
+            <EmptyState preset="no-snapshots" onAction={onSaveSnapshot} />
           ) : (
             <div className="space-y-1.5">
               {[...snapshots].reverse().map((snap) => (
@@ -576,13 +568,14 @@ export default function ProgressTimeline({
                     <span className="font-medium text-warm-700 truncate max-w-[130px]">
                       {snap.label || 'Untitled'}
                     </span>
-                    <button
-                      onClick={() => onDeleteSnapshot && onDeleteSnapshot(snap.id)}
-                      className="text-warm-300 hover:text-red-400 text-[10px] transition-colors"
-                      title="Delete snapshot"
-                    >
-                      {'×'}
-                    </button>
+                    {confirmDeleteId === snap.id ? (
+                      <span className="flex items-center gap-1">
+                        <button onClick={() => { onDeleteSnapshot?.(snap.id); setConfirmDeleteId(null) }} className="text-[9px] text-coral-600 hover:text-coral-800 font-medium min-h-[28px] px-1">Delete</button>
+                        <button onClick={() => setConfirmDeleteId(null)} className="text-[9px] text-warm-400 hover:text-warm-600 min-h-[28px] px-1">Cancel</button>
+                      </span>
+                    ) : (
+                      <button onClick={() => setConfirmDeleteId(snap.id)} className="text-warm-300 hover:text-red-400 text-[10px] transition-colors" title="Delete snapshot">{'×'}</button>
+                    )}
                   </div>
                   <div className="text-[10px] text-warm-400">
                     {formatDate(snap.timestamp)} at {formatTime(snap.timestamp)}
@@ -751,14 +744,7 @@ export default function ProgressTimeline({
                 </ResponsiveContainer>
               </div>
             ) : (
-              <div className="text-center py-12 mb-8">
-                <div className="text-4xl mb-4 text-warm-200">{'📈'}</div>
-                <h3 className="text-lg font-semibold text-warm-700 mb-2">No Timeline Data Yet</h3>
-                <p className="text-sm text-warm-500 max-w-md mx-auto">
-                  Save snapshots over time to see how a client's skills profile evolves.
-                  Each snapshot captures a point-in-time copy of all ratings.
-                </p>
-              </div>
+              <EmptyState preset="no-snapshots" onAction={onSaveSnapshot} className="mb-8" />
             )}
           </>
         )}

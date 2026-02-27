@@ -1,6 +1,10 @@
 import { useState, useMemo, useCallback, useRef, useEffect, lazy, Suspense } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
-import * as d3 from 'd3'
+import { scaleSequential } from 'd3-scale'
+import { interpolateYlOrRd } from 'd3-scale-chromatic'
+import { color } from 'd3-color'
+import { interpolateRgb } from 'd3-interpolate'
+import { forceSimulation, forceX, forceY, forceCollide } from 'd3-force'
 import { framework, DOMAIN_DEPENDENCIES } from '../data/framework.js'
 import { computeDomainHealth, computeSubAreaHealth, findPrerequisiteChain, computePathReadiness } from '../data/cascadeModel.js'
 import useCascadeGraph from '../hooks/useCascadeGraph.js'
@@ -69,7 +73,7 @@ const ORBITAL_RINGS = {
 }
 
 // Heatmap color scale (cool blue → warm red)
-const heatmapScale = d3.scaleSequential(d3.interpolateYlOrRd).domain([0, 1])
+const heatmapScale = scaleSequential(interpolateYlOrRd).domain([0, 1])
 
 /* ─────────────────────────────────────────────
    Main Component
@@ -309,11 +313,11 @@ export default function CascadeAnimation({
     if (heatmapOn) {
       const maxLeverage = Math.max(1, ...impactRanking.map((r) => r.leverageScore))
       const t = node.leverageScore / maxLeverage
-      const heatColor = d3.color(heatmapScale(t * 0.85 + 0.15)) // offset to avoid near-white
+      const heatColor = color(heatmapScale(t * 0.85 + 0.15)) // offset to avoid near-white
       return {
         fill: `rgba(${heatColor.r}, ${heatColor.g}, ${heatColor.b}, 0.25)`,
         stroke: heatColor.formatHex(),
-        textColor: d3.interpolateRgb(heatColor.formatHex(), '#ffffff')(0.4),
+        textColor: interpolateRgb(heatColor.formatHex(), '#ffffff')(0.4),
         glow: t > 0.5,
         domainColor,
       }
@@ -1791,10 +1795,10 @@ function SubAreaNodesSVG({ subAreas, parentPos, nodeW, nodeH, width, height, onN
       y: clusterCenterY + (i - subAreas.length / 2) * (saH + 8),
     }))
 
-    const simulation = d3.forceSimulation(simNodes)
-      .force('x', d3.forceX(clusterCenterX).strength(0.3))
-      .force('y', d3.forceY(clusterCenterY).strength(0.15))
-      .force('collide', d3.forceCollide(saH / 2 + 6))
+    const simulation = forceSimulation(simNodes)
+      .force('x', forceX(clusterCenterX).strength(0.3))
+      .force('y', forceY(clusterCenterY).strength(0.15))
+      .force('collide', forceCollide(saH / 2 + 6))
       .force('boundary', () => {
         simNodes.forEach((n) => {
           n.x = Math.max(saW / 2 + 10, Math.min(width - saW / 2 - 10, n.x))

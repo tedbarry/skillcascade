@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef, useCallback } from 'react'
 import { supabase } from '../lib/supabase.js'
 import { useAuth } from '../contexts/AuthContext.jsx'
+import EmptyState from './EmptyState.jsx'
 
 /* ─────────────────────────────────────────────
    SVG Icons (inline, no emoji)
@@ -317,13 +318,7 @@ export default function Messaging({
           </div>
         ) : messages.length === 0 ? (
           /* ── Empty State ── */
-          <div className="flex flex-col items-center justify-center h-full text-center py-12">
-            <div className="text-warm-300 mb-3">{ICONS.chat}</div>
-            <p className="text-sm text-warm-500 max-w-[260px] leading-relaxed">
-              Start a conversation about {clientName ? `${clientName}'s` : "your client's"} progress.
-              Messages help keep the whole team aligned.
-            </p>
-          </div>
+          <EmptyState preset="no-messages" />
         ) : (
           grouped.map((item) => {
             if (item.type === 'divider') {

@@ -8,4 +8,17 @@ export default defineConfig({
     tailwindcss(),
   ],
   cacheDir: 'C:/Users/teddy/.vite-cache/skillcascade',
+  build: {
+    chunkSizeWarningLimit: 750,
+    rollupOptions: {
+      output: {
+        manualChunks: {
+          'd3': ['d3'],
+          'recharts': ['recharts'],
+          'framer-motion': ['framer-motion'],
+          'three': ['three'],
+        },
+      },
+    },
+  },
 })

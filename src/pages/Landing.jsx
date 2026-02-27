@@ -232,10 +232,34 @@ const TESTIMONIALS = [
 ]
 
 const FOOTER_LINKS = {
-  Product: ['Features', 'Pricing', 'Integrations', 'Changelog', 'Roadmap'],
-  Resources: ['Documentation', 'API Reference', 'Blog', 'Case Studies', 'Webinars'],
-  Company: ['About', 'Careers', 'Contact', 'Partners', 'Press'],
-  Legal: ['Privacy Policy', 'Terms of Service', 'HIPAA Compliance', 'BAA', 'Security'],
+  Product: [
+    { label: 'Features', href: '#features' },
+    { label: 'Pricing', href: '#pricing' },
+    { label: 'Framework', href: '#framework' },
+    { label: 'Live Demo', href: '#demo' },
+    { label: 'Dashboard', href: '/dashboard' },
+  ],
+  Resources: [
+    { label: 'Documentation', href: '#' },
+    { label: 'API Reference', href: '#' },
+    { label: 'Blog', href: '#' },
+    { label: 'Case Studies', href: '#' },
+    { label: 'Webinars', href: '#' },
+  ],
+  Company: [
+    { label: 'About', href: '#' },
+    { label: 'Careers', href: '#' },
+    { label: 'Contact', href: '#' },
+    { label: 'Partners', href: '#' },
+    { label: 'Press', href: '#' },
+  ],
+  Legal: [
+    { label: 'Privacy Policy', href: '#' },
+    { label: 'Terms of Service', href: '#' },
+    { label: 'HIPAA Compliance', href: '#' },
+    { label: 'BAA', href: '#' },
+    { label: 'Security', href: '#' },
+  ],
 }
 
 /* ── Main Component ───────────────────────────────────────── */
@@ -740,13 +764,22 @@ export default function Landing() {
                 </h4>
                 <ul className="space-y-2.5">
                   {links.map((link) => (
-                    <li key={link}>
-                      <a
-                        href="#"
-                        className="text-sm text-warm-500 hover:text-white transition-colors"
-                      >
-                        {link}
-                      </a>
+                    <li key={link.label}>
+                      {link.href.startsWith('/') ? (
+                        <Link
+                          to={link.href}
+                          className="text-sm text-warm-500 hover:text-white transition-colors"
+                        >
+                          {link.label}
+                        </Link>
+                      ) : (
+                        <a
+                          href={link.href}
+                          className="text-sm text-warm-500 hover:text-white transition-colors"
+                        >
+                          {link.label}
+                        </a>
+                      )}
                     </li>
                   ))}
                 </ul>

@@ -117,6 +117,17 @@ export default function AssessmentPanel({ assessments, onAssess, initialSubAreaI
     return () => window.removeEventListener('keydown', handleKeyDown)
   }, [])
 
+  // Find the next sub-area with unrated skills (wraps around)
+  const nextUnratedIndex = useMemo(() => {
+    for (let i = 1; i <= ALL_SUB_AREAS.length; i++) {
+      const idx = (currentIndex + i) % ALL_SUB_AREAS.length
+      const sa = ALL_SUB_AREAS[idx]
+      const stats = getSubAreaStats(sa, assessments)
+      if (stats.assessed < stats.total) return idx
+    }
+    return -1 // all complete
+  }, [currentIndex, assessments])
+
   // Mark all skills in current sub-area to a given level
   function bulkRate(level) {
     const updates = {}
@@ -242,22 +253,32 @@ export default function AssessmentPanel({ assessments, onAssess, initialSubAreaI
         </div>
 
         {/* Bottom prev/next navigation */}
-        <div className="sticky bottom-0 z-10 bg-white border-t border-warm-200 flex items-center px-4 py-2 gap-3">
-          <button
-            onClick={() => goTo(currentIndex - 1)}
-            disabled={currentIndex === 0}
-            className={`flex-1 flex items-center justify-center gap-1 py-2.5 rounded-lg text-sm font-medium min-h-[44px] transition-colors ${currentIndex === 0 ? 'text-warm-300' : 'text-warm-600 bg-warm-100 hover:bg-warm-200'}`}
-          >
-            {'\u2190'} Prev
-          </button>
-          <span className="text-[10px] text-warm-400 whitespace-nowrap">{currentIndex + 1}/{ALL_SUB_AREAS.length}</span>
-          <button
-            onClick={() => goTo(currentIndex + 1)}
-            disabled={currentIndex === ALL_SUB_AREAS.length - 1}
-            className={`flex-1 flex items-center justify-center gap-1 py-2.5 rounded-lg text-sm font-medium min-h-[44px] transition-colors ${currentIndex === ALL_SUB_AREAS.length - 1 ? 'text-warm-300' : 'bg-sage-500 text-white hover:bg-sage-600'}`}
-          >
-            Next {'\u2192'}
-          </button>
+        <div className="sticky bottom-0 z-10 bg-white border-t border-warm-200 px-4 py-2">
+          <div className="flex items-center gap-2">
+            <button
+              onClick={() => goTo(currentIndex - 1)}
+              disabled={currentIndex === 0}
+              className={`flex-1 flex items-center justify-center gap-1 py-2.5 rounded-lg text-sm font-medium min-h-[44px] transition-colors ${currentIndex === 0 ? 'text-warm-300' : 'text-warm-600 bg-warm-100 hover:bg-warm-200'}`}
+            >
+              {'\u2190'} Prev
+            </button>
+            <span className="text-[10px] text-warm-400 whitespace-nowrap">{currentIndex + 1}/{ALL_SUB_AREAS.length}</span>
+            <button
+              onClick={() => goTo(currentIndex + 1)}
+              disabled={currentIndex === ALL_SUB_AREAS.length - 1}
+              className={`flex-1 flex items-center justify-center gap-1 py-2.5 rounded-lg text-sm font-medium min-h-[44px] transition-colors ${currentIndex === ALL_SUB_AREAS.length - 1 ? 'text-warm-300' : 'bg-sage-500 text-white hover:bg-sage-600'}`}
+            >
+              Next {'\u2192'}
+            </button>
+          </div>
+          {nextUnratedIndex >= 0 && nextUnratedIndex !== currentIndex + 1 && (
+            <button
+              onClick={() => goTo(nextUnratedIndex)}
+              className="w-full mt-1.5 text-[11px] text-sage-600 hover:text-sage-800 py-1 transition-colors"
+            >
+              Skip to next unrated {'\u2192'}
+            </button>
+          )}
         </div>
       </div>
     )
@@ -382,6 +403,7 @@ export default function AssessmentPanel({ assessments, onAssess, initialSubAreaI
                   <select
                     value={ALL_SUB_AREAS.findIndex((x) => x.domain.id === currentDomain.id)}
                     onChange={(e) => goTo(Number(e.target.value))}
+                    aria-label="Jump to domain"
                     className="text-sm font-medium text-warm-700 bg-transparent border border-warm-200 rounded-md px-2 py-1 cursor-pointer hover:border-warm-300 focus:outline-none focus:ring-2 focus:ring-sage-300"
                   >
                     {framework.map((domain) => {
@@ -399,7 +421,16 @@ export default function AssessmentPanel({ assessments, onAssess, initialSubAreaI
                 </div>
               </div>
 
-              <div className="w-28 flex justify-end">
+              <div className="flex items-center gap-2">
+                {nextUnratedIndex >= 0 && nextUnratedIndex !== currentIndex + 1 && (
+                  <button
+                    onClick={() => goTo(nextUnratedIndex)}
+                    className="text-[11px] text-sage-600 hover:text-sage-800 px-2 py-1 rounded transition-colors whitespace-nowrap"
+                    title="Jump to next sub-area with unrated skills"
+                  >
+                    Next unrated {'\u21AA'}
+                  </button>
+                )}
                 <button
                   onClick={() => goTo(currentIndex + 1)}
                   disabled={currentIndex === ALL_SUB_AREAS.length - 1}
@@ -562,6 +593,7 @@ function SkillRater({ skill, level, onRate }) {
                 key={val}
                 onClick={() => onRate(val)}
                 title={ASSESSMENT_LABELS[val]}
+                aria-pressed={level === val}
                 className={`w-8 h-8 rounded-lg text-xs font-bold transition-all ${
                   isSelected
                     ? 'ring-2 ring-offset-1 ring-warm-400 scale-110 shadow-sm'

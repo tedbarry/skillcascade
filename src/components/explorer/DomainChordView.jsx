@@ -1,5 +1,7 @@
 import { useMemo, useRef, useState, useCallback, memo } from 'react'
-import * as d3 from 'd3'
+import { chord, ribbon } from 'd3-chord'
+import { arc } from 'd3-shape'
+import { descending } from 'd3-array'
 import { framework } from '../../data/framework.js'
 import useResponsive from '../../hooks/useResponsive.js'
 import ExplorerTooltip from './ExplorerTooltip.jsx'
@@ -35,15 +37,15 @@ export default memo(function DomainChordView({
 
   // D3 chord layout
   const chordLayout = useMemo(() => {
-    const chord = d3.chord()
+    const chordGen = chord()
       .padAngle(0.06)
-      .sortSubgroups(d3.descending)
-    return chord(matrix)
+      .sortSubgroups(descending)
+    return chordGen(matrix)
   }, [matrix])
 
-  const arcGen = useMemo(() => d3.arc().innerRadius(160).outerRadius(180), [])
-  const healthArcGen = useMemo(() => d3.arc().innerRadius(145).outerRadius(158), [])
-  const ribbonGen = useMemo(() => d3.ribbon().radius(140), [])
+  const arcGen = useMemo(() => arc().innerRadius(160).outerRadius(180), [])
+  const healthArcGen = useMemo(() => arc().innerRadius(145).outerRadius(158), [])
+  const ribbonGen = useMemo(() => ribbon().radius(140), [])
 
   const handleArcHover = useCallback((e, i) => {
     setHoveredDomain(i)

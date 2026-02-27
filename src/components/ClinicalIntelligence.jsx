@@ -336,8 +336,8 @@ function DomainDetail({ domainId, insight, isPhone, onAssess, onGoal, onShowPath
         {/* Risks for this domain */}
         {hasRisks && (
           <div className="space-y-1 mb-2">
-            {insight.risks.slice(0, 3).map((risk, i) => (
-              <div key={i} className="text-[10px] text-gray-500 flex items-center gap-1.5">
+            {insight.risks.slice(0, 3).map((risk) => (
+              <div key={`${risk.type}-${risk.actionDomainId || ''}-${risk.affectedDomains?.[0] || ''}`} className="text-[10px] text-gray-500 flex items-center gap-1.5">
                 <span className="w-1 h-1 rounded-full bg-red-500 shrink-0" />
                 {risk.type?.replace(/-/g, ' ')}: {risk.description || risk.message || ''}
               </div>
@@ -592,8 +592,8 @@ export default memo(function ClinicalIntelligence({
             {risks.hasActiveRisks && (
               <Section title="Active Risks" count={risks.combined.length}>
                 <div className="space-y-1.5">
-                  {risks.combined.slice(0, 5).map((risk, i) => (
-                    <RiskCard key={i} risk={risk} isPhone />
+                  {risks.combined.slice(0, 5).map((risk) => (
+                    <RiskCard key={`${risk.type}-${risk.actionDomainId || ''}-${risk.affectedDomains?.[0] || ''}`} risk={risk} isPhone />
                   ))}
                 </div>
               </Section>
@@ -698,8 +698,8 @@ export default memo(function ClinicalIntelligence({
               {risks.hasActiveRisks && (
                 <Section title="Active Risks" count={risks.combined.length}>
                   <div className="space-y-1.5">
-                    {risks.combined.slice(0, 5).map((risk, i) => (
-                      <RiskCard key={i} risk={risk} />
+                    {risks.combined.slice(0, 5).map((risk) => (
+                      <RiskCard key={`${risk.type}-${risk.actionDomainId || ''}-${risk.affectedDomains?.[0] || ''}`} risk={risk} />
                     ))}
                   </div>
                 </Section>

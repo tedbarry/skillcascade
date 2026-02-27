@@ -39,6 +39,8 @@ export default memo(function StatusTile({ node, selected = false, onClick, isCom
     return (
       <motion.button
         onClick={onClick}
+        role="button"
+        aria-label={`${node.name}: ${hasAssessment ? Math.round(node.healthPct * 100) : 0}% health`}
         whileTap={{ scale: 0.98 }}
         className={`w-full flex items-center gap-3 px-3 py-3 rounded-lg transition-colors min-h-[44px] ${
           selected
@@ -80,6 +82,8 @@ export default memo(function StatusTile({ node, selected = false, onClick, isCom
   return (
     <motion.button
       onClick={onClick}
+      role="button"
+      aria-label={`${node.name}: ${hasAssessment ? Math.round(node.healthPct * 100) : 0}% health`}
       whileHover={{ scale: 1.02 }}
       whileTap={{ scale: 0.98 }}
       className={`relative flex flex-col items-center p-4 rounded-xl transition-all min-h-[44px] ${
