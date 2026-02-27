@@ -64,6 +64,14 @@ export function AuthProvider({ children }) {
 
   // Listen to auth state changes
   useEffect(() => {
+    // Safety timeout — never hang on the loading spinner forever
+    const timeout = setTimeout(() => {
+      setLoading((prev) => {
+        if (prev) console.warn('Auth loading timed out after 10s')
+        return false
+      })
+    }, 10000)
+
     // Check existing session
     supabase.auth.getSession().then(async ({ data: { session } }) => {
       try {
@@ -75,13 +83,18 @@ export function AuthProvider({ children }) {
       } catch (err) {
         console.error('Session restore failed:', err.message)
       } finally {
+        clearTimeout(timeout)
         setLoading(false)
       }
+    }).catch((err) => {
+      console.error('getSession() failed:', err.message)
+      clearTimeout(timeout)
+      setLoading(false)
     })
 
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       async (event, session) => {
-        if (event === 'SIGNED_IN' && session?.user) {
+        if ((event === 'SIGNED_IN' || event === 'INITIAL_SESSION' || event === 'TOKEN_REFRESHED') && session?.user) {
           setUser(session.user)
           const prof = await fetchProfile(session.user.id)
           setProfile(prof)
@@ -92,7 +105,7 @@ export function AuthProvider({ children }) {
       }
     )
 
-    return () => subscription.unsubscribe()
+    return () => { subscription.unsubscribe(); clearTimeout(timeout) }
   }, [fetchProfile])
 
   const signIn = useCallback(async (email, password) => {
