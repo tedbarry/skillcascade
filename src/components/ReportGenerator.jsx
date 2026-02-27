@@ -1,11 +1,15 @@
 import { useState, useMemo } from 'react'
 import { framework, ASSESSMENT_LEVELS, ASSESSMENT_LABELS, getDomainScores, DOMAIN_DEPENDENCIES } from '../data/framework.js'
 import { downloadFile } from '../data/exportUtils.js'
+import { computeDomainHealth, computeImpactRanking, detectCascadeRisks } from '../data/cascadeModel.js'
+import { generateClinicalSummary } from '../lib/narratives.js'
+import { generateDomainBarChart, generateRadarChart, generateMasteryGrid } from '../lib/reportCharts.js'
 
 const REPORT_TYPES = {
   SCHOOL: 'school',
   MEDICAL: 'medical',
   PROGRESS: 'progress',
+  INSURANCE: 'insurance',
 }
 
 const REPORT_META = {
@@ -33,6 +37,15 @@ const REPORT_META = {
     icon: (
       <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
         <path strokeLinecap="round" strokeLinejoin="round" d="M3 13.125C3 12.504 3.504 12 4.125 12h2.25c.621 0 1.125.504 1.125 1.125v6.75C7.5 20.496 6.996 21 6.375 21h-2.25A1.125 1.125 0 0 1 3 19.875v-6.75ZM9.75 8.625c0-.621.504-1.125 1.125-1.125h2.25c.621 0 1.125.504 1.125 1.125v11.25c0 .621-.504 1.125-1.125 1.125h-2.25a1.125 1.125 0 0 1-1.125-1.125V8.625ZM16.5 4.125c0-.621.504-1.125 1.125-1.125h2.25C20.496 3 21 3.504 21 4.125v15.75c0 .621-.504 1.125-1.125 1.125h-2.25a1.125 1.125 0 0 1-1.125-1.125V4.125Z" />
+      </svg>
+    ),
+  },
+  [REPORT_TYPES.INSURANCE]: {
+    label: 'Clinical Assessment',
+    description: 'Formal assessment report for insurance documentation — domain profiles, adaptive levels, cascade analysis, visualizations, and BCBA signature block.',
+    icon: (
+      <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
+        <path strokeLinecap="round" strokeLinejoin="round" d="M9 12h3.75M9 15h3.75M9 18h3.75m3 .75H18a2.25 2.25 0 0 0 2.25-2.25V6.108c0-1.135-.845-2.098-1.976-2.192a48.424 48.424 0 0 0-1.123-.08m-5.801 0c-.065.21-.1.433-.1.664 0 .414.336.75.75.75h4.5a.75.75 0 0 0 .75-.75 2.25 2.25 0 0 0-.1-.664m-5.8 0A2.251 2.251 0 0 1 13.5 2.25H15a2.25 2.25 0 0 1 2.15 1.586m-5.8 0c-.376.023-.75.05-1.124.08C9.095 4.01 8.25 4.973 8.25 6.108V8.25m0 0H4.875c-.621 0-1.125.504-1.125 1.125v11.25c0 .621.504 1.125 1.125 1.125h9.75c.621 0 1.125-.504 1.125-1.125V9.375c0-.621-.504-1.125-1.125-1.125H8.25ZM6.75 12h.008v.008H6.75V12Zm0 3h.008v.008H6.75V15Zm0 3h.008v.008H6.75V18Z" />
       </svg>
     ),
   },
@@ -179,7 +192,7 @@ function getSchoolAccommodations(weakSubAreas) {
 /**
  * Generate the HTML report string for download
  */
-function generateReportHTML(type, clientName, assessments, analysis, snapshotComparison, branding) {
+function generateReportHTML(type, clientName, assessments, analysis, snapshotComparison, branding, clinicalFields) {
   const date = new Date().toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' })
   const { scores, totalSkills, assessed, needsWork, developing, solid, weakSubAreas, strongSubAreas, cascadeIssues } = analysis
   const orgName = branding?.orgName || 'SkillCascade'
@@ -212,7 +225,22 @@ function generateReportHTML(type, clientName, assessments, analysis, snapshotCom
     li { margin-bottom: 4px; }
     .footer { margin-top: 40px; padding-top: 12px; border-top: 1px solid #e8d5c0; font-size: 10px; color: #c49a6c; display: flex; justify-content: space-between; }
     .confidential { font-size: 10px; color: #d44d3f; font-weight: 600; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 16px; }
-    @media print { body { padding: 0; } }
+    .demographics-table { border: none; margin: 8px 0 16px; }
+    .demographics-table td { border: none; padding: 4px 0; font-size: 12px; line-height: 1.8; }
+    .composite-score { text-align: center; margin: 16px 0; padding: 20px; background: #fdf8f0; border-radius: 8px; }
+    .composite-number { font-size: 36px; font-weight: 700; color: #3d2a1c; }
+    .composite-label { font-size: 11px; color: #7d5235; margin: 2px 0 8px; text-transform: uppercase; letter-spacing: 1px; }
+    .composite-badge { display: inline-block; padding: 4px 16px; border-radius: 12px; font-size: 12px; font-weight: 600; }
+    .chart-container { margin: 12px 0 20px; }
+    .chart-container svg { max-width: 100%; height: auto; }
+    .signature-block { margin-top: 40px; padding-top: 24px; }
+    .sig-line { width: 280px; border-top: 1px solid #3d2a1c; margin-bottom: 8px; }
+    .signature-block p { margin: 2px 0; font-size: 12px; color: #3d2a1c; }
+    @media print {
+      body { padding: 0; }
+      h2 { page-break-before: auto; }
+      table, .chart-container, .composite-score, .signature-block { page-break-inside: avoid; }
+    }
   `
 
   let html = `<!DOCTYPE html><html><head><meta charset="utf-8"><title>${orgName} Report - ${clientName}</title><style>${styles}</style></head><body>`
@@ -222,6 +250,8 @@ function generateReportHTML(type, clientName, assessments, analysis, snapshotCom
     html += generateSchoolReport(clientName, date, analysis)
   } else if (type === REPORT_TYPES.MEDICAL) {
     html += generateMedicalReport(clientName, date, analysis)
+  } else if (type === REPORT_TYPES.INSURANCE) {
+    html += generateInsuranceReport(clientName, date, analysis, assessments, clinicalFields)
   } else {
     html += generateProgressReport(clientName, date, analysis, snapshotComparison)
   }
@@ -450,6 +480,207 @@ function generateProgressReport(clientName, date, analysis, snapshotComparison) 
   return html
 }
 
+/* ─────────────────────────────────────────────
+   Adaptive Level Mapping (Vineland-style)
+   ───────────────────────────────────────────── */
+
+function getAdaptiveLevel(score) {
+  if (score >= 2.5) return { label: 'High', cssClass: 'badge-high', color: '#31543d', bg: '#dce8de' }
+  if (score >= 1.5) return { label: 'Adequate', cssClass: 'badge-adequate', color: '#78350f', bg: '#fefce8' }
+  if (score >= 1.0) return { label: 'Moderately Low', cssClass: 'badge-modlow', color: '#92400e', bg: '#fef3c7' }
+  return { label: 'Low', cssClass: 'badge-low', color: '#b63a2e', bg: '#fce0dd' }
+}
+
+function generateInsuranceReport(clientName, date, analysis, assessments, clinicalFields) {
+  const { scores, totalSkills, assessed, needsWork, developing, solid, weakSubAreas, strongSubAreas, cascadeIssues } = analysis
+  const {
+    examinerName = '', examinerCredentials = '', examinerLicense = '',
+    clientDOB = '', diagnosis = '', referralSource = '',
+    showDomainBarChart = true, showRadarChart = true, showMasteryGrid = true,
+  } = clinicalFields || {}
+
+  // Compute cascade data
+  const domainHealth = computeDomainHealth(assessments)
+  const impactRanking = computeImpactRanking(assessments)
+  const risks = detectCascadeRisks(assessments)
+
+  // Composite score (weighted mean of domain averages)
+  let totalWeighted = 0, totalWeight = 0
+  for (const s of scores) {
+    if (s.assessed > 0) {
+      totalWeighted += s.score * s.assessed
+      totalWeight += s.assessed
+    }
+  }
+  const compositeScore = totalWeight > 0 ? totalWeighted / totalWeight : 0
+  const compositeLevel = getAdaptiveLevel(compositeScore)
+
+  let html = ''
+
+  // ── Section 1: Header & Demographics ──
+  html += `<h1>Clinical Assessment Report</h1>`
+  html += `<p class="subtitle">Developmental-Functional Skills Assessment</p>`
+
+  html += `<table class="demographics-table"><tr>`
+  html += `<td style="width:50%;vertical-align:top;padding-right:20px;">`
+  html += `<strong>Client:</strong> ${clientName}<br>`
+  if (clientDOB) html += `<strong>Date of Birth:</strong> ${clientDOB}<br>`
+  if (diagnosis) html += `<strong>Diagnosis:</strong> ${diagnosis}<br>`
+  if (referralSource) html += `<strong>Referral Source:</strong> ${referralSource}<br>`
+  html += `</td><td style="width:50%;vertical-align:top;">`
+  if (examinerName) html += `<strong>Examiner:</strong> ${examinerName}<br>`
+  if (examinerCredentials) html += `<strong>Credentials:</strong> ${examinerCredentials}<br>`
+  if (examinerLicense) html += `<strong>License #:</strong> ${examinerLicense}<br>`
+  html += `<strong>Assessment Date:</strong> ${date}<br>`
+  html += `</td></tr></table>`
+
+  html += `<div class="callout" style="margin-top:12px;"><strong>Note:</strong> This report uses a criterion-referenced 0–3 rating scale (Not Assessed = 0, Needs Work = 1, Developing = 2, Solid = 3). Scores reflect mastery of discrete functional skills and are not norm-referenced standard scores. Adaptive levels are derived from domain mean scores.</div>`
+
+  // ── Section 2: Composite Summary ──
+  html += `<h2>Composite Summary</h2>`
+  html += `<div class="composite-score">`
+  html += `<div class="composite-number">${compositeScore.toFixed(2)}</div>`
+  html += `<div class="composite-label">Composite Score</div>`
+  html += `<div class="composite-badge" style="background:${compositeLevel.bg};color:${compositeLevel.color}">${compositeLevel.label}</div>`
+  html += `</div>`
+
+  html += `<table><tr><th>Metric</th><th style="text-align:center">Value</th></tr>`
+  html += `<tr><td>Total Skills in Framework</td><td style="text-align:center">${totalSkills}</td></tr>`
+  html += `<tr><td>Skills Assessed</td><td style="text-align:center">${assessed} (${totalSkills > 0 ? Math.round((assessed / totalSkills) * 100) : 0}%)</td></tr>`
+  html += `<tr><td>Solid (Score = 3)</td><td style="text-align:center">${solid} (${assessed > 0 ? Math.round((solid / assessed) * 100) : 0}%)</td></tr>`
+  html += `<tr><td>Developing (Score = 2)</td><td style="text-align:center">${developing} (${assessed > 0 ? Math.round((developing / assessed) * 100) : 0}%)</td></tr>`
+  html += `<tr><td>Needs Work (Score = 1)</td><td style="text-align:center">${needsWork} (${assessed > 0 ? Math.round((needsWork / assessed) * 100) : 0}%)</td></tr>`
+  html += `</table>`
+
+  // ── Section 3: Domain Bar Chart ──
+  if (showDomainBarChart && scores.length > 0) {
+    html += `<h2>Domain Score Profile</h2>`
+    html += `<div class="chart-container">${generateDomainBarChart(scores)}</div>`
+  }
+
+  // ── Section 4: Radar Profile ──
+  if (showRadarChart && scores.length > 0) {
+    html += `<h2>Developmental Profile</h2>`
+    html += `<div class="chart-container" style="text-align:center">${generateRadarChart(scores)}</div>`
+  }
+
+  // ── Section 5: Per-Domain Analysis ──
+  html += `<h2>Domain Analysis</h2>`
+  for (const s of scores) {
+    const clinical = CLINICAL_FRAMING[s.domainId]
+    const level = s.assessed > 0 ? getAdaptiveLevel(s.score) : null
+    const masteryPct = s.assessed > 0 && s.total > 0 ? Math.round((s.assessed / s.total) * 100) : 0
+
+    html += `<h3>${s.domain} — ${clinical}</h3>`
+    html += `<p>Mean Score: <strong>${s.assessed > 0 ? s.score.toFixed(2) : '—'}</strong>/3.00`
+    if (level) html += ` &nbsp;<span class="badge" style="background:${level.bg};color:${level.color}">${level.label}</span>`
+    html += `<br>Assessment Coverage: ${s.assessed}/${s.total} skills (${masteryPct}%)</p>`
+
+    // Sub-area detail table
+    const domain = framework.find(d => d.id === s.domainId)
+    if (domain) {
+      html += `<table><tr><th>Sub-Area</th><th style="text-align:center">Assessed</th><th style="text-align:center">Mean</th><th>Level</th></tr>`
+      for (const sa of domain.subAreas) {
+        let saTotal = 0, saCount = 0
+        for (const sg of sa.skillGroups) {
+          for (const skill of sg.skills) {
+            const lv = assessments[skill.id] ?? 0
+            if (lv > 0) { saCount++; saTotal += lv }
+          }
+        }
+        const saSkillCount = sa.skillGroups.reduce((sum, sg) => sum + sg.skills.length, 0)
+        const saAvg = saCount > 0 ? saTotal / saCount : 0
+        const saLevel = saCount > 0 ? getAdaptiveLevel(saAvg) : null
+        html += `<tr><td>${sa.name}</td><td style="text-align:center">${saCount}/${saSkillCount}</td><td style="text-align:center">${saCount > 0 ? saAvg.toFixed(2) : '—'}</td>`
+        html += `<td>${saLevel ? `<span class="badge" style="background:${saLevel.bg};color:${saLevel.color}">${saLevel.label}</span>` : '<span class="badge badge-na">N/A</span>'}</td></tr>`
+      }
+      html += `</table>`
+    }
+
+    // Cascade note for this domain
+    const domainCascades = cascadeIssues.filter(c => c.domainId === s.domainId)
+    if (domainCascades.length > 0) {
+      html += `<div class="callout callout-alert"><strong>Cascade Note:</strong> `
+      for (const c of domainCascades) {
+        html += `Performance may be constrained by prerequisite deficits in ${c.prerequisite} (${c.prereqScore.toFixed(2)}/3.00). `
+      }
+      html += `</div>`
+    }
+  }
+
+  // ── Section 6: Mastery Grid ──
+  if (showMasteryGrid) {
+    html += `<h2>Skill Mastery Grid</h2>`
+    html += `<p style="font-size:11px;color:#7d5235;">Each cell represents one skill. Color indicates mastery level.</p>`
+    html += `<div class="chart-container">${generateMasteryGrid(assessments, framework)}</div>`
+  }
+
+  // ── Section 7: Cascade Analysis ──
+  html += `<h2>Developmental Cascade Analysis</h2>`
+  if (cascadeIssues.length > 0) {
+    html += `<div class="callout callout-alert"><strong>Foundation deficits detected.</strong> The following prerequisite weaknesses may be constraining progress in dependent domains:</div>`
+    html += `<table><tr><th>Domain</th><th>Constrained By</th><th style="text-align:center">Prereq Score</th><th>Impact</th></tr>`
+    for (const issue of cascadeIssues) {
+      html += `<tr><td>${issue.domain}</td><td>${issue.prerequisite}</td><td style="text-align:center">${issue.prereqScore.toFixed(2)}/3.00</td><td>Prerequisite weakness may limit skill acquisition in this domain</td></tr>`
+    }
+    html += `</table>`
+  } else {
+    html += `<div class="callout callout-good">No significant cascade constraints detected. Prerequisite domains appear adequately developed to support current skill targets.</div>`
+  }
+
+  // Top leverage domains
+  if (impactRanking.length > 0) {
+    html += `<h3>Highest-Leverage Intervention Targets</h3>`
+    html += `<table><tr><th>#</th><th>Domain</th><th style="text-align:center">Leverage Score</th><th>Rationale</th></tr>`
+    const top3 = impactRanking.slice(0, 3)
+    for (let i = 0; i < top3.length; i++) {
+      const r = top3[i]
+      const domainName = framework.find(d => d.id === r.domainId)?.name || r.domainId
+      html += `<tr><td>${i + 1}</td><td>${domainName}</td><td style="text-align:center">${r.leverageScore?.toFixed(2) || '—'}</td><td>Improvements here cascade to ${r.dependentCount || 0} dependent domain(s)</td></tr>`
+    }
+    html += `</table>`
+  }
+
+  // ── Section 8: Clinical Narrative ──
+  html += `<h2>Clinical Summary</h2>`
+  const narrative = generateClinicalSummary(domainHealth, impactRanking, risks, [])
+  html += `<p>${narrative.replace(/\n/g, '</p><p>')}</p>`
+
+  // ── Section 9: Recommendations ──
+  html += `<h2>Recommendations</h2>`
+  html += `<ol>`
+
+  // Top priority goals from weak sub-areas
+  const priorityGoals = weakSubAreas.slice(0, 5)
+  for (const sa of priorityGoals) {
+    const targetLevel = sa.avg < 1.5 ? 'Adequate (1.5+)' : 'High (2.5+)'
+    html += `<li><strong>${sa.name}</strong> (${sa.domain.name}) — Current: ${sa.avg.toFixed(2)}/3.00. Target: ${targetLevel}.</li>`
+  }
+
+  if (priorityGoals.length === 0) {
+    html += `<li>Continue monitoring all domains with periodic re-assessment.</li>`
+  }
+
+  // Standard recommendations
+  if (cascadeIssues.length > 0) {
+    html += `<li>Prioritize foundational domain remediation (Regulation, Self-Awareness, Flexibility) before targeting higher-order skills.</li>`
+  }
+  html += `<li>Re-assessment recommended in 90 days to monitor progress and adjust treatment goals.</li>`
+  html += `<li>Coordinate with caregivers and educational team for generalization across settings.</li>`
+  html += `</ol>`
+
+  // ── Section 10: Signature Block ──
+  html += `<div class="signature-block">`
+  html += `<div class="sig-line"></div>`
+  html += `<p><strong>${examinerName || '______________________________'}</strong></p>`
+  if (examinerCredentials) html += `<p>${examinerCredentials}</p>`
+  if (examinerLicense) html += `<p>License #: ${examinerLicense}</p>`
+  html += `<p>Date: ${date}</p>`
+  html += `</div>`
+
+  return html
+}
+
 /**
  * ReportGenerator component — full-page view for generating audience-specific reports
  */
@@ -458,6 +689,11 @@ export default function ReportGenerator({ assessments, clientName, snapshots, on
   const [compareSnapshotId, setCompareSnapshotId] = useState('')
   const [generating, setGenerating] = useState(false)
   const [previewHTML, setPreviewHTML] = useState(null)
+  const [clinicalFields, setClinicalFields] = useState({
+    examinerName: '', examinerCredentials: '', examinerLicense: '',
+    clientDOB: '', diagnosis: '', referralSource: '',
+    showDomainBarChart: true, showRadarChart: true, showMasteryGrid: true,
+  })
 
   const analysis = useMemo(() => analyzeForReport(assessments), [assessments])
 
@@ -474,7 +710,7 @@ export default function ReportGenerator({ assessments, clientName, snapshots, on
 
     // Small timeout so the UI shows the generating state
     setTimeout(() => {
-      const html = generateReportHTML(selectedType, clientName, assessments, analysis, snapshotComparison, branding)
+      const html = generateReportHTML(selectedType, clientName, assessments, analysis, snapshotComparison, branding, clinicalFields)
       setPreviewHTML(html)
       setGenerating(false)
     }, 300)
@@ -521,7 +757,7 @@ export default function ReportGenerator({ assessments, clientName, snapshots, on
       {hasData && !previewHTML && (
         <>
           {/* Report type selector */}
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
             {Object.entries(REPORT_META).map(([key, meta]) => (
               <button
                 key={key}
@@ -568,6 +804,62 @@ export default function ReportGenerator({ assessments, clientName, snapshots, on
                   </option>
                 ))}
               </select>
+            </div>
+          )}
+
+          {/* Clinical fields (Insurance type) */}
+          {selectedType === REPORT_TYPES.INSURANCE && (
+            <div className="mb-6 bg-white rounded-xl border border-warm-200 p-4 sm:p-5">
+              <h3 className="text-sm font-semibold text-warm-700 mb-3">Clinical Information</h3>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <div>
+                  <label className="block text-xs text-warm-500 mb-1">Examiner Name</label>
+                  <input type="text" value={clinicalFields.examinerName} onChange={e => setClinicalFields(f => ({ ...f, examinerName: e.target.value }))}
+                    className="w-full px-3 py-2 min-h-[44px] text-sm rounded-lg border border-warm-200 text-warm-700 focus:outline-none focus:border-sage-400" placeholder="Jane Smith, BCBA" />
+                </div>
+                <div>
+                  <label className="block text-xs text-warm-500 mb-1">Credentials</label>
+                  <input type="text" value={clinicalFields.examinerCredentials} onChange={e => setClinicalFields(f => ({ ...f, examinerCredentials: e.target.value }))}
+                    className="w-full px-3 py-2 min-h-[44px] text-sm rounded-lg border border-warm-200 text-warm-700 focus:outline-none focus:border-sage-400" placeholder="BCBA, M.S. Applied Behavior Analysis" />
+                </div>
+                <div>
+                  <label className="block text-xs text-warm-500 mb-1">License #</label>
+                  <input type="text" value={clinicalFields.examinerLicense} onChange={e => setClinicalFields(f => ({ ...f, examinerLicense: e.target.value }))}
+                    className="w-full px-3 py-2 min-h-[44px] text-sm rounded-lg border border-warm-200 text-warm-700 focus:outline-none focus:border-sage-400" placeholder="BACB-1234567" />
+                </div>
+                <div>
+                  <label className="block text-xs text-warm-500 mb-1">Client Date of Birth</label>
+                  <input type="date" value={clinicalFields.clientDOB} onChange={e => setClinicalFields(f => ({ ...f, clientDOB: e.target.value }))}
+                    className="w-full px-3 py-2 min-h-[44px] text-sm rounded-lg border border-warm-200 text-warm-700 focus:outline-none focus:border-sage-400" />
+                </div>
+                <div className="sm:col-span-2">
+                  <label className="block text-xs text-warm-500 mb-1">Diagnosis</label>
+                  <input type="text" value={clinicalFields.diagnosis} onChange={e => setClinicalFields(f => ({ ...f, diagnosis: e.target.value }))}
+                    className="w-full px-3 py-2 min-h-[44px] text-sm rounded-lg border border-warm-200 text-warm-700 focus:outline-none focus:border-sage-400" placeholder="F84.0 Autism Spectrum Disorder" />
+                </div>
+                <div className="sm:col-span-2">
+                  <label className="block text-xs text-warm-500 mb-1">Referral Source</label>
+                  <input type="text" value={clinicalFields.referralSource} onChange={e => setClinicalFields(f => ({ ...f, referralSource: e.target.value }))}
+                    className="w-full px-3 py-2 min-h-[44px] text-sm rounded-lg border border-warm-200 text-warm-700 focus:outline-none focus:border-sage-400" placeholder="Dr. Johnson, Pediatrician" />
+                </div>
+              </div>
+              <div className="mt-4 pt-3 border-t border-warm-100">
+                <p className="text-xs text-warm-500 mb-2 font-medium">Visualizations to Include</p>
+                <div className="flex flex-wrap gap-4">
+                  {[
+                    { key: 'showDomainBarChart', label: 'Domain Bar Chart' },
+                    { key: 'showRadarChart', label: 'Radar Profile' },
+                    { key: 'showMasteryGrid', label: 'Mastery Grid' },
+                  ].map(({ key, label }) => (
+                    <label key={key} className="flex items-center gap-2 text-sm text-warm-600 cursor-pointer min-h-[44px]">
+                      <input type="checkbox" checked={clinicalFields[key]}
+                        onChange={e => setClinicalFields(f => ({ ...f, [key]: e.target.checked }))}
+                        className="w-4 h-4 rounded border-warm-300 text-sage-500 focus:ring-sage-400" />
+                      {label}
+                    </label>
+                  ))}
+                </div>
+              </div>
             </div>
           )}
 
