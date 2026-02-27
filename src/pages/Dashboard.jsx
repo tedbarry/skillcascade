@@ -589,6 +589,7 @@ export default function Dashboard() {
             assessments={assessments}
             snapshots={snapshots}
             risks={cascadeRisks}
+            onNavigate={setActiveView}
           />
           <SettingsDropdown />
           <Link

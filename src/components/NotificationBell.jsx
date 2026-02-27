@@ -64,7 +64,7 @@ function ActivityIcon({ type }) {
   )
 }
 
-export default function NotificationBell({ assessments = {}, snapshots = [], risks = [] }) {
+export default function NotificationBell({ assessments = {}, snapshots = [], risks = [], onNavigate }) {
   const [open, setOpen] = useState(false)
   const containerRef = useRef(null)
 
@@ -81,6 +81,7 @@ export default function NotificationBell({ assessments = {}, snapshots = [], ris
         title: 'Assessment updated',
         description: `${assessedCount} skills assessed`,
         timestamp: new Date().toISOString(),
+        navigateTo: 'assess',
       })
     }
 
@@ -94,6 +95,7 @@ export default function NotificationBell({ assessments = {}, snapshots = [], ris
           ? risks.map(r => r.label || r.subArea || r.domain || 'Unknown').join(', ')
           : `${risks.slice(0, 2).map(r => r.label || r.subArea || r.domain || 'Unknown').join(', ')} and ${risks.length - 2} more`,
         timestamp: new Date().toISOString(),
+        navigateTo: 'cascade',
       })
     }
 
@@ -110,6 +112,7 @@ export default function NotificationBell({ assessments = {}, snapshots = [], ris
         title: `Snapshot: ${snap.label || 'Untitled'}`,
         description: `Saved ${new Date(snap.timestamp).toLocaleDateString()}`,
         timestamp: snap.timestamp,
+        navigateTo: 'timeline',
       })
     }
 
@@ -205,9 +208,15 @@ export default function NotificationBell({ assessments = {}, snapshots = [], ris
                         </span>
                       </div>
                       {periodItems.map(item => (
-                        <div
+                        <button
                           key={item.id}
-                          className="px-4 py-2.5 flex items-start gap-2.5 hover:bg-warm-50 transition-colors border-b border-warm-50 last:border-b-0"
+                          onClick={() => {
+                            if (onNavigate && item.navigateTo) {
+                              onNavigate(item.navigateTo)
+                              setOpen(false)
+                            }
+                          }}
+                          className="w-full text-left px-4 py-2.5 flex items-start gap-2.5 hover:bg-warm-50 transition-colors border-b border-warm-50 last:border-b-0 cursor-pointer"
                           role="menuitem"
                         >
                           <ActivityIcon type={item.type} />
@@ -222,7 +231,7 @@ export default function NotificationBell({ assessments = {}, snapshots = [], ris
                           <span className="text-[10px] text-warm-400 flex-shrink-0 mt-0.5">
                             {relativeTime(item.timestamp)}
                           </span>
-                        </div>
+                        </button>
                       ))}
                     </div>
                   )
