@@ -3,7 +3,7 @@ import { motion } from 'framer-motion'
 import useResponsive from '../hooks/useResponsive.js'
 import { framework, ASSESSMENT_LEVELS } from '../data/framework.js'
 import { computeDomainHealth, detectCascadeRisks, computeImpactRanking } from '../data/cascadeModel.js'
-import EmptyState from './EmptyState.jsx'
+
 
 /** Animated counter — counts from 0 to target over duration ms */
 function AnimatedNumber({ value, duration = 800 }) {
@@ -312,41 +312,6 @@ export default function HomeDashboard({ assessments = {}, loading = false, snaps
     )
   }
 
-  // Welcome empty state when no assessment data exists
-  if (stats.assessedSkills === 0) {
-    return (
-      <div className="w-full max-w-6xl mx-auto px-3 sm:px-6 py-8 sm:py-16">
-        <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.4 }}>
-          <EmptyState
-            preset="assessment"
-            title={clientName ? `Start ${clientName}'s Assessment` : 'Welcome to SkillCascade'}
-            description={clientName
-              ? 'Begin by assessing skills across all 9 developmental domains. Start with a quick adaptive assessment or dive into the full assessment.'
-              : 'Select a client from the header, then run your first assessment to unlock insights across 9 developmental domains.'}
-          />
-          <div className={`mt-8 flex flex-col sm:flex-row items-center justify-center gap-3`}>
-            <motion.button
-              whileHover={{ scale: 1.02 }}
-              whileTap={{ scale: 0.98 }}
-              onClick={() => onChangeView('quick-assess')}
-              className="px-6 py-3 min-h-[44px] bg-sage-500 text-white rounded-xl text-sm font-medium hover:bg-sage-600 transition-colors shadow-sm"
-            >
-              Quick Assessment (~2 min)
-            </motion.button>
-            <motion.button
-              whileHover={{ scale: 1.02 }}
-              whileTap={{ scale: 0.98 }}
-              onClick={() => onChangeView('assess')}
-              className="px-6 py-3 min-h-[44px] border border-warm-200 text-warm-600 rounded-xl text-sm font-medium hover:bg-warm-50 transition-colors"
-            >
-              Full Assessment
-            </motion.button>
-          </div>
-        </motion.div>
-      </div>
-    )
-  }
-
   return (
     <div className="w-full max-w-6xl mx-auto px-3 sm:px-6 py-4 sm:py-8">
       {/* Header */}
@@ -362,6 +327,28 @@ export default function HomeDashboard({ assessments = {}, loading = false, snaps
           {clientName ? 'Assessment overview and quick actions' : 'Select a client to get started'}
         </p>
       </div>
+
+      {/* Get started banner when no assessments exist */}
+      {stats.assessedSkills === 0 && (
+        <motion.div
+          initial={{ opacity: 0, y: 6 }}
+          animate={{ opacity: 1, y: 0 }}
+          className="mb-6 p-4 bg-sage-50 border border-sage-200 rounded-xl flex flex-col sm:flex-row items-start sm:items-center gap-3"
+        >
+          <div className="flex-1 min-w-0">
+            <p className="text-sm font-medium text-sage-800">No assessment data yet</p>
+            <p className="text-xs text-sage-600 mt-0.5">Run an assessment to populate this dashboard with insights across all 9 domains.</p>
+          </div>
+          <div className="flex gap-2 shrink-0">
+            <button onClick={() => onChangeView('quick-assess')} className="px-4 py-2 min-h-[44px] bg-sage-500 text-white rounded-lg text-sm font-medium hover:bg-sage-600 transition-colors">
+              Quick Assessment
+            </button>
+            <button onClick={() => onChangeView('assess')} className="px-4 py-2 min-h-[44px] border border-sage-300 text-sage-700 rounded-lg text-sm font-medium hover:bg-sage-100 transition-colors">
+              Full Assessment
+            </button>
+          </div>
+        </motion.div>
+      )}
 
       {/* Progress insight */}
       {snapshots.length > 0 && (() => {
