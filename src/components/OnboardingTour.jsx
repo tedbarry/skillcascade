@@ -15,74 +15,248 @@ const ROLES = {
 }
 
 /**
- * Tour step definitions. Each step targets a DOM element via
- * data-tour="<selector>" attribute. If the element is not found
- * at runtime, the step is silently skipped.
+ * Tour step definitions.
+ *
+ * Each step targets a DOM element via data-tour="<selector>" attribute.
+ * If the element is not found at runtime, the step is silently skipped.
+ *
+ * `navigateTo` — if set, the tour switches to this dashboard view before
+ *                showing the step (allows cross-view tours).
  */
 const BCBA_STEPS = [
+  // ── Phase 1: Welcome & Setup ──
   {
     id: 'welcome',
-    selector: null, // No element — centered modal
+    selector: null,
     title: 'Welcome to SkillCascade!',
     description:
-      'This tool helps you get a bird\'s-eye view of your client\'s developmental skills across 9 interconnected domains.',
+      'This quick tour walks you through every feature — from assessment to clinical intelligence. You can come back to this tour anytime from Settings.',
     placement: 'center',
+    phase: 'Welcome',
   },
   {
     id: 'client-manager',
     selector: '[data-tour="client-manager"]',
     title: 'Client Manager',
     description:
-      'Start by creating or selecting a client. Their assessment data is saved automatically.',
+      'Start here. Create a client profile or select an existing one — all assessment data is tied to the active client and saved automatically.',
     placement: 'bottom',
+    phase: 'Welcome',
+  },
+
+  // ── Phase 2: Home Dashboard ──
+  {
+    id: 'home-stats',
+    selector: '[data-tour="home-stats"]',
+    title: 'At-a-Glance Stats',
+    description:
+      'The completion ring shows overall assessment progress. The stat cards break down skills by mastery level, domains mastered, and active alerts.',
+    placement: 'bottom',
+    navigateTo: 'home',
+    phase: 'Home',
   },
   {
-    id: 'view-tabs',
-    selector: '[data-tour="view-tabs"]',
-    title: 'Visualization Views',
+    id: 'home-domains',
+    selector: '[data-tour="home-domains"]',
+    title: 'Domain Health Grid',
     description:
-      'Switch between visualizations: Sunburst for hierarchy, Radar for domain comparison, Skill Tree for dependencies, and more.',
-    placement: 'bottom',
+      'Each card represents one of the 9 developmental domains. Click any card to jump directly into assessing that domain. Color and percentage show current health.',
+    placement: 'top',
+    navigateTo: 'home',
+    phase: 'Home',
+  },
+  {
+    id: 'home-actions',
+    selector: '[data-tour="home-actions"]',
+    title: 'Quick Actions',
+    description:
+      'Shortcuts to your most common tasks — the top suggestion is auto-prioritized by cascade logic to target the highest-leverage domain first.',
+    placement: 'top',
+    navigateTo: 'home',
+    phase: 'Home',
+  },
+  {
+    id: 'home-alerts',
+    selector: '[data-tour="home-alerts"]',
+    title: 'Alerts & Insights',
+    description:
+      'SkillCascade automatically detects 7 risk patterns: regressions, bottlenecks, plateaus, skill inversions, and more. Alerts appear here with specific recommendations.',
+    placement: 'top',
+    navigateTo: 'home',
+    phase: 'Home',
+  },
+
+  // ── Phase 3: Assessment ──
+  {
+    id: 'full-assessment',
+    selector: '[data-tour="assess-view"]',
+    title: 'Full Assessment',
+    description:
+      'Rate each of the 300+ skills across 9 domains on a 0–3 scale. Navigate between domains and sub-areas using the tree on the left, or arrow keys for speed.',
+    placement: 'right',
+    navigateTo: 'assess',
+    phase: 'Assess',
   },
   {
     id: 'quick-assess',
-    selector: '[data-tour="quick-assess"]',
-    title: 'Quick Assess',
+    selector: '[data-tour="quick-assess-view"]',
+    title: 'Quick Assessment',
     description:
-      'New clients? Use Quick Assess for a rapid screening that drills into gaps only \u2014 saves ~30 minutes vs the full assessment.',
+      'Short on time? Quick Assess uses adaptive branching — it asks smart follow-up questions and drills into gaps only. Takes ~2 minutes instead of 30.',
     placement: 'bottom',
+    navigateTo: 'quick-assess',
+    phase: 'Assess',
+  },
+
+  // ── Phase 4: Visualizations ──
+  {
+    id: 'sunburst',
+    selector: '[data-tour="sunburst-view"]',
+    title: 'Sunburst — Skill Hierarchy',
+    description:
+      'A radial hierarchy view: center ring = domains, middle = sub-areas, outer = individual skills. Click any segment to drill down. Colors show mastery level.',
+    placement: 'right',
+    navigateTo: 'sunburst',
+    phase: 'Visualize',
   },
   {
-    id: 'full-assessment',
-    selector: '[data-tour="full-assessment"]',
-    title: 'Full Assessment',
+    id: 'radar',
+    selector: '[data-tour="radar-view"]',
+    title: 'Radar — Domain Comparison',
     description:
-      'For detailed assessment, rate each of the 300+ skills individually. Use arrow keys to navigate between sub-areas.',
-    placement: 'bottom',
+      'Compare all 9 domains at once on a spider chart. Quickly spot uneven profiles — a lopsided shape reveals which domains need attention.',
+    placement: 'right',
+    navigateTo: 'radar',
+    phase: 'Visualize',
   },
+  {
+    id: 'skill-tree',
+    selector: '[data-tour="tree-view"]',
+    title: 'Skill Tree — Dependencies',
+    description:
+      'See how domains depend on each other as a horizontal tree. Bottleneck nodes are highlighted — these are the skills blocking the most downstream progress.',
+    placement: 'right',
+    navigateTo: 'tree',
+    phase: 'Visualize',
+  },
+  {
+    id: 'explorer',
+    selector: '[data-tour="explorer-view"]',
+    title: 'Dependency Explorer',
+    description:
+      'Three-level drill-down: Domain Chord Diagram → Sub-Area Web → Skill Explorer. Understand exactly which prerequisites are met, missing, or blocking progress.',
+    placement: 'right',
+    navigateTo: 'explorer',
+    phase: 'Visualize',
+  },
+
+  // ── Phase 5: Intelligence & Analysis ──
+  {
+    id: 'intelligence',
+    selector: '[data-tour="cascade-view"]',
+    title: 'Clinical Intelligence',
+    description:
+      'Five purpose-driven views: Status Map, Bottleneck Finder, Intervention Planner, Risk Monitor, and Progress Story. Switch between "Tell me what to do" and "Show me why" modes.',
+    placement: 'right',
+    navigateTo: 'cascade',
+    phase: 'Analyze',
+  },
+  {
+    id: 'timeline',
+    selector: '[data-tour="timeline-view"]',
+    title: 'Progress Timeline',
+    description:
+      'Track changes over time by saving snapshots. Compare any two points to see growth, regression, or plateaus across all domains.',
+    placement: 'right',
+    navigateTo: 'timeline',
+    phase: 'Analyze',
+  },
+  {
+    id: 'alerts',
+    selector: '[data-tour="alerts-view"]',
+    title: 'Pattern Alerts',
+    description:
+      'The alert engine continuously monitors for 7 risk types across all domains. Each alert includes affected skills and suggested next steps.',
+    placement: 'right',
+    navigateTo: 'alerts',
+    phase: 'Analyze',
+  },
+
+  // ── Phase 6: Planning & Reporting ──
   {
     id: 'goals',
-    selector: '[data-tour="goals"]',
+    selector: '[data-tour="goals-view"]',
     title: 'Goal Engine',
     description:
-      'The Goal Engine automatically prioritizes treatment targets using cascade logic \u2014 foundation skills first.',
-    placement: 'bottom',
+      'Auto-prioritized treatment targets using cascade logic — foundation skills surface first. Create, track, and measure goals with built-in progress tracking.',
+    placement: 'right',
+    navigateTo: 'goals',
+    phase: 'Plan',
   },
+  {
+    id: 'reports',
+    selector: '[data-tour="reports-view"]',
+    title: 'Reports',
+    description:
+      'Generate four report types: Parent Summary, Progress Report, Clinical Assessment (insurance-ready with BCBA signature block), and Custom. Download as standalone HTML or print.',
+    placement: 'right',
+    navigateTo: 'reports',
+    phase: 'Plan',
+  },
+
+  // ── Phase 7: Team & Collaboration ──
+  {
+    id: 'caseload',
+    selector: '[data-tour="caseload-view"]',
+    title: 'Caseload Management',
+    description:
+      'View your full client roster with health summaries, last-assessed dates, and quick actions. Sort and filter to focus on clients who need attention.',
+    placement: 'right',
+    navigateTo: 'caseload',
+    phase: 'Team',
+  },
+
+  // ── Phase 8: Power Tools ──
   {
     id: 'ai-tools',
     selector: '[data-tour="ai-tools"]',
     title: 'AI Tools',
     description:
-      '8 specialized AI tools help you write goals, BIPs, reports, and operational definitions \u2014 pre-loaded with your client\'s data.',
+      '8 specialized AI assistants help write goals, BIPs, operational definitions, session notes, and reports — all pre-loaded with your client\'s current assessment data.',
     placement: 'bottom-end',
+    navigateTo: 'home',
+    phase: 'Tools',
   },
   {
     id: 'search',
     selector: '[data-tour="search"]',
     title: 'Global Search',
     description:
-      'Press Ctrl+K anytime to search across all skills and jump directly to any area.',
+      'Press Ctrl+K (or Cmd+K) anytime to search across all 300+ skills, 47 sub-areas, and 9 domains. Jump directly to any skill from anywhere.',
     placement: 'bottom-end',
+    navigateTo: 'home',
+    phase: 'Tools',
+  },
+  {
+    id: 'sidebar-nav',
+    selector: '[data-tour="view-tabs"]',
+    title: 'Navigation Sidebar',
+    description:
+      'All views are organized into groups: Visualize, Analyze, Assess, Plan, Team, and Settings. Collapse the sidebar with the arrow for more screen space.',
+    placement: 'right',
+    navigateTo: 'home',
+    phase: 'Tools',
+  },
+
+  // ── Finish ──
+  {
+    id: 'finish',
+    selector: null,
+    title: 'You\'re All Set!',
+    description:
+      'That covers all the major features. Start by selecting a client and running a Quick Assessment — the dashboard will come alive with insights. You can restart this tour anytime from the sidebar.',
+    placement: 'center',
+    phase: 'Done',
   },
 ]
 
@@ -92,8 +266,9 @@ const PARENT_STEPS = [
     selector: null,
     title: 'Welcome to SkillCascade!',
     description:
-      'This tool helps you see your child\'s developmental skills across 9 key areas \u2014 all in one place.',
+      'This tool helps you see your child\'s developmental skills across 9 key areas — all in one place. Let us show you around!',
     placement: 'center',
+    phase: 'Welcome',
   },
   {
     id: 'client-manager',
@@ -102,30 +277,77 @@ const PARENT_STEPS = [
     description:
       'Start by creating a profile for your child. Progress is saved automatically so you can come back anytime.',
     placement: 'bottom',
+    phase: 'Welcome',
   },
   {
-    id: 'view-tabs',
-    selector: '[data-tour="view-tabs"]',
-    title: 'Different Ways to View Progress',
+    id: 'home-stats',
+    selector: '[data-tour="home-stats"]',
+    title: 'Progress at a Glance',
     description:
-      'Switch between different charts: the Sunburst shows all skill areas at once, Radar compares progress across areas, and more.',
+      'The ring shows how much of the assessment is complete. The cards show how many skills are strong, which need work, and if there are any alerts.',
     placement: 'bottom',
+    navigateTo: 'home',
+    phase: 'Home',
+  },
+  {
+    id: 'home-domains',
+    selector: '[data-tour="home-domains"]',
+    title: 'Skill Areas',
+    description:
+      'Each card is one of 9 developmental areas. Tap any card to see the individual skills in that area and how your child is doing.',
+    placement: 'top',
+    navigateTo: 'home',
+    phase: 'Home',
+  },
+  {
+    id: 'sunburst',
+    selector: '[data-tour="sunburst-view"]',
+    title: 'Visual Overview',
+    description:
+      'This colorful chart shows all skill areas at once. Green means strong, red means needs work. Tap any section to zoom in and see details.',
+    placement: 'right',
+    navigateTo: 'sunburst',
+    phase: 'Visualize',
+  },
+  {
+    id: 'radar',
+    selector: '[data-tour="radar-view"]',
+    title: 'Area Comparison',
+    description:
+      'This spider chart lets you compare all 9 areas side by side. A balanced shape means even development across areas.',
+    placement: 'right',
+    navigateTo: 'radar',
+    phase: 'Visualize',
   },
   {
     id: 'quick-assess',
-    selector: '[data-tour="quick-assess"]',
+    selector: '[data-tour="quick-assess-view"]',
     title: 'Quick Check-In',
     description:
-      'Getting started? The Quick Assess walks you through a short screening to identify where your child is today.',
+      'Getting started? The Quick Assessment walks you through a short screening (~2 minutes) to identify where your child is today.',
     placement: 'bottom',
+    navigateTo: 'quick-assess',
+    phase: 'Assess',
   },
   {
     id: 'full-assessment',
-    selector: '[data-tour="full-assessment"]',
+    selector: '[data-tour="assess-view"]',
     title: 'Detailed Assessment',
     description:
       'For a thorough look, rate each skill one by one. Use arrow keys to move between areas.',
-    placement: 'bottom',
+    placement: 'right',
+    navigateTo: 'assess',
+    phase: 'Assess',
+  },
+  {
+    id: 'goals',
+    selector: '[data-tour="goals-view"]',
+    title: 'Goals',
+    description:
+      'See which skills to work on next, automatically prioritized based on what will have the biggest impact.',
+    placement: 'right',
+    navigateTo: 'goals',
+    phase: 'Plan',
   },
   {
     id: 'search',
@@ -134,6 +356,17 @@ const PARENT_STEPS = [
     description:
       'Press Ctrl+K anytime to search for a specific skill and jump right to it.',
     placement: 'bottom-end',
+    navigateTo: 'home',
+    phase: 'Tools',
+  },
+  {
+    id: 'finish',
+    selector: null,
+    title: 'You\'re Ready!',
+    description:
+      'Start with a Quick Assessment to see your child\'s profile come to life. You can restart this tour anytime from the sidebar.',
+    placement: 'center',
+    phase: 'Done',
   },
 ]
 
@@ -145,10 +378,6 @@ const TOOLTIP_GAP = 12
 const TOOLTIP_ARROW_SIZE = 8
 const SPOTLIGHT_PADDING = 8
 
-/**
- * Compute tooltip position and arrow direction relative to the
- * target element's bounding rect and the viewport.
- */
 function computeTooltipPosition(targetRect, placement, tooltipRect) {
   if (!targetRect || placement === 'center') {
     return {
@@ -201,7 +430,7 @@ function computeTooltipPosition(targetRect, placement, tooltipRect) {
     }
   }
 
-  // Clamp to viewport boundaries with some padding
+  // Clamp to viewport boundaries
   const edgePad = 16
   if (tooltipRect) {
     if (left < edgePad) left = edgePad
@@ -224,9 +453,6 @@ function computeTooltipPosition(targetRect, placement, tooltipRect) {
   }
 }
 
-/**
- * Compute arrow position to point at the center of the target element.
- */
 function computeArrowStyle(arrowSide, targetRect, tooltipRect) {
   if (!arrowSide || !targetRect || !tooltipRect) return {}
 
@@ -240,8 +466,7 @@ function computeArrowStyle(arrowSide, targetRect, tooltipRect) {
       top: `-${size}px`,
       left: `${arrowLeft}px`,
       transform: 'translateX(-50%)',
-      width: 0,
-      height: 0,
+      width: 0, height: 0,
       borderLeft: `${size}px solid transparent`,
       borderRight: `${size}px solid transparent`,
       borderBottom: `${size}px solid white`,
@@ -255,8 +480,7 @@ function computeArrowStyle(arrowSide, targetRect, tooltipRect) {
       bottom: `-${size}px`,
       left: `${arrowLeft}px`,
       transform: 'translateX(-50%)',
-      width: 0,
-      height: 0,
+      width: 0, height: 0,
       borderLeft: `${size}px solid transparent`,
       borderRight: `${size}px solid transparent`,
       borderTop: `${size}px solid white`,
@@ -270,8 +494,7 @@ function computeArrowStyle(arrowSide, targetRect, tooltipRect) {
       left: `-${size}px`,
       top: `${arrowTop}px`,
       transform: 'translateY(-50%)',
-      width: 0,
-      height: 0,
+      width: 0, height: 0,
       borderTop: `${size}px solid transparent`,
       borderBottom: `${size}px solid transparent`,
       borderRight: `${size}px solid white`,
@@ -285,8 +508,7 @@ function computeArrowStyle(arrowSide, targetRect, tooltipRect) {
       right: `-${size}px`,
       top: `${arrowTop}px`,
       transform: 'translateY(-50%)',
-      width: 0,
-      height: 0,
+      width: 0, height: 0,
       borderTop: `${size}px solid transparent`,
       borderBottom: `${size}px solid transparent`,
       borderLeft: `${size}px solid white`,
@@ -318,11 +540,24 @@ const ParentIcon = (
   </svg>
 )
 
+/* Phase badge colors */
+const PHASE_COLORS = {
+  Welcome: 'bg-sage-100 text-sage-700',
+  Home: 'bg-warm-100 text-warm-700',
+  Assess: 'bg-coral-100 text-coral-700',
+  Visualize: 'bg-blue-100 text-blue-700',
+  Analyze: 'bg-purple-100 text-purple-700',
+  Plan: 'bg-amber-100 text-amber-700',
+  Team: 'bg-teal-100 text-teal-700',
+  Tools: 'bg-warm-100 text-warm-700',
+  Done: 'bg-sage-100 text-sage-700',
+}
+
 /* ─────────────────────────────────────────────
    OnboardingTour Component
    ───────────────────────────────────────────── */
 
-export default function OnboardingTour({ onComplete }) {
+export default function OnboardingTour({ onComplete, onNavigate }) {
   const { user } = useAuth()
   // Phase: 'role-select' | 'touring' | 'hidden'
   const [phase, setPhase] = useState('hidden')
@@ -332,6 +567,7 @@ export default function OnboardingTour({ onComplete }) {
   const [tooltipRect, setTooltipRect] = useState(null)
   const [isTransitioning, setIsTransitioning] = useState(false)
   const tooltipRef = useRef(null)
+  const navigationPending = useRef(false)
 
   // Determine the appropriate steps based on role
   const steps = useMemo(() => {
@@ -339,14 +575,8 @@ export default function OnboardingTour({ onComplete }) {
     return BCBA_STEPS
   }, [role])
 
-  // Filter steps to only those whose target elements exist (or have no selector)
-  const availableSteps = useMemo(() => {
-    return steps.filter((step) => {
-      if (!step.selector) return true
-      return document.querySelector(step.selector) !== null
-    })
-  }, [steps, phase]) // Re-evaluate when phase changes (elements may mount)
-
+  // For this comprehensive tour, we include ALL steps (navigation ensures elements exist)
+  const availableSteps = steps
   const totalSteps = availableSteps.length
   const step = availableSteps[currentStep] || null
 
@@ -364,9 +594,27 @@ export default function OnboardingTour({ onComplete }) {
     }
   }, [])
 
+  // Navigate to the correct view when a step has `navigateTo`
+  useEffect(() => {
+    if (phase !== 'touring' || !step) return
+    if (step.navigateTo && onNavigate) {
+      navigationPending.current = true
+      onNavigate(step.navigateTo)
+      // Allow 400ms for the view to mount before looking for the target
+      const timer = setTimeout(() => {
+        navigationPending.current = false
+        // Force re-render to pick up the new DOM element
+        setTargetRect(null)
+      }, 400)
+      return () => clearTimeout(timer)
+    }
+  }, [phase, currentStep, step, onNavigate])
+
   // Track the target element's position on each step change
   useEffect(() => {
     if (phase !== 'touring' || !step) return
+    // Don't measure while navigation is pending
+    if (navigationPending.current) return
 
     function updateTargetRect() {
       if (!step.selector) {
@@ -396,7 +644,6 @@ export default function OnboardingTour({ onComplete }) {
         rect.right <= window.innerWidth
       if (!isInView) {
         el.scrollIntoView({ behavior: 'smooth', block: 'center', inline: 'center' })
-        // Re-measure after scroll
         requestAnimationFrame(() => {
           const newRect = el.getBoundingClientRect()
           setTargetRect({
@@ -411,17 +658,18 @@ export default function OnboardingTour({ onComplete }) {
       }
     }
 
-    updateTargetRect()
+    // Small delay to let navigation settle
+    const initTimer = setTimeout(updateTargetRect, step.navigateTo ? 450 : 50)
 
-    // Re-measure on resize/scroll
     window.addEventListener('resize', updateTargetRect)
     window.addEventListener('scroll', updateTargetRect, true)
 
     return () => {
+      clearTimeout(initTimer)
       window.removeEventListener('resize', updateTargetRect)
       window.removeEventListener('scroll', updateTargetRect, true)
     }
-  }, [phase, step, currentStep])
+  }, [phase, step, currentStep, targetRect === null])
 
   // Measure tooltip dimensions after render
   useEffect(() => {
@@ -439,6 +687,8 @@ export default function OnboardingTour({ onComplete }) {
   // Complete the tour
   const completeTour = useCallback(() => {
     setPhase('hidden')
+    // Navigate back to home
+    if (onNavigate) onNavigate('home')
     try {
       localStorage.setItem(STORAGE_KEY, 'true')
       if (role) {
@@ -454,7 +704,7 @@ export default function OnboardingTour({ onComplete }) {
     }
 
     onComplete?.()
-  }, [onComplete, role, user])
+  }, [onComplete, onNavigate, role, user])
 
   // Skip tour
   const skipTour = useCallback(() => {
@@ -468,6 +718,7 @@ export default function OnboardingTour({ onComplete }) {
       setIsTransitioning(true)
       setTimeout(() => {
         setCurrentStep(nextIndex)
+        setTargetRect(null)
         setIsTransitioning(false)
       }, 150)
     },
@@ -634,6 +885,8 @@ export default function OnboardingTour({ onComplete }) {
       }
     : null
 
+  const phaseColor = PHASE_COLORS[step.phase] || PHASE_COLORS.Welcome
+
   return (
     <div
       className="fixed inset-0 z-[9999] print:hidden"
@@ -648,9 +901,7 @@ export default function OnboardingTour({ onComplete }) {
       >
         <defs>
           <mask id="tour-spotlight-mask">
-            {/* White = visible (the dark overlay) */}
             <rect x="0" y="0" width="100%" height="100%" fill="white" />
-            {/* Black = cutout (transparent hole) */}
             {spotlightRect && (
               <rect
                 x={spotlightRect.x}
@@ -675,7 +926,6 @@ export default function OnboardingTour({ onComplete }) {
           mask="url(#tour-spotlight-mask)"
           style={{ pointerEvents: 'auto' }}
           onClick={(e) => {
-            // Don't close — require explicit skip/complete
             e.stopPropagation()
           }}
         />
@@ -697,7 +947,7 @@ export default function OnboardingTour({ onComplete }) {
         />
       )}
 
-      {/* Allow clicks through to the spotlit element */}
+      {/* Pass-through click area over spotlit element */}
       {spotlightRect && (
         <div
           className="absolute"
@@ -708,7 +958,6 @@ export default function OnboardingTour({ onComplete }) {
             height: spotlightRect.h,
             borderRadius: spotlightRect.rx,
             transition: 'all 0.3s ease-in-out',
-            // This div sits above the SVG overlay to allow pointer events through to the element
             pointerEvents: 'none',
           }}
         />
@@ -745,6 +994,18 @@ export default function OnboardingTour({ onComplete }) {
 
           {/* Content */}
           <div className="px-5 pt-4 pb-3">
+            {/* Phase badge + step counter */}
+            <div className="flex items-center justify-between mb-2">
+              {step.phase && (
+                <span className={`text-[10px] font-semibold px-2 py-0.5 rounded-full ${phaseColor}`}>
+                  {step.phase}
+                </span>
+              )}
+              <span className="text-[11px] text-warm-400 font-medium">
+                {currentStep + 1} of {totalSteps}
+              </span>
+            </div>
+
             <h3 className="text-base font-bold text-warm-800 font-display mb-1.5">
               {step.title}
             </h3>
@@ -753,24 +1014,19 @@ export default function OnboardingTour({ onComplete }) {
               {step.description}
             </p>
 
-            {/* Step counter */}
-            <div className="text-[11px] text-warm-400 font-medium text-center mb-3">
-              {currentStep + 1} of {totalSteps}
-            </div>
-
-            {/* Progress dots */}
-            <div className="flex items-center justify-center gap-1.5 mb-4">
-              {availableSteps.map((_, i) => (
+            {/* Progress dots — compact for many steps */}
+            <div className="flex items-center justify-center gap-1 mb-4 flex-wrap">
+              {availableSteps.map((s, i) => (
                 <button
-                  key={i}
+                  key={s.id}
                   onClick={() => goToStep(i)}
                   aria-label={`Go to step ${i + 1}`}
                   className={`rounded-full transition-all duration-200 ${
                     i === currentStep
-                      ? 'w-5 h-2 bg-sage-500'
+                      ? 'w-4 h-1.5 bg-sage-500'
                       : i < currentStep
-                        ? 'w-2 h-2 bg-sage-300 hover:bg-sage-400'
-                        : 'w-2 h-2 bg-warm-200 hover:bg-warm-300'
+                        ? 'w-1.5 h-1.5 bg-sage-300 hover:bg-sage-400'
+                        : 'w-1.5 h-1.5 bg-warm-200 hover:bg-warm-300'
                   }`}
                 />
               ))}
@@ -806,7 +1062,7 @@ export default function OnboardingTour({ onComplete }) {
         </div>
       </div>
 
-      {/* Keyframe styles (also needed here in case role-select was skipped) */}
+      {/* Keyframe styles */}
       <style>{`
         @keyframes tourFadeIn {
           from { opacity: 0; transform: translateY(6px); }

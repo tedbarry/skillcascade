@@ -164,6 +164,7 @@ export default function Dashboard() {
   const [moreMenuOpen, setMoreMenuOpen] = useState(false)
   const [detailPanelOpen, setDetailPanelOpen] = useState(false)
   const [shortcutsOpen, setShortcutsOpen] = useState(false)
+  const [tourKey, setTourKey] = useState(0)
   const [navCollapsed, setNavCollapsed] = useState(() => {
     try { return localStorage.getItem('skillcascade_nav_collapsed') === 'true' } catch { return false }
   })
@@ -200,6 +201,11 @@ export default function Dashboard() {
   }, [])
   const scrollToTop = useCallback(() => {
     mainRef.current?.scrollTo({ top: 0, behavior: 'smooth' })
+  }, [])
+  const handleRestartTour = useCallback(() => {
+    try { localStorage.removeItem('skillcascade_onboarding_complete') } catch {}
+    setActiveView('home')
+    setTourKey(k => k + 1)
   }, [])
 
   // ─── Auto-save draft to localStorage ──────────────────────
@@ -710,6 +716,7 @@ export default function Dashboard() {
             onToggleCollapse={toggleNavCollapse}
             shortcutMap={SHORTCUT_MAP}
             onOpenShortcuts={() => setShortcutsOpen(true)}
+            onRestartTour={handleRestartTour}
           />
         )}
 
@@ -781,7 +788,7 @@ export default function Dashboard() {
           {/* Sunburst view */}
           {activeView === VIEWS.SUNBURST && (
             <Suspense fallback={<ViewLoader view={activeView} />}>
-              <div className="flex flex-col items-center w-full">
+              <div data-tour="sunburst-view" className="flex flex-col items-center w-full">
                 <h2 className="text-lg font-semibold text-warm-800 font-display mb-1">
                   Skills Profile — Sunburst View
                 </h2>
@@ -804,7 +811,7 @@ export default function Dashboard() {
           {/* Radar view */}
           {activeView === VIEWS.RADAR && (
             <Suspense fallback={<ViewLoader view={activeView} />}>
-              <div className="w-full max-w-2xl">
+              <div data-tour="radar-view" className="w-full max-w-2xl">
                 <h2 className="text-lg font-semibold text-warm-800 font-display mb-1 text-center">
                   Skills Profile — Domain Overview
                 </h2>
@@ -841,7 +848,7 @@ export default function Dashboard() {
           {/* Skill Tree view */}
           {activeView === VIEWS.TREE && (
             <Suspense fallback={<ViewLoader view={activeView} />}>
-              <div className="w-full max-w-4xl mx-auto">
+              <div data-tour="tree-view" className="w-full max-w-4xl mx-auto">
                 <h2 className="text-lg font-semibold text-warm-800 font-display mb-1 text-center">
                   Skill Tree — Domain Dependencies
                 </h2>
@@ -859,7 +866,7 @@ export default function Dashboard() {
           {/* Clinical Intelligence — replaces old Cascade view */}
           {activeView === VIEWS.CASCADE && (
             <Suspense fallback={<ViewLoader view={activeView} />}>
-              <div className="w-full h-full flex flex-col">
+              <div data-tour="cascade-view" className="w-full h-full flex flex-col">
                 <ClinicalIntelligence
                   assessments={assessments}
                   snapshots={snapshots}
@@ -875,7 +882,7 @@ export default function Dashboard() {
           {/* Timeline view */}
           {activeView === VIEWS.TIMELINE && (
             <Suspense fallback={<ViewLoader view={activeView} />}>
-              <div className="w-full h-full">
+              <div data-tour="timeline-view" className="w-full h-full">
                 <ProgressTimeline
                   snapshots={snapshots}
                   currentAssessments={assessments}
@@ -891,17 +898,19 @@ export default function Dashboard() {
           {/* Assessment view */}
           {activeView === VIEWS.ASSESS && (
             <Suspense fallback={<ViewLoader view={activeView} />}>
-              <AssessmentPanel
-                assessments={assessments}
-                onAssess={setAssessments}
-                initialSubAreaId={assessTarget}
-              />
+              <div data-tour="assess-view" className="w-full h-full">
+                <AssessmentPanel
+                  assessments={assessments}
+                  onAssess={setAssessments}
+                  initialSubAreaId={assessTarget}
+                />
+              </div>
             </Suspense>
           )}
 
           {/* Quick Assessment view */}
           {activeView === VIEWS.QUICK_ASSESS && (
-            <div className="w-full h-full">
+            <div data-tour="quick-assess-view" className="w-full h-full">
               <Suspense fallback={<ViewLoader view={activeView} />}>
                 <AdaptiveAssessment
                   assessments={assessments}
@@ -917,7 +926,7 @@ export default function Dashboard() {
 
           {/* Goals view */}
           {activeView === VIEWS.GOALS && (
-            <div className="w-full h-full overflow-y-auto">
+            <div data-tour="goals-view" className="w-full h-full overflow-y-auto">
               <Suspense fallback={<ViewLoader view={activeView} />}>
                 <GoalEngine
                   assessments={assessments}
@@ -931,7 +940,7 @@ export default function Dashboard() {
 
           {/* Alerts view */}
           {activeView === VIEWS.ALERTS && (
-            <div className="w-full h-full overflow-y-auto">
+            <div data-tour="alerts-view" className="w-full h-full overflow-y-auto">
               <Suspense fallback={<ViewLoader view={activeView} />}>
                 <PatternAlerts
                   assessments={assessments}
@@ -944,7 +953,7 @@ export default function Dashboard() {
 
           {/* Reports view */}
           {activeView === VIEWS.REPORTS && (
-            <div className="w-full h-full overflow-y-auto">
+            <div data-tour="reports-view" className="w-full h-full overflow-y-auto">
               <Suspense fallback={<ViewLoader view={activeView} />}>
                 <ReportGenerator
                   assessments={assessments}
@@ -973,7 +982,7 @@ export default function Dashboard() {
 
           {/* Caseload view */}
           {activeView === VIEWS.CASELOAD && (
-            <div className="w-full h-full overflow-y-auto">
+            <div data-tour="caseload-view" className="w-full h-full overflow-y-auto">
               <Suspense fallback={<ViewLoader view={activeView} />}>
                 <CaseloadDashboard
                   currentClientId={clientId}
@@ -1117,7 +1126,7 @@ export default function Dashboard() {
             </div>
           )}
           {activeView === VIEWS.EXPLORER && (
-            <div className="w-full h-full flex flex-col">
+            <div data-tour="explorer-view" className="w-full h-full flex flex-col">
               <Suspense fallback={<ViewLoader view={activeView} />}>
                 <DependencyExplorer assessments={assessments} />
               </Suspense>
@@ -1182,7 +1191,7 @@ export default function Dashboard() {
     <PrintReport assessments={assessments} clientName={clientName} snapshots={snapshots} branding={branding} />
     {/* Toasts now handled globally by ToastProvider in App.jsx */}
     <Suspense fallback={null}>
-      <OnboardingTour onComplete={() => {}} />
+      <OnboardingTour key={tourKey} onComplete={() => {}} onNavigate={(view) => setActiveView(view)} />
     </Suspense>
     <Suspense fallback={null}>
       <KeyboardShortcuts

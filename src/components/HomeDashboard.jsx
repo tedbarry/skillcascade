@@ -369,7 +369,7 @@ export default function HomeDashboard({ assessments = {}, snapshots = [], client
       })()}
 
       {/* Top row: Completion ring + Quick stats */}
-      <div className={`grid gap-4 sm:gap-6 mb-6 sm:mb-8 ${isPhone ? 'grid-cols-1' : 'grid-cols-[auto_1fr]'}`}>
+      <div data-tour="home-stats" className={`grid gap-4 sm:gap-6 mb-6 sm:mb-8 ${isPhone ? 'grid-cols-1' : 'grid-cols-[auto_1fr]'}`}>
         {/* Completion ring card */}
         <motion.div
           initial={{ opacity: 0, scale: 0.95 }}
@@ -407,7 +407,7 @@ export default function HomeDashboard({ assessments = {}, snapshots = [], client
       </div>
 
       {/* Domain health grid */}
-      <div className="mb-6 sm:mb-8">
+      <div data-tour="home-domains" className="mb-6 sm:mb-8">
         <div className="flex items-center justify-between mb-3">
           <h2 className="text-sm font-semibold text-warm-700">Domain Health</h2>
           <button
@@ -442,7 +442,7 @@ export default function HomeDashboard({ assessments = {}, snapshots = [], client
       {/* Bottom row: Quick actions + Alerts */}
       <div className={`grid gap-4 sm:gap-6 ${isPhone ? 'grid-cols-1' : 'grid-cols-2'}`}>
         {/* Quick actions */}
-        <div>
+        <div data-tour="home-actions">
           <h2 className="text-sm font-semibold text-warm-700 mb-3">Quick Actions</h2>
           <div className="space-y-2">
             {topPriority && (
@@ -476,7 +476,7 @@ export default function HomeDashboard({ assessments = {}, snapshots = [], client
         </div>
 
         {/* Alerts & Insights */}
-        <div>
+        <div data-tour="home-alerts">
           <div className="flex items-center justify-between mb-3">
             <h2 className="text-sm font-semibold text-warm-700">Alerts & Insights</h2>
             {risks.length > 3 && (
