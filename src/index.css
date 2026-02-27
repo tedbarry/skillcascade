@@ -1,5 +1,10 @@
 @import "tailwindcss";
 
+/* Viewport height chain — required for flex-1 layouts in Dashboard */
+html, body, #root {
+  height: 100%;
+}
+
 @theme {
   /* Warm color palette: "Clinical Precision meets Warm Humanity" */
   --color-warm-50: #fdf8f0;
