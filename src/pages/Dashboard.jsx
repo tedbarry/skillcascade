@@ -691,12 +691,16 @@ export default function Dashboard() {
             transition={{ duration: 0.2, ease: 'easeOut' }}
             className="w-full h-full"
           >
+          {/* Global loading gate — show skeleton for current view while assessments load from Supabase */}
+          {assessmentsLoading ? (
+            <ViewLoader view={activeView} />
+          ) : (<>
+
           {/* Home Dashboard view */}
           {activeView === VIEWS.HOME && (
             <Suspense fallback={<ViewLoader view="home" />}>
               <HomeDashboard
                 assessments={assessments}
-                loading={assessmentsLoading}
                 snapshots={snapshots}
                 clientName={clientName}
                 onChangeView={setActiveView}
@@ -1059,6 +1063,8 @@ export default function Dashboard() {
               </Suspense>
             </div>
           )}
+
+          </>)}
           </motion.div>
           </AnimatePresence>
           </ViewErrorBoundary>

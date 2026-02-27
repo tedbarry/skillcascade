@@ -221,7 +221,7 @@ function QuickActionButton({ icon, label, sublabel, onClick, variant = 'default'
   )
 }
 
-export default function HomeDashboard({ assessments = {}, loading = false, snapshots = [], clientName, onChangeView, onNavigateToAssess }) {
+export default function HomeDashboard({ assessments = {}, snapshots = [], clientName, onChangeView, onNavigateToAssess }) {
   const { isPhone, isTablet } = useResponsive()
 
   const domainHealth = useMemo(() => computeDomainHealth(assessments), [assessments])
@@ -292,25 +292,6 @@ export default function HomeDashboard({ assessments = {}, loading = false, snaps
   }, [snapshots, domainHealth])
 
   const topRisks = risks.slice(0, 3)
-
-  // Show skeleton while assessments are loading from async storage
-  if (loading) {
-    return (
-      <div className="w-full max-w-6xl mx-auto px-3 sm:px-6 py-4 sm:py-8 animate-pulse">
-        <div className="h-7 bg-warm-200 rounded w-48 mb-2" />
-        <div className="h-4 bg-warm-100 rounded w-64 mb-8" />
-        <div className={`grid gap-4 sm:gap-6 mb-8 ${isPhone ? 'grid-cols-1' : 'grid-cols-[auto_1fr]'}`}>
-          <div className="bg-warm-100 rounded-2xl w-[120px] h-[120px] mx-auto" />
-          <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-            {[1, 2, 3, 4].map(i => <div key={i} className="bg-warm-100 rounded-xl h-20" />)}
-          </div>
-        </div>
-        <div className={`grid gap-2.5 sm:gap-3 ${isPhone ? 'grid-cols-2' : 'grid-cols-3 lg:grid-cols-4 xl:grid-cols-5'}`}>
-          {[1, 2, 3, 4, 5, 6, 7, 8, 9].map(i => <div key={i} className="bg-warm-100 rounded-xl h-24" />)}
-        </div>
-      </div>
-    )
-  }
 
   return (
     <div className="w-full max-w-6xl mx-auto px-3 sm:px-6 py-4 sm:py-8">
