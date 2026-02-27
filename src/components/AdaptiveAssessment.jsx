@@ -110,6 +110,9 @@ export default function AdaptiveAssessment({ assessments, onAssess, onComplete }
   const [skillRatings, setSkillRatings] = useState(() => savedDraft.current?.skillRatings || {})
   const [transitioning, setTransitioning] = useState(false)
   const [applied, setApplied] = useState(false)
+  const [showAllDescs, setShowAllDescs] = useState(() => {
+    try { return localStorage.getItem('skillcascade_show_all_descs') === 'true' } catch { return false }
+  })
 
   const { isPhone } = useResponsive()
 
@@ -829,6 +832,27 @@ function Phase3SkillDetail({ subAreas, skillRatings, onRate }) {
                     ))}
                   </div>
 
+                  {/* Show descriptions toggle */}
+                  <div className="flex justify-end mb-2">
+                    <button
+                      onClick={() => setShowAllDescs(prev => {
+                        const next = !prev
+                        localStorage.setItem('skillcascade_show_all_descs', String(next))
+                        return next
+                      })}
+                      className="text-[10px] px-2.5 py-1 min-h-[44px] rounded-md font-medium transition-all border border-warm-200 hover:border-sage-300 flex items-center gap-1.5"
+                      style={{ backgroundColor: showAllDescs ? 'var(--color-sage-100)' : undefined, color: showAllDescs ? 'var(--color-sage-700)' : undefined }}
+                    >
+                      <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                        {showAllDescs
+                          ? <path strokeLinecap="round" strokeLinejoin="round" d="M3.98 8.223A10.477 10.477 0 001.934 12C3.226 16.338 7.244 19.5 12 19.5c.993 0 1.953-.138 2.863-.395M6.228 6.228A10.45 10.45 0 0112 4.5c4.756 0 8.773 3.162 10.065 7.498a10.523 10.523 0 01-4.293 5.774M6.228 6.228L3 3m3.228 3.228l3.65 3.65m7.894 7.894L21 21m-3.228-3.228l-3.65-3.65m0 0a3 3 0 10-4.243-4.243m4.242 4.242L9.88 9.88" />
+                          : <><path strokeLinecap="round" strokeLinejoin="round" d="M2.036 12.322a1.012 1.012 0 010-.639C3.423 7.51 7.36 4.5 12 4.5c4.638 0 8.573 3.007 9.963 7.178.07.207.07.431 0 .639C20.577 16.49 16.64 19.5 12 19.5c-4.638 0-8.573-3.007-9.963-7.178z" /><path strokeLinecap="round" strokeLinejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" /></>
+                        }
+                      </svg>
+                      {showAllDescs ? 'Hide descriptions' : 'Show descriptions'}
+                    </button>
+                  </div>
+
                   {/* Skill groups */}
                   <div className="space-y-6">
                     {sa.skillGroups.map((sg) => (
@@ -846,6 +870,7 @@ function Phase3SkillDetail({ subAreas, skillRatings, onRate }) {
                                 ASSESSMENT_LEVELS.NOT_ASSESSED
                               }
                               onRate={(level) => onRate(skill.id, level)}
+                              showAllDescs={showAllDescs}
                             />
                           ))}
                         </div>
@@ -865,9 +890,10 @@ function Phase3SkillDetail({ subAreas, skillRatings, onRate }) {
 /**
  * Individual skill rating row — matches AssessmentPanel SkillRater
  */
-function SkillRater({ skill, level, onRate }) {
-  const [showDesc, setShowDesc] = useState(false)
+function SkillRater({ skill, level, onRate, showAllDescs }) {
+  const [showDescLocal, setShowDescLocal] = useState(false)
   const desc = getSkillDescription(skill.id)
+  const showDesc = showAllDescs || showDescLocal
 
   return (
     <div className="flex items-start gap-4 py-2 px-3 rounded-lg hover:bg-warm-50 transition-colors group">
@@ -878,9 +904,9 @@ function SkillRater({ skill, level, onRate }) {
           </div>
           {desc && (
             <button
-              onClick={() => setShowDesc(!showDesc)}
-              className="text-warm-300 hover:text-warm-500 transition-colors shrink-0"
-              title="Show description"
+              onClick={() => setShowDescLocal(!showDescLocal)}
+              className={`transition-colors shrink-0 ${showDesc ? 'text-sage-500' : 'text-warm-300 hover:text-warm-500'}`}
+              title={showDesc ? 'Hide description' : 'Show description'}
             >
               <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
                 <path strokeLinecap="round" strokeLinejoin="round" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
@@ -888,6 +914,9 @@ function SkillRater({ skill, level, onRate }) {
             </button>
           )}
         </div>
+        {!showDesc && desc && (
+          <p className="text-[11px] text-warm-400 truncate mt-0.5 max-w-md">{desc.description}</p>
+        )}
         {showDesc && desc && (
           <div className="mt-2 ml-0.5 text-xs space-y-1 border-l-2 border-warm-200 pl-3">
             <p className="text-warm-600">{desc.description}</p>

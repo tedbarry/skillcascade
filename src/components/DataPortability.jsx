@@ -2,6 +2,7 @@ import { useState, useRef, useMemo, useEffect, useCallback } from 'react'
 import { getClients, getAssessments, getSnapshots, saveClient, saveAssessment, saveSnapshot, clearAllData } from '../data/storage.js'
 import { framework } from '../data/framework.js'
 import { downloadFile } from '../data/exportUtils.js'
+import { processImportFile, transformToAssessments, detectScoreValues, mapScore } from '../data/csvImportEngine.js'
 import { useAuth } from '../contexts/AuthContext.jsx'
 
 const APP_VERSION = '1.0.0'
@@ -177,7 +178,6 @@ export default function DataPortability({ onImportComplete }) {
   const [clearConfirmText, setClearConfirmText] = useState('')
   const [showClearConfirm, setShowClearConfirm] = useState(false)
   const [lastBackup, setLastBackup] = useState(() => localStorage.getItem('skillcascade_last_backup') || null)
-  const [mappingPreview, setMappingPreview] = useState(null)
   const [dataSummary, setDataSummary] = useState({ clients: 0, assessments: 0, snapshots: 0 })
 
   const refreshClients = useCallback(async () => {
@@ -337,46 +337,101 @@ export default function DataPortability({ onImportComplete }) {
 
   /* ── External System File Handler ── */
 
+  const [importState, setImportState] = useState(null) // { step, systemId, fileName, parsed, columnMapping, scoreValues, customScoreMap, result }
+
   function handleExternalFile(systemId, file) {
     const reader = new FileReader()
     reader.onload = (e) => {
       try {
         const text = e.target.result
-        let headers = []
+        const parsed = processImportFile(text, file.name)
 
-        if (file.name.endsWith('.csv')) {
-          const firstLine = text.split('\n')[0]
-          headers = firstLine.split(',').map((h) => h.trim().replace(/^"|"$/g, ''))
-        } else if (file.name.endsWith('.json')) {
-          const parsed = JSON.parse(text)
-          if (Array.isArray(parsed) && parsed.length > 0) {
-            headers = Object.keys(parsed[0])
-          } else if (typeof parsed === 'object') {
-            headers = Object.keys(parsed)
-          }
-        }
-
-        const domains = framework.map((d) => ({ id: d.id, name: d.name }))
-
-        setMappingPreview({
+        setImportState({
+          step: 'columns', // columns → scores → preview → done
           systemId,
           fileName: file.name,
-          headers,
-          domains,
-          mappings: {},
+          parsed,
+          columnMapping: { ...parsed.autoMap.mappings },
+          scoreValues: parsed.scoreValues,
+          customScoreMap: null,
         })
-      } catch {
-        showStatus('Could not read file headers', 'error')
+      } catch (err) {
+        showStatus('Could not read file: ' + err.message, 'error')
       }
     }
     reader.readAsText(file)
   }
 
-  function updateMapping(header, domainId) {
-    setMappingPreview((prev) => ({
+  function updateColumnMapping(field, colIndex) {
+    setImportState((prev) => ({
       ...prev,
-      mappings: { ...prev.mappings, [header]: domainId },
+      columnMapping: { ...prev.columnMapping, [field]: colIndex === '' ? null : Number(colIndex) },
     }))
+  }
+
+  function advanceImportStep() {
+    setImportState((prev) => {
+      if (prev.step === 'columns') {
+        // Recalculate score values based on current mapping
+        const sv = prev.columnMapping.score !== null ? detectScoreValues(prev.parsed.rows, prev.columnMapping.score) : []
+        return { ...prev, step: 'scores', scoreValues: sv }
+      }
+      if (prev.step === 'scores') {
+        // Run the transform to show preview
+        const result = transformToAssessments(prev.parsed.rows, prev.columnMapping, prev.customScoreMap)
+        return { ...prev, step: 'preview', result }
+      }
+      return prev
+    })
+  }
+
+  function updateScoreMapping(rawValue, level) {
+    setImportState((prev) => {
+      const current = prev.customScoreMap || {}
+      return { ...prev, customScoreMap: { ...current, [rawValue.toLowerCase().trim()]: Number(level) } }
+    })
+  }
+
+  async function executeImport() {
+    if (!importState?.result || !orgId) return
+    try {
+      const assessments = importState.result.assessments
+      const assessedCount = Object.keys(assessments).length
+      if (assessedCount === 0) {
+        showStatus('No skills could be mapped from this file', 'error')
+        return
+      }
+
+      // Import into selected client or create new one
+      const targetClientId = selectedClientId
+      const userId = profile?.id
+
+      if (targetClientId && userId) {
+        // Merge into existing client
+        const existing = await getAssessments(targetClientId)
+        const merged = { ...existing }
+        for (const [key, val] of Object.entries(assessments)) {
+          if (!key.startsWith('_')) merged[key] = val
+        }
+        await saveAssessment(targetClientId, merged, userId)
+        const client = clients.find(c => c.id === targetClientId)
+        showStatus(`Imported ${assessedCount} skill ratings into ${client?.name || 'client'}`)
+      } else {
+        // Create new client from file name
+        const clientName = importState.fileName.replace(/\.[^.]+$/, '').replace(/[-_]/g, ' ')
+        const newClient = await saveClient({ name: clientName }, orgId)
+        if (userId) {
+          await saveAssessment(newClient.id, assessments, userId)
+        }
+        showStatus(`Created "${clientName}" with ${assessedCount} skill ratings`)
+      }
+
+      await refreshClients()
+      onImportComplete?.()
+      setImportState(null)
+    } catch (err) {
+      showStatus('Import failed: ' + err.message, 'error')
+    }
   }
 
   /* ── CSV Export (All Clients) ── */
@@ -564,81 +619,274 @@ export default function DataPortability({ onImportComplete }) {
             Import from External Systems
           </h3>
           <p className="text-[11px] text-warm-500 mt-0.5">
-            Integration imports will be available when connected to these platforms
+            Import assessment data from Central Reach, Raven Health, Passage, or any CSV/JSON file
           </p>
         </div>
         <div className="p-5 space-y-4">
-          <div className="grid gap-4 sm:grid-cols-3">
-            {EXTERNAL_SYSTEMS.map((sys) => (
-              <div key={sys.id} className="relative">
-                <div className="absolute -top-1.5 right-2 z-10">
-                  <span className="inline-block px-2 py-0.5 text-[9px] font-bold uppercase tracking-wider bg-warm-200 text-warm-600 rounded-full">
-                    Coming Soon
-                  </span>
-                </div>
-                <div className="border border-warm-200 rounded-lg p-3 pt-4">
-                  <div className="text-xs font-semibold text-warm-600 mb-2 flex items-center gap-1.5">
-                    <div className="w-5 h-5 rounded bg-warm-100 flex items-center justify-center text-[10px] font-bold text-warm-500">
-                      {sys.name[0]}
+          {!importState && (
+            <>
+              <div className="grid gap-4 sm:grid-cols-3">
+                {EXTERNAL_SYSTEMS.map((sys) => (
+                  <div key={sys.id}>
+                    <div className="border border-warm-200 rounded-lg p-3">
+                      <div className="text-xs font-semibold text-warm-600 mb-2 flex items-center gap-1.5">
+                        <div className="w-5 h-5 rounded bg-sage-100 flex items-center justify-center text-[10px] font-bold text-sage-600">
+                          {sys.name[0]}
+                        </div>
+                        {sys.name}
+                      </div>
+                      <FileDropZone
+                        accept={sys.accepts}
+                        onFile={(file) => handleExternalFile(sys.id, file)}
+                        label="Drop file here"
+                      />
                     </div>
-                    {sys.name}
                   </div>
-                  <FileDropZone
-                    accept={sys.accepts}
-                    onFile={(file) => handleExternalFile(sys.id, file)}
-                    label="Drop file here"
-                    disabled
-                  />
-                </div>
+                ))}
               </div>
-            ))}
-          </div>
 
-          {/* Mapping Preview */}
-          {mappingPreview && (
-            <div className="border border-sage-200 rounded-lg p-4 bg-sage-50/50">
-              <div className="flex items-center justify-between mb-3">
-                <h4 className="text-xs font-semibold text-warm-700">
-                  Column Mapping Preview — {mappingPreview.fileName}
-                </h4>
-                <button
-                  onClick={() => setMappingPreview(null)}
-                  className="text-warm-400 hover:text-warm-600 text-xs"
-                >
-                  Close
-                </button>
-              </div>
-              {mappingPreview.headers.length > 0 ? (
-                <div className="space-y-2">
-                  {mappingPreview.headers.slice(0, 12).map((header) => (
-                    <div key={header} className="flex items-center gap-3">
-                      <span className="text-xs text-warm-600 w-32 truncate font-mono bg-white px-2 py-1 rounded border border-warm-200">
-                        {header}
-                      </span>
-                      <svg className="w-3 h-3 text-warm-400 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                        <path strokeLinecap="round" strokeLinejoin="round" d="M13.5 4.5L21 12m0 0l-7.5 7.5M21 12H3" />
-                      </svg>
-                      <select
-                        value={mappingPreview.mappings[header] || ''}
-                        onChange={(e) => updateMapping(header, e.target.value)}
-                        className="flex-1 text-xs px-2 py-1 rounded border border-warm-200 bg-white text-warm-600 focus:outline-none focus:border-sage-400"
-                      >
-                        <option value="">-- Skip --</option>
-                        {mappingPreview.domains.map((d) => (
-                          <option key={d.id} value={d.id}>{d.name}</option>
-                        ))}
-                      </select>
-                    </div>
-                  ))}
-                  {mappingPreview.headers.length > 12 && (
-                    <p className="text-[10px] text-warm-400 italic">
-                      +{mappingPreview.headers.length - 12} more columns not shown
-                    </p>
-                  )}
+              {clients.length > 0 && (
+                <div className="flex items-center gap-2 px-3 py-2 bg-warm-50 rounded-lg">
+                  <label className="text-xs text-warm-500 font-medium whitespace-nowrap">Import into:</label>
+                  <select
+                    value={selectedClientId}
+                    onChange={(e) => setSelectedClientId(e.target.value)}
+                    className="flex-1 text-xs px-2 py-1.5 rounded border border-warm-200 bg-white text-warm-600 focus:outline-none focus:border-sage-400"
+                  >
+                    <option value="">New client (from filename)</option>
+                    {clients.map((c) => (
+                      <option key={c.id} value={c.id}>{c.name}</option>
+                    ))}
+                  </select>
                 </div>
-              ) : (
-                <p className="text-xs text-warm-500 italic">No column headers detected in this file.</p>
               )}
+            </>
+          )}
+
+          {/* ── Import Wizard ── */}
+          {importState && (
+            <div className="border border-sage-200 rounded-lg overflow-hidden">
+              {/* Wizard header */}
+              <div className="px-4 py-3 bg-sage-50 border-b border-sage-200 flex items-center justify-between">
+                <div>
+                  <h4 className="text-xs font-semibold text-warm-700">{importState.fileName}</h4>
+                  <p className="text-[10px] text-warm-500">{importState.parsed.totalRows} rows detected</p>
+                </div>
+                <div className="flex items-center gap-2">
+                  <div className="flex gap-1">
+                    {['columns', 'scores', 'preview'].map((s, i) => (
+                      <div key={s} className={`w-2 h-2 rounded-full ${
+                        s === importState.step ? 'bg-sage-500' :
+                        ['columns', 'scores', 'preview'].indexOf(importState.step) > i ? 'bg-sage-300' : 'bg-warm-200'
+                      }`} />
+                    ))}
+                  </div>
+                  <button
+                    onClick={() => setImportState(null)}
+                    className="text-warm-400 hover:text-warm-600 text-xs ml-2"
+                  >
+                    Cancel
+                  </button>
+                </div>
+              </div>
+
+              <div className="p-4 space-y-3">
+                {/* Step 1: Column Mapping */}
+                {importState.step === 'columns' && (
+                  <>
+                    <p className="text-xs text-warm-600 font-medium">Map your file columns to SkillCascade fields:</p>
+                    {importState.parsed.autoMap.canAutoImport && (
+                      <div className="flex items-center gap-2 px-3 py-2 bg-sage-50 rounded-lg border border-sage-200">
+                        <svg className="w-4 h-4 text-sage-500 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                          <path strokeLinecap="round" strokeLinejoin="round" d="M9 12.75L11.25 15 15 9.75M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                        </svg>
+                        <span className="text-xs text-sage-700">Auto-detected: {importState.parsed.autoMap.confidence.join(', ')}</span>
+                      </div>
+                    )}
+                    <div className="space-y-2">
+                      {[
+                        { field: 'skillName', label: 'Skill Name' },
+                        { field: 'skillId', label: 'Skill ID' },
+                        { field: 'score', label: 'Score / Rating' },
+                        { field: 'domain', label: 'Domain (optional)' },
+                        { field: 'subArea', label: 'Sub-Area (optional)' },
+                        { field: 'clientName', label: 'Client Name (optional)' },
+                      ].map(({ field, label }) => (
+                        <div key={field} className="flex items-center gap-3">
+                          <span className="text-xs text-warm-600 w-36 font-medium">{label}</span>
+                          <select
+                            value={importState.columnMapping[field] ?? ''}
+                            onChange={(e) => updateColumnMapping(field, e.target.value)}
+                            className="flex-1 text-xs px-2 py-1.5 rounded border border-warm-200 bg-white text-warm-600 focus:outline-none focus:border-sage-400"
+                          >
+                            <option value="">-- Skip --</option>
+                            {importState.parsed.headers.map((h, i) => (
+                              <option key={i} value={i}>{h}</option>
+                            ))}
+                          </select>
+                        </div>
+                      ))}
+                    </div>
+
+                    {/* Sample data preview */}
+                    {importState.parsed.preview.rows.length > 0 && (
+                      <div className="mt-3">
+                        <p className="text-[10px] text-warm-500 font-medium mb-1.5">Data preview (first {importState.parsed.preview.rows.length} rows):</p>
+                        <div className="overflow-x-auto">
+                          <table className="text-[10px] text-warm-600 border-collapse w-full">
+                            <thead>
+                              <tr>
+                                {importState.parsed.preview.headers.map((h, i) => (
+                                  <th key={i} className="border border-warm-200 bg-warm-50 px-2 py-1 text-left font-medium whitespace-nowrap">{h}</th>
+                                ))}
+                              </tr>
+                            </thead>
+                            <tbody>
+                              {importState.parsed.preview.rows.map((row, ri) => (
+                                <tr key={ri}>
+                                  {row.map((cell, ci) => (
+                                    <td key={ci} className="border border-warm-200 px-2 py-1 whitespace-nowrap max-w-[120px] truncate">{cell}</td>
+                                  ))}
+                                </tr>
+                              ))}
+                            </tbody>
+                          </table>
+                        </div>
+                      </div>
+                    )}
+
+                    <div className="flex justify-end pt-2">
+                      <button
+                        onClick={advanceImportStep}
+                        disabled={importState.columnMapping.score === null && importState.columnMapping.skillName === null && importState.columnMapping.skillId === null}
+                        className="flex items-center gap-1.5 px-4 py-2 text-xs font-medium rounded-lg bg-sage-500 text-white hover:bg-sage-600 transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
+                      >
+                        Next: Score Mapping
+                        <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                          <path strokeLinecap="round" strokeLinejoin="round" d="M13.5 4.5L21 12m0 0l-7.5 7.5M21 12H3" />
+                        </svg>
+                      </button>
+                    </div>
+                  </>
+                )}
+
+                {/* Step 2: Score Mapping */}
+                {importState.step === 'scores' && (
+                  <>
+                    <p className="text-xs text-warm-600 font-medium">Map external scores to SkillCascade levels:</p>
+                    {importState.scoreValues.length > 0 ? (
+                      <div className="space-y-2">
+                        {importState.scoreValues.map((val) => {
+                          const autoMapped = mapScore(val, null)
+                          const current = importState.customScoreMap?.[val.toLowerCase().trim()] ?? autoMapped
+                          return (
+                            <div key={val} className="flex items-center gap-3">
+                              <span className="text-xs text-warm-600 w-28 truncate font-mono bg-white px-2 py-1 rounded border border-warm-200">{val}</span>
+                              <svg className="w-3 h-3 text-warm-400 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                                <path strokeLinecap="round" strokeLinejoin="round" d="M13.5 4.5L21 12m0 0l-7.5 7.5M21 12H3" />
+                              </svg>
+                              <select
+                                value={current}
+                                onChange={(e) => updateScoreMapping(val, e.target.value)}
+                                className="flex-1 text-xs px-2 py-1.5 rounded border border-warm-200 bg-white text-warm-600 focus:outline-none focus:border-sage-400"
+                              >
+                                <option value={0}>Skip (Not Assessed)</option>
+                                <option value={1}>Needs Work</option>
+                                <option value={2}>Developing</option>
+                                <option value={3}>Solid</option>
+                              </select>
+                            </div>
+                          )
+                        })}
+                      </div>
+                    ) : (
+                      <p className="text-xs text-warm-500 italic">No score column selected — all matched skills will be imported as "Needs Work".</p>
+                    )}
+                    <div className="flex justify-between pt-2">
+                      <button
+                        onClick={() => setImportState(prev => ({ ...prev, step: 'columns' }))}
+                        className="px-4 py-2 text-xs font-medium rounded-lg border border-warm-200 text-warm-600 hover:bg-warm-50 transition-colors"
+                      >
+                        Back
+                      </button>
+                      <button
+                        onClick={advanceImportStep}
+                        className="flex items-center gap-1.5 px-4 py-2 text-xs font-medium rounded-lg bg-sage-500 text-white hover:bg-sage-600 transition-colors"
+                      >
+                        Preview Import
+                        <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                          <path strokeLinecap="round" strokeLinejoin="round" d="M13.5 4.5L21 12m0 0l-7.5 7.5M21 12H3" />
+                        </svg>
+                      </button>
+                    </div>
+                  </>
+                )}
+
+                {/* Step 3: Preview & Import */}
+                {importState.step === 'preview' && importState.result && (
+                  <>
+                    <div className="grid grid-cols-3 gap-3">
+                      <div className="text-center p-3 bg-sage-50 rounded-lg">
+                        <div className="text-lg font-semibold text-sage-700">{importState.result.mapped}</div>
+                        <div className="text-[10px] text-warm-500 uppercase tracking-wider">Matched</div>
+                      </div>
+                      <div className="text-center p-3 bg-warm-50 rounded-lg">
+                        <div className="text-lg font-semibold text-warm-600">{importState.result.unmapped.length}</div>
+                        <div className="text-[10px] text-warm-500 uppercase tracking-wider">Unmatched</div>
+                      </div>
+                      <div className="text-center p-3 bg-warm-50 rounded-lg">
+                        <div className="text-lg font-semibold text-warm-600">{importState.result.total}</div>
+                        <div className="text-[10px] text-warm-500 uppercase tracking-wider">Total Rows</div>
+                      </div>
+                    </div>
+
+                    {importState.result.unmapped.length > 0 && (
+                      <div className="max-h-32 overflow-y-auto">
+                        <p className="text-[10px] text-warm-500 font-medium mb-1">Unmatched rows (first 10):</p>
+                        <div className="space-y-0.5">
+                          {importState.result.unmapped.slice(0, 10).map((u, i) => (
+                            <div key={i} className="text-[10px] text-warm-400 font-mono truncate">
+                              Row {u.row}: {u.name}
+                            </div>
+                          ))}
+                          {importState.result.unmapped.length > 10 && (
+                            <div className="text-[10px] text-warm-400 italic">+{importState.result.unmapped.length - 10} more</div>
+                          )}
+                        </div>
+                      </div>
+                    )}
+
+                    {importState.result.mapped > 0 && (
+                      <div className="flex items-start gap-2 px-3 py-2 bg-sage-50 border border-sage-200 rounded-lg">
+                        <svg className="w-4 h-4 text-sage-500 mt-0.5 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                          <path strokeLinecap="round" strokeLinejoin="round" d="M9 12.75L11.25 15 15 9.75M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                        </svg>
+                        <p className="text-xs text-sage-700">
+                          Ready to import {importState.result.mapped} skill ratings
+                          {selectedClientId ? ` into ${clients.find(c => c.id === selectedClientId)?.name}` : ' as a new client'}.
+                        </p>
+                      </div>
+                    )}
+
+                    <div className="flex justify-between pt-2">
+                      <button
+                        onClick={() => setImportState(prev => ({ ...prev, step: 'scores' }))}
+                        className="px-4 py-2 text-xs font-medium rounded-lg border border-warm-200 text-warm-600 hover:bg-warm-50 transition-colors"
+                      >
+                        Back
+                      </button>
+                      <button
+                        onClick={executeImport}
+                        disabled={importState.result.mapped === 0}
+                        className="flex items-center gap-1.5 px-4 py-2 text-xs font-medium rounded-lg bg-sage-500 text-white hover:bg-sage-600 transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
+                      >
+                        <IconUpload className="w-3.5 h-3.5" />
+                        Import {importState.result.mapped} Skills
+                      </button>
+                    </div>
+                  </>
+                )}
+              </div>
             </div>
           )}
         </div>

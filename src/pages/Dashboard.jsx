@@ -191,8 +191,10 @@ export default function Dashboard() {
   const [showScrollTop, setShowScrollTop] = useState(false)
   const handleMainScroll = useCallback((e) => {
     const top = e.target.scrollTop
-    setScrolled(top > 0)
-    setShowScrollTop(top > 300)
+    const nowScrolled = top > 0
+    const nowShowTop = top > 300
+    setScrolled(prev => prev === nowScrolled ? prev : nowScrolled)
+    setShowScrollTop(prev => prev === nowShowTop ? prev : nowShowTop)
   }, [])
   const scrollToTop = useCallback(() => {
     mainRef.current?.scrollTo({ top: 0, behavior: 'smooth' })

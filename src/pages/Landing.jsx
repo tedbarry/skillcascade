@@ -1,7 +1,8 @@
-import { useState, useEffect, useRef } from 'react'
+import { useState, useEffect, useRef, lazy, Suspense } from 'react'
 import { Link } from 'react-router-dom'
-import CascadeAnimation from '../components/CascadeAnimation.jsx'
-import PricingPage from '../components/PricingPage.jsx'
+
+const CascadeAnimation = lazy(() => import('../components/CascadeAnimation.jsx'))
+const PricingPage = lazy(() => import('../components/PricingPage.jsx'))
 
 /* ── Inline SVG Icons ─────────────────────────────────────── */
 
@@ -649,9 +650,11 @@ export default function Landing() {
               This is why effective intervention starts at the bottom.
             </p>
           </div>
-          <div className="bg-[#1a1a1e] rounded-2xl p-6 sm:p-8 max-w-2xl mx-auto shadow-2xl">
-            <CascadeAnimation compact />
-          </div>
+          <Suspense fallback={<div className="bg-[#1a1a1e] rounded-2xl p-6 sm:p-8 max-w-2xl mx-auto shadow-2xl h-[400px] animate-pulse" />}>
+            <div className="bg-[#1a1a1e] rounded-2xl p-6 sm:p-8 max-w-2xl mx-auto shadow-2xl">
+              <CascadeAnimation compact />
+            </div>
+          </Suspense>
         </div>
       </section>
 
@@ -696,7 +699,9 @@ export default function Landing() {
           9. Pricing Section
           ──────────────────────────────────────────────────────── */}
       <section id="pricing">
-        <PricingPage />
+        <Suspense fallback={<div className="py-20 text-center"><div className="w-6 h-6 border-2 border-sage-200 border-t-sage-500 rounded-full animate-spin mx-auto" /></div>}>
+          <PricingPage />
+        </Suspense>
       </section>
 
       {/* ────────────────────────────────────────────────────────
