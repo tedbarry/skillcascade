@@ -141,6 +141,7 @@ export default function Dashboard() {
   const { showToast } = useToast()
   const { isPhone, isTablet, isDesktop } = useResponsive()
   const [assessments, setAssessments, { undo, redo, canUndo, canRedo, resetState: resetAssessments }] = useUndoRedo({})
+  const [assessmentsLoading, setAssessmentsLoading] = useState(() => !!localStorage.getItem('skillcascade_selected_client'))
   const [selectedNode, setSelectedNode] = useState(null)
   const [sidebarOpen, setSidebarOpen] = useState(true)
   const [activeView, setActiveViewRaw] = useState(() => {
@@ -386,6 +387,7 @@ export default function Dashboard() {
       localStorage.removeItem('skillcascade_selected_client')
       localStorage.removeItem('skillcascade_selected_client_name')
     }
+    setAssessmentsLoading(false)
     if (savedAssessments === null) {
       resetAssessments(generateSampleAssessments())
     } else {
@@ -396,7 +398,10 @@ export default function Dashboard() {
   // Load assessments for restored client on mount
   useEffect(() => {
     if (clientId) {
-      getAssessments(clientId).then((saved) => { const data = saved || {}; resetAssessments(data); lastSavedRef.current = data }).catch(() => showToast('Failed to load assessments', 'error'))
+      setAssessmentsLoading(true)
+      getAssessments(clientId).then((saved) => { const data = saved || {}; resetAssessments(data); lastSavedRef.current = data }).catch(() => showToast('Failed to load assessments', 'error')).finally(() => setAssessmentsLoading(false))
+    } else {
+      setAssessmentsLoading(false)
     }
   }, []) // eslint-disable-line react-hooks/exhaustive-deps
 
@@ -691,6 +696,7 @@ export default function Dashboard() {
             <Suspense fallback={<ViewLoader view="home" />}>
               <HomeDashboard
                 assessments={assessments}
+                loading={assessmentsLoading}
                 snapshots={snapshots}
                 clientName={clientName}
                 onChangeView={setActiveView}

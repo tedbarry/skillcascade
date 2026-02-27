@@ -210,7 +210,8 @@ export default function SidebarNav({ activeView, onChangeView, collapsed = false
       <div className="py-1.5 flex-1">
         {NAV_GROUPS.map((group) => {
           const isGroupActive = group.views.some(v => v.key === activeView)
-          const isExpanded = expanded[group.id] || isGroupActive
+          // Respect explicit user collapse (false) even when group is active
+          const isExpanded = expanded[group.id] === false ? false : (expanded[group.id] || isGroupActive)
 
           // Single-item groups render flat
           if (group.single) {
