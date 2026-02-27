@@ -4,11 +4,7 @@ import { framework } from '../../data/framework.js'
 import { getDomainFromId } from '../../data/skillDependencies.js'
 import useResponsive from '../../hooks/useResponsive.js'
 import ExplorerTooltip from './ExplorerTooltip.jsx'
-
-const DOMAIN_COLORS = {
-  d1: '#e07b6e', d2: '#d4956a', d3: '#c9a84c', d4: '#8fb570',
-  d5: '#5da87a', d6: '#4a9e9e', d7: '#6889b5', d8: '#8b7bb5', d9: '#a86e9a',
-}
+import { DOMAIN_COLORS } from '../../constants/colors.js'
 
 const LEVEL_COLORS = ['#ef4444', '#f59e0b', '#3b82f6', '#22c55e'] // 0,1,2,3
 

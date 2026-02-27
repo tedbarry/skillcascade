@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import { Link } from 'react-router-dom'
+import useResponsive from '../hooks/useResponsive'
 
 /* ── Inline SVG Icons ─────────────────────────────────────── */
 
@@ -24,6 +25,14 @@ function ChevronDownIcon({ className = '' }) {
   return (
     <svg className={className} width="18" height="18" viewBox="0 0 18 18" fill="none" aria-hidden="true">
       <path d="M4.5 6.75L9 11.25L13.5 6.75" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" />
+    </svg>
+  )
+}
+
+function XMarkIcon({ className = '' }) {
+  return (
+    <svg className={className} width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true">
+      <path d="M4 4l8 8M12 4l-8 8" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
     </svg>
   )
 }
@@ -183,42 +192,46 @@ const FAQ_ITEMS = [
 
 function BillingToggle({ isAnnual, onChange }) {
   return (
-    <div className="flex items-center justify-center gap-3 mt-8">
-      <span
-        className={`text-sm font-medium transition-colors ${
-          !isAnnual ? 'text-warm-900' : 'text-warm-400'
-        }`}
+    <div className="mt-8 flex justify-center">
+      <div
+        className="inline-flex rounded-full bg-warm-100 p-1"
+        role="radiogroup"
+        aria-label="Billing period"
       >
-        Monthly
-      </span>
-      <button
-        type="button"
-        role="switch"
-        aria-checked={isAnnual}
-        aria-label="Toggle annual billing"
-        onClick={() => onChange(!isAnnual)}
-        className={`relative inline-flex h-7 w-[52px] items-center rounded-full transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-sage-400 focus-visible:ring-offset-2 ${
-          isAnnual ? 'bg-sage-500' : 'bg-warm-300'
-        }`}
-      >
-        <span
-          className={`inline-block h-5 w-5 transform rounded-full bg-white shadow transition-transform ${
-            isAnnual ? 'translate-x-[28px]' : 'translate-x-1'
+        <button
+          type="button"
+          role="radio"
+          aria-checked={!isAnnual}
+          onClick={() => onChange(false)}
+          className={`min-h-[44px] rounded-full px-6 py-2.5 text-sm font-semibold transition-all duration-200 focus:outline-none focus-visible:ring-2 focus-visible:ring-sage-400 focus-visible:ring-offset-2 ${
+            !isAnnual
+              ? 'bg-white text-warm-900 shadow-sm'
+              : 'bg-transparent text-warm-500 hover:text-warm-700'
           }`}
-        />
-      </button>
-      <span
-        className={`text-sm font-medium transition-colors ${
-          isAnnual ? 'text-warm-900' : 'text-warm-400'
-        }`}
-      >
-        Annual
-      </span>
-      {isAnnual && (
-        <span className="ml-1 rounded-full bg-sage-100 px-2.5 py-0.5 text-xs font-semibold text-sage-700">
-          Save 20%
-        </span>
-      )}
+        >
+          Monthly
+        </button>
+        <button
+          type="button"
+          role="radio"
+          aria-checked={isAnnual}
+          onClick={() => onChange(true)}
+          className={`min-h-[44px] rounded-full px-6 py-2.5 text-sm font-semibold transition-all duration-200 focus:outline-none focus-visible:ring-2 focus-visible:ring-sage-400 focus-visible:ring-offset-2 ${
+            isAnnual
+              ? 'bg-white text-warm-900 shadow-sm'
+              : 'bg-transparent text-warm-500 hover:text-warm-700'
+          }`}
+        >
+          Annual{' '}
+          <span
+            className={`inline-block transition-colors duration-200 ${
+              isAnnual ? 'text-sage-600' : 'text-warm-400'
+            }`}
+          >
+            (Save 20%)
+          </span>
+        </button>
+      </div>
     </div>
   )
 }
@@ -319,6 +332,179 @@ function PricingCard({ tier, isAnnual }) {
         </ul>
       </div>
     </div>
+  )
+}
+
+/* ── Feature Comparison Data ──────────────────────────────── */
+
+const COMPARISON_FEATURES = [
+  { category: 'Capacity' },
+  { feature: 'Client limit', starter: 'Up to 25', professional: 'Up to 100', enterprise: 'Unlimited' },
+  { feature: 'BCBA seats', starter: '1', professional: '5', enterprise: 'Unlimited' },
+  { feature: 'Multi-location support', starter: false, professional: false, enterprise: true },
+  { category: 'Assessment & Visualization' },
+  { feature: 'Full assessment framework', starter: true, professional: true, enterprise: true },
+  { feature: 'Adaptive (short) assessment', starter: true, professional: true, enterprise: true },
+  { feature: 'All visualizations', starter: true, professional: true, enterprise: true },
+  { feature: 'Custom assessments & skill libraries', starter: false, professional: false, enterprise: true },
+  { category: 'Clinical Tools' },
+  { feature: 'Goal engine', starter: true, professional: true, enterprise: true },
+  { feature: 'Pattern alerts', starter: true, professional: true, enterprise: true },
+  { feature: 'Progress prediction', starter: true, professional: true, enterprise: true },
+  { feature: 'AI Assistant (8 tools)', starter: false, professional: true, enterprise: true },
+  { feature: 'Caseload dashboard', starter: false, professional: true, enterprise: true },
+  { feature: 'Org analytics', starter: false, professional: true, enterprise: true },
+  { category: 'Reports & Export' },
+  { feature: 'Report generator (3 types)', starter: true, professional: true, enterprise: true },
+  { feature: 'Data export (CSV, JSON, HTML)', starter: true, professional: true, enterprise: true },
+  { feature: 'API access for integrations', starter: false, professional: false, enterprise: true },
+  { feature: 'Central Reach / Raven / Passage', starter: false, professional: false, enterprise: true },
+  { category: 'Collaboration & Branding' },
+  { feature: 'Parent portal access', starter: false, professional: true, enterprise: true },
+  { feature: 'Home practice module', starter: false, professional: true, enterprise: true },
+  { feature: 'Messaging (BCBA-parent)', starter: false, professional: true, enterprise: true },
+  { feature: 'White-label branding', starter: false, professional: 'Basic', enterprise: 'Full (custom domain)' },
+  { feature: 'Marketplace access', starter: false, professional: false, enterprise: true },
+  { category: 'Security & Support' },
+  { feature: 'HIPAA-compliant storage', starter: true, professional: true, enterprise: true },
+  { feature: 'Encryption at rest & in transit', starter: true, professional: true, enterprise: true },
+  { feature: 'SSO / SAML', starter: false, professional: false, enterprise: true },
+  { feature: 'Data backup & restore', starter: false, professional: true, enterprise: true },
+  { feature: 'Outcome certification', starter: false, professional: false, enterprise: true },
+  { feature: 'Support level', starter: 'Email', professional: 'Priority', enterprise: 'Dedicated account manager' },
+  { feature: 'SLA guarantee', starter: false, professional: false, enterprise: true },
+  { feature: 'Custom onboarding', starter: false, professional: false, enterprise: true },
+]
+
+function ComparisonCell({ value }) {
+  if (value === true) {
+    return (
+      <span className="inline-flex items-center justify-center text-sage-500" aria-label="Included">
+        <CheckIcon />
+      </span>
+    )
+  }
+  if (value === false) {
+    return (
+      <span className="inline-flex items-center justify-center text-warm-300" aria-label="Not included">
+        <XMarkIcon />
+      </span>
+    )
+  }
+  return <span className="text-sm text-warm-700 font-medium">{value}</span>
+}
+
+function FeatureComparisonTable({ isAnnual }) {
+  const { isPhone } = useResponsive()
+  const [isOpen, setIsOpen] = useState(false)
+
+  // On desktop always show, on phone collapsible
+  const showTable = !isPhone || isOpen
+
+  return (
+    <section className="mt-16" aria-labelledby="comparison-heading">
+      {/* Toggle button — only visible on phone */}
+      {isPhone && (
+        <button
+          type="button"
+          onClick={() => setIsOpen(!isOpen)}
+          aria-expanded={isOpen}
+          className="mx-auto flex min-h-[44px] items-center gap-2 rounded-lg border border-warm-200 bg-white px-5 py-3 text-sm font-semibold text-warm-700 shadow-sm transition-colors hover:bg-warm-50 focus:outline-none focus-visible:ring-2 focus-visible:ring-sage-400 focus-visible:ring-offset-2"
+        >
+          Compare all features
+          <ChevronDownIcon
+            className={`text-warm-400 transition-transform duration-200 ${
+              isOpen ? 'rotate-180' : ''
+            }`}
+          />
+        </button>
+      )}
+
+      {showTable && (
+        <div className={isPhone ? 'mt-4' : ''}>
+          <h2
+            id="comparison-heading"
+            className="font-display text-2xl font-bold text-warm-900 text-center sm:text-3xl mb-8"
+          >
+            Feature comparison
+          </h2>
+
+          {/* Horizontal scroll wrapper for phone */}
+          <div className={isPhone ? '-mx-4 overflow-x-auto px-4 pb-4' : ''}>
+            <table
+              className={`w-full border-collapse text-left ${
+                isPhone ? 'min-w-[600px]' : ''
+              }`}
+              role="table"
+            >
+              <thead>
+                <tr className="border-b-2 border-warm-200">
+                  <th className="py-3 pr-4 text-sm font-medium text-warm-500 w-[40%]" scope="col">
+                    Feature
+                  </th>
+                  {TIERS.map((tier) => {
+                    const price = isAnnual
+                      ? Math.round(tier.monthlyPrice * 0.8)
+                      : tier.monthlyPrice
+                    return (
+                      <th
+                        key={tier.name}
+                        className={`py-3 px-3 text-center text-sm font-bold w-[20%] ${
+                          tier.popular ? 'text-sage-700' : 'text-warm-800'
+                        }`}
+                        scope="col"
+                      >
+                        <div>{tier.name}</div>
+                        <div className="mt-0.5 text-xs font-medium text-warm-400">
+                          ${price}/mo
+                        </div>
+                      </th>
+                    )
+                  })}
+                </tr>
+              </thead>
+              <tbody>
+                {COMPARISON_FEATURES.map((row, i) => {
+                  if (row.category) {
+                    return (
+                      <tr key={row.category}>
+                        <td
+                          colSpan={4}
+                          className="pt-6 pb-2 text-xs font-bold text-warm-500 uppercase tracking-wider"
+                        >
+                          {row.category}
+                        </td>
+                      </tr>
+                    )
+                  }
+                  return (
+                    <tr
+                      key={row.feature}
+                      className={`border-b border-warm-100 ${
+                        i % 2 === 0 ? 'bg-warm-50/50' : ''
+                      }`}
+                    >
+                      <td className="py-3 pr-4 text-sm text-warm-700">
+                        {row.feature}
+                      </td>
+                      <td className="py-3 px-3 text-center">
+                        <ComparisonCell value={row.starter} />
+                      </td>
+                      <td className={`py-3 px-3 text-center ${TIERS[1].popular ? 'bg-sage-50/40' : ''}`}>
+                        <ComparisonCell value={row.professional} />
+                      </td>
+                      <td className="py-3 px-3 text-center">
+                        <ComparisonCell value={row.enterprise} />
+                      </td>
+                    </tr>
+                  )
+                })}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      )}
+    </section>
   )
 }
 
@@ -481,6 +667,9 @@ export default function PricingPage() {
             <PricingCard key={tier.name} tier={tier} isAnnual={isAnnual} />
           ))}
         </div>
+
+        {/* ── Feature Comparison ───────────────────────── */}
+        <FeatureComparisonTable isAnnual={isAnnual} />
 
         {/* ── All Plans Include ────────────────────────── */}
         <AllPlansSection />

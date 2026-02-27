@@ -101,6 +101,25 @@ export async function getAssessments(clientId) {
   return map
 }
 
+export async function getLastAssessedDates(clientIds) {
+  if (!clientIds.length) return {}
+  const { data, error } = await supabase
+    .from('assessments')
+    .select('client_id, assessed_at')
+    .in('client_id', clientIds)
+    .order('assessed_at', { ascending: false })
+  if (error) throw error
+
+  // Keep only the most recent assessed_at per client
+  const map = {}
+  for (const row of data || []) {
+    if (!map[row.client_id]) {
+      map[row.client_id] = row.assessed_at
+    }
+  }
+  return map
+}
+
 export async function deleteAssessments(clientId) {
   const { error } = await supabase
     .from('assessments')

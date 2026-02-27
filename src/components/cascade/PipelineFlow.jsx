@@ -1,11 +1,7 @@
 import { memo, useMemo, useCallback, useState, useRef } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import useResponsive from '../../hooks/useResponsive.js'
-
-const DOMAIN_COLORS = {
-  d1: '#e07b6e', d2: '#d4956a', d3: '#c9a84c', d4: '#8fb570',
-  d5: '#5da87a', d6: '#4a9e9e', d7: '#6889b5', d8: '#8b7bb5', d9: '#a86e9a',
-}
+import { DOMAIN_COLORS } from '../../constants/colors.js'
 
 // Main chain order (dependencies flow left to right)
 const CHAIN_ORDER = ['d1', 'd2', 'd3', 'd4', 'd5', 'd6', 'd7']

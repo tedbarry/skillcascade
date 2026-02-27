@@ -1,9 +1,9 @@
 import { useMemo, useState, useEffect, useRef, memo } from 'react'
-import { motion } from 'framer-motion'
+import { motion, AnimatePresence } from 'framer-motion'
 import useResponsive from '../hooks/useResponsive.js'
 import { framework, ASSESSMENT_LEVELS } from '../data/framework.js'
 import { computeDomainHealth, detectCascadeRisks, computeImpactRanking } from '../data/cascadeModel.js'
-
+import { DOMAIN_COLORS } from '../constants/colors.js'
 
 /** Animated counter — counts from 0 to target over duration ms */
 function AnimatedNumber({ value, duration = 800 }) {
@@ -50,11 +50,6 @@ function Sparkline({ points, width = 60, height = 16, color = '#7fb589' }) {
       <path d={path} fill="none" stroke={color} strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
     </svg>
   )
-}
-
-const DOMAIN_COLORS = {
-  d1: '#e8928a', d2: '#e5b76a', d3: '#7fb589', d4: '#6aa8d6',
-  d5: '#b594d6', d6: '#d694b5', d7: '#94d6c8', d8: '#d6c494', d9: '#94a8d6',
 }
 
 const FRIENDLY_NAMES = {
@@ -221,8 +216,28 @@ function QuickActionButton({ icon, label, sublabel, onClick, variant = 'default'
   )
 }
 
+const STORAGE_KEY = 'skillcascade_kbd_hint_seen'
+
 export default function HomeDashboard({ assessments = {}, snapshots = [], clientName, onChangeView, onNavigateToAssess }) {
   const { isPhone, isTablet } = useResponsive()
+
+  // Keyboard shortcut hint — auto-dismisses after 3 views
+  const [showKbdHint, setShowKbdHint] = useState(() => {
+    try {
+      const count = parseInt(localStorage.getItem(STORAGE_KEY) || '0', 10)
+      return count < 3
+    } catch { return true }
+  })
+
+  useEffect(() => {
+    try {
+      const count = parseInt(localStorage.getItem(STORAGE_KEY) || '0', 10)
+      if (count < 3) {
+        localStorage.setItem(STORAGE_KEY, String(count + 1))
+        if (count + 1 >= 3) setShowKbdHint(false)
+      }
+    } catch { /* localStorage unavailable */ }
+  }, [])
 
   const domainHealth = useMemo(() => computeDomainHealth(assessments), [assessments])
   const risks = useMemo(() => detectCascadeRisks(assessments, snapshots), [assessments, snapshots])
@@ -507,6 +522,37 @@ export default function HomeDashboard({ assessments = {}, snapshots = [], client
           )}
         </div>
       </div>
+
+      {/* Keyboard shortcuts hint — dismisses after 3 views or manual close */}
+      <AnimatePresence>
+        {showKbdHint && !isPhone && (
+          <motion.div
+            initial={{ opacity: 0, y: 8 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: 8 }}
+            transition={{ duration: 0.2 }}
+            className="mt-6 flex items-center justify-center gap-2 text-warm-400 text-xs"
+          >
+            <span>
+              Press{' '}
+              <kbd className="bg-warm-100 border border-warm-200 rounded px-1.5 py-0.5 text-[11px] font-mono text-warm-500">?</kbd>
+              {' '}for keyboard shortcuts
+            </span>
+            <button
+              onClick={() => {
+                setShowKbdHint(false)
+                try { localStorage.setItem(STORAGE_KEY, '3') } catch {}
+              }}
+              className="p-1 rounded hover:bg-warm-100 transition-colors text-warm-300 hover:text-warm-500"
+              aria-label="Dismiss keyboard shortcuts hint"
+            >
+              <svg className="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M18 6L6 18M6 6l12 12" />
+              </svg>
+            </button>
+          </motion.div>
+        )}
+      </AnimatePresence>
     </div>
   )
 }

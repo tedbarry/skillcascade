@@ -2,6 +2,8 @@ import { useState, useMemo, useEffect } from 'react'
 import { getClients, getAssessments } from '../data/storage.js'
 import { framework, ASSESSMENT_LEVELS, getDomainScores } from '../data/framework.js'
 import { useAuth } from '../contexts/AuthContext.jsx'
+import { useToast } from './Toast.jsx'
+import { userErrorMessage } from '../lib/errorUtils.js'
 
 /* ─────────────────────────────────────────────
    Constants
@@ -120,6 +122,7 @@ function scoreBarColor(score) {
 
 export default function CaseloadDashboard({ currentClientId, onSelectClient }) {
   const { profile } = useAuth()
+  const { showToast } = useToast()
   const [sortBy, setSortBy] = useState('name')
   const [filterBy, setFilterBy] = useState('all')
   const [clientData, setClientData] = useState([])
@@ -180,6 +183,7 @@ export default function CaseloadDashboard({ currentClientId, onSelectClient }) {
         setClientData(enriched)
       } catch (err) {
         console.error('Failed to load caseload data:', err.message)
+        showToast(userErrorMessage(err, 'load caseload data'), 'error')
       } finally {
         setDataLoading(false)
       }

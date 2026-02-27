@@ -119,7 +119,7 @@ const VIEW_TOUR_ATTR = {
   'goals': 'goals',
 }
 
-export default function SidebarNav({ activeView, onChangeView, collapsed = false, onToggleCollapse, shortcutMap }) {
+export default function SidebarNav({ activeView, onChangeView, collapsed = false, onToggleCollapse, shortcutMap, onOpenShortcuts }) {
   const { isTablet, isDesktop } = useResponsive()
   // Auto-collapse on tablet to save space — only show icons
   const effectiveCollapsed = isTablet || collapsed
@@ -182,6 +182,21 @@ export default function SidebarNav({ activeView, onChangeView, collapsed = false
             </button>
           )
         })}
+        {onOpenShortcuts && (
+          <button
+            onClick={onOpenShortcuts}
+            title="Keyboard shortcuts"
+            aria-label="Keyboard shortcuts"
+            className="mt-auto p-2.5 rounded-lg text-warm-400 hover:text-warm-600 hover:bg-warm-50 transition-colors"
+          >
+            <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.75} strokeLinecap="round" strokeLinejoin="round">
+              <rect x="2" y="4" width="20" height="16" rx="2" />
+              <path d="M6 8h.01M10 8h.01M14 8h.01M18 8h.01" />
+              <path d="M6 12h.01M10 12h.01M14 12h.01M18 12h.01" />
+              <path d="M8 16h8" />
+            </svg>
+          </button>
+        )}
       </nav>
     )
   }
@@ -311,6 +326,25 @@ export default function SidebarNav({ activeView, onChangeView, collapsed = false
           )
         })}
       </div>
+
+      {/* Keyboard shortcuts link */}
+      {onOpenShortcuts && (
+        <div className="border-t border-warm-100 px-3 py-2">
+          <button
+            onClick={onOpenShortcuts}
+            className="w-full flex items-center gap-2.5 px-2 py-2 text-left text-[13px] text-warm-500 hover:text-warm-700 hover:bg-warm-50 rounded-lg transition-colors min-h-[40px]"
+          >
+            <svg className="w-4 h-4 text-warm-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.75} strokeLinecap="round" strokeLinejoin="round">
+              <rect x="2" y="4" width="20" height="16" rx="2" />
+              <path d="M6 8h.01M10 8h.01M14 8h.01M18 8h.01" />
+              <path d="M6 12h.01M10 12h.01M14 12h.01M18 12h.01" />
+              <path d="M8 16h8" />
+            </svg>
+            <span>Shortcuts</span>
+            <kbd className="ml-auto text-[9px] font-mono bg-warm-50 border border-warm-100 text-warm-300 px-1 rounded">?</kbd>
+          </button>
+        </div>
+      )}
     </nav>
   )
 }

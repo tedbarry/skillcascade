@@ -5,6 +5,7 @@ import { AuthProvider } from './contexts/AuthContext.jsx'
 import { ToastProvider } from './components/Toast.jsx'
 import ProtectedRoute from './components/ProtectedRoute.jsx'
 import ErrorBoundary from './components/ErrorBoundary.jsx'
+import OfflineBanner from './components/OfflineBanner.jsx'
 
 const Landing = lazy(() => import('./pages/Landing.jsx'))
 const Login = lazy(() => import('./pages/Login.jsx'))
@@ -57,6 +58,7 @@ export default function App() {
     <ErrorBoundary>
     <AuthProvider>
     <ToastProvider>
+      <OfflineBanner />
       <Suspense fallback={<LoadingSpinner />}>
         <AnimatePresence mode="wait">
           <Routes location={location} key={location.pathname}>

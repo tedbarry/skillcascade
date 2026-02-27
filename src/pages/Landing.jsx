@@ -650,7 +650,47 @@ export default function Landing() {
               This is why effective intervention starts at the bottom.
             </p>
           </div>
-          <Suspense fallback={<div className="bg-[#1a1a1e] rounded-2xl p-6 sm:p-8 max-w-2xl mx-auto shadow-2xl h-[400px] animate-pulse" />}>
+          <Suspense fallback={
+            <div className="bg-[#1a1a1e] rounded-2xl p-6 sm:p-8 max-w-2xl mx-auto shadow-2xl">
+              {/* Skeleton: cascade animation toolbar */}
+              <div className="flex items-center gap-2 mb-6">
+                {[1,2,3,4].map(i => (
+                  <div key={i} className="h-8 w-16 rounded-lg bg-warm-200/10 animate-pulse" />
+                ))}
+                <div className="ml-auto h-8 w-24 rounded-lg bg-warm-200/10 animate-pulse" />
+              </div>
+              {/* Skeleton: tiered domain node grid (3 rows like the cascade pyramid) */}
+              <div className="space-y-4">
+                {/* Foundation tier — 3 nodes */}
+                <div className="flex justify-center gap-3">
+                  {[1,2,3].map(i => (
+                    <div key={i} className="h-14 w-24 sm:w-28 rounded-xl bg-warm-200/10 animate-pulse" />
+                  ))}
+                </div>
+                {/* Integration tier — 3 nodes */}
+                <div className="flex justify-center gap-3">
+                  {[1,2,3].map(i => (
+                    <div key={i} className="h-14 w-24 sm:w-28 rounded-xl bg-warm-200/10 animate-pulse" />
+                  ))}
+                </div>
+                {/* Applied tier — 3 nodes */}
+                <div className="flex justify-center gap-3">
+                  {[1,2,3].map(i => (
+                    <div key={i} className="h-14 w-24 sm:w-28 rounded-xl bg-warm-200/10 animate-pulse" />
+                  ))}
+                </div>
+              </div>
+              {/* Skeleton: legend bar */}
+              <div className="flex items-center justify-center gap-4 mt-6">
+                {[1,2,3,4,5].map(i => (
+                  <div key={i} className="flex items-center gap-1.5">
+                    <div className="h-3 w-3 rounded-full bg-warm-200/10 animate-pulse" />
+                    <div className="h-3 w-10 rounded bg-warm-200/10 animate-pulse" />
+                  </div>
+                ))}
+              </div>
+            </div>
+          }>
             <div className="bg-[#1a1a1e] rounded-2xl p-6 sm:p-8 max-w-2xl mx-auto shadow-2xl">
               <CascadeAnimation compact />
             </div>
@@ -699,7 +739,56 @@ export default function Landing() {
           9. Pricing Section
           ──────────────────────────────────────────────────────── */}
       <section id="pricing">
-        <Suspense fallback={<div className="py-20 text-center"><div className="w-6 h-6 border-2 border-sage-200 border-t-sage-500 rounded-full animate-spin mx-auto" /></div>}>
+        <Suspense fallback={
+          <div className="min-h-screen bg-warm-50 px-4 py-16 sm:px-6 lg:px-8">
+            <div className="mx-auto max-w-6xl">
+              {/* Skeleton: pricing hero */}
+              <div className="text-center">
+                <div className="h-6 w-56 rounded-full bg-warm-200 animate-pulse mx-auto mb-5" />
+                <div className="h-10 w-80 rounded-lg bg-warm-200 animate-pulse mx-auto mb-4" />
+                <div className="h-5 w-64 rounded bg-warm-200 animate-pulse mx-auto mb-8" />
+                <div className="flex items-center justify-center gap-3">
+                  <div className="h-4 w-16 rounded bg-warm-200 animate-pulse" />
+                  <div className="h-7 w-[52px] rounded-full bg-warm-200 animate-pulse" />
+                  <div className="h-4 w-14 rounded bg-warm-200 animate-pulse" />
+                </div>
+              </div>
+              {/* Skeleton: 3 pricing cards */}
+              <div className="mt-14 grid gap-8 lg:grid-cols-3 items-start">
+                {[1,2,3].map(i => (
+                  <div key={i} className={`rounded-2xl bg-white border p-7 ${i === 2 ? 'border-sage-300 border-2 shadow-lg' : 'border-warm-200 shadow-md'}`}>
+                    {/* Tier name */}
+                    <div className="h-5 w-24 rounded bg-warm-200 animate-pulse mb-2" />
+                    {/* Description */}
+                    <div className="h-4 w-40 rounded bg-warm-200 animate-pulse mb-5" />
+                    {/* Price */}
+                    <div className="flex items-baseline gap-2">
+                      <div className="h-9 w-20 rounded bg-warm-200 animate-pulse" />
+                      <div className="h-4 w-14 rounded bg-warm-200 animate-pulse" />
+                    </div>
+                    {/* Capacity lines */}
+                    <div className="mt-4 space-y-1.5">
+                      <div className="h-4 w-28 rounded bg-warm-200 animate-pulse" />
+                      <div className="h-4 w-24 rounded bg-warm-200 animate-pulse" />
+                    </div>
+                    {/* CTA button */}
+                    <div className="mt-6 h-10 w-full rounded-lg bg-warm-200 animate-pulse" />
+                    <div className="h-3 w-48 rounded bg-warm-200 animate-pulse mx-auto mt-2" />
+                    {/* Feature list divider */}
+                    <div className="mt-4 border-t border-warm-100 pt-6 space-y-3">
+                      {[1,2,3,4,5,6,7,8].map(j => (
+                        <div key={j} className="flex items-center gap-2.5">
+                          <div className="h-4 w-4 rounded-full bg-warm-200 animate-pulse shrink-0" />
+                          <div className="h-4 rounded bg-warm-200 animate-pulse" style={{ width: `${55 + (j * 7) % 35}%` }} />
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </div>
+        }>
           <PricingPage />
         </Suspense>
       </section>

@@ -17,7 +17,7 @@ const DOMAIN_LABELS = {
   d9: 'Support & Environment',
 }
 
-const DOMAIN_COLORS = {
+const DOMAIN_ACCENTS = {
   d1: { border: '#e06b5f', bg: '#fdf2f1', text: '#b63a2e' },
   d2: { border: '#d4884e', bg: '#fdf5ef', text: '#9a5c2e' },
   d3: { border: '#c49a6c', bg: '#fdf8f0', text: '#9a6740' },
@@ -776,7 +776,7 @@ export default function HomePractice({ assessments = {}, clientName = 'your chil
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           {filteredActivities.map(({ domainId, activity, isPriority }) => {
-            const colors = DOMAIN_COLORS[domainId]
+            const colors = DOMAIN_ACCENTS[domainId]
             const domainLabel = DOMAIN_LABELS[domainId]
 
             return (

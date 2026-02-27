@@ -1,6 +1,7 @@
 import { useState } from 'react'
 
 // Tab group definitions — which views live under each tab
+// Primary tabs: Dashboard, Assess, Clients, Tools, More (max 5)
 const TAB_GROUPS = {
   dashboard: {
     label: 'Dashboard',
@@ -17,15 +18,15 @@ const TAB_GROUPS = {
     views: ['caseload', 'compare', 'parent'],
     viewLabels: { caseload: 'Caseload', compare: 'Compare', parent: 'Parent View' },
   },
-  ai: {
-    label: 'AI',
-    views: [],
+  tools: {
+    label: 'Tools',
+    views: ['reports', 'goals', 'alerts', 'milestones'],
+    viewLabels: { reports: 'Reports', goals: 'Goals', alerts: 'Alerts', milestones: 'Milestones' },
   },
   more: {
     label: 'More',
-    views: ['goals', 'alerts', 'reports', 'milestones', 'practice', 'predictions', 'org-analytics', 'messages', 'branding', 'data', 'accessibility', 'certifications', 'marketplace', 'pricing'],
+    views: ['practice', 'predictions', 'org-analytics', 'messages', 'branding', 'data', 'accessibility', 'certifications', 'marketplace', 'pricing'],
     viewLabels: {
-      goals: 'Goals', alerts: 'Alerts', reports: 'Reports', milestones: 'Milestones',
       practice: 'Home Practice', predictions: 'Predictions', 'org-analytics': 'Org Analytics',
       messages: 'Messages', branding: 'Branding', data: 'Data', accessibility: 'Access.',
       certifications: 'Certs', marketplace: 'Marketplace', pricing: 'Pricing',
@@ -65,10 +66,10 @@ function TabIcon({ tab, active }) {
           <path strokeLinecap="round" strokeLinejoin="round" d="M15 19.128a9.38 9.38 0 002.625.372 9.337 9.337 0 004.121-.952 4.125 4.125 0 00-7.533-2.493M15 19.128v-.003c0-1.113-.285-2.16-.786-3.07M15 19.128v.106A12.318 12.318 0 018.624 21c-2.331 0-4.512-.645-6.374-1.766l-.001-.109a6.375 6.375 0 0111.964-3.07M12 6.375a3.375 3.375 0 11-6.75 0 3.375 3.375 0 016.75 0zm8.25 2.25a2.625 2.625 0 11-5.25 0 2.625 2.625 0 015.25 0z" />
         </svg>
       )
-    case 'ai':
+    case 'tools':
       return (
         <svg {...props}>
-          <path strokeLinecap="round" strokeLinejoin="round" d="M9.813 15.904L9 18.75l-.813-2.846a4.5 4.5 0 00-3.09-3.09L2.25 12l2.846-.813a4.5 4.5 0 003.09-3.09L9 5.25l.813 2.846a4.5 4.5 0 003.09 3.09L15.75 12l-2.846.813a4.5 4.5 0 00-3.09 3.09zM18.259 8.715L18 9.75l-.259-1.035a3.375 3.375 0 00-2.455-2.456L14.25 6l1.036-.259a3.375 3.375 0 002.455-2.456L18 2.25l.259 1.035a3.375 3.375 0 002.455 2.456L21.75 6l-1.036.259a3.375 3.375 0 00-2.455 2.456z" />
+          <path strokeLinecap="round" strokeLinejoin="round" d="M19.5 14.25v-2.625a3.375 3.375 0 00-3.375-3.375h-1.5A1.125 1.125 0 0113.5 7.125v-1.5a3.375 3.375 0 00-3.375-3.375H8.25m0 12.75h7.5m-7.5 3H12M10.5 2.25H5.625c-.621 0-1.125.504-1.125 1.125v17.25c0 .621.504 1.125 1.125 1.125h12.75c.621 0 1.125-.504 1.125-1.125V11.25a9 9 0 00-9-9z" />
         </svg>
       )
     case 'more':
@@ -87,10 +88,6 @@ export default function MobileTabBar({ activeView, onChangeView, onOpenAI }) {
   const activeTab = getTabForView(activeView)
 
   function handleTabPress(tab) {
-    if (tab === 'ai') {
-      onOpenAI()
-      return
-    }
     if (tab === 'more') {
       setMoreOpen(!moreOpen)
       return
@@ -126,6 +123,21 @@ export default function MobileTabBar({ activeView, onChangeView, onOpenAI }) {
                 <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
                   <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
                 </svg>
+              </button>
+            </div>
+            {/* AI Assistant button */}
+            <div className="px-4 pt-3">
+              <button
+                onClick={() => {
+                  onOpenAI()
+                  setMoreOpen(false)
+                }}
+                className="w-full flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-medium bg-indigo-50 text-indigo-700 hover:bg-indigo-100 transition-colors min-h-[44px]"
+              >
+                <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M9.813 15.904L9 18.75l-.813-2.846a4.5 4.5 0 00-3.09-3.09L2.25 12l2.846-.813a4.5 4.5 0 003.09-3.09L9 5.25l.813 2.846a4.5 4.5 0 003.09 3.09L15.75 12l-2.846.813a4.5 4.5 0 00-3.09 3.09zM18.259 8.715L18 9.75l-.259-1.035a3.375 3.375 0 00-2.455-2.456L14.25 6l1.036-.259a3.375 3.375 0 002.455-2.456L18 2.25l.259 1.035a3.375 3.375 0 002.455 2.456L21.75 6l-1.036.259a3.375 3.375 0 00-2.455 2.456z" />
+                </svg>
+                AI Assistant
               </button>
             </div>
             <div className="grid grid-cols-3 gap-2 p-4">
@@ -171,7 +183,7 @@ export default function MobileTabBar({ activeView, onChangeView, onOpenAI }) {
 
       {/* Main bottom tab bar */}
       <nav className="fixed bottom-0 left-0 right-0 z-30 bg-white border-t border-warm-200 flex items-stretch pb-safe sm:hidden">
-        {['dashboard', 'assess', 'clients', 'ai', 'more'].map((tab) => {
+        {['dashboard', 'assess', 'clients', 'tools', 'more'].map((tab) => {
           const isActive = tab === activeTab || (tab === 'more' && moreOpen)
           return (
             <button

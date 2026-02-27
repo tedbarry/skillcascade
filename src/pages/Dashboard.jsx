@@ -13,11 +13,13 @@ import MobileTabBar from '../components/MobileTabBar.jsx'
 import MobileFAB from '../components/MobileFAB.jsx'
 import ResponsiveSVG from '../components/ResponsiveSVG.jsx'
 import { detectCascadeRisks } from '../data/cascadeModel.js'
+import { userErrorMessage } from '../lib/errorUtils.js'
 import SidebarNav from '../components/SidebarNav.jsx'
 import SkeletonLoader, { SkeletonChart, SkeletonDashboard, SkeletonAssessment, SkeletonList, SkeletonGrid } from '../components/SkeletonLoader.jsx'
 import AssessmentCompletionBadge from '../components/AssessmentCompletionBadge.jsx'
 import ViewBreadcrumb from '../components/ViewBreadcrumb.jsx'
 import NotificationBell from '../components/NotificationBell.jsx'
+import UnsavedChangesDialog from '../components/UnsavedChangesDialog.jsx'
 
 // Lazy-loaded view components — each gets its own chunk, loaded on-demand
 const HomeDashboard = lazy(() => import('../components/HomeDashboard.jsx'))
@@ -255,7 +257,7 @@ export default function Dashboard() {
           showToast('Draft restored', 'success')
         }
       }
-    } catch { showToast('Could not restore draft', 'error') }
+    } catch (err) { showToast(userErrorMessage(err, 'restore draft'), 'error') }
     setDraftAvailable(false)
   }
 
@@ -274,6 +276,60 @@ export default function Dashboard() {
     window.addEventListener('beforeunload', handler)
     return () => window.removeEventListener('beforeunload', handler)
   }, [clientId, assessments])
+
+  // ─── Unsaved-changes guard for in-app view switching ────
+  const [pendingView, setPendingView] = useState(null)
+  const [unsavedDialogOpen, setUnsavedDialogOpen] = useState(false)
+  const [unsavedSaving, setUnsavedSaving] = useState(false)
+
+  const hasUnsavedChanges = useCallback(() => {
+    if (!clientId) return false
+    return JSON.stringify(assessments) !== JSON.stringify(lastSavedRef.current)
+  }, [clientId, assessments])
+
+  // Guarded view switch — shows confirmation dialog when dirty
+  const guardedSetActiveView = useCallback((view) => {
+    if (hasUnsavedChanges()) {
+      setPendingView(view)
+      setUnsavedDialogOpen(true)
+    } else {
+      setActiveView(view)
+    }
+  }, [hasUnsavedChanges, setActiveView])
+
+  const handleUnsavedStay = useCallback(() => {
+    setPendingView(null)
+    setUnsavedDialogOpen(false)
+  }, [])
+
+  const handleUnsavedLeave = useCallback(() => {
+    setUnsavedDialogOpen(false)
+    if (pendingView) setActiveView(pendingView)
+    setPendingView(null)
+  }, [pendingView, setActiveView])
+
+  const handleUnsavedSaveLeave = useCallback(async () => {
+    if (!clientId || !user) {
+      // Can't save without client/user — just leave
+      handleUnsavedLeave()
+      return
+    }
+    setUnsavedSaving(true)
+    try {
+      await saveAssessment(clientId, assessments, user.id)
+      lastSavedRef.current = assessments
+      showToast('Assessment saved', 'success')
+      setUnsavedDialogOpen(false)
+      if (pendingView) setActiveView(pendingView)
+      setPendingView(null)
+    } catch (err) {
+      showToast(userErrorMessage(err, 'save assessment'), 'error')
+      setUnsavedDialogOpen(false)
+      setPendingView(null)
+    } finally {
+      setUnsavedSaving(false)
+    }
+  }, [clientId, user, assessments, pendingView, setActiveView, showToast])
 
   // Global Ctrl+K / Cmd+K to open search
   useEffect(() => {
@@ -300,7 +356,7 @@ export default function Dashboard() {
       // Number keys 1-9: navigate to views
       if (SHORTCUT_TO_VIEW[e.key]) {
         e.preventDefault()
-        setActiveView(SHORTCUT_TO_VIEW[e.key])
+        guardedSetActiveView(SHORTCUT_TO_VIEW[e.key])
         return
       }
 
@@ -327,7 +383,7 @@ export default function Dashboard() {
     }
     window.addEventListener('keydown', handleGlobalShortcut)
     return () => window.removeEventListener('keydown', handleGlobalShortcut)
-  }, [setActiveView])
+  }, [guardedSetActiveView])
 
   // Auto-close sidebars on narrow viewports
   useEffect(() => {
@@ -345,14 +401,14 @@ export default function Dashboard() {
 
   const handleNavigateToAssess = useCallback((subAreaId) => {
     setAssessTarget({ subAreaId, ts: Date.now() })
-    setActiveView(VIEWS.ASSESS)
-  }, [])
+    guardedSetActiveView(VIEWS.ASSESS)
+  }, [guardedSetActiveView])
 
   const [goalFocusDomain, setGoalFocusDomain] = useState(null)
   const handleNavigateToGoals = useCallback((domainId) => {
     setGoalFocusDomain(domainId)
-    setActiveView(VIEWS.GOALS)
-  }, [])
+    guardedSetActiveView(VIEWS.GOALS)
+  }, [guardedSetActiveView])
 
   // Load sample data on mount (only if no saved client)
   useEffect(() => {
@@ -401,7 +457,7 @@ export default function Dashboard() {
   useEffect(() => {
     if (clientId) {
       setAssessmentsLoading(true)
-      getAssessments(clientId).then((saved) => { const data = saved || {}; resetAssessments(data); lastSavedRef.current = data }).catch(() => showToast('Failed to load assessments', 'error')).finally(() => setAssessmentsLoading(false))
+      getAssessments(clientId).then((saved) => { const data = saved || {}; resetAssessments(data); lastSavedRef.current = data }).catch((err) => showToast(userErrorMessage(err, 'load assessments'), 'error')).finally(() => setAssessmentsLoading(false))
     } else {
       setAssessmentsLoading(false)
     }
@@ -423,7 +479,7 @@ export default function Dashboard() {
       setSnapshots(updated)
       showToast('Snapshot saved', 'success')
     } catch (err) {
-      showToast('Failed to save snapshot', 'error')
+      showToast(userErrorMessage(err, 'save snapshot'), 'error')
     }
   }
 
@@ -433,7 +489,7 @@ export default function Dashboard() {
       const updated = await deleteSnapshot(clientId, snapshotId)
       setSnapshots(updated)
     } catch (err) {
-      showToast('Failed to delete snapshot', 'error')
+      showToast(userErrorMessage(err, 'delete snapshot'), 'error')
     }
   }
 
@@ -455,10 +511,10 @@ export default function Dashboard() {
             currentClientId={clientId}
             onSelectClient={handleSelectClient}
             assessments={assessments}
-            onSaveSuccess={() => showToast('Assessment saved', 'success')}
+            onSaveSuccess={() => { lastSavedRef.current = assessments; showToast('Assessment saved', 'success') }}
           /></span>
           <span className="hidden sm:inline">
-            <AssessmentCompletionBadge assessments={assessments} onClick={() => setActiveView(VIEWS.ASSESS)} />
+            <AssessmentCompletionBadge assessments={assessments} onClick={() => guardedSetActiveView(VIEWS.ASSESS)} />
           </span>
         </div>
         <div className="flex items-center gap-1 sm:gap-3 shrink-0">
@@ -591,7 +647,7 @@ export default function Dashboard() {
             assessments={assessments}
             snapshots={snapshots}
             risks={cascadeRisks}
-            onNavigate={setActiveView}
+            onNavigate={guardedSetActiveView}
           />
           <SettingsDropdown />
           <Link
@@ -641,7 +697,7 @@ export default function Dashboard() {
       </AnimatePresence>
 
       {/* Breadcrumb */}
-      <ViewBreadcrumb activeView={activeView} onNavigateHome={() => setActiveView(VIEWS.HOME)} />
+      <ViewBreadcrumb activeView={activeView} onNavigateHome={() => guardedSetActiveView(VIEWS.HOME)} />
 
       {/* Main content */}
       <div className="flex flex-1 overflow-hidden">
@@ -649,10 +705,11 @@ export default function Dashboard() {
         {!isPhone && (
           <SidebarNav
             activeView={activeView}
-            onChangeView={setActiveView}
+            onChangeView={guardedSetActiveView}
             collapsed={navCollapsed}
             onToggleCollapse={toggleNavCollapse}
             shortcutMap={SHORTCUT_MAP}
+            onOpenShortcuts={() => setShortcutsOpen(true)}
           />
         )}
 
@@ -684,7 +741,7 @@ export default function Dashboard() {
         <main ref={mainRef} onScroll={handleMainScroll} className={`flex-1 overflow-auto ${fullWidthViews.includes(activeView) ? '' : 'flex flex-col items-center p-3 sm:p-8'} ${isPhone ? 'pb-24' : ''}`}>
           {/* View tabs removed — SidebarNav handles navigation on desktop/tablet */}
 
-          <ViewErrorBoundary key={activeView} viewName={VIEW_LABELS[activeView] || activeView} onNavigateHome={() => setActiveView(VIEWS.HOME)}>
+          <ViewErrorBoundary key={activeView} viewName={VIEW_LABELS[activeView] || activeView} onNavigateHome={() => guardedSetActiveView(VIEWS.HOME)}>
           <AnimatePresence mode="wait">
           <motion.div
             key={activeView}
@@ -706,7 +763,7 @@ export default function Dashboard() {
                 assessments={assessments}
                 snapshots={snapshots}
                 clientName={clientName}
-                onChangeView={setActiveView}
+                onChangeView={guardedSetActiveView}
                 onNavigateToAssess={handleNavigateToAssess}
               />
             </Suspense>
@@ -851,7 +908,7 @@ export default function Dashboard() {
                   onAssess={setAssessments}
                   onComplete={() => {
                     showToast('Quick assessment applied', 'success')
-                    setActiveView(VIEWS.RADAR)
+                    guardedSetActiveView(VIEWS.RADAR)
                   }}
                 />
               </Suspense>
@@ -922,7 +979,7 @@ export default function Dashboard() {
                   currentClientId={clientId}
                   onSelectClient={(id, name, saved) => {
                     handleSelectClient(id, name, saved)
-                    setActiveView(VIEWS.RADAR)
+                    guardedSetActiveView(VIEWS.RADAR)
                   }}
                 />
               </Suspense>
@@ -1116,7 +1173,7 @@ export default function Dashboard() {
           handleNavigateToAssess(subAreaId)
         }}
         assessments={assessments}
-        onChangeView={setActiveView}
+        onChangeView={guardedSetActiveView}
         onPrint={() => window.print()}
         onSaveSnapshot={() => { if (clientId) handleSaveSnapshot('Quick snapshot') }}
         onOpenAI={() => setAiPanelOpen(true)}
@@ -1132,8 +1189,8 @@ export default function Dashboard() {
         isOpen={shortcutsOpen}
         onClose={() => setShortcutsOpen(false)}
         onToggle={() => setShortcutsOpen(prev => !prev)}
-        onSwitchView={(viewKey) => { setActiveView(viewKey); setShortcutsOpen(false) }}
-        onSave={() => { if (clientId && user) { saveAssessment(clientId, assessments, user.id).then(() => { lastSavedRef.current = assessments; showToast('Assessment saved', 'success') }).catch(() => showToast('Failed to save', 'error')) } }}
+        onSwitchView={(viewKey) => { guardedSetActiveView(viewKey); setShortcutsOpen(false) }}
+        onSave={() => { if (clientId && user) { saveAssessment(clientId, assessments, user.id).then(() => { lastSavedRef.current = assessments; showToast('Assessment saved', 'success') }).catch((err) => showToast(userErrorMessage(err, 'save assessment'), 'error')) } }}
         onPrint={() => window.print()}
       />
     </Suspense>
@@ -1157,7 +1214,7 @@ export default function Dashboard() {
     </AnimatePresence>
     {isPhone && (
       <MobileFAB
-        onStartAssessment={() => setActiveView(VIEWS.ASSESS)}
+        onStartAssessment={() => guardedSetActiveView(VIEWS.ASSESS)}
         onSaveSnapshot={() => { if (clientId) handleSaveSnapshot('Quick snapshot') }}
         onSearch={() => setSearchOpen(true)}
         onAITools={() => setAiPanelOpen(true)}
@@ -1167,10 +1224,17 @@ export default function Dashboard() {
     {isPhone && (
       <MobileTabBar
         activeView={activeView}
-        onChangeView={setActiveView}
+        onChangeView={guardedSetActiveView}
         onOpenAI={() => setAiPanelOpen(true)}
       />
     )}
+    <UnsavedChangesDialog
+      isOpen={unsavedDialogOpen}
+      onSaveLeave={handleUnsavedSaveLeave}
+      onLeave={handleUnsavedLeave}
+      onStay={handleUnsavedStay}
+      saving={unsavedSaving}
+    />
     </>
   )
 }

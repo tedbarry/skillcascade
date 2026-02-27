@@ -736,7 +736,7 @@ export default function OnboardingTour({ onComplete }) {
         {/* Card */}
         <div className="bg-white rounded-xl shadow-2xl border border-warm-200 overflow-hidden">
           {/* Progress bar */}
-          <div className="h-1 bg-warm-100">
+          <div className="h-1 bg-warm-200">
             <div
               className="h-full bg-sage-500 transition-all duration-300 ease-in-out"
               style={{ width: `${((currentStep + 1) / totalSteps) * 100}%` }}
@@ -745,18 +745,18 @@ export default function OnboardingTour({ onComplete }) {
 
           {/* Content */}
           <div className="px-5 pt-4 pb-3">
-            {/* Step counter */}
-            <div className="text-[10px] uppercase tracking-wider text-warm-400 font-semibold mb-1.5">
-              Step {currentStep + 1} of {totalSteps}
-            </div>
-
             <h3 className="text-base font-bold text-warm-800 font-display mb-1.5">
               {step.title}
             </h3>
 
-            <p className="text-sm text-warm-600 leading-relaxed mb-4">
+            <p className="text-sm text-warm-600 leading-relaxed mb-3">
               {step.description}
             </p>
+
+            {/* Step counter */}
+            <div className="text-[11px] text-warm-400 font-medium text-center mb-3">
+              {currentStep + 1} of {totalSteps}
+            </div>
 
             {/* Progress dots */}
             <div className="flex items-center justify-center gap-1.5 mb-4">

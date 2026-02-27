@@ -1,7 +1,8 @@
 import { useState, useEffect, useCallback, useRef } from 'react'
-import { getClients, saveClient, deleteClient, getAssessments, saveAssessment } from '../data/storage.js'
+import { getClients, saveClient, deleteClient, getAssessments, saveAssessment, getLastAssessedDates } from '../data/storage.js'
 import { useAuth } from '../contexts/AuthContext.jsx'
 import { useToast } from './Toast.jsx'
+import { userErrorMessage } from '../lib/errorUtils.js'
 
 export default function ClientManager({ currentClientId, onSelectClient, assessments, onSaveSuccess }) {
   const [isOpen, setIsOpen] = useState(false)
@@ -11,6 +12,7 @@ export default function ClientManager({ currentClientId, onSelectClient, assessm
   const [loading, setLoading] = useState(true)
   const [editingClient, setEditingClient] = useState(null)
   const [editForm, setEditForm] = useState({ name: '', date_of_birth: '', notes: '' })
+  const [lastAssessed, setLastAssessed] = useState({})
   const { profile, user } = useAuth()
   const { showToast } = useToast()
   const triggerRef = useRef(null)
@@ -23,9 +25,19 @@ export default function ClientManager({ currentClientId, onSelectClient, assessm
     try {
       const data = await getClients(orgId)
       setClients(data)
+      // Fetch last-assessed timestamps for all clients
+      const ids = data.map((c) => c.id)
+      if (ids.length > 0) {
+        try {
+          const dates = await getLastAssessedDates(ids)
+          setLastAssessed(dates)
+        } catch {
+          // Non-critical — silently ignore
+        }
+      }
     } catch (err) {
       console.error('Failed to load clients:', err.message)
-      showToast('Failed to load clients', 'error')
+      showToast(userErrorMessage(err, 'load clients'), 'error')
     } finally {
       setLoading(false)
     }
@@ -44,7 +56,7 @@ export default function ClientManager({ currentClientId, onSelectClient, assessm
       onSelectClient(client.id, client.name, {})
     } catch (err) {
       console.error('Failed to create client:', err.message)
-      showToast('Failed to create client', 'error')
+      showToast(userErrorMessage(err, 'create client'), 'error')
     }
   }
 
@@ -54,7 +66,7 @@ export default function ClientManager({ currentClientId, onSelectClient, assessm
       onSelectClient(client.id, client.name, saved)
     } catch (err) {
       console.error('Failed to load assessments:', err.message)
-      showToast('Failed to load assessments', 'error')
+      showToast(userErrorMessage(err, 'load assessments'), 'error')
       // Still select the client even if assessments fail to load
       onSelectClient(client.id, client.name, {})
     }
@@ -69,7 +81,7 @@ export default function ClientManager({ currentClientId, onSelectClient, assessm
       onSaveSuccess?.()
     } catch (err) {
       console.error('Failed to save assessment:', err.message)
-      showToast('Failed to save changes', 'error')
+      showToast(userErrorMessage(err, 'save assessment'), 'error')
     }
   }
 
@@ -83,7 +95,7 @@ export default function ClientManager({ currentClientId, onSelectClient, assessm
       }
     } catch (err) {
       console.error('Failed to delete client:', err.message)
-      showToast('Failed to delete client', 'error')
+      showToast(userErrorMessage(err, 'delete client'), 'error')
     }
   }
 
@@ -113,7 +125,7 @@ export default function ClientManager({ currentClientId, onSelectClient, assessm
       }
     } catch (err) {
       console.error('Failed to update client:', err.message)
-      showToast('Failed to save changes', 'error')
+      showToast(userErrorMessage(err, 'update client'), 'error')
     }
   }
 
@@ -142,6 +154,24 @@ export default function ClientManager({ currentClientId, onSelectClient, assessm
     document.addEventListener('keydown', handleKey)
     return () => document.removeEventListener('keydown', handleKey)
   }, [isOpen])
+
+  function formatRelativeTime(isoString) {
+    if (!isoString) return null
+    const diff = Date.now() - new Date(isoString).getTime()
+    const mins = Math.floor(diff / 60000)
+    if (mins < 1) return 'Just now'
+    if (mins < 60) return `${mins}m ago`
+    const hours = Math.floor(mins / 60)
+    if (hours < 24) return `${hours}h ago`
+    const days = Math.floor(hours / 24)
+    if (days < 7) return `${days}d ago`
+    const weeks = Math.floor(days / 7)
+    if (weeks < 5) return `${weeks}w ago`
+    const months = Math.floor(days / 30)
+    if (months < 12) return `${months}mo ago`
+    const years = Math.floor(days / 365)
+    return `${years}y ago`
+  }
 
   const currentClient = clients.find((c) => c.id === currentClientId)
 
@@ -304,11 +334,12 @@ export default function ClientManager({ currentClientId, onSelectClient, assessm
                             </span>
                             <div className="flex-1 min-w-0">
                               <div className="font-medium truncate">{client.name}</div>
-                              {client.updated_at && (
-                                <div className="text-[10px] text-warm-400">
-                                  {new Date(client.updated_at).toLocaleDateString()}
-                                </div>
-                              )}
+                              <div className="text-[10px] text-warm-400">
+                                {lastAssessed[client.id]
+                                  ? formatRelativeTime(lastAssessed[client.id])
+                                  : <span className="italic">Not assessed</span>
+                                }
+                              </div>
                             </div>
                           </button>
 

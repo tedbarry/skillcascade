@@ -4,15 +4,11 @@ import { framework } from '../../data/framework.js'
 import useDependencyExplorer from '../../hooks/useDependencyExplorer.js'
 import useResponsive from '../../hooks/useResponsive.js'
 import ExplorerCoachMark, { COACH_STEPS } from './ExplorerCoachMark.jsx'
+import { DOMAIN_COLORS } from '../../constants/colors.js'
 
 const DomainChordView = lazy(() => import('./DomainChordView.jsx'))
 const SubAreaWebView = lazy(() => import('./SubAreaWebView.jsx'))
 const SkillExplorerView = lazy(() => import('./SkillExplorerView.jsx'))
-
-const DOMAIN_COLORS = {
-  d1: '#e07b6e', d2: '#d4956a', d3: '#c9a84c', d4: '#8fb570',
-  d5: '#5da87a', d6: '#4a9e9e', d7: '#6889b5', d8: '#8b7bb5', d9: '#a86e9a',
-}
 
 const GUIDE_KEY = 'skillcascade_explorer_coach_v2'
 

@@ -53,10 +53,13 @@ export default class ViewErrorBoundary extends Component {
 
         {/* Error message */}
         <p className="text-warm-700 font-medium mb-1">
-          Something went wrong in {viewName}
+          The {viewName} view ran into a problem
+        </p>
+        <p className="text-warm-400 text-sm mb-1 max-w-sm">
+          This is usually caused by a temporary glitch or unexpected data.
         </p>
         <p className="text-warm-400 text-sm mb-6 max-w-sm">
-          This might be a temporary issue. Try refreshing the view.
+          Click <strong className="text-warm-500">Retry</strong> to reload the view, or <strong className="text-warm-500">Go Home</strong> to start fresh.
         </p>
 
         {/* Action buttons */}

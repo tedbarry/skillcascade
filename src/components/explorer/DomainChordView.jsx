@@ -5,11 +5,7 @@ import { descending } from 'd3-array'
 import { framework } from '../../data/framework.js'
 import useResponsive from '../../hooks/useResponsive.js'
 import ExplorerTooltip from './ExplorerTooltip.jsx'
-
-const DOMAIN_COLORS = {
-  d1: '#e07b6e', d2: '#d4956a', d3: '#c9a84c', d4: '#8fb570',
-  d5: '#5da87a', d6: '#4a9e9e', d7: '#6889b5', d8: '#8b7bb5', d9: '#a86e9a',
-}
+import { DOMAIN_COLORS } from '../../constants/colors.js'
 
 const DOMAIN_IDS = ['d1', 'd2', 'd3', 'd4', 'd5', 'd6', 'd7', 'd8', 'd9']
 
@@ -181,7 +177,7 @@ export default memo(function DomainChordView({
         </p>
       </div>
 
-      <svg width="100%" viewBox={`0 0 ${size} ${size}`} style={{ maxWidth: size, maxHeight: size }}>
+      <svg width="100%" viewBox={`0 0 ${size} ${size}`} style={{ maxWidth: size, maxHeight: size }} role="img" aria-label="Domain dependency chord diagram showing relationships between 9 developmental domains">
         <g transform={`translate(${cx},${cy})`}>
           {/* Ribbons */}
           {chordLayout.map((chord, i) => {
@@ -207,6 +203,7 @@ export default memo(function DomainChordView({
                   fill={`url(#${gradId})`}
                   opacity={isHighlighted ? 0.4 : 0.08}
                   className="transition-opacity duration-200"
+                  aria-label={`Dependency between ${getDomainName(srcDomain)} and ${getDomainName(tgtDomain)}`}
                 />
               </g>
             )
@@ -235,6 +232,15 @@ export default memo(function DomainChordView({
                   onTouchStart={(e) => handleArcTouch(e, i)}
                   onClick={() => handleArcClick(i)}
                   className="transition-opacity duration-200"
+                  role="button"
+                  aria-label={`${getDomainName(domainId)}, ${Math.round(healthPct * 100)}% health. Press Enter to explore.`}
+                  tabIndex={0}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter' || e.key === ' ') {
+                      e.preventDefault()
+                      handleArcClick(i)
+                    }
+                  }}
                 />
 
                 {/* Health fill arc */}

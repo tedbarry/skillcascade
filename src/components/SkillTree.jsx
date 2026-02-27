@@ -185,6 +185,8 @@ export default memo(function SkillTree({ assessments = {}, onSelectDomain }) {
         width="100%"
         style={{ maxWidth: width, background: 'linear-gradient(180deg, #1a1a1e 0%, #1e1e24 50%, #1a1a1e 100%)' }}
         className="mx-auto block"
+        role="img"
+        aria-label="Skill tree diagram showing developmental domains and their dependency relationships"
       >
         <defs>
           {/* Glow filters */}
@@ -287,8 +289,14 @@ export default memo(function SkillTree({ assessments = {}, onSelectDomain }) {
             const isRecommended = domain.id === recommendedTarget
             const isExpanded = expandedDomain === domain.id
 
+            const ariaLabel = `${domain.name}, ${
+              score && score.assessed > 0
+                ? `score ${score.score.toFixed(1)} out of 3, ${score.assessed} of ${score.total} assessed, ${config.label}`
+                : config.label
+            }${isRecommended ? ', recommended next target' : ''}. Press Enter to expand.`
+
             return (
-              <g key={domain.id}>
+              <g key={domain.id} role="group" aria-label={`Domain: ${domain.name}`}>
                 {/* Pulse ring for recommended target */}
                 {isRecommended && (
                   <rect
@@ -320,6 +328,16 @@ export default memo(function SkillTree({ assessments = {}, onSelectDomain }) {
                   strokeWidth={isExpanded ? 2.5 : 1.5}
                   filter={config.glow !== 'none' ? `url(#glow-${state})` : undefined}
                   style={{ cursor: 'pointer' }}
+                  role="button"
+                  aria-label={ariaLabel}
+                  tabIndex={0}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter' || e.key === ' ') {
+                      e.preventDefault()
+                      setExpandedDomain(isExpanded ? null : domain.id)
+                      if (onSelectDomain) onSelectDomain(domain)
+                    }
+                  }}
                   onClick={() => {
                     setExpandedDomain(isExpanded ? null : domain.id)
                     if (onSelectDomain) onSelectDomain(domain)

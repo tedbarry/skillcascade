@@ -604,30 +604,73 @@ ${summary.weakestDomains.length > 0 ? `\nContext: ${clientName}'s weakest areas 
    Message component
    ───────────────────────────────────────────── */
 
-function ChatMessage({ message }) {
+function ChatMessage({ message, isLastAssistant, onRegenerate }) {
   const isUser = message.role === 'user'
   const isSystem = message.role === 'system'
+  const isAssistant = message.role === 'assistant'
+  const [copied, setCopied] = useState(false)
+
+  function handleCopy() {
+    navigator.clipboard.writeText(message.content).then(() => {
+      setCopied(true)
+      setTimeout(() => setCopied(false), 2000)
+    })
+  }
 
   return (
     <div className={`flex ${isUser ? 'justify-end' : 'justify-start'} mb-3`}>
-      <div
-        className={`max-w-[85%] rounded-xl px-4 py-3 text-sm leading-relaxed ${
-          isUser
-            ? 'bg-sage-500 text-white rounded-br-sm'
-            : isSystem
-              ? 'bg-warm-100 text-warm-600 border border-warm-200 rounded-bl-sm'
-              : 'bg-white text-warm-700 border border-warm-200 shadow-sm rounded-bl-sm'
-        }`}
-      >
-        {/* Role label for non-user messages */}
-        {!isUser && (
-          <div className={`text-[10px] font-semibold uppercase tracking-wider mb-1.5 ${
-            isSystem ? 'text-warm-400' : 'text-sage-500'
-          }`}>
-            {isSystem ? 'System' : 'AI Assistant'}
-          </div>
+      <div className="max-w-[85%]">
+        <div
+          className={`relative rounded-xl px-4 py-3 text-sm leading-relaxed ${
+            isUser
+              ? 'bg-sage-500 text-white rounded-br-sm'
+              : isSystem
+                ? 'bg-warm-100 text-warm-600 border border-warm-200 rounded-bl-sm'
+                : 'bg-white text-warm-700 border border-warm-200 shadow-sm rounded-bl-sm'
+          }`}
+        >
+          {/* Copy button for AI responses */}
+          {isAssistant && (
+            <button
+              onClick={handleCopy}
+              className="absolute top-2 right-2 min-h-[44px] min-w-[44px] flex items-center justify-center text-warm-500 hover:text-warm-700 transition-colors"
+              aria-label={copied ? 'Copied' : 'Copy to clipboard'}
+              title={copied ? 'Copied!' : 'Copy to clipboard'}
+            >
+              {copied ? (
+                <span className="text-xs font-medium text-sage-600">Copied!</span>
+              ) : (
+                <svg className="w-3.5 h-3.5" viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+                  <rect x="6" y="6" width="11" height="11" rx="1.5" />
+                  <path d="M14 6V4.5A1.5 1.5 0 0012.5 3H4.5A1.5 1.5 0 003 4.5v8A1.5 1.5 0 004.5 14H6" />
+                </svg>
+              )}
+            </button>
+          )}
+          {/* Role label for non-user messages */}
+          {!isUser && (
+            <div className={`text-[10px] font-semibold uppercase tracking-wider mb-1.5 ${
+              isSystem ? 'text-warm-400' : 'text-sage-500'
+            }`}>
+              {isSystem ? 'System' : 'AI Assistant'}
+            </div>
+          )}
+          <div className={`whitespace-pre-wrap ${isAssistant ? 'pr-8' : ''}`}>{message.content}</div>
+        </div>
+        {/* Regenerate button — only on the most recent AI response */}
+        {isAssistant && isLastAssistant && onRegenerate && (
+          <button
+            onClick={onRegenerate}
+            className="mt-1 ml-1 min-h-[44px] inline-flex items-center gap-1 text-xs text-warm-500 hover:text-warm-700 transition-colors"
+            aria-label="Regenerate response"
+          >
+            <svg className="w-3 h-3" viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+              <path d="M3 10a7 7 0 0112.95-3.61M17 10a7 7 0 01-12.95 3.61" />
+              <path d="M16 3v4h-4M4 17v-4h4" />
+            </svg>
+            Regenerate
+          </button>
         )}
-        <div className="whitespace-pre-wrap">{message.content}</div>
       </div>
     </div>
   )
@@ -1288,6 +1331,58 @@ export default function AIAssistantPanel({ isOpen, onClose, clientName, assessme
     [handleSendMessage]
   )
 
+  // Find the last assistant message id for the regenerate button
+  const lastAssistantId = useMemo(() => {
+    for (let i = messages.length - 1; i >= 0; i--) {
+      if (messages[i].role === 'assistant') return messages[i].id
+    }
+    return null
+  }, [messages])
+
+  // Regenerate: find the user prompt that preceded the last assistant message, remove the assistant message, and re-send
+  const handleRegenerate = useCallback(async () => {
+    if (isLoading || !lastAssistantId) return
+    // Find index of the last assistant message
+    const aiIdx = messages.findIndex((m) => m.id === lastAssistantId)
+    if (aiIdx < 0) return
+    // Find the user message that preceded it
+    let userText = null
+    for (let i = aiIdx - 1; i >= 0; i--) {
+      if (messages[i].role === 'user') {
+        userText = messages[i].content
+        break
+      }
+    }
+    if (!userText) return
+
+    // Remove the last assistant message
+    const trimmed = messages.filter((m) => m.id !== lastAssistantId)
+    setMessages(trimmed)
+
+    if (isApiConnected) {
+      setIsLoading(true)
+      try {
+        const response = await callOpenAI(userText, trimmed)
+        const aiMsg = { id: `ai-${Date.now()}`, role: 'assistant', content: response }
+        setMessages((prev) => [...prev, aiMsg])
+      } catch (err) {
+        const errorMsg = { id: `error-${Date.now()}`, role: 'system', content: `Error: ${err.message}` }
+        setMessages((prev) => [...prev, errorMsg])
+      } finally {
+        setIsLoading(false)
+      }
+    } else {
+      const closestAction = selectedTool?.actions?.find((a) =>
+        userText.toLowerCase().includes(a.label.toLowerCase().split(' ')[0])
+      )
+      const previewContent = closestAction
+        ? generatePreviewResponse(selectedToolId, closestAction.label, clientName || 'this client', assessments || {})
+        : `I understand you're asking about "${userText}" in the context of ${selectedTool?.name}. This is preview mode -- connect an API key below to get full AI-powered responses.`
+      const aiMsg = { id: `ai-${Date.now()}`, role: 'assistant', content: previewContent }
+      setMessages((prev) => [...prev, aiMsg])
+    }
+  }, [isLoading, lastAssistantId, messages, isApiConnected, selectedToolId, selectedTool, clientName, assessments])
+
   return (
     <>
       {/* Backdrop */}
@@ -1517,7 +1612,12 @@ export default function AIAssistantPanel({ isOpen, onClose, clientName, assessme
           /* ── Messages ── */
           <div className="flex-1 overflow-y-auto px-4 py-4">
             {messages.map((msg) => (
-              <ChatMessage key={msg.id} message={msg} />
+              <ChatMessage
+                key={msg.id}
+                message={msg}
+                isLastAssistant={msg.id === lastAssistantId}
+                onRegenerate={handleRegenerate}
+              />
             ))}
             {isLoading && (
               <div className="flex justify-start mb-3">

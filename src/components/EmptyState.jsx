@@ -50,50 +50,101 @@ const ILLUSTRATIONS = {
       <path d="M32 40h16M40 32v16" strokeLinecap="round" className="text-warm-200" />
     </svg>
   ),
+  'no-reports': (
+    <svg className="w-24 h-24 text-warm-300" fill="none" viewBox="0 0 96 96" stroke="currentColor" strokeWidth={1.5}>
+      <rect x="20" y="12" width="56" height="72" rx="6" />
+      <path d="M34 32h28M34 42h20M34 52h24" strokeLinecap="round" />
+      <path d="M34 66h12" strokeLinecap="round" strokeWidth={2} className="text-warm-400" />
+      <path d="M56 60v12h12" strokeLinecap="round" strokeLinejoin="round" className="text-sage-400" />
+    </svg>
+  ),
+  'no-practice': (
+    <svg className="w-24 h-24 text-warm-300" fill="none" viewBox="0 0 96 96" stroke="currentColor" strokeWidth={1.5}>
+      <rect x="16" y="24" width="64" height="52" rx="8" />
+      <path d="M40 44l12 8-12 8V44z" fill="currentColor" className="text-warm-200" stroke="none" />
+      <path d="M32 16h32" strokeLinecap="round" strokeWidth={2} className="text-warm-200" />
+      <circle cx="72" cy="32" r="6" className="text-sage-400" />
+      <path d="M69.5 32l2 2 3-4" strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} className="text-sage-400" />
+    </svg>
+  ),
+  'no-predictions': (
+    <svg className="w-24 h-24 text-warm-300" fill="none" viewBox="0 0 96 96" stroke="currentColor" strokeWidth={1.5}>
+      <path d="M16 72l16-20 12 8 16-24 12 12 8-16" strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} />
+      <path d="M56 36l16-20" strokeLinecap="round" strokeDasharray="4 4" className="text-warm-200" />
+      <circle cx="72" cy="16" r="4" className="text-warm-200" />
+      <path d="M16 76h64" strokeLinecap="round" className="text-warm-200" />
+    </svg>
+  ),
 }
 
 const PRESETS = {
   'no-client': {
     illustration: 'no-client',
     title: 'No Client Selected',
-    description: 'Select a client from the top bar or create a new one to begin assessing.',
-    actionLabel: 'View Caseload',
+    description: 'Pick a client from your caseload to view their skill profile, or add a new client to get started.',
+    actionLabel: 'Open Caseload',
     actionView: 'caseload',
   },
   'no-assessments': {
     illustration: 'no-data',
-    title: 'No Assessment Data',
-    description: 'Start an assessment to see this client\'s skill profile come to life.',
-    actionLabel: 'Start Assessment',
+    title: 'No Assessment Data Yet',
+    description: 'Run your first assessment to build this client\'s skill profile. It only takes a few minutes to get actionable insights.',
+    actionLabel: 'Start Assessing',
     actionView: 'assess',
   },
   'no-snapshots': {
     illustration: 'no-snapshots',
     title: 'No Snapshots Yet',
-    description: 'Save a snapshot to track progress over time. Each snapshot captures the full assessment at a point in time.',
-    actionLabel: 'Save Snapshot',
+    description: 'Save a snapshot after each assessment to track progress over time. Each snapshot captures the full skill profile at a point in time.',
+    actionLabel: 'Save First Snapshot',
+    actionView: 'timeline',
   },
   'no-alerts': {
     illustration: 'no-alerts',
     title: 'All Clear',
-    description: 'No cascade risks or learning barriers detected. This client\'s profile is balanced.',
+    description: 'No cascade risks or learning barriers detected right now. Continue assessing to keep this profile up to date.',
+    actionLabel: 'Review Profile',
+    actionView: 'cascade',
   },
   'no-goals': {
     illustration: 'no-goals',
-    title: 'No Goals Set',
-    description: 'Set domain or skill-level goals to track intervention progress.',
-    actionLabel: 'Set Goals',
+    title: 'No Goals Set Yet',
+    description: 'Define domain or skill-level goals to track intervention progress and measure outcomes over time.',
+    actionLabel: 'Create First Goal',
     actionView: 'goals',
   },
   'no-messages': {
     illustration: 'no-messages',
-    title: 'No Messages',
-    description: 'Team messages and collaboration notes will appear here.',
+    title: 'No Messages Yet',
+    description: 'Start a conversation with your team. Collaboration notes and updates will appear here.',
+    actionLabel: 'Send a Message',
+    actionView: 'messages',
   },
   'no-results': {
     illustration: 'search',
     title: 'No Results Found',
-    description: 'Try adjusting your search terms or filters.',
+    description: 'Try adjusting your search terms or broadening your filters to find what you\'re looking for.',
+  },
+  'no-reports': {
+    illustration: 'no-reports',
+    title: 'No Reports Yet',
+    description: 'Generate your first report from assessment data. Reports summarize progress and can be shared with caregivers or teams.',
+    actionLabel: 'Generate Report',
+    actionView: 'reports',
+  },
+  'no-practice': {
+    illustration: 'no-practice',
+    title: 'No Practice Activities Yet',
+    description: 'Create practice activities for home use based on this client\'s current skill gaps and goals.',
+    actionLabel: 'Create Activity',
+    actionView: 'practice',
+  },
+  'no-predictions': {
+    illustration: 'no-predictions',
+    title: 'Not Enough Data for Predictions',
+    description: 'Complete more assessments and save snapshots to unlock growth predictions and trend analysis.',
+    actionLabel: 'Start Assessing',
+    actionView: 'assess',
   },
 }
 

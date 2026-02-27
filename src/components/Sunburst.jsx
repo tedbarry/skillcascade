@@ -4,23 +4,12 @@ import { arc } from 'd3-shape'
 import { interpolate } from 'd3-interpolate'
 import { select } from 'd3-selection'
 import 'd3-transition' // side-effect: patches selection.prototype.transition
-import { ASSESSMENT_COLORS, ASSESSMENT_LABELS, ASSESSMENT_LEVELS } from '../data/framework.js'
+import { ASSESSMENT_COLORS, ASSESSMENT_LABELS, ASSESSMENT_LEVELS, framework } from '../data/framework.js'
+import { DOMAIN_COLORS } from '../constants/colors.js'
 
 /**
  * Domain colors — warm, distinct, accessible
  */
-const DOMAIN_COLORS = {
-  d1: '#e07b6e',
-  d2: '#d4956a',
-  d3: '#c9a84c',
-  d4: '#8fb570',
-  d5: '#5da87a',
-  d6: '#4a9e9e',
-  d7: '#6889b5',
-  d8: '#8b7bb5',
-  d9: '#a86e9a',
-}
-
 function getDomainId(d) {
   let node = d
   while (node.depth > 1 && node.parent) node = node.parent
@@ -87,6 +76,35 @@ function labelTransform(d, radius) {
 function truncateLabel(text, maxLen) {
   if (text.length <= maxLen) return text
   return text.slice(0, maxLen - 1) + '\u2026'
+}
+
+function getArcAriaLabel(d, assessments) {
+  const depthLabel = d.depth === 1 ? 'Domain' : d.depth === 2 ? 'Sub-area' : 'Skill'
+  const name = d.data.name
+
+  // Leaf node: show individual assessment
+  if (!d.children && !d._children) {
+    const level = assessments[d.data.id] ?? ASSESSMENT_LEVELS.NOT_ASSESSED
+    const levelLabel = ASSESSMENT_LABELS[level] || 'Not assessed'
+    return `${depthLabel}: ${name}, ${levelLabel}. Press Enter to drill down.`
+  }
+
+  // Branch node: show average score
+  const leaves = d.leaves()
+  const assessed = leaves.filter((l) => {
+    const level = assessments[l.data.id]
+    return level !== undefined && level !== ASSESSMENT_LEVELS.NOT_ASSESSED
+  })
+  const avgLevel =
+    assessed.length > 0
+      ? (assessed.reduce((sum, l) => sum + assessments[l.data.id], 0) / assessed.length).toFixed(1)
+      : null
+
+  const scoreText = avgLevel !== null
+    ? `average score ${avgLevel} out of 3, ${assessed.length} of ${leaves.length} assessed`
+    : 'not assessed'
+
+  return `${depthLabel}: ${name}, ${scoreText}. Press Enter to drill down.`
 }
 
 export default memo(function Sunburst({ data, assessments = {}, width = 800, height = 800, onSelect }) {
@@ -167,6 +185,7 @@ export default memo(function Sunburst({ data, assessments = {}, width = 800, hei
       })
       .attr('fill-opacity', (d) => (arcVisible(d.target) ? (d.children ? 0.85 : 0.7) : 0))
       .attr('pointer-events', (d) => (arcVisible(d.target) ? 'auto' : 'none'))
+      .attr('tabindex', (d) => (arcVisible(d.target) ? 0 : -1))
       .attrTween('d', (d) => () => makeArc(d))
 
     label
@@ -232,6 +251,15 @@ export default memo(function Sunburst({ data, assessments = {}, width = 800, hei
       .style('cursor', 'pointer')
       .style('stroke', '#fdf8f0')
       .style('stroke-width', '0.5px')
+      .attr('role', 'button')
+      .attr('aria-label', (d) => getArcAriaLabel(d, assessmentsRef.current))
+      .attr('tabindex', (d) => (arcVisible(d.current) ? 0 : -1))
+      .on('keydown', (event, d) => {
+        if (event.key === 'Enter' || event.key === ' ') {
+          event.preventDefault()
+          zoomTo(d)
+        }
+      })
 
     // Hover
     path
@@ -375,6 +403,9 @@ export default memo(function Sunburst({ data, assessments = {}, width = 800, hei
       .attr('fill', '#fdf8f0')
       .attr('pointer-events', 'all')
       .style('cursor', 'pointer')
+      .attr('role', 'button')
+      .attr('aria-label', 'Go up one level. Press Enter to zoom out.')
+      .attr('tabindex', 0)
       .on('click', () => {
         // Zoom out one level: go to the parent of the current zoomed node
         const current = currentNodeRef.current || root
@@ -382,6 +413,15 @@ export default memo(function Sunburst({ data, assessments = {}, width = 800, hei
           zoomTo(current.parent)
         }
         // Already at root — do nothing
+      })
+      .on('keydown', (event) => {
+        if (event.key === 'Enter' || event.key === ' ') {
+          event.preventDefault()
+          const current = currentNodeRef.current || root
+          if (current.parent) {
+            zoomTo(current.parent)
+          }
+        }
       })
 
     // Center text

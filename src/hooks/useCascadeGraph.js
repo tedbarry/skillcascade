@@ -57,42 +57,92 @@ const EDGES = [
 /**
  * useCascadeGraph — React hook wrapping cascade computations with memoization.
  *
+ * Memoization is split into independent chains so that unrelated inputs
+ * (e.g. snapshots vs. whatIfOverrides) don't invalidate each other:
+ *
+ *   assessments ──► domainHealth, impactRanking, skillBottlenecks, subAreaReadiness
+ *   assessments + snapshots ──► cascadeRisks, learningBarriers
+ *   assessments + whatIfOverrides ──► nodes, edges, triggerCascade, callbacks
+ *
  * @param {Object} assessments - Current assessment data { skillId: level }
  * @param {Array} snapshots - Array of historical snapshots
  * @param {Object} whatIfOverrides - Optional what-if domain overrides { domainId: targetAvg }
  * @returns Graph data, cascade state, and action dispatchers
  */
 export default function useCascadeGraph(assessments = {}, snapshots = [], whatIfOverrides = null) {
-  // What-if: use simulated assessments when overrides are active
-  const effectiveAssessments = useMemo(() => {
-    if (!whatIfOverrides || Object.keys(whatIfOverrides).length === 0) return assessments
-    return simulateCascade(assessments, whatIfOverrides)
-  }, [assessments, whatIfOverrides])
 
-  // Domain health map
+  // ─── Independent memo: domain health (assessments only) ───
+
   const domainHealth = useMemo(
-    () => computeDomainHealth(effectiveAssessments),
-    [effectiveAssessments]
+    () => computeDomainHealth(assessments),
+    [assessments]
   )
 
-  // Impact ranking
+  // ─── Independent memo: impact ranking (assessments only) ───
+
   const impactRanking = useMemo(
-    () => computeImpactRanking(effectiveAssessments),
-    [effectiveAssessments]
+    () => computeImpactRanking(assessments),
+    [assessments]
   )
 
-  // Cascade risks
+  // ─── Independent memo: cascade risks (assessments + snapshots) ───
+
   const cascadeRisks = useMemo(
-    () => detectCascadeRisks(effectiveAssessments, snapshots),
-    [effectiveAssessments, snapshots]
+    () => detectCascadeRisks(assessments, snapshots),
+    [assessments, snapshots]
   )
 
-  // Graph nodes with positions
+  // ─── Independent memo: skill bottlenecks (assessments only) ───
+
+  const skillBottlenecks = useMemo(
+    () => findSkillBottlenecks(assessments, 20),
+    [assessments]
+  )
+
+  // ─── Independent memo: sub-area readiness (assessments only) ───
+
+  const subAreaReadiness = useMemo(
+    () => computeSubAreaReadiness(assessments),
+    [assessments]
+  )
+
+  // ─── Independent memo: learning barriers (assessments + snapshots) ───
+
+  const learningBarriers = useMemo(
+    () => detectLearningBarriers(assessments, snapshots),
+    [assessments, snapshots]
+  )
+
+  // ─── What-if layer: only recomputes when overrides change ───
+
+  const whatIfActive = whatIfOverrides != null && Object.keys(whatIfOverrides).length > 0
+
+  const whatIfAssessments = useMemo(() => {
+    if (!whatIfActive) return null
+    return simulateCascade(assessments, whatIfOverrides)
+  }, [assessments, whatIfOverrides, whatIfActive])
+
+  const whatIfDomainHealth = useMemo(() => {
+    if (!whatIfAssessments) return null
+    return computeDomainHealth(whatIfAssessments)
+  }, [whatIfAssessments])
+
+  const whatIfImpactRanking = useMemo(() => {
+    if (!whatIfAssessments) return null
+    return computeImpactRanking(whatIfAssessments)
+  }, [whatIfAssessments])
+
+  // Effective values used by nodes/edges: base when no overrides, simulated when what-if
+  const displayHealth = whatIfActive ? whatIfDomainHealth : domainHealth
+  const displayRanking = whatIfActive ? whatIfImpactRanking : impactRanking
+
+  // ─── Graph nodes (domainHealth + impactRanking + whatIfOverrides) ───
+
   const nodes = useMemo(() => {
     return framework.map((domain) => {
       const layout = NODE_LAYOUT[domain.id]
-      const health = domainHealth[domain.id] || { avg: 0, assessed: 0, total: 0, healthPct: 0, state: 'locked' }
-      const ranking = impactRanking.find((r) => r.domainId === domain.id)
+      const health = displayHealth[domain.id] || { avg: 0, assessed: 0, total: 0, healthPct: 0, state: 'locked' }
+      const ranking = displayRanking.find((r) => r.domainId === domain.id)
 
       return {
         id: domain.id,
@@ -107,12 +157,13 @@ export default function useCascadeGraph(assessments = {}, snapshots = [], whatIf
         downstreamSkills: ranking?.downstreamSkills ?? 0,
       }
     })
-  }, [domainHealth, impactRanking])
+  }, [displayHealth, displayRanking])
 
-  // Graph edges with health-based styling data
+  // ─── Graph edges (domainHealth + whatIfOverrides) ───
+
   const edges = useMemo(() => {
     return EDGES.map((edge) => {
-      const fromHealth = domainHealth[edge.from] || { avg: 0, healthPct: 0, state: 'locked' }
+      const fromHealth = displayHealth[edge.from] || { avg: 0, healthPct: 0, state: 'locked' }
       const isWeak = fromHealth.assessed > 0 && fromHealth.avg < 1.5
 
       return {
@@ -122,7 +173,7 @@ export default function useCascadeGraph(assessments = {}, snapshots = [], whatIf
         isWeak,
       }
     })
-  }, [domainHealth])
+  }, [displayHealth])
 
   // ─── Cascade Animation State ───
 
@@ -141,6 +192,9 @@ export default function useCascadeGraph(assessments = {}, snapshots = [], whatIf
       if (timerRef.current) clearTimeout(timerRef.current)
     }
   }, [])
+
+  // Effective assessments for interactive callbacks (what-if aware)
+  const effectiveAssessments = whatIfAssessments || assessments
 
   const triggerCascade = useCallback((domainId) => {
     if (timerRef.current) clearTimeout(timerRef.current)
@@ -187,7 +241,7 @@ export default function useCascadeGraph(assessments = {}, snapshots = [], whatIf
     setCascadeState({ active: false, source: null, affected: {}, phase: 0, maxTier: 0 })
   }, [])
 
-  // ─── Sub-area expansion ───
+  // ─── Sub-area expansion (what-if aware) ───
 
   const getSubAreaHealth = useCallback(
     (domainId) => computeSubAreaHealth(domainId, effectiveAssessments),
@@ -206,27 +260,11 @@ export default function useCascadeGraph(assessments = {}, snapshots = [], whatIf
     [effectiveAssessments]
   )
 
-  // ─── Skill-Level Dependencies ───
-
-  const skillBottlenecks = useMemo(
-    () => findSkillBottlenecks(effectiveAssessments, 20),
-    [effectiveAssessments]
-  )
-
-  const subAreaReadiness = useMemo(
-    () => computeSubAreaReadiness(effectiveAssessments),
-    [effectiveAssessments]
-  )
+  // ─── Enhanced sub-area health (what-if aware) ───
 
   const getEnhancedSubAreaHealth = useCallback(
     (domainId) => computeEnhancedSubAreaHealth(domainId, effectiveAssessments),
     [effectiveAssessments]
-  )
-
-  // Learning barriers (VB-MAPP-style pattern detection)
-  const learningBarriers = useMemo(
-    () => detectLearningBarriers(effectiveAssessments, snapshots),
-    [effectiveAssessments, snapshots]
   )
 
   return {

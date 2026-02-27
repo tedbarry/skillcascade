@@ -6,6 +6,8 @@ import {
 import { getClients, getAssessments, getSnapshots } from '../data/storage.js'
 import { framework, ASSESSMENT_LEVELS, getDomainScores } from '../data/framework.js'
 import { useAuth } from '../contexts/AuthContext.jsx'
+import { useToast } from './Toast.jsx'
+import { userErrorMessage } from '../lib/errorUtils.js'
 import useResponsive from '../hooks/useResponsive.js'
 
 /* ─────────────────────────────────────────────
@@ -158,6 +160,7 @@ function ChartTooltip({ active, payload, label, suffix }) {
 
 export default function OrgAnalytics() {
   const { profile } = useAuth()
+  const { showToast } = useToast()
   const { isPhone } = useResponsive()
   const [tableSortKey, setTableSortKey] = useState('name')
   const [tableSortDir, setTableSortDir] = useState('asc')
@@ -213,6 +216,7 @@ export default function OrgAnalytics() {
         setOrgData(enriched)
       } catch (err) {
         console.error('Failed to load org data:', err.message)
+        showToast(userErrorMessage(err, 'load organization data'), 'error')
       } finally {
         setDataLoading(false)
       }

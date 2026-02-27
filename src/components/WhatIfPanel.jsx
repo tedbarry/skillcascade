@@ -2,11 +2,7 @@ import { useMemo } from 'react'
 import { framework, DOMAIN_DEPENDENCIES } from '../data/framework.js'
 import { computeDomainHealth, simulateCascade } from '../data/cascadeModel.js'
 import useResponsive from '../hooks/useResponsive.js'
-
-const DOMAIN_COLORS = {
-  d1: '#e07b6e', d2: '#d4956a', d3: '#c9a84c', d4: '#8fb570',
-  d5: '#5da87a', d6: '#4a9e9e', d7: '#6889b5', d8: '#8b7bb5', d9: '#a86e9a',
-}
+import { DOMAIN_COLORS } from '../constants/colors.js'
 
 export default function WhatIfPanel({ assessments = {}, overrides, onOverridesChange, onClose }) {
   const { isPhone } = useResponsive()

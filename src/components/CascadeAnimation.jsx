@@ -9,6 +9,7 @@ import { framework, DOMAIN_DEPENDENCIES } from '../data/framework.js'
 import { computeDomainHealth, computeSubAreaHealth, findPrerequisiteChain, computePathReadiness } from '../data/cascadeModel.js'
 import useCascadeGraph from '../hooks/useCascadeGraph.js'
 import useResponsive from '../hooks/useResponsive.js'
+import { DOMAIN_COLORS } from '../constants/colors.js'
 
 const WhatIfPanel = lazy(() => import('./WhatIfPanel.jsx'))
 const CascadeTimelineSlider = lazy(() => import('./CascadeTimelineSlider.jsx'))
@@ -20,11 +21,6 @@ const CascadeGraph3D = lazy(() => import('./CascadeGraph3D.jsx'))
 /* ─────────────────────────────────────────────
    Constants
    ───────────────────────────────────────────── */
-
-const DOMAIN_COLORS = {
-  d1: '#e07b6e', d2: '#d4956a', d3: '#c9a84c', d4: '#8fb570',
-  d5: '#5da87a', d6: '#4a9e9e', d7: '#6889b5', d8: '#8b7bb5', d9: '#a86e9a',
-}
 
 const STATE_CONFIG = {
   locked:       { fill: '#2a2a2a', stroke: '#444',    textColor: '#888',    label: 'Locked' },
