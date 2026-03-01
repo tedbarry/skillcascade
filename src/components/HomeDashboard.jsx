@@ -418,7 +418,7 @@ export default function HomeDashboard({ assessments = {}, snapshots = [], client
           </button>
         </div>
         <motion.div
-          className={`grid gap-2.5 sm:gap-3 ${isPhone ? 'grid-cols-2' : isTablet ? 'grid-cols-3' : 'grid-cols-3 lg:grid-cols-4'}`}
+          className={`grid gap-2.5 sm:gap-3 ${isPhone ? 'grid-cols-2' : 'grid-cols-3'}`}
           initial="hidden"
           animate="visible"
           variants={{ visible: { transition: { staggerChildren: 0.05 } } }}
