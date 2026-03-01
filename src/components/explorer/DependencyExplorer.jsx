@@ -229,6 +229,7 @@ export default memo(function DependencyExplorer({ assessments = {} }) {
                   domainHealth={explorer.domainHealth}
                   assessments={assessments}
                   onDrillToDomain={handleDrillToDomain}
+                  onShowFullWeb={handleShowFullWeb}
                 />
               )}
               {level === 2 && (
