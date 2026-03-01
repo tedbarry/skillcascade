@@ -2,6 +2,7 @@ import { useState, useMemo } from 'react'
 import { framework, ASSESSMENT_LEVELS, ASSESSMENT_LABELS, getDomainScores, DOMAIN_DEPENDENCIES, isAssessed } from '../data/framework.js'
 import { downloadFile } from '../data/exportUtils.js'
 import { computeDomainHealth, computeImpactRanking, detectCascadeRisks } from '../data/cascadeModel.js'
+import { computeConstrainedSkills, computeSkillInfluence } from '../data/skillInfluence.js'
 import { generateClinicalSummary } from '../lib/narratives.js'
 import { generateDomainBarChart, generateRadarChart, generateMasteryGrid, generateScoreSummaryProfile } from '../lib/reportCharts.js'
 import { getBehavioralIndicator } from '../data/behavioralIndicators.js'
@@ -717,6 +718,41 @@ function generateInsuranceReport(clientName, date, analysis, assessments, clinic
       html += `<tr><td>${i + 1}</td><td>${domainName}</td><td style="text-align:center">${r.leverageScore?.toFixed(2) || '—'}</td><td>Improvements here cascade to ${r.dependentCount || 0} dependent domain(s)</td></tr>`
     }
     html += `</table>`
+  }
+
+  // ── Section 7b: Ceiling Analysis ──
+  const constrained = computeConstrainedSkills(assessments)
+  const influence = computeSkillInfluence(assessments)
+  const topCaps = Object.entries(influence)
+    .filter(([, inf]) => inf.directDownstream > 0)
+    .sort(([, a], [, b]) => b.directDownstream - a.directDownstream)
+    .slice(0, 5)
+
+  if (topCaps.length > 0 || constrained.length > 0) {
+    html += `<h3>Ceiling Analysis</h3>`
+    if (topCaps.length > 0) {
+      html += `<p>The following prerequisite skills are currently capping the maximum achievable level of downstream skills:</p>`
+      html += `<table><tr><th>Prerequisite Skill</th><th style="text-align:center">Current Level</th><th style="text-align:center">Skills Capped</th></tr>`
+      for (const [skillId, inf] of topCaps) {
+        let name = skillId
+        for (const d of framework) {
+          for (const sa of d.subAreas) {
+            for (const sg of sa.skillGroups) {
+              for (const s of sg.skills) {
+                if (s.id === skillId) name = s.name
+              }
+            }
+          }
+        }
+        const level = assessments[skillId]
+        const levelLabel = level != null ? ASSESSMENT_LABELS[level] || String(level) : 'Not Assessed'
+        html += `<tr><td>${name}</td><td style="text-align:center">${levelLabel}</td><td style="text-align:center">${inf.directDownstream}</td></tr>`
+      }
+      html += `</table>`
+    }
+    if (constrained.length > 0) {
+      html += `<div class="callout callout-alert"><strong>${constrained.length} skill${constrained.length !== 1 ? 's' : ''} rated above ceiling.</strong> These skills may be fragile — rated higher than their prerequisite support would predict. Monitor for regression.</div>`
+    }
   }
 
   // ── Section 8: Clinical Narrative ──

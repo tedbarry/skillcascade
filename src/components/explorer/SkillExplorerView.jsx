@@ -3,6 +3,7 @@ import { framework } from '../../data/framework.js'
 import { getDomainFromId } from '../../data/skillDependencies.js'
 import { getSkillDescription } from '../../data/skillDescriptions.js'
 import { getBehavioralIndicator } from '../../data/behavioralIndicators.js'
+import { getSkillCeiling, computeSkillInfluence } from '../../data/skillInfluence.js'
 import useResponsive from '../../hooks/useResponsive.js'
 import ExplorerTooltip from './ExplorerTooltip.jsx'
 import { DOMAIN_COLORS } from '../../constants/colors.js'
@@ -294,6 +295,7 @@ export default memo(function SkillExplorerView({
                   onSelect={() => handleNodeClick(node)}
                   onCrossNavigate={onCrossNavigate}
                   graphData={graphData}
+                  assessments={assessments}
                 />
               ))}
             </div>
@@ -316,7 +318,7 @@ export default memo(function SkillExplorerView({
 
         {/* Detail panel */}
         {selectedDetail && (
-          <DetailPanel detail={selectedDetail} cascadeMap={cascadeMap} graphData={graphData} />
+          <DetailPanel detail={selectedDetail} cascadeMap={cascadeMap} graphData={graphData} assessments={assessments} />
         )}
 
         <ExplorerTooltip
@@ -647,7 +649,7 @@ export default memo(function SkillExplorerView({
 
       {/* Detail panel below graph */}
       {selectedDetail && (
-        <DetailPanel detail={selectedDetail} cascadeMap={cascadeMap} graphData={graphData} />
+        <DetailPanel detail={selectedDetail} cascadeMap={cascadeMap} graphData={graphData} assessments={assessments} />
       )}
 
       <ExplorerTooltip
@@ -662,10 +664,11 @@ export default memo(function SkillExplorerView({
 })
 
 /** Detail panel shown below graph when a skill is selected */
-function DetailPanel({ detail, cascadeMap, graphData }) {
+function DetailPanel({ detail, cascadeMap, graphData, assessments }) {
   const { node, desc, downstreamInGraph, upstreamInGraph, totalCascade, blockedCount } = detail
   const statusColor = getStatusColor(node.level)
   const domainColor = DOMAIN_COLORS[node.domainId] || '#888'
+  const ceilingData = useMemo(() => getSkillCeiling(node.id, assessments || {}), [node.id, assessments])
 
   return (
     <div className="border-t border-gray-800 bg-gray-900/80 px-5 py-4">
@@ -737,6 +740,30 @@ function DetailPanel({ detail, cascadeMap, graphData }) {
             )}
           </div>
 
+          {/* Ceiling constraint */}
+          {ceilingData && (
+            <div className="bg-gray-800 rounded-lg px-3 py-2">
+              <div className="text-[10px] font-semibold text-gray-400 mb-1">Skill Ceiling</div>
+              <div className="text-[10px] text-gray-300">
+                Max: <span className="font-semibold" style={{
+                  color: ceilingData.ceiling >= 3 ? '#4ade80' : ceilingData.ceiling >= 2 ? '#fbbf24' : '#f87171'
+                }}>
+                  {ASSESSMENT_LABELS[ceilingData.ceiling]}
+                </span>
+              </div>
+              {ceilingData.ceiling < 3 && ceilingData.constrainingPrereqs[0] && (
+                <div className="text-[10px] text-amber-400/80 mt-0.5">
+                  Limited by prerequisite at {ASSESSMENT_LABELS[ceilingData.constrainingPrereqs[0].level ?? 0]}
+                </div>
+              )}
+              {isAssessed(node.level) && node.level > ceilingData.ceiling && (
+                <div className="text-[10px] text-red-400 mt-0.5 font-medium">
+                  &#9888; Rated above ceiling — may be fragile
+                </div>
+              )}
+            </div>
+          )}
+
           {/* Downstream impact */}
           <div className="bg-gray-800 rounded-lg px-3 py-2">
             <div className="text-[10px] font-semibold text-gray-400 mb-1">Downstream Impact</div>
@@ -761,11 +788,12 @@ function DetailPanel({ detail, cascadeMap, graphData }) {
 }
 
 /** Phone card for a local skill */
-function SkillCard({ node, isSelected, cascadeInfo, selectedSkillId, edges, onSelect, onCrossNavigate, graphData }) {
+function SkillCard({ node, isSelected, cascadeInfo, selectedSkillId, edges, onSelect, onCrossNavigate, graphData, assessments }) {
   const statusColor = getStatusColor(node.level)
   const domainColor = DOMAIN_COLORS[node.domainId] || '#888'
   const readinessPct = Math.round((node.readiness?.readiness ?? 1) * 100)
   const desc = isSelected ? getSkillDescription(node.id) : null
+  const ceilingData = useMemo(() => isSelected ? getSkillCeiling(node.id, assessments || {}) : null, [isSelected, node.id, assessments])
 
   // Cascade tint class
   let cascadeBorder = ''
@@ -839,6 +867,18 @@ function SkillCard({ node, isSelected, cascadeInfo, selectedSkillId, edges, onSe
           {node.downstreamCount > 0 && (
             <div className="text-[10px] text-gray-400">
               Affects {node.downstreamCount} downstream skills
+            </div>
+          )}
+          {/* Ceiling */}
+          {ceilingData && (
+            <div className="text-[10px]">
+              <span className="text-gray-500">Ceiling: </span>
+              <span style={{ color: ceilingData.ceiling >= 3 ? '#4ade80' : ceilingData.ceiling >= 2 ? '#fbbf24' : '#f87171' }}>
+                {ASSESSMENT_LABELS[ceilingData.ceiling]}
+              </span>
+              {isAssessed(node.level) && node.level > ceilingData.ceiling && (
+                <span className="text-red-400 ml-1">&#9888; above ceiling</span>
+              )}
             </div>
           )}
           {/* Cross-domain connections */}

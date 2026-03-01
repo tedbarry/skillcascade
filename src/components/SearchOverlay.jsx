@@ -67,7 +67,7 @@ const COMMAND_DEFINITIONS = [
   { id: 'cmd:predictions', name: 'Go to Predictions', keywords: 'predictions forecast progress', icon: 'globe', action: 'navigate', value: 'predictions' },
   { id: 'cmd:compare', name: 'Go to Compare', keywords: 'compare snapshots diff', icon: 'scale', action: 'navigate', value: 'compare' },
   { id: 'cmd:assess', name: 'Start Full Assessment', keywords: 'assess full assessment evaluate', icon: 'clipboard', action: 'navigate', value: 'assess' },
-  { id: 'cmd:quick-assess', name: 'Start Quick Assessment', keywords: 'quick assessment adaptive fast', icon: 'bolt', action: 'navigate', value: 'quick-assess' },
+  { id: 'cmd:quick-assess', name: 'Start Here Assessment', keywords: 'start here quick assessment adaptive fast influence', icon: 'bolt', action: 'navigate', value: 'quick-assess' },
   { id: 'cmd:goals', name: 'Go to Goals', keywords: 'goals targets objectives plan', icon: 'target', action: 'navigate', value: 'goals' },
   { id: 'cmd:reports', name: 'Go to Reports', keywords: 'reports generate clinical', icon: 'doc', action: 'navigate', value: 'reports' },
   { id: 'cmd:milestones', name: 'Go to Milestones', keywords: 'milestones celebrations achievements', icon: 'trophy', action: 'navigate', value: 'milestones' },

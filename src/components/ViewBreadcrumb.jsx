@@ -12,7 +12,7 @@ const VIEW_MAP = {
   predictions: { group: 'Analyze', label: 'Predictions' },
   compare: { group: 'Analyze', label: 'Compare' },
   assess: { group: 'Assess', label: 'Full Assessment' },
-  'quick-assess': { group: 'Assess', label: 'Quick Assessment' },
+  'quick-assess': { group: 'Assess', label: 'Start Here' },
   goals: { group: 'Plan', label: 'Goals' },
   reports: { group: 'Plan', label: 'Reports' },
   milestones: { group: 'Plan', label: 'Milestones' },

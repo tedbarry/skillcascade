@@ -10,6 +10,7 @@ import {
   rebuildSearchIndex as rebuildIndex,
   getMatchedResponse,
 } from '../lib/chatSimilarity.js'
+import { computeConstrainedSkills, computeSkillInfluence } from '../data/skillInfluence.js'
 
 /* ─────────────────────────────────────────────
    SVG Icons (inline, no emojis)
@@ -380,6 +381,27 @@ When writing operational definitions:
 - Use clinical ABA terminology appropriately`,
   }
 
+  // Ceiling constraint data for AI context
+  const constrained = computeConstrainedSkills(assessments)
+  const influence = computeSkillInfluence(assessments)
+  const topConstraints = Object.entries(influence)
+    .filter(([, inf]) => inf.directDownstream > 0)
+    .sort(([, a], [, b]) => b.directDownstream - a.directDownstream)
+    .slice(0, 5)
+    .map(([skillId, inf]) => {
+      let name = skillId
+      for (const dom of framework) {
+        for (const sa of dom.subAreas) {
+          for (const sg of sa.skillGroups) {
+            for (const s of sg.skills) {
+              if (s.id === skillId) name = s.name
+            }
+          }
+        }
+      }
+      return { skill: name, level: assessments[skillId] ?? null, capsDownstream: inf.directDownstream }
+    })
+
   const domainDataJson = JSON.stringify(
     summary.domainSummaries.map((d) => ({
       domain: d.name,
@@ -407,6 +429,10 @@ Weakest domains: ${summary.weakestDomains.map((d) => `${d.name} (avg ${d.avg})`)
 
 === DOMAIN ASSESSMENT DATA ===
 ${domainDataJson}
+
+=== CEILING CONSTRAINTS ===
+${topConstraints.length > 0 ? `Top prerequisite skills capping downstream development:\n${topConstraints.map(c => `- ${c.skill} (level ${c.level ?? 'unassessed'}) — caps ${c.capsDownstream} downstream skills`).join('\n')}` : 'No significant ceiling constraints detected.'}
+${constrained.length > 0 ? `\n${constrained.length} skill${constrained.length !== 1 ? 's are' : ' is'} rated above ${constrained.length !== 1 ? 'their' : 'its'} ceiling (may be fragile).` : ''}
 
 === FRAMEWORK CONTEXT ===
 SkillCascade uses a 9-domain developmental-functional framework:

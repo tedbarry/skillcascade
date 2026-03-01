@@ -10,6 +10,7 @@ import {
 import { getSkillDescription } from '../data/skillDescriptions.js'
 import { getBehavioralIndicator } from '../data/behavioralIndicators.js'
 import { downloadFile, csvEscape } from '../data/exportUtils.js'
+import { getSkillCeiling, computeSkillInfluence } from '../data/skillInfluence.js'
 import EmptyState from './EmptyState.jsx'
 import useResponsive from '../hooks/useResponsive.js'
 
@@ -180,6 +181,7 @@ function getRationale(domainId, priority, assessments) {
  */
 function analyzeGaps(assessments) {
   const recommendations = []
+  const influence = computeSkillInfluence(assessments)
 
   framework.forEach((domain) => {
     const domainAvg = getDomainAvg(domain.id, assessments)
@@ -206,6 +208,18 @@ function analyzeGaps(assessments) {
             priority = 3
           }
 
+          // Ceiling data
+          const ceilingData = getSkillCeiling(skill.id, assessments)
+          const ceiling = ceilingData?.ceiling ?? 3
+          const inf = influence[skill.id]
+          const capsDownstream = inf?.directDownstream || 0
+
+          // Enhance rationale with ceiling info
+          let rationale = getRationale(domain.id, priority, assessments)
+          if (capsDownstream > 0 && (level == null || level < 2)) {
+            rationale = `Caps ${capsDownstream} downstream skill${capsDownstream !== 1 ? 's' : ''}`
+          }
+
           recommendations.push({
             skillId: skill.id,
             skillName: skill.name,
@@ -217,18 +231,22 @@ function analyzeGaps(assessments) {
             skillGroupName: sg.name,
             level,
             priority,
-            rationale: getRationale(domain.id, priority, assessments),
+            rationale,
             downstream,
             downstreamSkills,
+            ceiling,
+            capsDownstream,
           })
         })
       })
     })
   })
 
-  // Sort within each priority: by downstream impact (highest first), then domain, then level
+  // Sort within each priority: by ceiling impact (skills that cap more go first),
+  // then downstream impact, then domain, then level
   recommendations.sort((a, b) => {
     if (a.priority !== b.priority) return a.priority - b.priority
+    if (a.capsDownstream !== b.capsDownstream) return b.capsDownstream - a.capsDownstream
     if (a.downstreamSkills !== b.downstreamSkills) return b.downstreamSkills - a.downstreamSkills
     if (a.domainNumber !== b.domainNumber) return a.domainNumber - b.domainNumber
     if (a.level !== b.level) return a.level - b.level
@@ -411,8 +429,15 @@ function SkillCard({ rec, onNavigateToAssess, isExpanded, onToggle }) {
             {rec.rationale}
           </span>
 
+          {/* Ceiling info — show when this skill caps downstream */}
+          {rec.capsDownstream > 0 && (
+            <span className="text-[10px] text-purple-400 whitespace-nowrap shrink-0">
+              Caps {rec.capsDownstream} skill{rec.capsDownstream !== 1 ? 's' : ''}
+            </span>
+          )}
+
           {/* Downstream count — show for all priorities with downstream impact */}
-          {rec.downstreamSkills > 0 && (
+          {rec.downstreamSkills > 0 && !rec.capsDownstream && (
             <span className="text-[10px] text-warm-400 whitespace-nowrap shrink-0">
               Unlocks {rec.downstreamSkills} skill{rec.downstreamSkills !== 1 ? 's' : ''}
             </span>

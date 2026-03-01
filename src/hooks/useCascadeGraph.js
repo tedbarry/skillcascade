@@ -14,6 +14,12 @@ import {
   computeSubAreaReadiness,
   detectLearningBarriers,
 } from '../data/cascadeModel.js'
+import {
+  computeSkillCeilings,
+  computeSkillInfluence,
+  computeConstrainedSkills,
+  getStartHerePriority,
+} from '../data/skillInfluence.js'
 
 /**
  * Layout — same positions as SkillTree / old CascadeAnimation
@@ -111,6 +117,34 @@ export default function useCascadeGraph(assessments = {}, snapshots = [], whatIf
   const learningBarriers = useMemo(
     () => detectLearningBarriers(assessments, snapshots),
     [assessments, snapshots]
+  )
+
+  // ─── Independent memo: skill ceilings (assessments only) ───
+
+  const skillCeilings = useMemo(
+    () => computeSkillCeilings(assessments),
+    [assessments]
+  )
+
+  // ─── Independent memo: skill influence (assessments only) ───
+
+  const skillInfluence = useMemo(
+    () => computeSkillInfluence(assessments),
+    [assessments]
+  )
+
+  // ─── Independent memo: constrained skills (assessments only) ───
+
+  const constrainedSkills = useMemo(
+    () => computeConstrainedSkills(assessments),
+    [assessments]
+  )
+
+  // ─── Independent memo: Start Here priority (assessments only) ───
+
+  const startHerePriority = useMemo(
+    () => getStartHerePriority(assessments),
+    [assessments]
   )
 
   // ─── What-if layer: only recomputes when overrides change ───
@@ -283,5 +317,9 @@ export default function useCascadeGraph(assessments = {}, snapshots = [], whatIf
     subAreaReadiness,
     getEnhancedSubAreaHealth,
     learningBarriers,
+    skillCeilings,
+    skillInfluence,
+    constrainedSkills,
+    startHerePriority,
   }
 }

@@ -2,6 +2,7 @@ import { useState, useCallback, useMemo, memo } from 'react'
 import StatusTile from './StatusTile.jsx'
 import SubAreaPanel from './SubAreaPanel.jsx'
 import useCascadeGraph from '../../hooks/useCascadeGraph.js'
+import { computeConstrainedSkills } from '../../data/skillInfluence.js'
 import useResponsive from '../../hooks/useResponsive.js'
 
 /**
@@ -19,6 +20,17 @@ export default memo(function StatusMapView({
   const { nodes, getEnhancedSubAreaHealth } = useCascadeGraph(assessments, snapshots)
   const [expandedDomain, setExpandedDomain] = useState(null)
   const hasData = useMemo(() => Object.keys(assessments).length > 0, [assessments])
+
+  // Ceiling constraints per domain for summary badges
+  const constrainedByDomain = useMemo(() => {
+    if (!hasData) return {}
+    const constrained = computeConstrainedSkills(assessments)
+    const byDomain = {}
+    constrained.forEach(c => {
+      byDomain[c.domainId] = (byDomain[c.domainId] || 0) + 1
+    })
+    return byDomain
+  }, [hasData, assessments])
 
   const handleTileClick = useCallback((domainId) => {
     setExpandedDomain(prev => prev === domainId ? null : domainId)
@@ -73,6 +85,7 @@ export default memo(function StatusMapView({
                   selected={expandedDomain === node.id}
                   onClick={() => handleTileClick(node.id)}
                   isCompact
+                  constrainedCount={constrainedByDomain[node.id] || 0}
                 />
               ))}
             </div>
@@ -85,6 +98,7 @@ export default memo(function StatusMapView({
                   node={node}
                   selected={expandedDomain === node.id}
                   onClick={() => handleTileClick(node.id)}
+                  constrainedCount={constrainedByDomain[node.id] || 0}
                 />
               ))}
             </div>

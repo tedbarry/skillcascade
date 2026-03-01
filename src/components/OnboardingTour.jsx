@@ -100,9 +100,9 @@ const BCBA_STEPS = [
   {
     id: 'quick-assess',
     selector: '[data-tour="quick-assess-view"]',
-    title: 'Quick Assessment',
+    title: 'Start Here',
     description:
-      'Short on time? Quick Assess uses adaptive branching — it asks smart follow-up questions and drills into gaps only. Takes ~2 minutes instead of 30.',
+      'New client? Start Here presents the most influential skills first — the ones that set the ceiling for everything above them. Rate each skill 0-3 with behavioral indicators showing what each level looks like. Even 15-20 ratings gives useful cascade coverage.',
     placement: 'bottom',
     navigateTo: 'quick-assess',
     phase: 'Assess',
@@ -295,7 +295,7 @@ const BCBA_STEPS = [
     selector: null,
     title: 'You\'re All Set!',
     description:
-      'That covers all the major features. Start by selecting a client and running a Quick Assessment — the dashboard will come alive with insights. You can restart this tour anytime from the sidebar.',
+      'That covers all the major features. Start by selecting a client and using Start Here to rate the most influential skills — the dashboard will come alive with insights. You can restart this tour anytime from the sidebar.',
     placement: 'center',
     phase: 'Done',
   },
@@ -363,9 +363,9 @@ const PARENT_STEPS = [
   {
     id: 'quick-assess',
     selector: '[data-tour="quick-assess-view"]',
-    title: 'Quick Check-In',
+    title: 'Start Here',
     description:
-      'Getting started? The Quick Assessment walks you through a short screening (~2 minutes) to identify where your child is today.',
+      'Getting started? Start Here guides you through the most important skills first — the ones that influence everything else. Each rating you give helps build a picture of your child\'s development.',
     placement: 'bottom',
     navigateTo: 'quick-assess',
     phase: 'Assess',
@@ -405,7 +405,7 @@ const PARENT_STEPS = [
     selector: null,
     title: 'You\'re Ready!',
     description:
-      'Start with a Quick Assessment to see your child\'s profile come to life. You can restart this tour anytime from the sidebar.',
+      'Start with Start Here to rate a few key skills and see your child\'s profile come to life. You can restart this tour anytime from the sidebar.',
     placement: 'center',
     phase: 'Done',
   },

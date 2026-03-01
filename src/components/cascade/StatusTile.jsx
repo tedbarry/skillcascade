@@ -19,7 +19,7 @@ const STATE_CONFIG = {
  *   onClick   — () => void
  *   isCompact — boolean (phone: horizontal row instead of tile)
  */
-export default memo(function StatusTile({ node, selected = false, onClick, isCompact = false }) {
+export default memo(function StatusTile({ node, selected = false, onClick, isCompact = false, constrainedCount = 0 }) {
   const color = DOMAIN_COLORS[node.id] || '#888'
   const stateInfo = STATE_CONFIG[node.state] || STATE_CONFIG.locked
   const hasAssessment = node.assessed > 0
@@ -152,9 +152,14 @@ export default memo(function StatusTile({ node, selected = false, onClick, isCom
         {stateInfo.label}
       </div>
 
-      {/* Assessed count */}
-      <div className="text-[9px] text-gray-600 mt-0.5">
-        {node.assessed}/{node.total} assessed
+      {/* Assessed count + ceiling badge */}
+      <div className="text-[9px] text-gray-600 mt-0.5 flex items-center gap-1.5">
+        <span>{node.assessed}/{node.total} assessed</span>
+        {constrainedCount > 0 && (
+          <span className="text-[8px] text-purple-400 bg-purple-900/20 px-1 rounded">
+            {constrainedCount} fragile
+          </span>
+        )}
       </div>
     </motion.button>
   )

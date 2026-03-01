@@ -24,7 +24,7 @@ const VIEW_LABELS = {
   4: 'Cascade',
   5: 'Timeline',
   6: 'Assess',
-  7: 'Quick Assess',
+  7: 'Start Here',
   8: 'Goals',
   9: 'Alerts',
 }

@@ -96,7 +96,7 @@ const TIERS = [
     seats: '1 BCBA seat',
     cta: 'Start Free Trial',
     features: [
-      'All assessment tools (full framework, adaptive assessment)',
+      'All assessment tools (full framework, Start Here guided assessment)',
       'All visualizations (sunburst, radar, skill tree, cascade, timeline)',
       'Goal engine',
       'Pattern alerts',
@@ -362,7 +362,7 @@ const COMPARISON_FEATURES = [
   { feature: 'Multi-location support', starter: false, professional: false, enterprise: true },
   { category: 'Assessment & Visualization' },
   { feature: 'Full assessment framework', starter: true, professional: true, enterprise: true },
-  { feature: 'Adaptive (short) assessment', starter: true, professional: true, enterprise: true },
+  { feature: 'Start Here guided assessment', starter: true, professional: true, enterprise: true },
   { feature: 'All visualizations', starter: true, professional: true, enterprise: true },
   { feature: 'Custom assessments & skill libraries', starter: false, professional: false, enterprise: true },
   { category: 'Clinical Tools' },

@@ -11,7 +11,7 @@ const TAB_GROUPS = {
   assess: {
     label: 'Assess',
     views: ['assess', 'quick-assess'],
-    viewLabels: { assess: 'Full', 'quick-assess': 'Quick' },
+    viewLabels: { assess: 'Full', 'quick-assess': 'Start Here' },
   },
   clients: {
     label: 'Clients',

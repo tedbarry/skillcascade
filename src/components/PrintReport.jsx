@@ -4,6 +4,7 @@ import { ASSESSMENT_COLORS, framework, ASSESSMENT_LEVELS, isAssessed } from '../
 import { computeDomainHealth, detectCascadeRisks } from '../data/cascadeModel.js'
 import { generateClinicalSummary, generateParentSummary } from '../lib/narratives.js'
 import { computeImpactRanking } from '../data/cascadeModel.js'
+import { computeConstrainedSkills } from '../data/skillInfluence.js'
 import { getBehavioralIndicator } from '../data/behavioralIndicators.js'
 
 const PILL_COLORS = {
@@ -36,6 +37,7 @@ export default function PrintReport({ assessments, clientName, snapshots = [], b
   const domainHealth = useMemo(() => computeDomainHealth(assessments), [assessments])
   const risks = useMemo(() => detectCascadeRisks(assessments, snapshots), [assessments, snapshots])
   const impactRanking = useMemo(() => computeImpactRanking(assessments), [assessments])
+  const constrainedSkills = useMemo(() => computeConstrainedSkills(assessments), [assessments])
 
   const clinicalSummary = useMemo(() => {
     try { return generateClinicalSummary(domainHealth, impactRanking, risks, []) } catch { return '' }
@@ -100,6 +102,12 @@ export default function PrintReport({ assessments, clientName, snapshots = [], b
               <div style={{ fontSize: '20px', fontWeight: 700, color: risks.length > 0 ? '#d44d3f' : '#4f8460' }}>{risks.length}</div>
               <div style={{ fontSize: '9px', color: '#9a6740' }}>Active Alerts</div>
             </div>
+            {constrainedSkills.length > 0 && (
+              <div style={{ textAlign: 'center' }}>
+                <div style={{ fontSize: '20px', fontWeight: 700, color: '#b468c7' }}>{constrainedSkills.length}</div>
+                <div style={{ fontSize: '9px', color: '#9a6740' }}>Above Ceiling</div>
+              </div>
+            )}
           </div>
         </div>
 

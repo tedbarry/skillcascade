@@ -55,7 +55,7 @@ const NAV_GROUPS = [
     ),
     views: [
       { key: 'assess', label: 'Full Assessment' },
-      { key: 'quick-assess', label: 'Quick Assessment' },
+      { key: 'quick-assess', label: 'Start Here' },
     ],
   },
   {

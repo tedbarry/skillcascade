@@ -2,6 +2,7 @@ import { useMemo } from 'react'
 import useCascadeGraph from './useCascadeGraph.js'
 import { framework } from '../data/framework.js'
 import { computeCascadeStrength } from '../data/cascadeModel.js'
+import { computeConstrainedSkills, computeSkillInfluence } from '../data/skillInfluence.js'
 import {
   generateClinicalSummary,
   generateParentSummary,
@@ -82,10 +83,43 @@ export default function useClinicalIntelligence(assessments = {}, snapshots = []
     }
   }, [cascadeRisks, learningBarriers])
 
+  // ─── Ceiling Constraints ───
+  const constrainedSkills = useMemo(() => computeConstrainedSkills(assessments), [assessments])
+  const skillInfluence = useMemo(() => computeSkillInfluence(assessments), [assessments])
+
+  // Find the single most impactful ceiling constraint (most downstream caps)
+  const topCeilingConstraint = useMemo(() => {
+    if (!hasData) return null
+    // Find the prereq skill that caps the most downstream skills
+    let best = null
+    for (const [skillId, inf] of Object.entries(skillInfluence)) {
+      if (inf.influenceScore > 0 && inf.directDownstream > 0) {
+        const level = assessments[skillId] ?? null
+        if (level != null && level < 2) {
+          if (!best || inf.directDownstream > best.directDownstream) {
+            const domain = framework.find(d => d.id === inf.affectedDomains[0])
+            let skillName = skillId
+            for (const d of framework) {
+              for (const sa of d.subAreas) {
+                for (const sg of sa.skillGroups) {
+                  for (const s of sg.skills) {
+                    if (s.id === skillId) skillName = s.name
+                  }
+                }
+              }
+            }
+            best = { skillId, skillName, level, ...inf }
+          }
+        }
+      }
+    }
+    return best
+  }, [hasData, skillInfluence, assessments])
+
   // ─── Headline (the 5-second answer) ───
   const headline = useMemo(() => {
     if (!hasData) {
-      return { topAction: null, topRisk: null, topStrength: null }
+      return { topAction: null, topRisk: null, topStrength: null, topConstraint: null }
     }
 
     // Top action: first target skill
@@ -100,8 +134,8 @@ export default function useClinicalIntelligence(assessments = {}, snapshots = []
       ? { domainId: strongest.domainId, domainName: strongest.domainName, healthPct: strongest.healthPct }
       : null
 
-    return { topAction, topRisk, topStrength }
-  }, [hasData, targetSkills, risks, impactRanking])
+    return { topAction, topRisk, topStrength, topConstraint: topCeilingConstraint }
+  }, [hasData, targetSkills, risks, impactRanking, topCeilingConstraint])
 
   // ─── Domain Insights ───
   const domainInsights = useMemo(() => {
@@ -167,6 +201,10 @@ export default function useClinicalIntelligence(assessments = {}, snapshots = []
     domainInsights,
     // Narratives
     narratives,
+    // Ceiling constraints
+    constrainedSkills,
+    skillInfluence,
+    topCeilingConstraint,
     // Passthrough from cascade graph (for views that need raw data)
     nodes,
     domainHealth,

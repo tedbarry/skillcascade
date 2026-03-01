@@ -1,1178 +1,453 @@
 import { useState, useMemo, useCallback, useRef, useEffect } from 'react'
-import { framework, ASSESSMENT_LEVELS, ASSESSMENT_LABELS, ASSESSMENT_COLORS, isAssessed } from '../data/framework.js'
-import { getSkillDescription } from '../data/skillDescriptions.js'
+import { framework, ASSESSMENT_LEVELS, ASSESSMENT_LABELS, ASSESSMENT_COLORS } from '../data/framework.js'
 import { getBehavioralIndicator } from '../data/behavioralIndicators.js'
+import { getStartHerePriority, getCeilingCoverage, getSkillCeiling } from '../data/skillInfluence.js'
 import useResponsive from '../hooks/useResponsive.js'
-import { safeSetItem } from '../lib/safeStorage.js'
 
 /**
- * AdaptiveAssessment — Quick screening mode for SkillCascade
+ * AdaptiveAssessment — "Start Here" cascade-aware initial assessment
  *
- * Cuts a 300+ skill full assessment down to ~15 minutes via a four-phase
- * adaptive funnel:
- *
- *   Phase 1: Domain Screening (9 questions, ~2 min)
- *   Phase 2: Sub-Area Drill-Down (only Mixed/Weak domains)
- *   Phase 3: Skill-Level Detail (only Weak sub-areas)
- *   Phase 4: Summary & Apply
+ * Replaces the old 4-phase adaptive funnel with a smarter approach:
+ *   - Skills are presented in influence-priority order (most impactful first)
+ *   - Real per-skill 0-3 ratings (no bulk domain stamps)
+ *   - Behavioral indicators show what each level looks like
+ *   - Live progress shows ceiling coverage across the framework
+ *   - "Done for now" always available — no forced completion
  *
  * Props:
- *   assessments  — current full assessment state
+ *   assessments  — current full assessment state { skillId: level }
  *   onAssess     — setState updater for assessments
- *   onComplete   — callback when user finishes and applies results
+ *   onComplete   — callback when user finishes
  */
 
-const PHASES = [
-  { key: 1, label: 'Domains', short: '1' },
-  { key: 2, label: 'Sub-Areas', short: '2' },
-  { key: 3, label: 'Skills', short: '3' },
-  { key: 4, label: 'Summary', short: '4' },
+const BATCH_SIZE = 5
+const DRAFT_KEY = 'skillcascade_adaptive_draft'
+const DRAFT_VERSION = 2
+
+const LEVEL_OPTIONS = [
+  { level: ASSESSMENT_LEVELS.NOT_PRESENT, label: 'Not Present', short: 'NP' },
+  { level: ASSESSMENT_LEVELS.NEEDS_WORK, label: 'Needs Work', short: 'NW' },
+  { level: ASSESSMENT_LEVELS.DEVELOPING, label: 'Developing', short: 'Dev' },
+  { level: ASSESSMENT_LEVELS.SOLID, label: 'Solid', short: 'Sol' },
 ]
 
-const SCREENING_RATINGS = ['Strong', 'Mixed', 'Weak', 'Skip']
-
-const SCREENING_COLORS = {
-  Strong: { bg: 'bg-sage-500', text: 'text-white', border: 'border-sage-500', ring: 'ring-sage-400' },
-  Mixed: { bg: 'bg-amber-500', text: 'text-white', border: 'border-amber-500', ring: 'ring-amber-400' },
-  Weak: { bg: 'bg-coral-500', text: 'text-white', border: 'border-coral-500', ring: 'ring-coral-400' },
-  Skip: { bg: 'bg-warm-300', text: 'text-warm-700', border: 'border-warm-300', ring: 'ring-warm-300' },
-}
-
-const SCREENING_ICONS = {
-  Strong: '\u2713',
-  Mixed: '\u223C',
-  Weak: '\u2717',
-  Skip: '\u2014',
-}
-
-// ============================================================================
-// Helpers
-// ============================================================================
-
-function countSkillsInDomain(domain) {
-  let count = 0
-  domain.subAreas.forEach((sa) => {
-    sa.skillGroups.forEach((sg) => {
-      count += sg.skills.length
-    })
-  })
-  return count
-}
-
-function countSkillsInSubArea(subArea) {
-  let count = 0
-  subArea.skillGroups.forEach((sg) => {
-    count += sg.skills.length
-  })
-  return count
-}
-
-function getSubAreasForDrillDown(domainRatings) {
-  const results = []
-  framework.forEach((domain) => {
-    const rating = domainRatings[domain.id]
-    if (rating === 'Mixed' || rating === 'Weak') {
-      domain.subAreas.forEach((sa) => {
-        results.push({ ...sa, domain })
-      })
-    }
-  })
-  return results
-}
-
-function getSkillsForDetail(subAreaRatings) {
-  const results = []
-  framework.forEach((domain) => {
-    domain.subAreas.forEach((sa) => {
-      if (subAreaRatings[sa.id] === 'Weak') {
-        results.push({ ...sa, domain })
-      }
-    })
-  })
-  return results
-}
-
-// ============================================================================
-// Main Component
-// ============================================================================
-
-const ADAPTIVE_DRAFT_KEY = 'skillcascade_adaptive_draft'
-
 export default function AdaptiveAssessment({ assessments, onAssess, onComplete }) {
-  // Restore draft from localStorage if available
-  const savedDraft = useRef(null)
-  try {
-    const raw = localStorage.getItem(ADAPTIVE_DRAFT_KEY)
-    if (raw) savedDraft.current = JSON.parse(raw)
-  } catch { /* ignore */ }
-
-  const [phase, setPhase] = useState(() => savedDraft.current?.phase || 1)
-  const [domainRatings, setDomainRatings] = useState(() => savedDraft.current?.domainRatings || {})
-  const [subAreaRatings, setSubAreaRatings] = useState(() => savedDraft.current?.subAreaRatings || {})
-  const [skillRatings, setSkillRatings] = useState(() => savedDraft.current?.skillRatings || {})
-  const [transitioning, setTransitioning] = useState(false)
-  const [applied, setApplied] = useState(false)
-  const [showAllDescs, setShowAllDescs] = useState(() => {
-    try { return localStorage.getItem('skillcascade_show_all_descs') === 'true' } catch { return false }
-  })
-
-  const { isPhone } = useResponsive()
-
+  const [started, setStarted] = useState(false)
+  const [batchIndex, setBatchIndex] = useState(0)
+  const { isPhone, isTablet } = useResponsive()
   const contentRef = useRef(null)
+  const [expandedSkill, setExpandedSkill] = useState(null)
 
-  // Auto-save adaptive draft to localStorage on state changes
+  // Restore draft state
   useEffect(() => {
-    const hasData = Object.keys(domainRatings).length > 0 || Object.keys(subAreaRatings).length > 0 || Object.keys(skillRatings).length > 0
-    if (!hasData || applied) {
-      localStorage.removeItem(ADAPTIVE_DRAFT_KEY)
-      return
-    }
     try {
-      localStorage.setItem(ADAPTIVE_DRAFT_KEY, JSON.stringify({
-        phase, domainRatings, subAreaRatings, skillRatings, savedAt: Date.now(),
-      }))
-    } catch { /* quota — ignore */ }
-  }, [phase, domainRatings, subAreaRatings, skillRatings, applied])
-
-  // Scroll to top on phase change
-  useEffect(() => {
-    if (contentRef.current) contentRef.current.scrollTop = 0
-  }, [phase])
-
-  // ---------------------------------------------------------------------------
-  // Derived data
-  // ---------------------------------------------------------------------------
-
-  const drillDownSubAreas = useMemo(
-    () => getSubAreasForDrillDown(domainRatings),
-    [domainRatings]
-  )
-
-  const detailSubAreas = useMemo(
-    () => getSkillsForDetail(subAreaRatings),
-    [subAreaRatings]
-  )
-
-  // Progress calculation
-  const progress = useMemo(() => {
-    if (phase === 1) {
-      const rated = Object.keys(domainRatings).length
-      return { rated, total: framework.length }
-    }
-    if (phase === 2) {
-      const rated = drillDownSubAreas.filter((sa) => subAreaRatings[sa.id]).length
-      return { rated, total: drillDownSubAreas.length }
-    }
-    if (phase === 3) {
-      let total = 0
-      let rated = 0
-      detailSubAreas.forEach((sa) => {
-        sa.skillGroups.forEach((sg) => {
-          sg.skills.forEach((skill) => {
-            total++
-            if (skillRatings[skill.id] !== undefined) rated++
-          })
-        })
-      })
-      return { rated, total }
-    }
-    return { rated: 0, total: 0 }
-  }, [phase, domainRatings, subAreaRatings, skillRatings, drillDownSubAreas, detailSubAreas])
-
-  const progressPct = progress.total > 0 ? Math.round((progress.rated / progress.total) * 100) : 100
-
-  // Can advance?
-  const canAdvance = useMemo(() => {
-    if (phase === 1) return Object.keys(domainRatings).length === framework.length
-    if (phase === 2) return drillDownSubAreas.every((sa) => subAreaRatings[sa.id])
-    if (phase === 3) return true // skill level is optional per spec
-    return false
-  }, [phase, domainRatings, subAreaRatings, drillDownSubAreas])
-
-  // Determine whether phases 2 and 3 have work
-  const hasPhase2Work = useMemo(() => {
-    return framework.some((d) => {
-      const r = domainRatings[d.id]
-      return r === 'Mixed' || r === 'Weak'
-    })
-  }, [domainRatings])
-
-  const hasPhase3Work = useMemo(() => {
-    return Object.values(subAreaRatings).some((r) => r === 'Weak')
-  }, [subAreaRatings])
-
-  // ---------------------------------------------------------------------------
-  // Navigation
-  // ---------------------------------------------------------------------------
-
-  const transitionTo = useCallback((nextPhase) => {
-    setTransitioning(true)
-    setTimeout(() => {
-      setPhase(nextPhase)
-      setTransitioning(false)
-    }, 200)
+      const raw = localStorage.getItem(DRAFT_KEY)
+      if (raw) {
+        const draft = JSON.parse(raw)
+        if (draft.version === DRAFT_VERSION) {
+          setStarted(true)
+          setBatchIndex(draft.batchIndex || 0)
+        } else {
+          localStorage.removeItem(DRAFT_KEY)
+        }
+      }
+    } catch { /* ignore */ }
   }, [])
 
-  const handleNext = useCallback(() => {
-    if (phase === 1) {
-      if (hasPhase2Work) {
-        transitionTo(2)
-      } else {
-        // Skip phase 2 and 3 — go straight to summary
-        transitionTo(4)
-      }
-    } else if (phase === 2) {
-      if (hasPhase3Work) {
-        transitionTo(3)
-      } else {
-        transitionTo(4)
-      }
-    } else if (phase === 3) {
-      transitionTo(4)
-    }
-  }, [phase, hasPhase2Work, hasPhase3Work, transitionTo])
+  // Save draft on batch change
+  useEffect(() => {
+    if (!started) return
+    try {
+      localStorage.setItem(DRAFT_KEY, JSON.stringify({
+        version: DRAFT_VERSION,
+        batchIndex,
+        savedAt: Date.now(),
+      }))
+    } catch { /* quota */ }
+  }, [started, batchIndex])
 
-  const handleBack = useCallback(() => {
-    if (phase === 2) transitionTo(1)
-    else if (phase === 3) transitionTo(2)
-    else if (phase === 4) {
-      if (hasPhase3Work) transitionTo(3)
-      else if (hasPhase2Work) transitionTo(2)
-      else transitionTo(1)
-    }
-  }, [phase, hasPhase2Work, hasPhase3Work, transitionTo])
+  // Priority-ordered unassessed skills (recalculates as ratings come in)
+  const priorityQueue = useMemo(
+    () => getStartHerePriority(assessments),
+    [assessments]
+  )
 
-  // ---------------------------------------------------------------------------
-  // Apply results to full assessment
-  // ---------------------------------------------------------------------------
+  // Coverage tracking
+  const coverage = useMemo(
+    () => getCeilingCoverage(assessments),
+    [assessments]
+  )
 
-  const handleApply = useCallback(() => {
-    const updates = {}
+  // Total rated so far in this session
+  const totalRated = useMemo(() => {
+    let count = 0
+    framework.forEach(d => d.subAreas.forEach(sa => sa.skillGroups.forEach(sg =>
+      sg.skills.forEach(s => { if (assessments[s.id] != null) count++ })
+    )))
+    return count
+  }, [assessments])
 
-    framework.forEach((domain) => {
-      const domainRating = domainRatings[domain.id]
+  // Current batch of skills
+  const currentBatch = useMemo(() => {
+    const start = batchIndex * BATCH_SIZE
+    return priorityQueue.slice(start, start + BATCH_SIZE)
+  }, [priorityQueue, batchIndex])
 
-      domain.subAreas.forEach((sa) => {
-        const saRating = subAreaRatings[sa.id]
+  // Are there more batches?
+  const hasMore = (batchIndex + 1) * BATCH_SIZE < priorityQueue.length
+  const totalBatches = Math.ceil(priorityQueue.length / BATCH_SIZE)
 
-        sa.skillGroups.forEach((sg) => {
-          sg.skills.forEach((skill) => {
-            // Priority 1: Individual skill ratings from Phase 3
-            if (skillRatings[skill.id] !== undefined) {
-              updates[skill.id] = skillRatings[skill.id]
-              return
-            }
+  // Handle rating a skill
+  const handleRate = useCallback((skillId, level) => {
+    onAssess(prev => ({ ...prev, [skillId]: level }))
+  }, [onAssess])
 
-            // Priority 2: Sub-area level ratings from Phase 2
-            if (saRating === 'Strong') {
-              updates[skill.id] = ASSESSMENT_LEVELS.SOLID
-              return
-            }
-            if (saRating === 'Mixed') {
-              updates[skill.id] = ASSESSMENT_LEVELS.DEVELOPING
-              return
-            }
-            // saRating === 'Weak' but no individual skill rating — leave as Needs Work
-            if (saRating === 'Weak') {
-              updates[skill.id] = ASSESSMENT_LEVELS.NEEDS_WORK
-              return
-            }
+  // Navigation
+  const handleNextBatch = useCallback(() => {
+    setBatchIndex(prev => prev + 1)
+    setExpandedSkill(null)
+    if (contentRef.current) contentRef.current.scrollTop = 0
+  }, [])
 
-            // Priority 3: Domain level ratings (for domains rated Strong)
-            if (domainRating === 'Strong') {
-              updates[skill.id] = ASSESSMENT_LEVELS.SOLID
-              return
-            }
+  const handlePrevBatch = useCallback(() => {
+    setBatchIndex(prev => Math.max(0, prev - 1))
+    setExpandedSkill(null)
+    if (contentRef.current) contentRef.current.scrollTop = 0
+  }, [])
 
-            // Skip or not rated — leave as null (Not Assessed)
-            // Don't set anything — absence of key = not assessed
-          })
-        })
-      })
-    })
+  const handleDone = useCallback(() => {
+    localStorage.removeItem(DRAFT_KEY)
+    if (onComplete) onComplete()
+  }, [onComplete])
 
-    onAssess((prev) => ({ ...prev, ...updates }))
-    setApplied(true)
-    if (onComplete) onComplete(updates)
-  }, [domainRatings, subAreaRatings, skillRatings, onAssess, onComplete])
+  // ─── Welcome Screen ───
+  if (!started) {
+    return (
+      <div className="flex flex-col items-center justify-center min-h-[60vh] px-4 text-center">
+        <div className="max-w-lg">
+          <div className="w-16 h-16 mx-auto mb-4 rounded-2xl bg-sage-500/10 flex items-center justify-center">
+            <svg className="w-8 h-8 text-sage-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
+              <path strokeLinecap="round" strokeLinejoin="round" d="M3.75 13.5l10.5-11.25L12 10.5h8.25L9.75 21.75 12 13.5H3.75z" />
+            </svg>
+          </div>
+          <h2 className="text-2xl font-display font-bold text-warm-900 mb-2">Start Here</h2>
+          <p className="text-warm-600 mb-6 leading-relaxed">
+            Rate the most influential skills first — they set the ceiling for
+            everything above them. Each rating you give immediately informs
+            what the rest of the framework can look like.
+          </p>
+          <div className="grid grid-cols-3 gap-3 mb-6 text-center">
+            <StatBox
+              value={priorityQueue.length}
+              label="skills to rate"
+              color="text-warm-600"
+            />
+            <StatBox
+              value={`${Math.round(coverage.coverage * 100)}%`}
+              label="ceilings known"
+              color="text-sage-600"
+            />
+            <StatBox
+              value={totalRated}
+              label="already rated"
+              color="text-warm-500"
+            />
+          </div>
+          <p className="text-xs text-warm-400 mb-4">
+            You can stop at any time. The most impactful skills come first,
+            so even 15-20 ratings gives useful coverage.
+          </p>
+          <button
+            onClick={() => setStarted(true)}
+            className="px-6 py-3 min-h-[44px] bg-sage-500 text-white rounded-lg font-semibold hover:bg-sage-600 transition-colors"
+          >
+            {totalRated > 0 ? 'Continue Rating' : 'Begin'}
+          </button>
+        </div>
+      </div>
+    )
+  }
 
-  // ---------------------------------------------------------------------------
-  // Summary stats
-  // ---------------------------------------------------------------------------
-
-  const summaryStats = useMemo(() => {
-    return framework.map((domain) => {
-      const domainRating = domainRatings[domain.id]
-      const totalSkills = countSkillsInDomain(domain)
-
-      let strongSAs = 0
-      let mixedSAs = 0
-      let weakSAs = 0
-      let skippedSAs = 0
-      let detailedSkills = 0
-
-      domain.subAreas.forEach((sa) => {
-        const saRating = subAreaRatings[sa.id]
-        if (saRating === 'Strong') strongSAs++
-        else if (saRating === 'Mixed') mixedSAs++
-        else if (saRating === 'Weak') {
-          weakSAs++
-          sa.skillGroups.forEach((sg) => {
-            sg.skills.forEach((skill) => {
-              if (skillRatings[skill.id] !== undefined) detailedSkills++
-            })
-          })
-        } else skippedSAs++
-      })
-
-      return {
-        domain,
-        domainRating,
-        totalSkills,
-        totalSubAreas: domain.subAreas.length,
-        strongSAs,
-        mixedSAs,
-        weakSAs,
-        skippedSAs,
-        detailedSkills,
-      }
-    })
-  }, [domainRatings, subAreaRatings, skillRatings])
-
-  // ---------------------------------------------------------------------------
-  // Render
-  // ---------------------------------------------------------------------------
+  // ─── Rating Interface ───
+  const coveragePct = Math.round(coverage.coverage * 100)
+  const goodCoverage = coveragePct >= 80
 
   return (
-    <div className="flex flex-col h-full bg-warm-50">
-      {/* ---- Step indicator + progress bar ---- */}
-      <div className="bg-white border-b border-warm-200 shrink-0">
-        <div className="max-w-4xl mx-auto px-6 py-4">
-          {/* Phase steps */}
-          <div className="flex items-center justify-center gap-1 mb-3">
-            {PHASES.map((p, i) => {
-              const isCurrent = p.key === phase
-              const isComplete = p.key < phase
-              const isSkipped =
-                (p.key === 2 && !hasPhase2Work && phase > 1) ||
-                (p.key === 3 && !hasPhase3Work && phase > 2)
+    <div className="flex flex-col h-full">
+      {/* Progress Bar */}
+      <div className={`sticky top-0 z-10 bg-warm-50 border-b border-warm-200 ${isPhone ? 'px-3 py-2' : 'px-4 py-3'}`}>
+        <div className="flex items-center justify-between mb-1.5">
+          <div className="flex items-center gap-3">
+            <h3 className="text-sm font-bold text-warm-800">Start Here</h3>
+            <span className="text-xs text-warm-500">
+              Batch {batchIndex + 1} of {totalBatches}
+            </span>
+          </div>
+          <button
+            onClick={handleDone}
+            className="px-3 py-1.5 min-h-[36px] text-xs font-semibold rounded-md bg-sage-500 text-white hover:bg-sage-600 transition-colors"
+          >
+            Done for now
+          </button>
+        </div>
 
+        {/* Stats row */}
+        <div className="flex items-center gap-4 text-[11px] text-warm-500 mb-1.5">
+          <span>
+            <span className="font-semibold text-warm-700">{totalRated}</span> rated
+          </span>
+          <span>
+            <span className={`font-semibold ${goodCoverage ? 'text-sage-600' : 'text-warm-700'}`}>
+              {coveragePct}%
+            </span> ceilings known
+          </span>
+          <span>
+            <span className="font-semibold text-warm-700">{priorityQueue.length}</span> remaining
+          </span>
+        </div>
+
+        {/* Coverage bar */}
+        <div className="h-1.5 bg-warm-200 rounded-full overflow-hidden">
+          <div
+            className={`h-full rounded-full transition-all duration-500 ${goodCoverage ? 'bg-sage-500' : 'bg-amber-400'}`}
+            style={{ width: `${coveragePct}%` }}
+          />
+        </div>
+
+        {goodCoverage && (
+          <p className="text-[10px] text-sage-600 mt-1 font-medium">
+            Great coverage — most skill ceilings are now informed by your ratings.
+          </p>
+        )}
+      </div>
+
+      {/* Skill Cards */}
+      <div ref={contentRef} className={`flex-1 overflow-y-auto ${isPhone ? 'px-3 py-3' : 'px-4 py-4'}`}>
+        {currentBatch.length === 0 ? (
+          <div className="text-center py-12">
+            <div className="text-4xl mb-3">&#127881;</div>
+            <h3 className="text-lg font-bold text-warm-800 mb-1">All skills rated!</h3>
+            <p className="text-sm text-warm-500 mb-4">
+              You've rated every skill in the framework.
+            </p>
+            <button
+              onClick={handleDone}
+              className="px-5 py-2.5 min-h-[44px] bg-sage-500 text-white rounded-lg font-semibold hover:bg-sage-600"
+            >
+              Finish
+            </button>
+          </div>
+        ) : (
+          <div className="space-y-3">
+            {/* Batch group header */}
+            {(() => {
+              const firstSkill = currentBatch[0]
               return (
-                <div key={p.key} className="flex items-center">
-                  {i > 0 && (
-                    <div className={`w-8 sm:w-12 h-0.5 mx-1 transition-colors duration-300 ${
-                      isComplete || isCurrent ? 'bg-sage-400' : 'bg-warm-200'
-                    }`} />
-                  )}
-                  <div className="flex flex-col items-center gap-1">
-                    <div
-                      className={`w-8 h-8 rounded-full flex items-center justify-center text-sm font-bold transition-all duration-300 ${
-                        isCurrent
-                          ? 'bg-sage-500 text-white ring-4 ring-sage-100 scale-110'
-                          : isComplete
-                            ? 'bg-sage-500 text-white'
-                            : isSkipped
-                              ? 'bg-warm-200 text-warm-400 line-through'
-                              : 'bg-warm-100 text-warm-400'
-                      }`}
-                    >
-                      {isComplete ? '\u2713' : p.short}
-                    </div>
-                    <span className={`text-[10px] font-medium whitespace-nowrap transition-colors duration-300 ${
-                      isCurrent
-                        ? 'text-sage-700'
-                        : isComplete
-                          ? 'text-sage-500'
-                          : 'text-warm-400'
-                    }`}>
-                      {p.label}
-                    </span>
-                  </div>
+                <div className="flex items-center gap-2 text-xs text-warm-500 mb-1">
+                  <span className="font-semibold text-warm-600">{firstSkill.domainName}</span>
+                  <span className="text-warm-300">|</span>
+                  <span>{firstSkill.subAreaName}</span>
+                  <span className="ml-auto text-warm-400">Tier {firstSkill.tier}</span>
+                </div>
+              )
+            })()}
+
+            {currentBatch.map((item) => (
+              <SkillRatingCard
+                key={item.skillId}
+                item={item}
+                currentLevel={assessments[item.skillId] ?? null}
+                assessments={assessments}
+                onRate={handleRate}
+                expanded={expandedSkill === item.skillId}
+                onToggleExpand={() => setExpandedSkill(
+                  expandedSkill === item.skillId ? null : item.skillId
+                )}
+                isPhone={isPhone}
+              />
+            ))}
+          </div>
+        )}
+
+        {/* Navigation */}
+        {currentBatch.length > 0 && (
+          <div className="flex items-center justify-between mt-6 pb-4">
+            <button
+              onClick={handlePrevBatch}
+              disabled={batchIndex === 0}
+              className="px-4 py-2 min-h-[44px] text-sm font-medium rounded-md border border-warm-300 text-warm-600 hover:bg-warm-100 disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
+            >
+              Previous
+            </button>
+            <span className="text-xs text-warm-400">
+              {batchIndex + 1} / {totalBatches}
+            </span>
+            {hasMore ? (
+              <button
+                onClick={handleNextBatch}
+                className="px-4 py-2 min-h-[44px] text-sm font-semibold rounded-md bg-sage-500 text-white hover:bg-sage-600 transition-colors"
+              >
+                Next batch
+              </button>
+            ) : (
+              <button
+                onClick={handleDone}
+                className="px-4 py-2 min-h-[44px] text-sm font-semibold rounded-md bg-sage-500 text-white hover:bg-sage-600 transition-colors"
+              >
+                Finish
+              </button>
+            )}
+          </div>
+        )}
+      </div>
+    </div>
+  )
+}
+
+/* ─── Skill Rating Card ─── */
+
+function SkillRatingCard({ item, currentLevel, assessments, onRate, expanded, onToggleExpand, isPhone }) {
+  const ceilingData = useMemo(
+    () => getSkillCeiling(item.skillId, assessments),
+    [item.skillId, assessments]
+  )
+  const ceiling = ceilingData?.ceiling ?? 3
+  const hasCeiling = ceilingData != null && ceiling < 3
+
+  return (
+    <div className={`rounded-lg border transition-all ${
+      currentLevel != null
+        ? 'border-sage-300 bg-sage-50/30'
+        : 'border-warm-200 bg-white'
+    }`}>
+      {/* Header */}
+      <button
+        onClick={onToggleExpand}
+        className="w-full text-left px-3 py-2.5 flex items-start gap-2 min-h-[44px]"
+      >
+        <div className="flex-1 min-w-0">
+          <div className="flex items-center gap-2">
+            <span className="text-sm font-semibold text-warm-800 leading-tight">
+              {item.skillName}
+            </span>
+            {currentLevel != null && (
+              <span
+                className="text-[10px] font-bold px-1.5 py-0.5 rounded-full"
+                style={{
+                  backgroundColor: ASSESSMENT_COLORS[currentLevel] + '20',
+                  color: ASSESSMENT_COLORS[currentLevel],
+                }}
+              >
+                {ASSESSMENT_LABELS[currentLevel]}
+              </span>
+            )}
+          </div>
+          <p className="text-[11px] text-warm-400 mt-0.5 leading-snug">
+            {item.reason}
+          </p>
+          {hasCeiling && (
+            <p className="text-[10px] mt-0.5 text-amber-600 font-medium">
+              Ceiling: {ASSESSMENT_LABELS[ceiling]}
+              {ceilingData.constrainingPrereqs[0] && (
+                <span className="text-warm-400 font-normal">
+                  {' '}(limited by prerequisite)
+                </span>
+              )}
+            </p>
+          )}
+        </div>
+        <svg
+          className={`w-4 h-4 text-warm-400 mt-0.5 shrink-0 transition-transform ${expanded ? 'rotate-180' : ''}`}
+          fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}
+        >
+          <path strokeLinecap="round" strokeLinejoin="round" d="M19 9l-7 7-7-7" />
+        </svg>
+      </button>
+
+      {/* Rating buttons — always visible */}
+      <div className={`px-3 pb-2.5 flex gap-1.5 ${isPhone ? '' : 'gap-2'}`}>
+        {LEVEL_OPTIONS.map(opt => {
+          const isSelected = currentLevel === opt.level
+          const aboveCeiling = hasCeiling && opt.level > ceiling
+          return (
+            <button
+              key={opt.level}
+              onClick={() => onRate(item.skillId, opt.level)}
+              className={`flex-1 py-1.5 min-h-[36px] rounded-md text-xs font-semibold transition-all ${
+                isSelected
+                  ? 'ring-2 ring-offset-1 shadow-sm'
+                  : aboveCeiling
+                    ? 'opacity-40 border border-dashed border-warm-300'
+                    : 'border border-warm-200 hover:border-warm-400'
+              }`}
+              style={isSelected ? {
+                backgroundColor: ASSESSMENT_COLORS[opt.level] + '20',
+                color: ASSESSMENT_COLORS[opt.level],
+                borderColor: ASSESSMENT_COLORS[opt.level],
+                boxShadow: `0 0 0 2px ${ASSESSMENT_COLORS[opt.level]}40`,
+              } : {}}
+              title={aboveCeiling ? `Above ceiling (${ASSESSMENT_LABELS[ceiling]})` : opt.label}
+            >
+              {isPhone ? opt.short : opt.label}
+            </button>
+          )
+        })}
+      </div>
+
+      {/* Expanded: behavioral indicators for all 4 levels */}
+      {expanded && (
+        <div className="px-3 pb-3 border-t border-warm-100 pt-2">
+          <p className="text-[10px] font-semibold text-warm-500 uppercase tracking-wide mb-1.5">
+            What each level looks like:
+          </p>
+          <div className="space-y-1.5">
+            {LEVEL_OPTIONS.map(opt => {
+              const indicator = getBehavioralIndicator(item.skillId, opt.level)
+              if (!indicator) return null
+              const isActive = currentLevel === opt.level
+              return (
+                <div
+                  key={opt.level}
+                  className={`text-[11px] leading-relaxed rounded px-2 py-1.5 ${
+                    isActive
+                      ? 'ring-1'
+                      : 'bg-warm-50'
+                  }`}
+                  style={isActive ? {
+                    backgroundColor: ASSESSMENT_COLORS[opt.level] + '10',
+                    borderColor: ASSESSMENT_COLORS[opt.level],
+                    ringColor: ASSESSMENT_COLORS[opt.level] + '40',
+                  } : {}}
+                >
+                  <span
+                    className="font-bold"
+                    style={{ color: ASSESSMENT_COLORS[opt.level] }}
+                  >
+                    {opt.label}:
+                  </span>{' '}
+                  <span className="text-warm-600">{indicator}</span>
                 </div>
               )
             })}
           </div>
-
-          {/* Progress bar */}
-          {phase < 4 && (
-            <div className="flex items-center gap-3">
-              <div className="flex-1 h-2 bg-warm-200 rounded-full overflow-hidden">
-                <div
-                  className="h-full rounded-full bg-sage-500 transition-all duration-500 ease-out"
-                  style={{ width: `${progressPct}%` }}
-                />
-              </div>
-              <span className="text-xs text-warm-500 font-medium whitespace-nowrap">
-                {progress.rated}/{progress.total} rated
-              </span>
-            </div>
+          {item.downstreamCount > 0 && (
+            <p className="text-[10px] text-warm-400 mt-2 italic">
+              This skill influences {item.downstreamCount} downstream skill{item.downstreamCount !== 1 ? 's' : ''}.
+            </p>
           )}
-        </div>
-      </div>
-
-      {/* ---- Main content ---- */}
-      <div
-        ref={contentRef}
-        className={`flex-1 overflow-y-auto transition-opacity duration-200 ${
-          transitioning ? 'opacity-0' : 'opacity-100'
-        }`}
-      >
-        <div className="max-w-4xl mx-auto px-6 py-8">
-          {phase === 1 && (
-            <Phase1DomainScreening
-              domainRatings={domainRatings}
-              onRate={(domainId, rating) =>
-                setDomainRatings((prev) => ({ ...prev, [domainId]: rating }))
-              }
-            />
-          )}
-
-          {phase === 2 && (
-            <Phase2SubAreaDrillDown
-              subAreas={drillDownSubAreas}
-              subAreaRatings={subAreaRatings}
-              domainRatings={domainRatings}
-              onRate={(saId, rating) =>
-                setSubAreaRatings((prev) => ({ ...prev, [saId]: rating }))
-              }
-            />
-          )}
-
-          {phase === 3 && (
-            <Phase3SkillDetail
-              subAreas={detailSubAreas}
-              skillRatings={skillRatings}
-              onRate={(skillId, level) =>
-                setSkillRatings((prev) => ({ ...prev, [skillId]: level }))
-              }
-            />
-          )}
-
-          {phase === 4 && (
-            <Phase4Summary
-              summaryStats={summaryStats}
-              applied={applied}
-              onApply={handleApply}
-            />
-          )}
-        </div>
-      </div>
-
-      {/* ---- Bottom navigation bar ---- */}
-      <div className="bg-white border-t border-warm-200 shrink-0">
-        <div className="max-w-4xl mx-auto px-6 py-3 flex items-center justify-between">
-          <button
-            onClick={handleBack}
-            disabled={phase === 1}
-            className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-colors min-h-[44px] ${
-              phase === 1
-                ? 'text-warm-300 cursor-not-allowed'
-                : 'text-warm-600 hover:bg-warm-100 hover:text-warm-800'
-            }`}
-          >
-            <span>{'\u2190'}</span>
-            <span>Back</span>
-          </button>
-
-          <div className="text-xs text-warm-400">
-            {phase < 4 ? `Phase ${phase} of 4` : 'Review & Apply'}
-          </div>
-
-          {phase < 4 ? (
-            <button
-              onClick={handleNext}
-              disabled={!canAdvance}
-              className={`flex items-center gap-2 px-5 py-2 rounded-lg text-sm font-medium transition-all min-h-[44px] ${
-                canAdvance
-                  ? 'bg-sage-500 text-white hover:bg-sage-600 shadow-sm hover:shadow'
-                  : 'bg-warm-200 text-warm-400 cursor-not-allowed'
-              }`}
-            >
-              <span>Next</span>
-              <span>{'\u2192'}</span>
-            </button>
-          ) : (
-            !applied && (
-              <button
-                onClick={handleApply}
-                className="flex items-center gap-2 px-5 py-2 rounded-lg text-sm font-bold bg-sage-500 text-white hover:bg-sage-600 shadow-sm hover:shadow transition-all min-h-[44px]"
-              >
-                <span>Apply to Full Assessment</span>
-                <span>{'\u2192'}</span>
-              </button>
-            )
-          )}
-        </div>
-      </div>
-    </div>
-  )
-}
-
-// ============================================================================
-// Phase 1 — Domain Screening
-// ============================================================================
-
-function Phase1DomainScreening({ domainRatings, onRate }) {
-  return (
-    <div>
-      <div className="text-center mb-8">
-        <h2 className="text-2xl font-bold text-warm-800 font-display mb-2">
-          Quick Domain Screening
-        </h2>
-        <p className="text-sm text-warm-500 max-w-lg mx-auto">
-          Rate each domain at a high level. This takes about 2 minutes. Domains
-          marked "Mixed" or "Weak" will be explored in more detail next.
-        </p>
-      </div>
-
-      <div className="grid gap-3">
-        {framework.map((domain) => {
-          const currentRating = domainRatings[domain.id]
-          const skillCount = countSkillsInDomain(domain)
-
-          return (
-            <div
-              key={domain.id}
-              className={`bg-white rounded-xl border-2 p-5 transition-all duration-200 ${
-                currentRating
-                  ? `${getScreeningBorderClass(currentRating)} shadow-sm`
-                  : 'border-warm-200 hover:border-warm-300 hover:shadow-sm'
-              }`}
-            >
-              <div className="flex flex-col sm:flex-row sm:items-start gap-4">
-                {/* Domain info */}
-                <div className="flex-1 min-w-0">
-                  <div className="flex items-center gap-2 mb-1">
-                    <span className="inline-flex items-center justify-center w-7 h-7 rounded-full bg-warm-100 text-warm-500 text-xs font-bold shrink-0">
-                      {domain.domain}
-                    </span>
-                    <h3 className="text-lg font-bold text-warm-800 font-display">
-                      {domain.name}
-                    </h3>
-                    <span className="text-xs text-warm-400 hidden sm:inline">
-                      {domain.subtitle}
-                    </span>
-                  </div>
-                  <p className="text-sm text-warm-600 italic leading-relaxed mt-1">
-                    {domain.coreQuestion}
-                  </p>
-                  <p className="text-[11px] text-warm-400 mt-1">
-                    {domain.subAreas.length} sub-areas &middot; {skillCount} skills
-                  </p>
-                </div>
-
-                {/* Rating buttons */}
-                <div className="flex flex-wrap gap-2 shrink-0 sm:pt-1">
-                  {SCREENING_RATINGS.map((rating) => {
-                    const isSelected = currentRating === rating
-                    const colors = SCREENING_COLORS[rating]
-
-                    return (
-                      <button
-                        key={rating}
-                        onClick={() => onRate(domain.id, rating)}
-                        className={`px-4 py-2.5 rounded-lg text-sm font-semibold transition-all duration-150 min-w-[72px] min-h-[44px] ${
-                          isSelected
-                            ? `${colors.bg} ${colors.text} ring-2 ring-offset-2 ${colors.ring} scale-105 shadow-md`
-                            : 'bg-warm-100 text-warm-500 hover:bg-warm-200 hover:text-warm-700 hover:scale-[1.02]'
-                        }`}
-                      >
-                        <span className="block text-base leading-none mb-0.5">
-                          {SCREENING_ICONS[rating]}
-                        </span>
-                        <span className="block text-[11px]">{rating}</span>
-                      </button>
-                    )
-                  })}
-                </div>
-              </div>
-            </div>
-          )
-        })}
-      </div>
-    </div>
-  )
-}
-
-function getScreeningBorderClass(rating) {
-  if (rating === 'Strong') return 'border-sage-400'
-  if (rating === 'Mixed') return 'border-amber-400'
-  if (rating === 'Weak') return 'border-coral-400'
-  return 'border-warm-300'
-}
-
-// ============================================================================
-// Phase 2 — Sub-Area Drill-Down
-// ============================================================================
-
-function Phase2SubAreaDrillDown({ subAreas, subAreaRatings, domainRatings, onRate }) {
-  // Group sub-areas by domain
-  const grouped = useMemo(() => {
-    const groups = []
-    let currentDomainId = null
-    let currentGroup = null
-
-    subAreas.forEach((sa) => {
-      if (sa.domain.id !== currentDomainId) {
-        currentDomainId = sa.domain.id
-        currentGroup = { domain: sa.domain, subAreas: [] }
-        groups.push(currentGroup)
-      }
-      currentGroup.subAreas.push(sa)
-    })
-
-    return groups
-  }, [subAreas])
-
-  return (
-    <div>
-      <div className="text-center mb-8">
-        <h2 className="text-2xl font-bold text-warm-800 font-display mb-2">
-          Sub-Area Drill-Down
-        </h2>
-        <p className="text-sm text-warm-500 max-w-lg mx-auto">
-          These domains need more detail. Rate each sub-area within them.
-          Sub-areas marked "Weak" will be explored at the skill level next.
-        </p>
-      </div>
-
-      <div className="space-y-8">
-        {grouped.map(({ domain, subAreas: sas }) => (
-          <div key={domain.id}>
-            {/* Domain header */}
-            <div className="flex items-center gap-3 mb-4">
-              <span className="inline-flex items-center justify-center w-8 h-8 rounded-full bg-warm-100 text-warm-500 text-sm font-bold shrink-0">
-                {domain.domain}
-              </span>
-              <div>
-                <h3 className="text-lg font-bold text-warm-800 font-display leading-tight">
-                  {domain.name}
-                </h3>
-                <p className="text-xs text-warm-400">
-                  Rated "{domainRatings[domain.id]}" &mdash; {sas.length} sub-areas to review
-                </p>
-              </div>
-              <RatingPill rating={domainRatings[domain.id]} small />
-            </div>
-
-            {/* Sub-area cards */}
-            <div className="grid gap-3">
-              {sas.map((sa) => {
-                const currentRating = subAreaRatings[sa.id]
-                const skillCount = countSkillsInSubArea(sa)
-
-                return (
-                  <div
-                    key={sa.id}
-                    className={`bg-white rounded-lg border-2 px-5 py-4 transition-all duration-200 ${
-                      currentRating
-                        ? `${getScreeningBorderClass(currentRating)} shadow-sm`
-                        : 'border-warm-200 hover:border-warm-300'
-                    }`}
-                  >
-                    <div className="flex flex-col sm:flex-row sm:items-center gap-3">
-                      <div className="flex-1 min-w-0">
-                        <h4 className="text-sm font-semibold text-warm-700 leading-snug">
-                          {sa.name}
-                        </h4>
-                        <p className="text-[11px] text-warm-400 mt-0.5">
-                          {sa.skillGroups.length} skill groups &middot; {skillCount} skills
-                        </p>
-                      </div>
-
-                      <div className="flex flex-wrap gap-2 shrink-0">
-                        {SCREENING_RATINGS.map((rating) => {
-                          const isSelected = currentRating === rating
-                          const colors = SCREENING_COLORS[rating]
-
-                          return (
-                            <button
-                              key={rating}
-                              onClick={() => onRate(sa.id, rating)}
-                              className={`px-3 py-2 rounded-lg text-xs font-semibold transition-all duration-150 min-w-[60px] min-h-[44px] ${
-                                isSelected
-                                  ? `${colors.bg} ${colors.text} ring-2 ring-offset-1 ${colors.ring} scale-105 shadow-sm`
-                                  : 'bg-warm-100 text-warm-500 hover:bg-warm-200 hover:text-warm-700'
-                              }`}
-                            >
-                              <span className="block text-sm leading-none mb-0.5">
-                                {SCREENING_ICONS[rating]}
-                              </span>
-                              <span className="block text-[10px]">{rating}</span>
-                            </button>
-                          )
-                        })}
-                      </div>
-                    </div>
-                  </div>
-                )
-              })}
-            </div>
-          </div>
-        ))}
-      </div>
-    </div>
-  )
-}
-
-// ============================================================================
-// Phase 3 — Skill-Level Detail
-// ============================================================================
-
-function Phase3SkillDetail({ subAreas, skillRatings, onRate }) {
-  const [expandedSA, setExpandedSA] = useState(() => {
-    // Auto-expand first sub-area
-    return subAreas.length > 0 ? subAreas[0].id : null
-  })
-
-  // Update expansion when subAreas change
-  useEffect(() => {
-    if (subAreas.length > 0 && !subAreas.find((sa) => sa.id === expandedSA)) {
-      setExpandedSA(subAreas[0].id)
-    }
-  }, [subAreas, expandedSA])
-
-  return (
-    <div>
-      <div className="text-center mb-8">
-        <h2 className="text-2xl font-bold text-warm-800 font-display mb-2">
-          Skill-Level Detail
-        </h2>
-        <p className="text-sm text-warm-500 max-w-lg mx-auto">
-          These sub-areas were marked "Weak". Rate individual skills for precise
-          assessment. Use the quick-fill buttons to speed things up.
-        </p>
-      </div>
-
-      <div className="space-y-4">
-        {subAreas.map((sa) => {
-          const isExpanded = expandedSA === sa.id
-
-          // Count rated skills in this sub-area
-          let totalSkills = 0
-          let ratedSkills = 0
-          sa.skillGroups.forEach((sg) => {
-            sg.skills.forEach((skill) => {
-              totalSkills++
-              if (skillRatings[skill.id] !== undefined) ratedSkills++
-            })
-          })
-
-          return (
-            <div
-              key={sa.id}
-              className="bg-white rounded-xl border border-warm-200 overflow-hidden transition-shadow duration-200 hover:shadow-sm"
-            >
-              {/* Sub-area header — collapsible */}
-              <button
-                onClick={() => setExpandedSA(isExpanded ? null : sa.id)}
-                className="w-full text-left px-5 py-4 flex items-center gap-3 hover:bg-warm-50 transition-colors min-h-[44px]"
-              >
-                <span className="text-xs text-warm-400 w-4">
-                  {isExpanded ? '\u25BE' : '\u25B8'}
-                </span>
-                <div className="flex-1 min-w-0">
-                  <div className="flex items-center gap-2">
-                    <span className="text-xs text-warm-400 font-medium">
-                      {sa.domain.name}
-                    </span>
-                    <span className="text-warm-300">{'\u203A'}</span>
-                    <h4 className="text-sm font-semibold text-warm-700 truncate">
-                      {sa.name}
-                    </h4>
-                  </div>
-                </div>
-
-                {/* Mini progress */}
-                <div className="flex items-center gap-2 shrink-0">
-                  <div className="w-20 h-1.5 bg-warm-200 rounded-full overflow-hidden">
-                    <div
-                      className="h-full rounded-full bg-sage-500 transition-all duration-300"
-                      style={{
-                        width: `${totalSkills > 0 ? (ratedSkills / totalSkills) * 100 : 0}%`,
-                      }}
-                    />
-                  </div>
-                  <span className="text-[10px] text-warm-400 w-10 text-right">
-                    {ratedSkills}/{totalSkills}
-                  </span>
-                </div>
-              </button>
-
-              {/* Expanded skill list */}
-              {isExpanded && (
-                <div className="border-t border-warm-100 px-5 py-4">
-                  {/* Bulk actions */}
-                  <div className="flex flex-wrap items-center gap-2 mb-4 pb-4 border-b border-warm-100">
-                    <span className="text-xs text-warm-400 mr-1">Quick fill:</span>
-                    {[
-                      ASSESSMENT_LEVELS.NOT_PRESENT,
-                      ASSESSMENT_LEVELS.NEEDS_WORK,
-                      ASSESSMENT_LEVELS.DEVELOPING,
-                      ASSESSMENT_LEVELS.SOLID,
-                    ].map((level) => (
-                      <button
-                        key={level}
-                        onClick={() => {
-                          sa.skillGroups.forEach((sg) => {
-                            sg.skills.forEach((skill) => {
-                              onRate(skill.id, level)
-                            })
-                          })
-                        }}
-                        className="text-[10px] px-2.5 py-1 rounded-md font-medium transition-all hover:scale-105 border border-warm-200 hover:border-warm-300 min-h-[44px]"
-                        style={{
-                          backgroundColor: ASSESSMENT_COLORS[level] + '20',
-                        }}
-                      >
-                        All "{ASSESSMENT_LABELS[level]}"
-                      </button>
-                    ))}
-                  </div>
-
-                  {/* Show descriptions toggle */}
-                  <div className="flex justify-end mb-2">
-                    <button
-                      onClick={() => setShowAllDescs(prev => {
-                        const next = !prev
-                        safeSetItem('skillcascade_show_all_descs', String(next))
-                        return next
-                      })}
-                      className="text-[10px] px-2.5 py-1 min-h-[44px] rounded-md font-medium transition-all border border-warm-200 hover:border-sage-300 flex items-center gap-1.5"
-                      style={{ backgroundColor: showAllDescs ? 'var(--color-sage-100)' : undefined, color: showAllDescs ? 'var(--color-sage-700)' : undefined }}
-                    >
-                      <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                        {showAllDescs
-                          ? <path strokeLinecap="round" strokeLinejoin="round" d="M3.98 8.223A10.477 10.477 0 001.934 12C3.226 16.338 7.244 19.5 12 19.5c.993 0 1.953-.138 2.863-.395M6.228 6.228A10.45 10.45 0 0112 4.5c4.756 0 8.773 3.162 10.065 7.498a10.523 10.523 0 01-4.293 5.774M6.228 6.228L3 3m3.228 3.228l3.65 3.65m7.894 7.894L21 21m-3.228-3.228l-3.65-3.65m0 0a3 3 0 10-4.243-4.243m4.242 4.242L9.88 9.88" />
-                          : <><path strokeLinecap="round" strokeLinejoin="round" d="M2.036 12.322a1.012 1.012 0 010-.639C3.423 7.51 7.36 4.5 12 4.5c4.638 0 8.573 3.007 9.963 7.178.07.207.07.431 0 .639C20.577 16.49 16.64 19.5 12 19.5c-4.638 0-8.573-3.007-9.963-7.178z" /><path strokeLinecap="round" strokeLinejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" /></>
-                        }
-                      </svg>
-                      {showAllDescs ? 'Hide descriptions' : 'Show descriptions'}
-                    </button>
-                  </div>
-
-                  {/* Skill groups */}
-                  <div className="space-y-6">
-                    {sa.skillGroups.map((sg) => (
-                      <div key={sg.id}>
-                        <h5 className="text-sm font-semibold text-warm-700 mb-3">
-                          {sg.name}
-                        </h5>
-                        <div className="space-y-2">
-                          {sg.skills.map((skill) => (
-                            <SkillRater
-                              key={skill.id}
-                              skill={skill}
-                              level={skillRatings[skill.id] ?? null}
-                              onRate={(level) => onRate(skill.id, level)}
-                              showAllDescs={showAllDescs}
-                            />
-                          ))}
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              )}
-            </div>
-          )
-        })}
-      </div>
-    </div>
-  )
-}
-
-/**
- * Individual skill rating row — matches AssessmentPanel SkillRater
- */
-function SkillRater({ skill, level, onRate, showAllDescs }) {
-  const [showDescLocal, setShowDescLocal] = useState(false)
-  const desc = getSkillDescription(skill.id)
-  const indicator = getBehavioralIndicator(skill.id, level)
-  const showDesc = showAllDescs || showDescLocal
-
-  return (
-    <div className="py-2 px-3 rounded-lg hover:bg-warm-50 transition-colors group">
-      <div className="flex items-start gap-4">
-        <div className="flex-1 min-w-0">
-          <div className="flex items-center gap-1.5">
-            <div className="text-sm text-warm-700 leading-snug group-hover:text-warm-900 transition-colors">
-              {skill.name}
-            </div>
-            {desc && (
-              <button
-                onClick={() => setShowDescLocal(!showDescLocal)}
-                className={`transition-colors shrink-0 ${showDesc ? 'text-sage-500' : 'text-warm-300 hover:text-warm-500'}`}
-                title={showDesc ? 'Hide description' : 'Show description'}
-              >
-                <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                  <path strokeLinecap="round" strokeLinejoin="round" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-                </svg>
-              </button>
-            )}
-          </div>
-          {!showDesc && desc && (
-            <p className="text-[11px] text-warm-400 truncate mt-0.5 max-w-md">{desc.description}</p>
-          )}
-        </div>
-        <div className="flex gap-1.5 shrink-0 items-center">
-          {!isAssessed(level) && (
-            <span className="text-[9px] text-warm-400 mr-0.5">{'\u2014'}</span>
-          )}
-          {[
-            ASSESSMENT_LEVELS.NOT_PRESENT,
-            ASSESSMENT_LEVELS.NEEDS_WORK,
-            ASSESSMENT_LEVELS.DEVELOPING,
-            ASSESSMENT_LEVELS.SOLID,
-          ].map((val) => {
-            const isSelected = level === val
-            const labels = {
-              [ASSESSMENT_LEVELS.NOT_PRESENT]: '0',
-              [ASSESSMENT_LEVELS.NEEDS_WORK]: '1',
-              [ASSESSMENT_LEVELS.DEVELOPING]: '2',
-              [ASSESSMENT_LEVELS.SOLID]: '3',
-            }
-            return (
-              <button
-                key={val}
-                onClick={() => onRate(isSelected ? null : val)}
-                title={isSelected ? 'Clear (Not Assessed)' : ASSESSMENT_LABELS[val]}
-                aria-pressed={isSelected}
-                className={`w-8 h-8 min-w-[44px] min-h-[44px] rounded-lg text-xs font-bold transition-all ${
-                  isSelected
-                    ? 'ring-2 ring-offset-1 ring-warm-400 scale-110 shadow-sm'
-                    : !isAssessed(level) ? 'opacity-30 hover:opacity-70 hover:scale-105' : 'opacity-40 hover:opacity-80 hover:scale-105'
-                }`}
-                style={{
-                  backgroundColor: ASSESSMENT_COLORS[val],
-                  color: '#fff',
-                }}
-              >
-                {labels[val]}
-              </button>
-            )
-          })}
-        </div>
-      </div>
-      {isAssessed(level) && indicator && (
-        <div
-          className="mt-1.5 px-2.5 py-1.5 rounded-md text-[11px] leading-relaxed"
-          style={{
-            backgroundColor: ASSESSMENT_COLORS[level] + '12',
-            borderLeft: `3px solid ${ASSESSMENT_COLORS[level]}`,
-          }}
-        >
-          <span className="font-medium" style={{ color: ASSESSMENT_COLORS[level] }}>
-            {ASSESSMENT_LABELS[level]}:
-          </span>{' '}
-          <span className="text-warm-600">{indicator}</span>
-        </div>
-      )}
-      {showDesc && desc && (
-        <div className="mt-2 ml-0.5 text-xs space-y-1 border-l-2 border-warm-200 pl-3">
-          <p className="text-warm-600">{desc.description}</p>
-          {desc.looks_like && <p className="text-sage-600"><span className="font-medium">Present:</span> {desc.looks_like}</p>}
-          {desc.absence && <p className="text-coral-600"><span className="font-medium">Absent:</span> {desc.absence}</p>}
         </div>
       )}
     </div>
   )
 }
 
-// ============================================================================
-// Phase 4 — Summary
-// ============================================================================
+/* ─── Stat Box ─── */
 
-function Phase4Summary({ summaryStats, applied, onApply }) {
-  const totalSkillsAffected = useMemo(() => {
-    return summaryStats.reduce((sum, s) => sum + s.totalSkills, 0)
-  }, [summaryStats])
-
-  const strongDomains = summaryStats.filter((s) => s.domainRating === 'Strong')
-  const mixedDomains = summaryStats.filter((s) => s.domainRating === 'Mixed')
-  const weakDomains = summaryStats.filter((s) => s.domainRating === 'Weak')
-  const skippedDomains = summaryStats.filter(
-    (s) => s.domainRating === 'Skip' || !s.domainRating
-  )
-
+function StatBox({ value, label, color }) {
   return (
-    <div>
-      <div className="text-center mb-8">
-        <h2 className="text-2xl font-bold text-warm-800 font-display mb-2">
-          Screening Summary
-        </h2>
-        <p className="text-sm text-warm-500 max-w-lg mx-auto">
-          Review your adaptive screening results below. When ready, apply them
-          to populate the full assessment.
-        </p>
-      </div>
-
-      {/* Overall counts */}
-      <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-8">
-        <StatCard
-          label="Strong"
-          count={strongDomains.length}
-          color="bg-sage-50 text-sage-700 border-sage-200"
-        />
-        <StatCard
-          label="Mixed"
-          count={mixedDomains.length}
-          color="bg-amber-50 text-amber-700 border-amber-200"
-        />
-        <StatCard
-          label="Weak"
-          count={weakDomains.length}
-          color="bg-coral-50 text-coral-700 border-coral-200"
-        />
-        <StatCard
-          label="Skipped"
-          count={skippedDomains.length}
-          color="bg-warm-50 text-warm-500 border-warm-200"
-        />
-      </div>
-
-      {/* Domain breakdown */}
-      <div className="space-y-3 mb-8">
-        {summaryStats.map(({ domain, domainRating, totalSkills, totalSubAreas, strongSAs, mixedSAs, weakSAs, skippedSAs, detailedSkills }) => (
-          <div
-            key={domain.id}
-            className="bg-white rounded-lg border border-warm-200 px-5 py-4"
-          >
-            <div className="flex items-center gap-3 mb-2">
-              <span className="inline-flex items-center justify-center w-7 h-7 rounded-full bg-warm-100 text-warm-500 text-xs font-bold shrink-0">
-                {domain.domain}
-              </span>
-              <h4 className="text-sm font-bold text-warm-800 font-display flex-1">
-                {domain.name}
-              </h4>
-              <RatingPill rating={domainRating} />
-            </div>
-
-            {/* Sub-area breakdown (for Mixed/Weak domains) */}
-            {(domainRating === 'Mixed' || domainRating === 'Weak') && (
-              <div className="ml-10 mt-2">
-                <div className="flex flex-wrap gap-x-4 gap-y-1 text-[11px] text-warm-500">
-                  {strongSAs > 0 && (
-                    <span>
-                      <span className="inline-block w-2 h-2 rounded-full bg-sage-400 mr-1" />
-                      {strongSAs} strong sub-area{strongSAs !== 1 ? 's' : ''}
-                    </span>
-                  )}
-                  {mixedSAs > 0 && (
-                    <span>
-                      <span className="inline-block w-2 h-2 rounded-full bg-amber-400 mr-1" />
-                      {mixedSAs} mixed
-                    </span>
-                  )}
-                  {weakSAs > 0 && (
-                    <span>
-                      <span className="inline-block w-2 h-2 rounded-full bg-coral-400 mr-1" />
-                      {weakSAs} weak
-                      {detailedSkills > 0 && (
-                        <span className="text-warm-400">
-                          {' '}({detailedSkills} skill{detailedSkills !== 1 ? 's' : ''} detailed)
-                        </span>
-                      )}
-                    </span>
-                  )}
-                  {skippedSAs > 0 && (
-                    <span>
-                      <span className="inline-block w-2 h-2 rounded-full bg-warm-300 mr-1" />
-                      {skippedSAs} skipped
-                    </span>
-                  )}
-                </div>
-              </div>
-            )}
-
-            {/* Mapping explanation */}
-            <div className="ml-10 mt-2 text-[11px] text-warm-400">
-              {domainRating === 'Strong' && (
-                <span>All {totalSkills} skills will be set to Solid (3)</span>
-              )}
-              {domainRating === 'Mixed' && (
-                <span>
-                  {totalSubAreas} sub-areas mapped individually &middot;{' '}
-                  {totalSkills} skills total
-                </span>
-              )}
-              {domainRating === 'Weak' && (
-                <span>
-                  {totalSubAreas} sub-areas mapped individually &middot;{' '}
-                  {totalSkills} skills total
-                </span>
-              )}
-              {(domainRating === 'Skip' || !domainRating) && (
-                <span>All {totalSkills} skills will remain Not Assessed (0)</span>
-              )}
-            </div>
-          </div>
-        ))}
-      </div>
-
-      {/* Apply button */}
-      {!applied ? (
-        <div className="text-center">
-          <p className="text-xs text-warm-400 mb-3">
-            This will update {totalSkillsAffected} skills in the full assessment.
-            Existing ratings will be overwritten.
-          </p>
-          <button
-            onClick={onApply}
-            className="inline-flex items-center gap-2 px-8 py-3 rounded-xl text-base font-bold bg-sage-500 text-white hover:bg-sage-600 shadow-md hover:shadow-lg transition-all hover:scale-[1.02] min-h-[44px]"
-          >
-            <span>Apply to Full Assessment</span>
-            <span>{'\u2192'}</span>
-          </button>
-        </div>
-      ) : (
-        <div className="text-center bg-sage-50 border border-sage-200 rounded-xl p-6">
-          <div className="text-3xl mb-2">{'\u2713'}</div>
-          <h3 className="text-lg font-bold text-sage-800 font-display mb-1">
-            Results Applied
-          </h3>
-          <p className="text-sm text-sage-600">
-            {totalSkillsAffected} skills have been updated in the full assessment.
-            You can now switch to the full Assess view to review or refine
-            individual ratings.
-          </p>
-        </div>
-      )}
+    <div className="text-center">
+      <div className={`text-xl font-bold font-display ${color}`}>{value}</div>
+      <div className="text-[10px] text-warm-500">{label}</div>
     </div>
-  )
-}
-
-// ============================================================================
-// Shared small components
-// ============================================================================
-
-function StatCard({ label, count, color }) {
-  return (
-    <div className={`rounded-lg border px-4 py-3 text-center ${color}`}>
-      <div className="text-2xl font-bold font-display">{count}</div>
-      <div className="text-xs font-medium">{label}</div>
-    </div>
-  )
-}
-
-function RatingPill({ rating, small = false }) {
-  if (!rating) return null
-
-  const colorMap = {
-    Strong: 'bg-sage-100 text-sage-700',
-    Mixed: 'bg-amber-100 text-amber-700',
-    Weak: 'bg-coral-100 text-coral-700',
-    Skip: 'bg-warm-100 text-warm-500',
-  }
-
-  return (
-    <span
-      className={`inline-flex items-center gap-1 rounded-full font-semibold ${
-        colorMap[rating] || 'bg-warm-100 text-warm-500'
-      } ${small ? 'text-[10px] px-2 py-0.5' : 'text-xs px-2.5 py-1'}`}
-    >
-      <span>{SCREENING_ICONS[rating]}</span>
-      <span>{rating}</span>
-    </span>
   )
 }

@@ -4,6 +4,7 @@ import SubAreaPanel from './SubAreaPanel.jsx'
 import useCascadeGraph from '../../hooks/useCascadeGraph.js'
 import useResponsive from '../../hooks/useResponsive.js'
 import { framework } from '../../data/framework.js'
+import { computeSkillInfluence } from '../../data/skillInfluence.js'
 
 /**
  * BottleneckFinderView — "What's holding us back?"
@@ -67,22 +68,30 @@ export default memo(function BottleneckFinderView({
     setExpandedDomain(domainId)
   }, [expandedDomain, resetCascade, triggerCascade, nodes])
 
-  // Top skill-level bottleneck
+  // Top skill-level bottleneck with influence data
   const topSkillBottleneck = useMemo(() => {
     if (!hasData || skillBottlenecks.length === 0) return null
     return skillBottlenecks[0]
   }, [hasData, skillBottlenecks])
+
+  const influence = useMemo(() => computeSkillInfluence(assessments), [assessments])
 
   // Summary sentence
   const summaryText = useMemo(() => {
     if (!bottleneck) return hasData ? 'No significant bottlenecks detected.' : 'Add assessment data to identify bottlenecks.'
     const domain = framework.find(d => d.id === bottleneck.domainId)
     const base = `Weakness in ${domain?.name || ''} affects ${bottleneck.downstreamDomains} downstream domain${bottleneck.downstreamDomains !== 1 ? 's' : ''}, limiting ${bottleneck.downstreamSkills} skills.`
-    if (topSkillBottleneck && topSkillBottleneck.blockedCount > 3) {
-      return `${base} Top skill bottleneck: "${topSkillBottleneck.skillName}" blocks ${topSkillBottleneck.blockedCount} skills.`
+    if (topSkillBottleneck) {
+      const inf = influence[topSkillBottleneck.skillId]
+      if (inf && inf.directDownstream > 0) {
+        return `${base} Top constraint: "${topSkillBottleneck.skillName}" caps ${inf.directDownstream} downstream skill${inf.directDownstream !== 1 ? 's' : ''}.`
+      }
+      if (topSkillBottleneck.blockedCount > 3) {
+        return `${base} Top skill bottleneck: "${topSkillBottleneck.skillName}" blocks ${topSkillBottleneck.blockedCount} skills.`
+      }
     }
     return base
-  }, [bottleneck, hasData, topSkillBottleneck])
+  }, [bottleneck, hasData, topSkillBottleneck, influence])
 
   const footerText = useMemo(() => {
     if (cascadeState.active) {

@@ -13,6 +13,7 @@ const RISK_BORDER_COLORS = {
   regression: '#ff6666',
   bottleneck: '#e5b76a',
   stalling: '#aaa',
+  'ceiling-constraint': '#d694e8',
   // Learning barrier types
   'score-inversion': '#b594d6',
   'prerequisite-gap': '#d694b5',
@@ -32,7 +33,7 @@ export default memo(function RiskMonitorView({
   onNavigateToAssess,
 }) {
   const { isPhone, isTablet } = useResponsive()
-  const { nodes, cascadeRisks, domainHealth, getEnhancedSubAreaHealth, learningBarriers } = useCascadeGraph(assessments, snapshots)
+  const { nodes, cascadeRisks, domainHealth, getEnhancedSubAreaHealth, learningBarriers, constrainedSkills } = useCascadeGraph(assessments, snapshots)
   const [selectedRisk, setSelectedRisk] = useState(null)
   const [expandedDomain, setExpandedDomain] = useState(null)
   const hasData = useMemo(() => Object.keys(assessments).length > 0, [assessments])
@@ -162,6 +163,52 @@ export default memo(function RiskMonitorView({
                     </span>
                   </div>
                   <p className="text-[11px] text-gray-400 mt-1">{barrier.description}</p>
+                </div>
+              )
+            })}
+          </div>
+        )}
+
+        {/* Ceiling constraint warnings */}
+        {constrainedSkills && constrainedSkills.length > 0 && (
+          <div className={`${isPhone ? 'px-3 pt-2' : 'px-5 pt-3'} space-y-2`}>
+            <div className="flex items-center gap-2 mb-1">
+              <span className="text-[9px] font-mono tracking-widest text-gray-600 uppercase">Ceiling Constraints</span>
+              <span className="text-[9px] text-gray-600 bg-[#2a2a33] px-1.5 py-0.5 rounded">{constrainedSkills.length}</span>
+            </div>
+            {constrainedSkills.slice(0, 4).map((cs, i) => {
+              const borderColor = RISK_BORDER_COLORS['ceiling-constraint']
+              let skillName = cs.skillId
+              for (const d of framework) {
+                for (const sa of d.subAreas) {
+                  for (const sg of sa.skillGroups) {
+                    for (const s of sg.skills) {
+                      if (s.id === cs.skillId) skillName = s.name
+                    }
+                  }
+                }
+              }
+              return (
+                <div
+                  key={`ceiling-${i}`}
+                  className="rounded-lg px-4 py-2.5"
+                  style={{
+                    backgroundColor: `${borderColor}08`,
+                    borderLeft: `3px solid ${borderColor}`,
+                  }}
+                >
+                  <div className="flex items-center gap-2">
+                    <span className="text-[9px] font-mono font-bold tracking-wider px-1.5 py-0.5 rounded"
+                      style={{ color: borderColor, backgroundColor: `${borderColor}15` }}>
+                      ABOVE CEILING
+                    </span>
+                    <span className="text-[9px] text-gray-600 font-mono">
+                      {cs.domainId.toUpperCase()} · gap +{cs.gap}
+                    </span>
+                  </div>
+                  <p className="text-[11px] text-gray-400 mt-1">
+                    {skillName} rated level {cs.level} but ceiling is {cs.ceiling} — may be fragile without prereq support
+                  </p>
                 </div>
               )
             })}

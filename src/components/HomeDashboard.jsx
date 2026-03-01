@@ -337,7 +337,7 @@ export default function HomeDashboard({ assessments = {}, snapshots = [], client
           </div>
           <div className="flex gap-2 shrink-0">
             <button onClick={() => onChangeView('quick-assess')} className="px-4 py-2 min-h-[44px] bg-sage-500 text-white rounded-lg text-sm font-medium hover:bg-sage-600 transition-colors">
-              Quick Assessment
+              Start Here
             </button>
             <button onClick={() => onChangeView('assess')} className="px-4 py-2 min-h-[44px] border border-sage-300 text-sage-700 rounded-lg text-sm font-medium hover:bg-sage-100 transition-colors">
               Full Assessment
@@ -463,8 +463,8 @@ export default function HomeDashboard({ assessments = {}, snapshots = [], client
             />
             <QuickActionButton
               icon={<svg className="w-4 h-4 text-sage-600" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M3.75 13.5l10.5-11.25L12 10.5h8.25L9.75 21.75 12 13.5H3.75z" /></svg>}
-              label="Quick Assessment"
-              sublabel="Adaptive screening (~2 min)"
+              label="Start Here"
+              sublabel="Rate high-impact skills first"
               onClick={() => onChangeView('quick-assess')}
             />
             <QuickActionButton

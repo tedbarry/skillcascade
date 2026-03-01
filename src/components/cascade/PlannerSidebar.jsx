@@ -2,6 +2,7 @@ import { useMemo, memo } from 'react'
 import { motion } from 'framer-motion'
 import { framework, DOMAIN_DEPENDENCIES } from '../../data/framework.js'
 import { computeDomainHealth, simulateCascade, findPrerequisiteChain, computePathReadiness, findSkillBottlenecks } from '../../data/cascadeModel.js'
+import { computeSkillInfluence } from '../../data/skillInfluence.js'
 import useResponsive from '../../hooks/useResponsive.js'
 import { DOMAIN_COLORS } from '../../constants/colors.js'
 
@@ -44,6 +45,7 @@ export default memo(function PlannerSidebar({
   }, [selectedDomain, assessments])
 
   // Skill-level bottlenecks for this domain
+  const influence = useMemo(() => computeSkillInfluence(assessments), [assessments])
   const skillBottlenecks = useMemo(() => {
     const allBottlenecks = findSkillBottlenecks(assessments, 50)
     // Filter to only show bottlenecks IN this domain (prerequisite skills that are weak)
@@ -210,7 +212,13 @@ export default memo(function PlannerSidebar({
                   <div className="flex-1 min-w-0">
                     <div className="text-gray-300 leading-tight">{b.skillName}</div>
                     <div className="text-[9px] text-gray-600 mt-0.5">
-                      {b.domainId.toUpperCase()} · Tier {b.tier} ({TIER_LABELS[b.tier] || '?'}) · Blocks {b.blockedCount} skills
+                      {b.domainId.toUpperCase()} · Tier {b.tier} ({TIER_LABELS[b.tier] || '?'}) · {(() => {
+                        const inf = influence[b.skillId]
+                        if (inf && inf.influenceScore > 0) {
+                          return `Caps ${inf.directDownstream} skill${inf.directDownstream !== 1 ? 's' : ''}`
+                        }
+                        return `Blocks ${b.blockedCount} skills`
+                      })()}
                     </div>
                   </div>
                   <span className="text-[10px] font-mono shrink-0" style={{
