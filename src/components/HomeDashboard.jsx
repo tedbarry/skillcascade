@@ -119,7 +119,7 @@ const DomainMiniCard = memo(function DomainMiniCard({ domainId, health, sparklin
       whileHover={{ y: -2, boxShadow: '0 4px 12px rgba(0,0,0,0.08)' }}
       whileTap={{ scale: 0.98 }}
       onClick={onClick}
-      className="bg-white rounded-xl border border-warm-200 p-3 sm:p-4 text-left transition-colors hover:border-warm-300 min-h-[44px]"
+      className="bg-white rounded-xl border border-warm-200 p-3 sm:p-4 text-left transition-colors hover:border-warm-300 min-h-[44px] h-full w-full"
     >
       <div className="flex items-center justify-between gap-2 mb-2">
         <div className="flex items-center gap-2 min-w-0">
@@ -426,6 +426,7 @@ export default function HomeDashboard({ assessments = {}, snapshots = [], client
           {framework.map((domain) => (
             <motion.div
               key={domain.id}
+              className="h-full"
               variants={{ hidden: { opacity: 0, y: 10 }, visible: { opacity: 1, y: 0 } }}
             >
               <DomainMiniCard
