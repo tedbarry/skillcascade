@@ -67,13 +67,18 @@ export default function AdaptiveAssessment({ assessments, onAssess, onComplete }
     } catch { /* quota */ }
   }, [started, batchIndex])
 
-  // Priority-ordered unassessed skills (recalculates as ratings come in)
-  const priorityQueue = useMemo(
-    () => getStartHerePriority(assessments),
-    [assessments]
-  )
+  // Stable priority queue — computed once on mount, not re-sorted on every rating.
+  // This prevents batches from shifting when a skill gets rated.
+  const [stableQueue, setStableQueue] = useState(() => getStartHerePriority(assessments))
 
-  // Coverage tracking
+  // Re-snapshot queue when session starts (but NOT on every rating)
+  useEffect(() => {
+    if (started && stableQueue.length === 0) {
+      setStableQueue(getStartHerePriority(assessments))
+    }
+  }, [started])
+
+  // Coverage tracking (this CAN update live — it's just stats, not ordering)
   const coverage = useMemo(
     () => getCeilingCoverage(assessments),
     [assessments]
@@ -88,15 +93,21 @@ export default function AdaptiveAssessment({ assessments, onAssess, onComplete }
     return count
   }, [assessments])
 
-  // Current batch of skills
+  // Remaining count (unassessed skills in the stable queue)
+  const remainingCount = useMemo(
+    () => stableQueue.filter(s => assessments[s.skillId] == null).length,
+    [stableQueue, assessments]
+  )
+
+  // Current batch of skills from stable queue
   const currentBatch = useMemo(() => {
     const start = batchIndex * BATCH_SIZE
-    return priorityQueue.slice(start, start + BATCH_SIZE)
-  }, [priorityQueue, batchIndex])
+    return stableQueue.slice(start, start + BATCH_SIZE)
+  }, [stableQueue, batchIndex])
 
   // Are there more batches?
-  const hasMore = (batchIndex + 1) * BATCH_SIZE < priorityQueue.length
-  const totalBatches = Math.ceil(priorityQueue.length / BATCH_SIZE)
+  const hasMore = (batchIndex + 1) * BATCH_SIZE < stableQueue.length
+  const totalBatches = Math.ceil(stableQueue.length / BATCH_SIZE)
 
   // Handle rating a skill
   const handleRate = useCallback((skillId, level) => {
@@ -139,7 +150,7 @@ export default function AdaptiveAssessment({ assessments, onAssess, onComplete }
           </p>
           <div className="grid grid-cols-3 gap-3 mb-6 text-center">
             <StatBox
-              value={priorityQueue.length}
+              value={stableQueue.length}
               label="skills to rate"
               color="text-warm-600"
             />
@@ -216,7 +227,7 @@ export default function AdaptiveAssessment({ assessments, onAssess, onComplete }
             </span> ceilings known
           </span>
           <span>
-            <span className="font-semibold text-warm-700">{priorityQueue.length}</span> remaining
+            <span className="font-semibold text-warm-700">{remainingCount}</span> remaining
           </span>
         </div>
 
