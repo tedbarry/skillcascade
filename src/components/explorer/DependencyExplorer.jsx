@@ -1,6 +1,7 @@
 import { useState, useCallback, useMemo, useEffect, lazy, Suspense, memo } from 'react'
 import { AnimatePresence, motion } from 'framer-motion'
 import { framework } from '../../data/framework.js'
+import { getDomainFromId, getSubAreaFromId } from '../../data/skillDependencies.js'
 import useDependencyExplorer from '../../hooks/useDependencyExplorer.js'
 import useResponsive from '../../hooks/useResponsive.js'
 import { safeGetItem, safeSetItem } from '../../lib/safeStorage.js'
@@ -27,6 +28,7 @@ function ViewLoader() {
 /**
  * DependencyExplorer — Orchestrator for the 3-level dependency explorer.
  * Breadcrumb: Domains > [Domain Name] > [Sub-Area] > [Skill]
+ * Supports cross-domain navigation with back history.
  */
 export default memo(function DependencyExplorer({ assessments = {} }) {
   const { isPhone, isTablet } = useResponsive()
@@ -39,10 +41,13 @@ export default memo(function DependencyExplorer({ assessments = {} }) {
   const guideActive = guideStep >= 0 && guideStep < COACH_STEPS.length
 
   // Navigation state: level + context
-  const [level, setLevel] = useState(1) // 1=chord, 2=sub-area web, 3=skill explorer
+  const [level, setLevel] = useState(1) // 1=chord, 2=sub-area web, 3=skill constellation
   const [focusDomainId, setFocusDomainId] = useState(null)
   const [focusSubAreaId, setFocusSubAreaId] = useState(null)
   const [focusSkillId, setFocusSkillId] = useState(null)
+
+  // Navigation history for cross-domain traversal (back button)
+  const [navHistory, setNavHistory] = useState([])
 
   // Auto-advance guide based on navigation state
   useEffect(() => {
@@ -91,17 +96,52 @@ export default memo(function DependencyExplorer({ assessments = {} }) {
   // Drill-down handlers
   const handleDrillToDomain = useCallback((domainId) => {
     setFocusDomainId(domainId)
+    setFocusSubAreaId(null)
+    setFocusSkillId(null)
     setLevel(2)
+    setNavHistory([])
   }, [])
 
   const handleDrillToSubArea = useCallback((subAreaId) => {
+    const domainId = getDomainFromId(subAreaId)
+    setFocusDomainId(domainId)
     setFocusSubAreaId(subAreaId)
+    setFocusSkillId(null)
     setLevel(3)
   }, [])
 
   const handleDrillToSkill = useCallback((skillId) => {
     setFocusSkillId(skillId)
     setLevel(3)
+  }, [])
+
+  // Cross-domain navigation: push current state, navigate to skill's sub-area
+  const handleCrossNavigate = useCallback((skill) => {
+    setNavHistory(prev => [...prev, {
+      level,
+      focusDomainId,
+      focusSubAreaId,
+      focusSkillId,
+    }])
+    const newDomainId = skill.domainId || getDomainFromId(skill.id)
+    const newSubAreaId = skill.subAreaId || getSubAreaFromId(skill.id)
+    setFocusDomainId(newDomainId)
+    setFocusSubAreaId(newSubAreaId)
+    setFocusSkillId(skill.id)
+    setLevel(3)
+  }, [level, focusDomainId, focusSubAreaId, focusSkillId])
+
+  // Navigate back through cross-domain history
+  const handleNavigateBack = useCallback(() => {
+    setNavHistory(prev => {
+      if (prev.length === 0) return prev
+      const last = prev[prev.length - 1]
+      setLevel(last.level)
+      setFocusDomainId(last.focusDomainId)
+      setFocusSubAreaId(last.focusSubAreaId)
+      setFocusSkillId(last.focusSkillId)
+      return prev.slice(0, -1)
+    })
   }, [])
 
   const handleRecenterSkill = useCallback((skillId) => {
@@ -115,19 +155,22 @@ export default memo(function DependencyExplorer({ assessments = {} }) {
       setFocusDomainId(null)
       setFocusSubAreaId(null)
       setFocusSkillId(null)
+      setNavHistory([])
     } else if (targetLevel === 2) {
       setLevel(2)
       setFocusSubAreaId(null)
       setFocusSkillId(null)
+      setNavHistory([])
     }
   }, [])
 
   const handleShowFullWeb = useCallback(() => {
     setFocusDomainId(null)
     setLevel(2)
+    setNavHistory([])
   }, [])
 
-  // Breadcrumb items
+  // Breadcrumb items — always show domain when at L3
   const breadcrumbs = useMemo(() => {
     const items = [{ label: 'Domains', level: 1 }]
 
@@ -142,17 +185,20 @@ export default memo(function DependencyExplorer({ assessments = {} }) {
     }
 
     if (level === 3 && focusSubAreaId) {
-      const domainId = focusSubAreaId.match(/^(d\d+)/)?.[1]
+      const domainId = getDomainFromId(focusSubAreaId)
       const domain = framework.find(d => d.id === domainId)
       const subArea = domain?.subAreas.find(sa => sa.id === focusSubAreaId)
-      const label = isPhone
+
+      // If domain wasn't set in the previous crumb (e.g. cross-domain nav), add it
+      if (!focusDomainId || focusDomainId !== domainId) {
+        const dLabel = isPhone ? domainId.toUpperCase() : domain?.name || domainId
+        items.push({ label: dLabel, level: 2, color: DOMAIN_COLORS[domainId] })
+      }
+
+      const saLabel = isPhone
         ? subArea?.name.split(' ').slice(0, 2).join(' ') || focusSubAreaId
         : subArea?.name || focusSubAreaId
-      items.push({ label, level: 3 })
-    }
-
-    if (level === 3 && focusSkillId && !focusSubAreaId) {
-      items.push({ label: 'Skill', level: 3 })
+      items.push({ label: saLabel, level: 3 })
     }
 
     return items
@@ -162,8 +208,22 @@ export default memo(function DependencyExplorer({ assessments = {} }) {
     <div role="navigation" className="flex-1 h-full flex flex-col overflow-hidden bg-gray-950">
       {/* Breadcrumb bar */}
       <nav aria-label="Dependency explorer breadcrumb" className={`flex items-center gap-1 ${isPhone ? 'px-3 py-2' : 'px-5 py-3'} bg-gray-900 border-b border-gray-800 min-h-[44px] flex-shrink-0`}>
+        {/* Back button for cross-domain navigation history */}
+        {navHistory.length > 0 && (
+          <button
+            onClick={handleNavigateBack}
+            className="flex items-center gap-1 text-xs text-gray-400 hover:text-white px-1.5 py-1 rounded transition-colors min-h-[28px] mr-1"
+            title="Go back"
+          >
+            <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+              <path strokeLinecap="round" strokeLinejoin="round" d="M15 19l-7-7 7-7" />
+            </svg>
+            {!isPhone && <span>Back</span>}
+          </button>
+        )}
+
         {breadcrumbs.map((crumb, i) => {
-          const isCurrent = crumb.level === level
+          const isCurrent = i === breadcrumbs.length - 1
           return (
             <span key={i} className="flex items-center gap-1">
               {i > 0 && (
@@ -251,6 +311,9 @@ export default memo(function DependencyExplorer({ assessments = {} }) {
                   assessments={assessments}
                   onRecenterSkill={handleRecenterSkill}
                   onDrillToSkill={handleDrillToSkill}
+                  onCrossNavigate={handleCrossNavigate}
+                  onNavigateBack={handleNavigateBack}
+                  navHistoryDepth={navHistory.length}
                 />
               )}
             </Suspense>

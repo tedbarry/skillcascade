@@ -10,6 +10,7 @@ import {
   getSkillTier,
   getDomainFromId,
   getSubAreaFromId,
+  computeSkillReadiness,
   SUB_AREA_DEPS,
   SKILL_PREREQUISITES,
 } from '../data/skillDependencies.js'
@@ -228,6 +229,169 @@ export default function useDependencyExplorer(assessments = {}) {
     return skills
   }, [assessments, reversePrereqMap])
 
+  /**
+   * Get full skill graph for a sub-area — used by the Skill Constellation view.
+   * Returns local skill nodes, assessment-aware edges, and cross-domain satellite nodes.
+   */
+  const getSubAreaSkillGraph = useMemo(() => (subAreaId) => {
+    const domainId = getDomainFromId(subAreaId)
+    const domain = framework.find(d => d.id === domainId)
+    if (!domain) return { nodes: [], edges: [], satellites: [] }
+
+    const subArea = domain.subAreas.find(sa => sa.id === subAreaId)
+    if (!subArea) return { nodes: [], edges: [], satellites: [] }
+
+    // Collect all skill IDs in this sub-area
+    const localSkillIds = new Set()
+    subArea.skillGroups.forEach(sg => {
+      sg.skills.forEach(s => localSkillIds.add(s.id))
+    })
+
+    // Helper to resolve skill name from framework
+    const resolveSkillName = (skillId) => {
+      const sDomain = getDomainFromId(skillId)
+      const sDomainData = framework.find(d => d.id === sDomain)
+      if (!sDomainData) return skillId
+      for (const sa of sDomainData.subAreas) {
+        for (const sg of sa.skillGroups) {
+          const found = sg.skills.find(s => s.id === skillId)
+          if (found) return found.name
+        }
+      }
+      return skillId
+    }
+
+    // Helper to resolve sub-area name
+    const resolveSubAreaName = (saId) => {
+      const dId = getDomainFromId(saId)
+      const d = framework.find(dd => dd.id === dId)
+      return d?.subAreas.find(sa => sa.id === saId)?.name || saId
+    }
+
+    // Helper to resolve domain name
+    const resolveDomainName = (dId) => framework.find(d => d.id === dId)?.name || dId
+
+    // Build local nodes
+    const nodes = []
+    subArea.skillGroups.forEach(sg => {
+      sg.skills.forEach(skill => {
+        const readiness = computeSkillReadiness(skill.id, assessments, framework)
+        const downstreamCount = (reversePrereqMap[skill.id] || []).length
+        nodes.push({
+          id: skill.id,
+          name: skill.name,
+          domainId,
+          domainName: domain.name,
+          subAreaId,
+          subAreaName: subArea.name,
+          tier: getSkillTier(skill.id),
+          level: assessments[skill.id] ?? null,
+          readiness,
+          downstreamCount,
+          isCrossDomain: false,
+        })
+      })
+    })
+
+    // Build edges — connections between local skills and from/to satellites
+    const edges = []
+    const satelliteMap = new Map() // skillId → satellite data (dedup)
+
+    localSkillIds.forEach(skillId => {
+      // Upstream: prerequisites of this skill
+      const prereqs = SKILL_PREREQUISITES[skillId] || []
+      prereqs.forEach(prereqId => {
+        const fromLevel = assessments[prereqId] ?? null
+        const toLevel = assessments[skillId] ?? null
+        const met = fromLevel !== null && fromLevel >= 2
+
+        if (localSkillIds.has(prereqId)) {
+          // Intra-sub-area edge
+          edges.push({
+            from: prereqId,
+            to: skillId,
+            type: 'direct',
+            met,
+            fromLevel,
+            toLevel,
+            crossDomain: false,
+          })
+        } else {
+          // Cross-domain/cross-sub-area prerequisite → satellite
+          edges.push({
+            from: prereqId,
+            to: skillId,
+            type: 'direct',
+            met,
+            fromLevel,
+            toLevel,
+            crossDomain: true,
+          })
+          if (!satelliteMap.has(prereqId)) {
+            const pDomainId = getDomainFromId(prereqId)
+            const pSubAreaId = getSubAreaFromId(prereqId)
+            satelliteMap.set(prereqId, {
+              id: prereqId,
+              name: resolveSkillName(prereqId),
+              domainId: pDomainId,
+              domainName: resolveDomainName(pDomainId),
+              subAreaId: pSubAreaId,
+              subAreaName: resolveSubAreaName(pSubAreaId),
+              tier: getSkillTier(prereqId),
+              level: assessments[prereqId] ?? null,
+              isCrossDomain: true,
+              direction: 'upstream',
+              linkedLocalSkillId: skillId,
+            })
+          }
+        }
+      })
+
+      // Downstream: skills that depend on this skill
+      const dependents = reversePrereqMap[skillId] || []
+      dependents.forEach(depId => {
+        if (!localSkillIds.has(depId)) {
+          // Cross-domain/cross-sub-area dependent → satellite
+          const fromLevel = assessments[skillId] ?? null
+          const toLevel = assessments[depId] ?? null
+          const met = fromLevel !== null && fromLevel >= 2
+          edges.push({
+            from: skillId,
+            to: depId,
+            type: 'direct',
+            met,
+            fromLevel,
+            toLevel,
+            crossDomain: true,
+          })
+          if (!satelliteMap.has(depId)) {
+            const dDomainId = getDomainFromId(depId)
+            const dSubAreaId = getSubAreaFromId(depId)
+            satelliteMap.set(depId, {
+              id: depId,
+              name: resolveSkillName(depId),
+              domainId: dDomainId,
+              domainName: resolveDomainName(dDomainId),
+              subAreaId: dSubAreaId,
+              subAreaName: resolveSubAreaName(dSubAreaId),
+              tier: getSkillTier(depId),
+              level: assessments[depId] ?? null,
+              isCrossDomain: true,
+              direction: 'downstream',
+              linkedLocalSkillId: skillId,
+            })
+          }
+        }
+      })
+    })
+
+    return {
+      nodes,
+      edges,
+      satellites: Array.from(satelliteMap.values()),
+    }
+  }, [assessments, reversePrereqMap])
+
   return {
     // Level 1: Chord
     chordData,
@@ -239,7 +403,8 @@ export default function useDependencyExplorer(assessments = {}) {
     subAreaReadiness,
     reverseSubAreaDeps,
 
-    // Level 3: Skill Explorer
+    // Level 3: Skill Constellation
+    getSubAreaSkillGraph,
     getSkillTree,
     getSubAreaSkills,
     reversePrereqMap,

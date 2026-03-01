@@ -2,7 +2,7 @@ import { useMemo, useRef, useState, useCallback, memo } from 'react'
 import { chord, ribbon } from 'd3-chord'
 import { arc } from 'd3-shape'
 import { descending } from 'd3-array'
-import { framework } from '../../data/framework.js'
+import { framework, DOMAIN_DEPENDENCIES } from '../../data/framework.js'
 import useResponsive from '../../hooks/useResponsive.js'
 import ExplorerTooltip from './ExplorerTooltip.jsx'
 import { DOMAIN_COLORS } from '../../constants/colors.js'
@@ -50,6 +50,14 @@ export default memo(function DomainChordView({
     const health = domainHealth[domainId]
     const pct = health ? Math.round(health.healthPct * 100) : 0
     const connections = matrix[i].reduce((sum, v) => sum + (v > 0 ? 1 : 0), 0)
+
+    // Prerequisite health summary
+    const prereqs = DOMAIN_DEPENDENCIES[domainId] || []
+    const metPrereqs = prereqs.filter(pid => {
+      const ph = domainHealth[pid]
+      return ph && ph.assessed > 0 && ph.avg >= 2.0
+    })
+
     setTooltip({
       visible: true,
       x: e.clientX,
@@ -59,6 +67,14 @@ export default memo(function DomainChordView({
           <div className="font-medium">{getDomainName(domainId)}</div>
           <div className="text-gray-300 mt-1">{pct}% health</div>
           <div className="text-gray-400">{connections} connections</div>
+          {prereqs.length > 0 && (
+            <div className={`mt-1 text-[10px] ${metPrereqs.length === prereqs.length ? 'text-green-400' : 'text-amber-400'}`}>
+              Prerequisites: {metPrereqs.length}/{prereqs.length} met
+            </div>
+          )}
+          {prereqs.length === 0 && (
+            <div className="mt-1 text-[10px] text-green-400">Foundational domain</div>
+          )}
           <div className="text-gray-500 mt-1 text-[10px]">Click to explore</div>
         </div>
       ),
@@ -192,7 +208,7 @@ export default memo(function DomainChordView({
 
       <svg width="100%" viewBox={`0 0 ${size} ${size}`} style={{ maxWidth: size, maxHeight: size }} role="img" aria-label="Domain dependency chord diagram showing relationships between 9 developmental domains">
         <g transform={`translate(${cx},${cy})`}>
-          {/* Ribbons */}
+          {/* Ribbons — opacity encodes prerequisite health */}
           {chordLayout.map((chord, i) => {
             const srcDomain = domainIds[chord.source.index]
             const tgtDomain = domainIds[chord.target.index]
@@ -203,18 +219,27 @@ export default memo(function DomainChordView({
               hoveredDomain === chord.target.index
             const gradId = `ribbon-grad-${i}`
 
+            // Assessment-aware: source health affects ribbon visibility
+            const srcHealth = domainHealth[srcDomain]?.healthPct ?? 0
+            const srcAvg = domainHealth[srcDomain]?.avg ?? 0
+            // Brighter if source is healthy (prereqs well-met), dimmer if struggling
+            const healthBoost = srcAvg >= 2.0 ? 1.2 : srcAvg >= 1.5 ? 1.0 : 0.7
+            const baseOpacity = isHighlighted ? 0.4 * healthBoost : 0.08
+            // Red tint if source is struggling (< 1.5 avg)
+            const useRedTint = srcAvg > 0 && srcAvg < 1.5
+
             return (
               <g key={i}>
                 <defs>
                   <linearGradient id={gradId} x1="0%" y1="0%" x2="100%" y2="0%">
-                    <stop offset="0%" stopColor={srcColor} />
+                    <stop offset="0%" stopColor={useRedTint ? '#f87171' : srcColor} />
                     <stop offset="100%" stopColor={tgtColor} />
                   </linearGradient>
                 </defs>
                 <path
                   d={ribbonGen(chord)}
                   fill={`url(#${gradId})`}
-                  opacity={isHighlighted ? 0.4 : 0.08}
+                  opacity={Math.min(0.6, baseOpacity)}
                   className="transition-opacity duration-200"
                   aria-label={`Dependency between ${getDomainName(srcDomain)} and ${getDomainName(tgtDomain)}`}
                 />

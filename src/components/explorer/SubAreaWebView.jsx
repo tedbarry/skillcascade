@@ -11,7 +11,7 @@ const DOMAIN_COLUMN = {
 }
 
 const NODE_W = 160
-const NODE_H = 52
+const NODE_H = 54
 const COL_GAP = 190
 const ROW_GAP = 20
 const PADDING = 40
@@ -107,6 +107,14 @@ export default memo(function SubAreaWebView({
     setHoveredNode(node.id)
     const healthPct = Math.round(node.healthPct * 100)
     const readinessPct = Math.round(node.readiness * 100)
+
+    // Find unmet prerequisite sub-areas
+    const prereqEdges = graphData.edges.filter(edge => edge.to === node.id)
+    const unmetPrereqs = prereqEdges.filter(edge => {
+      const prereqNode = graphData.nodes.find(n => n.id === edge.from)
+      return prereqNode && prereqNode.healthPct < 0.33
+    })
+
     setTooltip({
       visible: true,
       x: e.clientX,
@@ -117,11 +125,16 @@ export default memo(function SubAreaWebView({
           <div className="text-gray-300">{node.domainName}</div>
           <div className="text-gray-400 mt-1">{healthPct}% health · {readinessPct}% ready</div>
           <div className="text-gray-500">{node.assessed}/{node.total} assessed</div>
+          {prereqEdges.length > 0 && (
+            <div className={`mt-1 text-[10px] ${unmetPrereqs.length === 0 ? 'text-green-400' : 'text-amber-400'}`}>
+              Prerequisites: {prereqEdges.length - unmetPrereqs.length}/{prereqEdges.length} healthy
+            </div>
+          )}
           <div className="text-gray-500 mt-1 text-[10px]">Click to see skills</div>
         </div>
       ),
     })
-  }, [])
+  }, [graphData])
 
   const handleNodeLeave = useCallback(() => {
     setHoveredNode(null)
@@ -205,6 +218,7 @@ export default memo(function SubAreaWebView({
                       </div>
                       <div className="flex items-center gap-3 text-[10px]">
                         <span className="text-gray-400">Health {healthPct}%</span>
+                        <span className="text-gray-500">{node.assessed}/{node.total}</span>
                         <span className={`${node.ready ? 'text-green-400' : 'text-amber-400'}`}>
                           {node.ready ? 'Ready' : `${readinessPct}% ready`}
                         </span>
@@ -248,21 +262,31 @@ export default memo(function SubAreaWebView({
           viewBox={`0 0 ${svgWidth} ${svgHeight}`}
           className="w-full"
         >
-          {/* Edges */}
+          {/* Edges — color encodes source sub-area health */}
           {edgePaths.map((edge, i) => {
             const edgeKey = `${edge.from}->${edge.to}`
             const isHighlighted = hoveredNode === null || connectedEdges.has(edgeKey)
             const fromDomain = getDomainFromId(edge.from)
-            const color = DOMAIN_COLORS[fromDomain] || '#666'
+            const fromNode = graphData.nodes.find(n => n.id === edge.from)
+            const sourceHealth = fromNode?.healthPct ?? 0
+
+            // Assessment-aware edge color: green if source healthy, amber if mid, red if struggling
+            const edgeColor = sourceHealth >= 0.66 ? '#4ade80'
+              : sourceHealth >= 0.33 ? '#fbbf24'
+              : sourceHealth > 0 ? '#f87171'
+              : DOMAIN_COLORS[fromDomain] || '#666'
+
+            // Thickness: base on health — thicker = healthier source (stronger foundation)
+            const thickness = isHighlighted ? (1 + sourceHealth * 2) : 0.5
 
             return (
               <path
                 key={i}
                 d={edge.path}
                 fill="none"
-                stroke={color}
-                strokeWidth={isHighlighted ? 1.5 : 0.5}
-                strokeDasharray={edge.crossDomain ? undefined : '4 2'}
+                stroke={edgeColor}
+                strokeWidth={thickness}
+                strokeDasharray={edge.crossDomain ? '6 3' : undefined}
                 opacity={isHighlighted ? 0.6 : 0.12}
                 className="transition-all duration-200"
                 markerEnd={`url(#arrow-${fromDomain})`}
@@ -328,10 +352,22 @@ export default memo(function SubAreaWebView({
                   opacity={isConnected ? 1 : 0.3}
                 />
 
+                {/* Domain abbreviation */}
+                <text
+                  x={12}
+                  y={14}
+                  fill={color}
+                  fontSize={8}
+                  fontWeight={600}
+                  opacity={isConnected ? 0.8 : 0.4}
+                >
+                  {node.domainName ? node.domainName.split(' ').slice(0, 2).join(' ') : ''}
+                </text>
+
                 {/* Sub-area name */}
                 <text
                   x={12}
-                  y={20}
+                  y={26}
                   fill={isConnected ? '#e5e5e5' : '#666'}
                   fontSize={10}
                   fontWeight={500}
@@ -340,19 +376,19 @@ export default memo(function SubAreaWebView({
                   {node.name.length > 20 ? node.name.slice(0, 18) + '\u2026' : node.name}
                 </text>
 
-                {/* Health % + readiness */}
-                <text x={12} y={35} fill="#888" fontSize={9}>
-                  {healthPct}% health
+                {/* Health % + assessed count + readiness */}
+                <text x={12} y={38} fill="#888" fontSize={8}>
+                  {healthPct}% · {node.assessed}/{node.total}
                   {!node.ready && (
                     <tspan fill="#f59e0b"> · prereqs needed</tspan>
                   )}
                 </text>
 
                 {/* Health bar */}
-                <rect x={12} y={42} width={NODE_W - 24} height={4} rx={2} fill="#1e293b" />
+                <rect x={12} y={43} width={NODE_W - 24} height={4} rx={2} fill="#1e293b" />
                 <rect
                   x={12}
-                  y={42}
+                  y={43}
                   width={Math.max(2, (NODE_W - 24) * node.healthPct)}
                   height={4}
                   rx={2}
