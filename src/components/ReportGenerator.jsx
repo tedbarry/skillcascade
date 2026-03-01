@@ -4,6 +4,7 @@ import { downloadFile } from '../data/exportUtils.js'
 import { computeDomainHealth, computeImpactRanking, detectCascadeRisks } from '../data/cascadeModel.js'
 import { generateClinicalSummary } from '../lib/narratives.js'
 import { generateDomainBarChart, generateRadarChart, generateMasteryGrid, generateScoreSummaryProfile } from '../lib/reportCharts.js'
+import { getBehavioralIndicator } from '../data/behavioralIndicators.js'
 
 const REPORT_TYPES = {
   SCHOOL: 'school',
@@ -221,6 +222,9 @@ function generateReportHTML(type, clientName, assessments, analysis, snapshotCom
     .callout { background: #fdf8f0; border-left: 3px solid #c49a6c; padding: 10px 14px; margin: 12px 0; font-size: 12px; }
     .callout-alert { background: #fdf2f1; border-left-color: #d44d3f; }
     .callout-good { background: #f0f5f1; border-left-color: #4f8460; }
+    .indicator { font-size: 10px; color: #5f3e2a; padding: 3px 0 3px 10px; border-left: 2px solid; margin: 2px 0; line-height: 1.5; }
+    .indicator-nw { border-left-color: #e8928a; }
+    .indicator-np { border-left-color: #c47070; }
     ul { padding-left: 20px; }
     li { margin-bottom: 4px; }
     .footer { margin-top: 40px; padding-top: 12px; border-top: 1px solid #e8d5c0; font-size: 10px; color: #c49a6c; display: flex; justify-content: space-between; }
@@ -249,13 +253,13 @@ function generateReportHTML(type, clientName, assessments, analysis, snapshotCom
   html += `<div class="confidential">${reportHeader}</div>`
 
   if (type === REPORT_TYPES.SCHOOL) {
-    html += generateSchoolReport(clientName, date, analysis)
+    html += generateSchoolReport(clientName, date, analysis, assessments)
   } else if (type === REPORT_TYPES.MEDICAL) {
-    html += generateMedicalReport(clientName, date, analysis)
+    html += generateMedicalReport(clientName, date, analysis, assessments)
   } else if (type === REPORT_TYPES.INSURANCE) {
     html += generateInsuranceReport(clientName, date, analysis, assessments, clinicalFields)
   } else {
-    html += generateProgressReport(clientName, date, analysis, snapshotComparison)
+    html += generateProgressReport(clientName, date, analysis, snapshotComparison, assessments)
   }
 
   html += `<div class="footer"><span>${reportFooter} — ${clientName}</span><span>${date}${showPoweredBy ? ' • Powered by SkillCascade' : ''}</span></div>`
@@ -263,7 +267,7 @@ function generateReportHTML(type, clientName, assessments, analysis, snapshotCom
   return html
 }
 
-function generateSchoolReport(clientName, date, analysis) {
+function generateSchoolReport(clientName, date, analysis, assessments) {
   const { scores, weakSubAreas, strongSubAreas } = analysis
   const accommodations = getSchoolAccommodations(weakSubAreas)
   let html = ''
@@ -303,6 +307,17 @@ function generateSchoolReport(clientName, date, analysis) {
     for (const sa of weakSubAreas.slice(0, 6)) {
       html += `<h3>${sa.name} (${sa.domain.name})</h3>`
       html += `<p>Current level: <span class="badge badge-nw">Needs Support</span> — ${sa.needsWorkCount} skill(s) identified as needing focused attention.</p>`
+      // Skill-level behavioral indicators for concerning skills
+      for (const sg of sa.skillGroups) {
+        for (const skill of sg.skills) {
+          const level = assessments[skill.id]
+          if (level !== 0 && level !== 1) continue
+          const indicator = getBehavioralIndicator(skill.id, level)
+          if (!indicator) continue
+          const cls = level === 0 ? 'indicator-np' : 'indicator-nw'
+          html += `<div class="indicator ${cls}"><strong>${skill.name}</strong> (${ASSESSMENT_LABELS[level]}): ${indicator}</div>`
+        }
+      }
     }
   }
 
@@ -323,7 +338,7 @@ function generateSchoolReport(clientName, date, analysis) {
   return html
 }
 
-function generateMedicalReport(clientName, date, analysis) {
+function generateMedicalReport(clientName, date, analysis, assessments) {
   const { scores, totalSkills, assessed, needsWork, developing, solid, weakSubAreas, strongSubAreas, cascadeIssues } = analysis
   let html = ''
 
@@ -369,11 +384,19 @@ function generateMedicalReport(clientName, date, analysis) {
   // Areas of concern
   if (weakSubAreas.length > 0) {
     html += `<h2>Areas of Clinical Concern</h2>`
-    html += `<ul>`
     for (const sa of weakSubAreas) {
-      html += `<li><strong>${sa.name}</strong> (${sa.domain.name}) — mean ${sa.avg.toFixed(2)}/3.00, ${sa.needsWorkCount} skill(s) at deficit level</li>`
+      html += `<p><strong>${sa.name}</strong> (${sa.domain.name}) — mean ${sa.avg.toFixed(2)}/3.00, ${sa.needsWorkCount} skill(s) at deficit level</p>`
+      for (const sg of sa.skillGroups) {
+        for (const skill of sg.skills) {
+          const level = assessments[skill.id]
+          if (level !== 0 && level !== 1) continue
+          const indicator = getBehavioralIndicator(skill.id, level)
+          if (!indicator) continue
+          const cls = level === 0 ? 'indicator-np' : 'indicator-nw'
+          html += `<div class="indicator ${cls}"><strong>${skill.name}</strong> (${ASSESSMENT_LABELS[level]}): ${indicator}</div>`
+        }
+      }
     }
-    html += `</ul>`
   }
 
   // Strengths
@@ -401,7 +424,7 @@ function generateMedicalReport(clientName, date, analysis) {
   return html
 }
 
-function generateProgressReport(clientName, date, analysis, snapshotComparison) {
+function generateProgressReport(clientName, date, analysis, snapshotComparison, assessments) {
   const { scores, totalSkills, assessed, needsWork, developing, solid, weakSubAreas, strongSubAreas } = analysis
   let html = ''
 
@@ -463,11 +486,19 @@ function generateProgressReport(clientName, date, analysis, snapshotComparison) 
 
   if (weakSubAreas.length > 0) {
     html += `<h2>Priority Focus Areas</h2>`
-    html += `<div class="callout callout-alert"><ul>`
     for (const sa of weakSubAreas.slice(0, 6)) {
-      html += `<li><strong>${sa.name}</strong> (${sa.domain.name}) — ${sa.avg.toFixed(1)}/3</li>`
+      html += `<p><strong>${sa.name}</strong> (${sa.domain.name}) — ${sa.avg.toFixed(1)}/3</p>`
+      for (const sg of sa.skillGroups) {
+        for (const skill of sg.skills) {
+          const level = assessments[skill.id]
+          if (level !== 0 && level !== 1) continue
+          const indicator = getBehavioralIndicator(skill.id, level)
+          if (!indicator) continue
+          const cls = level === 0 ? 'indicator-np' : 'indicator-nw'
+          html += `<div class="indicator ${cls}"><strong>${skill.name}</strong> (${ASSESSMENT_LABELS[level]}): ${indicator}</div>`
+        }
+      }
     }
-    html += `</ul></div>`
   }
 
   html += `<h2>Next Steps</h2>`
@@ -621,6 +652,27 @@ function generateInsuranceReport(clientName, date, analysis, assessments, clinic
         html += `<td>${saLevel ? `<span class="badge" style="background:${saLevel.bg};color:${saLevel.color}">${saLevel.label}</span>` : '<span class="badge badge-na">N/A</span>'}</td></tr>`
       }
       html += `</table>`
+    }
+
+    // Behavioral indicators for concerning skills in this domain
+    if (domain) {
+      let hasIndicators = false
+      for (const sa of domain.subAreas) {
+        for (const sg of sa.skillGroups) {
+          for (const skill of sg.skills) {
+            const lv = assessments[skill.id]
+            if (lv !== 0 && lv !== 1) continue
+            const indicator = getBehavioralIndicator(skill.id, lv)
+            if (!indicator) continue
+            if (!hasIndicators) {
+              html += `<p style="font-size:11px;font-weight:600;color:#5f3e2a;margin-top:8px;">Skill-Level Observations:</p>`
+              hasIndicators = true
+            }
+            const cls = lv === 0 ? 'indicator-np' : 'indicator-nw'
+            html += `<div class="indicator ${cls}"><strong>${skill.name}</strong> (${ASSESSMENT_LABELS[lv]}): ${indicator}</div>`
+          }
+        }
+      }
     }
 
     // Cascade note for this domain

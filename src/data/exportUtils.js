@@ -1,10 +1,11 @@
 import { framework, ASSESSMENT_LABELS, getDomainScores } from './framework.js'
+import { getBehavioralIndicator } from './behavioralIndicators.js'
 
 /**
  * Generate RFC 4180-compliant CSV from assessments
  */
 export function generateCSV(assessments, clientName) {
-  const rows = [['Domain', 'Sub-Area', 'Skill Group', 'Skill', 'Assessment', 'Score']]
+  const rows = [['Domain', 'Sub-Area', 'Skill Group', 'Skill', 'Assessment', 'Score', 'Behavioral Indicator']]
 
   for (const domain of framework) {
     for (const sa of domain.subAreas) {
@@ -13,6 +14,7 @@ export function generateCSV(assessments, clientName) {
           const raw = assessments[skill.id]
           const label = raw != null ? ASSESSMENT_LABELS[raw] : 'Not Assessed'
           const score = raw != null ? String(raw) : ''
+          const indicator = raw != null ? (getBehavioralIndicator(skill.id, raw) || '') : ''
           rows.push([
             domain.name,
             sa.name,
@@ -20,6 +22,7 @@ export function generateCSV(assessments, clientName) {
             skill.name,
             label,
             score,
+            indicator,
           ])
         }
       }

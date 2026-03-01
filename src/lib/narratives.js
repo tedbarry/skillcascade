@@ -5,7 +5,8 @@
  * No AI — conditional templates selected by data patterns.
  */
 
-import { framework } from '../data/framework.js'
+import { framework, ASSESSMENT_LABELS } from '../data/framework.js'
+import { getBehavioralIndicator } from '../data/behavioralIndicators.js'
 
 const DOMAIN_NAMES = {}
 const FRIENDLY_NAMES = {
@@ -214,4 +215,29 @@ export function generateDomainNarrative(domainId, domainHealth, risks, impactRan
   }
 
   return `${dn(domainId)} at ${avg}/3, developing. ${health.assessed}/${health.total} skills assessed.`
+}
+
+/* ─── Skill Narrative ─── */
+
+/**
+ * Generate a single-sentence narrative combining skill name, level label, and behavioral indicator.
+ * Composable into larger narrative templates.
+ */
+export function generateSkillNarrative(skillId, level) {
+  if (level == null) return null
+  const indicator = getBehavioralIndicator(skillId, level)
+  const label = ASSESSMENT_LABELS[level]
+  // Find the skill name from the framework
+  let skillName = skillId
+  for (const domain of framework) {
+    for (const sa of domain.subAreas) {
+      for (const sg of sa.skillGroups) {
+        for (const skill of sg.skills) {
+          if (skill.id === skillId) { skillName = skill.name; break }
+        }
+      }
+    }
+  }
+  if (!indicator) return `${skillName} is currently rated ${label}.`
+  return `${skillName} (${label}): ${indicator}`
 }

@@ -1,6 +1,7 @@
 import { useState, useMemo, useCallback, useRef, useEffect } from 'react'
 import { framework, ASSESSMENT_LEVELS, ASSESSMENT_LABELS, ASSESSMENT_COLORS, isAssessed } from '../data/framework.js'
 import { getSkillDescription } from '../data/skillDescriptions.js'
+import { getBehavioralIndicator } from '../data/behavioralIndicators.js'
 import useResponsive from '../hooks/useResponsive.js'
 import { safeSetItem } from '../lib/safeStorage.js'
 
@@ -887,76 +888,93 @@ function Phase3SkillDetail({ subAreas, skillRatings, onRate }) {
 function SkillRater({ skill, level, onRate, showAllDescs }) {
   const [showDescLocal, setShowDescLocal] = useState(false)
   const desc = getSkillDescription(skill.id)
+  const indicator = getBehavioralIndicator(skill.id, level)
   const showDesc = showAllDescs || showDescLocal
 
   return (
-    <div className="flex items-start gap-4 py-2 px-3 rounded-lg hover:bg-warm-50 transition-colors group">
-      <div className="flex-1 min-w-0">
-        <div className="flex items-center gap-1.5">
-          <div className="text-sm text-warm-700 leading-snug group-hover:text-warm-900 transition-colors">
-            {skill.name}
+    <div className="py-2 px-3 rounded-lg hover:bg-warm-50 transition-colors group">
+      <div className="flex items-start gap-4">
+        <div className="flex-1 min-w-0">
+          <div className="flex items-center gap-1.5">
+            <div className="text-sm text-warm-700 leading-snug group-hover:text-warm-900 transition-colors">
+              {skill.name}
+            </div>
+            {desc && (
+              <button
+                onClick={() => setShowDescLocal(!showDescLocal)}
+                className={`transition-colors shrink-0 ${showDesc ? 'text-sage-500' : 'text-warm-300 hover:text-warm-500'}`}
+                title={showDesc ? 'Hide description' : 'Show description'}
+              >
+                <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                </svg>
+              </button>
+            )}
           </div>
-          {desc && (
-            <button
-              onClick={() => setShowDescLocal(!showDescLocal)}
-              className={`transition-colors shrink-0 ${showDesc ? 'text-sage-500' : 'text-warm-300 hover:text-warm-500'}`}
-              title={showDesc ? 'Hide description' : 'Show description'}
-            >
-              <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                <path strokeLinecap="round" strokeLinejoin="round" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-              </svg>
-            </button>
+          {!showDesc && desc && (
+            <p className="text-[11px] text-warm-400 truncate mt-0.5 max-w-md">{desc.description}</p>
           )}
         </div>
-        {!showDesc && desc && (
-          <p className="text-[11px] text-warm-400 truncate mt-0.5 max-w-md">{desc.description}</p>
-        )}
-        {showDesc && desc && (
-          <div className="mt-2 ml-0.5 text-xs space-y-1 border-l-2 border-warm-200 pl-3">
-            <p className="text-warm-600">{desc.description}</p>
-            {desc.looks_like && <p className="text-sage-600"><span className="font-medium">Present:</span> {desc.looks_like}</p>}
-            {desc.absence && <p className="text-coral-600"><span className="font-medium">Absent:</span> {desc.absence}</p>}
-          </div>
-        )}
+        <div className="flex gap-1.5 shrink-0 items-center">
+          {!isAssessed(level) && (
+            <span className="text-[9px] text-warm-400 mr-0.5">{'\u2014'}</span>
+          )}
+          {[
+            ASSESSMENT_LEVELS.NOT_PRESENT,
+            ASSESSMENT_LEVELS.NEEDS_WORK,
+            ASSESSMENT_LEVELS.DEVELOPING,
+            ASSESSMENT_LEVELS.SOLID,
+          ].map((val) => {
+            const isSelected = level === val
+            const labels = {
+              [ASSESSMENT_LEVELS.NOT_PRESENT]: '0',
+              [ASSESSMENT_LEVELS.NEEDS_WORK]: '1',
+              [ASSESSMENT_LEVELS.DEVELOPING]: '2',
+              [ASSESSMENT_LEVELS.SOLID]: '3',
+            }
+            return (
+              <button
+                key={val}
+                onClick={() => onRate(isSelected ? null : val)}
+                title={isSelected ? 'Clear (Not Assessed)' : ASSESSMENT_LABELS[val]}
+                aria-pressed={isSelected}
+                className={`w-8 h-8 min-w-[44px] min-h-[44px] rounded-lg text-xs font-bold transition-all ${
+                  isSelected
+                    ? 'ring-2 ring-offset-1 ring-warm-400 scale-110 shadow-sm'
+                    : !isAssessed(level) ? 'opacity-30 hover:opacity-70 hover:scale-105' : 'opacity-40 hover:opacity-80 hover:scale-105'
+                }`}
+                style={{
+                  backgroundColor: ASSESSMENT_COLORS[val],
+                  color: '#fff',
+                }}
+              >
+                {labels[val]}
+              </button>
+            )
+          })}
+        </div>
       </div>
-      <div className="flex gap-1.5 shrink-0 items-center">
-        {!isAssessed(level) && (
-          <span className="text-[9px] text-warm-400 mr-0.5">{'\u2014'}</span>
-        )}
-        {[
-          ASSESSMENT_LEVELS.NOT_PRESENT,
-          ASSESSMENT_LEVELS.NEEDS_WORK,
-          ASSESSMENT_LEVELS.DEVELOPING,
-          ASSESSMENT_LEVELS.SOLID,
-        ].map((val) => {
-          const isSelected = level === val
-          const labels = {
-            [ASSESSMENT_LEVELS.NOT_PRESENT]: '0',
-            [ASSESSMENT_LEVELS.NEEDS_WORK]: '1',
-            [ASSESSMENT_LEVELS.DEVELOPING]: '2',
-            [ASSESSMENT_LEVELS.SOLID]: '3',
-          }
-          return (
-            <button
-              key={val}
-              onClick={() => onRate(isSelected ? null : val)}
-              title={isSelected ? 'Clear (Not Assessed)' : ASSESSMENT_LABELS[val]}
-              aria-pressed={isSelected}
-              className={`w-8 h-8 min-w-[44px] min-h-[44px] rounded-lg text-xs font-bold transition-all ${
-                isSelected
-                  ? 'ring-2 ring-offset-1 ring-warm-400 scale-110 shadow-sm'
-                  : !isAssessed(level) ? 'opacity-30 hover:opacity-70 hover:scale-105' : 'opacity-40 hover:opacity-80 hover:scale-105'
-              }`}
-              style={{
-                backgroundColor: ASSESSMENT_COLORS[val],
-                color: '#fff',
-              }}
-            >
-              {labels[val]}
-            </button>
-          )
-        })}
-      </div>
+      {isAssessed(level) && indicator && (
+        <div
+          className="mt-1.5 px-2.5 py-1.5 rounded-md text-[11px] leading-relaxed"
+          style={{
+            backgroundColor: ASSESSMENT_COLORS[level] + '12',
+            borderLeft: `3px solid ${ASSESSMENT_COLORS[level]}`,
+          }}
+        >
+          <span className="font-medium" style={{ color: ASSESSMENT_COLORS[level] }}>
+            {ASSESSMENT_LABELS[level]}:
+          </span>{' '}
+          <span className="text-warm-600">{indicator}</span>
+        </div>
+      )}
+      {showDesc && desc && (
+        <div className="mt-2 ml-0.5 text-xs space-y-1 border-l-2 border-warm-200 pl-3">
+          <p className="text-warm-600">{desc.description}</p>
+          {desc.looks_like && <p className="text-sage-600"><span className="font-medium">Present:</span> {desc.looks_like}</p>}
+          {desc.absence && <p className="text-coral-600"><span className="font-medium">Absent:</span> {desc.absence}</p>}
+        </div>
+      )}
     </div>
   )
 }

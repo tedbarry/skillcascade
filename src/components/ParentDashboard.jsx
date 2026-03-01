@@ -57,6 +57,17 @@ const FRIENDLY_LEVELS = {
 }
 
 /**
+ * Parent-friendly behavioral indicator templates — generic, warm language.
+ * The clinical indicators are too technical for parents; these are universal.
+ */
+export const PARENT_INDICATOR_TEMPLATES = {
+  0: 'This is a skill we haven\'t seen yet — it gives us a clear starting point.',
+  1: 'We\'re starting to see the beginnings of this skill. With practice and support, it will grow.',
+  2: 'This skill is developing nicely! Some situations are easier than others.',
+  3: 'This is a real strength — it shows up reliably in many different situations.',
+}
+
+/**
  * SVG progress ring component
  */
 function ProgressRing({ percent, size = 96, strokeWidth = 8, color = 'var(--color-sage-400)' }) {
@@ -256,10 +267,26 @@ export default function ParentDashboard({
 
     domainScores.forEach((ds) => {
       if (ds.assessed === 0) return
+      // Find 2 specific growing skills (level 1) for parent-friendly context
+      const domain = framework.find((d) => d.id === ds.domainId)
+      const growingSkills = []
+      if (domain) {
+        for (const sa of domain.subAreas) {
+          for (const sg of sa.skillGroups) {
+            for (const skill of sg.skills) {
+              const level = assessments[skill.id]
+              if (level === ASSESSMENT_LEVELS.NEEDS_WORK && growingSkills.length < 2) {
+                growingSkills.push(skill.name)
+              }
+            }
+          }
+        }
+      }
+
       if (ds.score >= 2.0) {
-        s.push(ds)
+        s.push({ ...ds, growingSkills })
       } else {
-        g.push(ds)
+        g.push({ ...ds, growingSkills })
       }
     })
 
@@ -269,7 +296,7 @@ export default function ParentDashboard({
     g.sort((a, b) => b.score - a.score)
 
     return { strengths: s, growing: g }
-  }, [domainScores])
+  }, [domainScores, assessments])
 
   // Compute progress comparisons if snapshots exist
   const progressComparisons = useMemo(() => {
@@ -424,6 +451,11 @@ export default function ParentDashboard({
                     <p className="text-xs text-warm-500 mt-1 leading-relaxed">
                       {GROWING_BLURBS[ds.domainId]}
                     </p>
+                    {ds.growingSkills?.length > 0 && (
+                      <p className="text-[10px] text-warm-400 mt-1 italic">
+                        Currently building: {ds.growingSkills.join(', ')}
+                      </p>
+                    )}
                     <div className="mt-3">
                       <ProgressBar value={ds.score} max={3} />
                     </div>

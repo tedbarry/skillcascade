@@ -4,6 +4,7 @@ import { ASSESSMENT_COLORS, framework, ASSESSMENT_LEVELS, isAssessed } from '../
 import { computeDomainHealth, detectCascadeRisks } from '../data/cascadeModel.js'
 import { generateClinicalSummary, generateParentSummary } from '../lib/narratives.js'
 import { computeImpactRanking } from '../data/cascadeModel.js'
+import { getBehavioralIndicator } from '../data/behavioralIndicators.js'
 
 const PILL_COLORS = {
   null: { bg: '#e5e7eb', color: '#6b7280', label: 'Not Assessed' },
@@ -249,6 +250,17 @@ export default function PrintReport({ assessments, clientName, snapshots = [], b
                         )
                       })}
                     </div>
+                    {/* Behavioral indicators for concerning skills (level 0–1) */}
+                    {sg.skills.filter(s => s.level === 0 || s.level === 1).map(skill => {
+                      const indicator = getBehavioralIndicator(skill.id, skill.level)
+                      if (!indicator) return null
+                      const pill = PILL_COLORS[skill.level]
+                      return (
+                        <div key={`${skill.id}-ind`} style={{ marginLeft: '4px', marginTop: '2px', fontSize: '8px', lineHeight: '1.4', color: '#5f3e2a', paddingLeft: '8px', borderLeft: `2px solid ${ASSESSMENT_COLORS[skill.level]}` }}>
+                          <span style={{ fontWeight: 600, color: pill.color }}>{skill.name}:</span> {indicator}
+                        </div>
+                      )
+                    })}
                   </div>
                 ))}
               </div>

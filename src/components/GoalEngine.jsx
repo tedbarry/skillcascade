@@ -8,6 +8,7 @@ import {
   isAssessed,
 } from '../data/framework.js'
 import { getSkillDescription } from '../data/skillDescriptions.js'
+import { getBehavioralIndicator } from '../data/behavioralIndicators.js'
 import { downloadFile, csvEscape } from '../data/exportUtils.js'
 import EmptyState from './EmptyState.jsx'
 import useResponsive from '../hooks/useResponsive.js'
@@ -361,6 +362,28 @@ function SkillCard({ rec, onNavigateToAssess, isExpanded, onToggle }) {
           ) : (
             <p className="text-[11px] text-warm-400 italic">No operational definition available for this skill.</p>
           )}
+          {/* Behavioral Indicators: current → target */}
+          {(() => {
+            const currentInd = getBehavioralIndicator(rec.skillId, rec.level)
+            const targetInd = getBehavioralIndicator(rec.skillId, targetLevel)
+            if (!currentInd && !targetInd) return null
+            return (
+              <div className="space-y-1.5">
+                {currentInd && (
+                  <div className="rounded-md px-2.5 py-1.5 text-[11px] leading-relaxed" style={{ backgroundColor: ASSESSMENT_COLORS[rec.level] + '12', borderLeft: `3px solid ${ASSESSMENT_COLORS[rec.level]}` }}>
+                    <span className="font-medium" style={{ color: ASSESSMENT_COLORS[rec.level] }}>Current ({ASSESSMENT_LABELS[rec.level]}):</span>{' '}
+                    <span className="text-warm-600">{currentInd}</span>
+                  </div>
+                )}
+                {targetInd && (
+                  <div className="rounded-md px-2.5 py-1.5 text-[11px] leading-relaxed" style={{ backgroundColor: ASSESSMENT_COLORS[targetLevel] + '12', borderLeft: `3px solid ${ASSESSMENT_COLORS[targetLevel]}` }}>
+                    <span className="font-medium" style={{ color: ASSESSMENT_COLORS[targetLevel] }}>Target ({ASSESSMENT_LABELS[targetLevel]}):</span>{' '}
+                    <span className="text-warm-600">{targetInd}</span>
+                  </div>
+                )}
+              </div>
+            )
+          })()}
           {/* Baseline → Target */}
           <div className="flex items-center gap-2 pt-1">
             <span className="text-[10px] font-semibold text-warm-500 uppercase tracking-wider">Baseline</span>
@@ -575,7 +598,8 @@ export default function GoalEngine({ assessments = {}, onNavigateToAssess, focus
 
   const handleExportGoals = useCallback(() => {
     const rows = [['Client', 'Domain', 'Sub-Area', 'Skill', 'Current Level', 'Current Score',
-      'Target Level', 'Target Score', 'Operational Definition', 'Observable When Present',
+      'Target Level', 'Target Score', 'Current Behavioral Indicator', 'Target Behavioral Indicator',
+      'Operational Definition', 'Observable When Present',
       'Observable When Absent', 'Rationale', 'Priority', 'Downstream Impact']]
 
     for (const rec of recommendations) {
@@ -594,6 +618,8 @@ export default function GoalEngine({ assessments = {}, onNavigateToAssess, focus
         currentScore,
         targetLabel,
         String(targetLevel),
+        getBehavioralIndicator(rec.skillId, rec.level) || '',
+        getBehavioralIndicator(rec.skillId, targetLevel) || '',
         desc?.description || '',
         desc?.looks_like || '',
         desc?.absence || '',

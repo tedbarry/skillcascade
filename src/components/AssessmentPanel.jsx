@@ -1,6 +1,7 @@
 import { useState, useMemo, useEffect, useCallback, useRef } from 'react'
 import { framework, ASSESSMENT_LEVELS, ASSESSMENT_LABELS, ASSESSMENT_COLORS, isAssessed } from '../data/framework.js'
 import { getSkillDescription } from '../data/skillDescriptions.js'
+import { getBehavioralIndicator } from '../data/behavioralIndicators.js'
 import useResponsive from '../hooks/useResponsive.js'
 import { safeGetItem, safeSetItem } from '../lib/safeStorage.js'
 
@@ -635,6 +636,7 @@ function SkillGroupRater({ skillGroup, assessments, onAssess, showAllDescs }) {
 function SkillRater({ skill, level, onRate, showAllDescs }) {
   const [showDescLocal, setShowDescLocal] = useState(false)
   const desc = getSkillDescription(skill.id)
+  const indicator = getBehavioralIndicator(skill.id, level)
   const showDesc = showAllDescs || showDescLocal
 
   return (
@@ -700,6 +702,20 @@ function SkillRater({ skill, level, onRate, showAllDescs }) {
           })}
         </div>
       </div>
+      {isAssessed(level) && indicator && (
+        <div
+          className="mt-1.5 px-2.5 py-1.5 rounded-md text-[11px] leading-relaxed"
+          style={{
+            backgroundColor: ASSESSMENT_COLORS[level] + '12',
+            borderLeft: `3px solid ${ASSESSMENT_COLORS[level]}`,
+          }}
+        >
+          <span className="font-medium" style={{ color: ASSESSMENT_COLORS[level] }}>
+            {ASSESSMENT_LABELS[level]}:
+          </span>{' '}
+          <span className="text-warm-600">{indicator}</span>
+        </div>
+      )}
       {showDesc && desc && (
         <div className="mt-2 ml-0.5 text-xs space-y-1 border-l-2 border-warm-200 pl-3">
           <p className="text-warm-600">{desc.description}</p>

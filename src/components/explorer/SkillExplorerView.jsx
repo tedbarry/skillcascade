@@ -2,6 +2,7 @@ import { useMemo, useEffect, useRef, useState, useCallback, memo } from 'react'
 import { framework } from '../../data/framework.js'
 import { getDomainFromId } from '../../data/skillDependencies.js'
 import { getSkillDescription } from '../../data/skillDescriptions.js'
+import { getBehavioralIndicator } from '../../data/behavioralIndicators.js'
 import useResponsive from '../../hooks/useResponsive.js'
 import ExplorerTooltip from './ExplorerTooltip.jsx'
 import { DOMAIN_COLORS } from '../../constants/colors.js'
@@ -689,6 +690,20 @@ function DetailPanel({ detail, cascadeMap, graphData }) {
           {desc && (
             <p className="text-[11px] text-gray-400 mb-2 leading-relaxed">{desc.description}</p>
           )}
+          {/* Behavioral indicator */}
+          {isAssessed(node.level) && (() => {
+            const indicator = getBehavioralIndicator(node.id, node.level)
+            if (!indicator) return null
+            return (
+              <p
+                className="text-[11px] leading-relaxed mb-2 px-2 py-1.5 rounded"
+                style={{ backgroundColor: statusColor + '15', borderLeft: `3px solid ${statusColor}` }}
+              >
+                <span className="font-medium" style={{ color: statusColor }}>{getStatusLabel(node.level)}:</span>{' '}
+                <span className="text-gray-300">{indicator}</span>
+              </p>
+            )
+          })()}
         </div>
 
         {/* Right: readiness + impact */}
@@ -799,6 +814,18 @@ function SkillCard({ node, isSelected, cascadeInfo, selectedSkillId, edges, onSe
           {desc && (
             <p className="text-[11px] text-gray-400 leading-relaxed">{desc.description}</p>
           )}
+          {/* Behavioral indicator */}
+          {isAssessed(node.level) && (() => {
+            const indicator = getBehavioralIndicator(node.id, node.level)
+            if (!indicator) return null
+            return (
+              <p className="text-[11px] leading-relaxed px-2 py-1.5 rounded"
+                style={{ backgroundColor: statusColor + '15', borderLeft: `3px solid ${statusColor}` }}>
+                <span className="font-medium" style={{ color: statusColor }}>{getStatusLabel(node.level)}:</span>{' '}
+                <span className="text-gray-300">{indicator}</span>
+              </p>
+            )
+          })()}
           {/* Readiness */}
           {node.readiness?.prereqCount > 0 && (
             <div className="text-[10px]">

@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef, useMemo, useCallback } from 'react'
 import { framework, ASSESSMENT_LEVELS, ASSESSMENT_LABELS, isAssessed } from '../data/framework.js'
+import { getBehavioralIndicator } from '../data/behavioralIndicators.js'
 import { useAuth } from '../contexts/AuthContext.jsx'
 import { getAiChats, saveAiChat, deleteAiChat } from '../data/storage.js'
 import { supabase, mergeUserSettings } from '../lib/supabase.js'
@@ -201,7 +202,20 @@ function summarizeAssessments(assessments) {
 
       const saAvg = saAssessed > 0 ? saScoreSum / saAssessed : 0
       if (saAssessed > 0 && saAvg < 2.0) {
-        weakSubAreas.push({ name: sa.name, avg: saAvg, assessed: saAssessed, total: saTotal })
+        // Collect lowest-scored skills with behavioral indicators for AI context
+        const skillExamples = []
+        for (const sg of sa.skillGroups) {
+          for (const skill of sg.skills) {
+            const lv = assessments[skill.id]
+            if (lv === 0 || lv === 1) {
+              const indicator = getBehavioralIndicator(skill.id, lv)
+              if (indicator) {
+                skillExamples.push({ skill: skill.name, level: ASSESSMENT_LABELS[lv], observation: indicator })
+              }
+            }
+          }
+        }
+        weakSubAreas.push({ name: sa.name, avg: saAvg, assessed: saAssessed, total: saTotal, skillExamples: skillExamples.slice(0, 3) })
       }
     }
 
@@ -375,6 +389,9 @@ When writing operational definitions:
       developing: d.developing,
       solid: d.solid,
       weakAreas: d.weakSubAreas.map((w) => w.name),
+      ...(d.weakSubAreas.length > 0 ? {
+        behavioralExamples: d.weakSubAreas.slice(0, 2).flatMap((w) => w.skillExamples || []).slice(0, 3),
+      } : {}),
     })),
     null,
     2
