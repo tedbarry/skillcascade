@@ -232,6 +232,326 @@ const TESTIMONIALS = [
   },
 ]
 
+const DEMO_TABS = [
+  {
+    id: 'cascade',
+    label: 'Cascade',
+    icon: CascadeIcon,
+    title: 'See Why Foundations Matter',
+    desc: 'Click any domain to weaken it and watch the impact cascade upward. This interactive demo shows exactly why effective intervention starts at the foundation.',
+    bullets: ['Interactive what-if simulation', '9-domain dependency model', 'Real-time cascade propagation'],
+    mockup: 'cascade',
+  },
+  {
+    id: 'visualize',
+    label: 'Visualize',
+    icon: BirdIcon,
+    title: 'Four Ways to See the Data',
+    desc: 'Sunburst, radar, skill tree, and dependency explorer give you every angle on a learner\'s developmental profile.',
+    bullets: ['Sunburst hierarchy drill-down', 'Radar domain comparison', 'Skill tree with bottleneck detection', 'Dependency explorer (chord \u2192 web \u2192 skill)'],
+    mockup: 'visualize',
+  },
+  {
+    id: 'assess',
+    label: 'Assess',
+    icon: TargetIcon,
+    title: 'Smarter Assessment',
+    desc: 'Full 300-skill assessment or adaptive quick screening that identifies key gaps in minutes. Auto-saves, keyboard navigation, and bulk rate support.',
+    bullets: ['Adaptive branching (~2 min)', 'Full 300+ skill assessment', 'Import from Central Reach / Raven / Passage', 'Auto-save with undo/redo'],
+    mockup: 'assess',
+  },
+  {
+    id: 'intelligence',
+    label: 'Intelligence',
+    icon: SparkleIcon,
+    title: 'Clinical Intelligence Engine',
+    desc: 'Five purpose-driven views: status map, bottleneck finder, intervention planner, risk monitor, and progress story. Two modes: directive and discovery.',
+    bullets: ['Bottleneck detection across domains', 'Auto-prioritized intervention targets', '7 risk pattern types detected', 'Narrative summaries for stakeholders'],
+    mockup: 'intelligence',
+  },
+  {
+    id: 'ai',
+    label: 'AI Tools',
+    icon: ZapIcon,
+    title: '8 Specialized AI Assistants',
+    desc: 'Write goals, BIPs, session notes, operational definitions, and reports \u2014 all pre-loaded with the client\'s current assessment data.',
+    bullets: ['Goal writing assistant', 'BIP & session note generator', 'Operational definitions', 'Pre-loaded with assessment context'],
+    mockup: 'ai',
+  },
+  {
+    id: 'reports',
+    label: 'Reports',
+    icon: FileIcon,
+    title: 'Professional Reports in Seconds',
+    desc: 'Four report types: parent summary, progress report, clinical assessment (insurance-ready with BCBA signature block), and custom. Download or print.',
+    bullets: ['Insurance-ready clinical assessment', 'Vineland-style domain profiles', 'Auto-generated narratives', 'BCBA signature block'],
+    mockup: 'reports',
+  },
+]
+
+/* ── Demo Mockup Illustrations ───────────────────────────── */
+
+function VisualizeMockup() {
+  return (
+    <div className="grid grid-cols-2 gap-3">
+      {/* Sunburst mockup */}
+      <div className="bg-warm-700/50 rounded-xl p-4 border border-warm-600/30">
+        <div className="text-[10px] text-warm-400 font-medium mb-2 uppercase tracking-wider">Sunburst</div>
+        <svg viewBox="0 0 120 120" className="w-full max-w-[120px] mx-auto">
+          <circle cx="60" cy="60" r="18" fill="#4f8460" opacity="0.9" />
+          <path d="M60 60 L60 10 A50 50 0 0 1 103 35 Z" fill="#7fb589" opacity="0.7" />
+          <path d="M60 60 L103 35 A50 50 0 0 1 103 85 Z" fill="#c4956a" opacity="0.7" />
+          <path d="M60 60 L103 85 A50 50 0 0 1 60 110 Z" fill="#e8a87c" opacity="0.6" />
+          <path d="M60 60 L60 110 A50 50 0 0 1 17 85 Z" fill="#d4856a" opacity="0.7" />
+          <path d="M60 60 L17 85 A50 50 0 0 1 17 35 Z" fill="#7fb589" opacity="0.6" />
+          <path d="M60 60 L17 35 A50 50 0 0 1 60 10 Z" fill="#90c49a" opacity="0.7" />
+        </svg>
+      </div>
+      {/* Radar mockup */}
+      <div className="bg-warm-700/50 rounded-xl p-4 border border-warm-600/30">
+        <div className="text-[10px] text-warm-400 font-medium mb-2 uppercase tracking-wider">Radar</div>
+        <svg viewBox="0 0 120 120" className="w-full max-w-[120px] mx-auto">
+          <polygon points="60,15 95,35 105,70 85,100 60,110 35,100 15,70 25,35" fill="none" stroke="#4a3f35" strokeWidth="0.5" opacity="0.4" />
+          <polygon points="60,30 82,43 90,68 75,90 60,97 45,90 30,68 38,43" fill="none" stroke="#4a3f35" strokeWidth="0.5" opacity="0.3" />
+          <polygon points="60,45 70,52 74,66 66,78 60,82 54,78 46,66 50,52" fill="none" stroke="#4a3f35" strokeWidth="0.5" opacity="0.2" />
+          <polygon points="60,20 88,40 95,72 78,95 60,102 42,95 22,72 32,40" fill="#7fb589" fillOpacity="0.3" stroke="#7fb589" strokeWidth="1.5" />
+          {[0,1,2,3,4,5,6,7].map(i => {
+            const a = (i * 45 - 90) * Math.PI / 180
+            const r = [42, 30, 35, 25, 38, 32, 28, 36][i]
+            return <circle key={i} cx={60 + r * Math.cos(a)} cy={60 + r * Math.sin(a)} r="2.5" fill="#7fb589" />
+          })}
+        </svg>
+      </div>
+      {/* Skill Tree mockup */}
+      <div className="bg-warm-700/50 rounded-xl p-4 border border-warm-600/30">
+        <div className="text-[10px] text-warm-400 font-medium mb-2 uppercase tracking-wider">Skill Tree</div>
+        <svg viewBox="0 0 120 80" className="w-full">
+          <line x1="25" y1="40" x2="55" y2="20" stroke="#7fb589" strokeWidth="1.5" opacity="0.5" />
+          <line x1="25" y1="40" x2="55" y2="40" stroke="#7fb589" strokeWidth="1.5" opacity="0.5" />
+          <line x1="25" y1="40" x2="55" y2="60" stroke="#7fb589" strokeWidth="1.5" opacity="0.5" />
+          <line x1="55" y1="20" x2="95" y2="12" stroke="#c4956a" strokeWidth="1.5" opacity="0.5" />
+          <line x1="55" y1="20" x2="95" y2="28" stroke="#c4956a" strokeWidth="1.5" opacity="0.5" />
+          <line x1="55" y1="40" x2="95" y2="40" stroke="#c4956a" strokeWidth="1.5" opacity="0.5" />
+          <line x1="55" y1="60" x2="95" y2="55" stroke="#d4856a" strokeWidth="1.5" opacity="0.5" />
+          <line x1="55" y1="60" x2="95" y2="68" stroke="#d4856a" strokeWidth="1.5" opacity="0.5" />
+          <circle cx="25" cy="40" r="8" fill="#4f8460" />
+          <circle cx="55" cy="20" r="6" fill="#7fb589" />
+          <circle cx="55" cy="40" r="6" fill="#7fb589" />
+          <circle cx="55" cy="60" r="6" fill="#d4856a" />
+          <circle cx="95" cy="12" r="5" fill="#c4956a" />
+          <circle cx="95" cy="28" r="5" fill="#7fb589" />
+          <circle cx="95" cy="40" r="5" fill="#c4956a" />
+          <circle cx="95" cy="55" r="5" fill="#d4856a" />
+          <circle cx="95" cy="68" r="5" fill="#e8a87c" />
+        </svg>
+      </div>
+      {/* Explorer mockup */}
+      <div className="bg-warm-700/50 rounded-xl p-4 border border-warm-600/30">
+        <div className="text-[10px] text-warm-400 font-medium mb-2 uppercase tracking-wider">Explorer</div>
+        <svg viewBox="0 0 120 120" className="w-full max-w-[120px] mx-auto">
+          {/* Chord diagram arcs */}
+          <circle cx="60" cy="60" r="48" fill="none" stroke="#4a3f35" strokeWidth="0.5" opacity="0.3" />
+          {[0,1,2,3,4,5].map(i => {
+            const a = (i * 60 - 90) * Math.PI / 180
+            const colors = ['#d4856a','#c4956a','#e8a87c','#7fb589','#90c49a','#4f8460']
+            return <circle key={i} cx={60 + 48 * Math.cos(a)} cy={60 + 48 * Math.sin(a)} r="6" fill={colors[i]} opacity="0.8" />
+          })}
+          <path d="M60 12 Q30 40 12 60" fill="none" stroke="#7fb589" strokeWidth="1.5" opacity="0.4" />
+          <path d="M108 60 Q80 30 60 12" fill="none" stroke="#c4956a" strokeWidth="1.5" opacity="0.4" />
+          <path d="M90 102 Q60 70 12 60" fill="none" stroke="#d4856a" strokeWidth="1.5" opacity="0.4" />
+          <path d="M30 102 Q50 80 90 102" fill="none" stroke="#e8a87c" strokeWidth="1.5" opacity="0.3" />
+          <path d="M108 60 Q80 90 30 102" fill="none" stroke="#90c49a" strokeWidth="1.5" opacity="0.3" />
+        </svg>
+      </div>
+    </div>
+  )
+}
+
+function AssessMockup() {
+  const skills = [
+    { name: 'Identifies own emotions', level: 2, color: '#c4956a' },
+    { name: 'Recognizes others\u2019 feelings', level: 1, color: '#d4856a' },
+    { name: 'Labels emotional intensity', level: null, color: null },
+  ]
+  return (
+    <div className="bg-warm-700/50 rounded-xl border border-warm-600/30 overflow-hidden">
+      {/* Progress bar */}
+      <div className="h-1.5 bg-warm-600/30">
+        <div className="h-full bg-sage-500 rounded-r" style={{ width: '62%' }} />
+      </div>
+      <div className="p-4">
+        <div className="flex items-center justify-between mb-3">
+          <span className="text-[10px] text-warm-400 font-medium uppercase tracking-wider">Self-Awareness &rsaquo; Emotional Insight</span>
+          <span className="text-[10px] text-sage-400 font-semibold">62%</span>
+        </div>
+        <div className="space-y-2.5">
+          {skills.map((s, i) => (
+            <div key={i} className={`flex items-center justify-between p-2.5 rounded-lg ${i === 1 ? 'bg-warm-600/30 ring-1 ring-sage-500/40' : 'bg-warm-700/30'}`}>
+              <span className="text-xs text-warm-200 truncate mr-3">{s.name}</span>
+              <div className="flex gap-1.5 shrink-0">
+                {[0,1,2,3].map(lvl => (
+                  <div
+                    key={lvl}
+                    className={`w-5 h-5 rounded-full border ${
+                      s.level !== null && lvl <= s.level
+                        ? 'border-transparent'
+                        : 'border-warm-500/40 bg-transparent'
+                    }`}
+                    style={s.level !== null && lvl <= s.level ? { backgroundColor: s.color } : {}}
+                  />
+                ))}
+              </div>
+            </div>
+          ))}
+        </div>
+        <div className="flex items-center gap-3 mt-3 pt-3 border-t border-warm-600/20">
+          <div className="flex gap-1">
+            {['Not Assessed','Needs Work','Developing','Solid'].map((l, i) => (
+              <div key={l} className="flex items-center gap-1">
+                <div className="w-2 h-2 rounded-full" style={{ backgroundColor: ['#4a3f35','#d4856a','#c4956a','#7fb589'][i] }} />
+                <span className="text-[9px] text-warm-500">{l}</span>
+              </div>
+            ))}
+          </div>
+        </div>
+      </div>
+    </div>
+  )
+}
+
+function IntelligenceMockup() {
+  const tiles = [
+    { label: 'REG', pct: 87, color: '#7fb589' },
+    { label: 'SA', pct: 78, color: '#c4956a' },
+    { label: 'EF', pct: 59, color: '#d4856a' },
+    { label: 'PS', pct: 61, color: '#d4856a' },
+    { label: 'COM', pct: 47, color: '#e8725c' },
+    { label: 'SU', pct: 53, color: '#d4856a' },
+    { label: 'ID', pct: 54, color: '#d4856a' },
+    { label: 'SAF', pct: 86, color: '#7fb589' },
+    { label: 'SS', pct: 75, color: '#c4956a' },
+  ]
+  return (
+    <div className="bg-warm-700/50 rounded-xl p-4 border border-warm-600/30">
+      <div className="flex items-center justify-between mb-3">
+        <span className="text-[10px] text-warm-400 font-medium uppercase tracking-wider">Status Map</span>
+        <div className="flex gap-1">
+          <span className="text-[9px] bg-sage-500/20 text-sage-400 px-1.5 py-0.5 rounded font-medium">Directive</span>
+          <span className="text-[9px] bg-warm-600/30 text-warm-400 px-1.5 py-0.5 rounded font-medium">Discovery</span>
+        </div>
+      </div>
+      <div className="grid grid-cols-3 gap-1.5 mb-3">
+        {tiles.map(t => (
+          <div key={t.label} className="bg-warm-800/60 rounded-lg p-2 text-center">
+            <div className="text-[9px] text-warm-400 font-medium">{t.label}</div>
+            <div className="text-sm font-bold mt-0.5" style={{ color: t.color }}>{t.pct}%</div>
+          </div>
+        ))}
+      </div>
+      {/* Mini bottleneck bar */}
+      <div className="bg-warm-800/40 rounded-lg p-2.5">
+        <div className="text-[9px] text-warm-400 mb-1.5 font-medium">Top Leverage</div>
+        {[{ name: 'Executive Function', w: '85%', c: '#d4856a' }, { name: 'Communication', w: '72%', c: '#e8725c' }, { name: 'Self-Awareness', w: '55%', c: '#c4956a' }].map(b => (
+          <div key={b.name} className="flex items-center gap-2 mb-1">
+            <span className="text-[9px] text-warm-300 w-24 truncate">{b.name}</span>
+            <div className="flex-1 h-1.5 bg-warm-700/50 rounded-full overflow-hidden">
+              <div className="h-full rounded-full" style={{ width: b.w, backgroundColor: b.c }} />
+            </div>
+          </div>
+        ))}
+      </div>
+    </div>
+  )
+}
+
+function AIMockup() {
+  return (
+    <div className="bg-warm-700/50 rounded-xl border border-warm-600/30 overflow-hidden">
+      <div className="flex items-center gap-2 px-4 py-2.5 border-b border-warm-600/20">
+        <div className="w-2 h-2 rounded-full bg-sage-500" />
+        <span className="text-[10px] text-warm-300 font-medium">Goal Writing Assistant</span>
+        <span className="text-[9px] text-warm-500 ml-auto">Powered by AI</span>
+      </div>
+      <div className="p-4 space-y-3">
+        {/* User message */}
+        <div className="flex justify-end">
+          <div className="bg-sage-500/20 border border-sage-500/30 rounded-xl rounded-br-sm px-3 py-2 max-w-[80%]">
+            <p className="text-[11px] text-warm-200 leading-relaxed">Write a measurable goal for improving emotional regulation</p>
+          </div>
+        </div>
+        {/* AI response */}
+        <div className="flex justify-start">
+          <div className="bg-warm-600/30 border border-warm-500/20 rounded-xl rounded-bl-sm px-3 py-2 max-w-[90%]">
+            <p className="text-[11px] text-warm-200 leading-relaxed mb-1.5">Based on the assessment data (Regulation: 87%, Self-Awareness: 78%):</p>
+            <p className="text-[11px] text-warm-300 leading-relaxed font-medium">&ldquo;Given a frustrating task, the learner will independently use a taught calming strategy within 30 seconds across 4/5 opportunities over 3 consecutive sessions.&rdquo;</p>
+            <div className="flex gap-2 mt-2">
+              <span className="text-[9px] bg-sage-500/20 text-sage-400 px-1.5 py-0.5 rounded">Copy</span>
+              <span className="text-[9px] bg-warm-600/40 text-warm-300 px-1.5 py-0.5 rounded">Refine</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  )
+}
+
+function ReportsMockup() {
+  return (
+    <div className="bg-warm-700/50 rounded-xl border border-warm-600/30 overflow-hidden">
+      {/* Document header */}
+      <div className="bg-warm-600/20 px-4 py-3 border-b border-warm-600/20">
+        <div className="flex items-center justify-between">
+          <div>
+            <div className="text-xs text-warm-200 font-semibold">Clinical Assessment Report</div>
+            <div className="text-[9px] text-warm-400">SkillCascade Developmental-Functional Profile</div>
+          </div>
+          <div className="flex gap-1.5">
+            <span className="text-[9px] bg-sage-500/20 text-sage-400 px-2 py-1 rounded font-medium">Download</span>
+            <span className="text-[9px] bg-warm-600/40 text-warm-300 px-2 py-1 rounded font-medium">Print</span>
+          </div>
+        </div>
+      </div>
+      <div className="p-4">
+        {/* Mini domain bar chart */}
+        <div className="text-[9px] text-warm-400 font-medium mb-2 uppercase tracking-wider">Domain Score Profile</div>
+        <div className="space-y-1 mb-3">
+          {[
+            { name: 'Regulation', w: '87%', c: '#7fb589' },
+            { name: 'Self-Awareness', w: '78%', c: '#c4956a' },
+            { name: 'Exec Function', w: '59%', c: '#d4856a' },
+            { name: 'Problem Solving', w: '61%', c: '#d4856a' },
+            { name: 'Communication', w: '47%', c: '#e8725c' },
+          ].map(d => (
+            <div key={d.name} className="flex items-center gap-2">
+              <span className="text-[9px] text-warm-400 w-20 truncate">{d.name}</span>
+              <div className="flex-1 h-2 bg-warm-700/40 rounded-full overflow-hidden">
+                <div className="h-full rounded-full" style={{ width: d.w, backgroundColor: d.c }} />
+              </div>
+              <span className="text-[9px] text-warm-300 w-7 text-right">{d.w.replace('%','')}</span>
+            </div>
+          ))}
+        </div>
+        {/* Narrative preview */}
+        <div className="bg-warm-800/40 rounded-lg p-2.5 mb-3">
+          <div className="text-[9px] text-warm-400 font-medium mb-1">Clinical Narrative</div>
+          <div className="text-[9px] text-warm-500 leading-relaxed">The learner demonstrates relative strength in regulatory skills with emerging capacity in self-awareness...</div>
+        </div>
+        {/* Signature block */}
+        <div className="border-t border-warm-600/20 pt-2.5 flex items-center justify-between">
+          <div>
+            <div className="text-[9px] text-warm-400">BCBA Signature</div>
+            <div className="w-24 h-px bg-warm-500/40 mt-2" />
+          </div>
+          <div className="text-right">
+            <div className="text-[9px] text-warm-400">Date</div>
+            <div className="w-16 h-px bg-warm-500/40 mt-2" />
+          </div>
+        </div>
+      </div>
+    </div>
+  )
+}
+
 const FOOTER_LINKS = {
   Product: [
     { label: 'Features', href: '#features' },
@@ -268,6 +588,7 @@ const FOOTER_LINKS = {
 export default function Landing() {
   const [scrolled, setScrolled] = useState(false)
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
+  const [activeDemo, setActiveDemo] = useState('cascade')
   const heroRef = useRef(null)
 
   useEffect(() => {
@@ -634,67 +955,112 @@ export default function Landing() {
       </section>
 
       {/* ────────────────────────────────────────────────────────
-          7. Demo Section
+          7. Demo Section — Tabbed Feature Showcase
           ──────────────────────────────────────────────────────── */}
       <section id="demo" className="bg-warm-800">
         <div className="max-w-7xl mx-auto px-6 lg:px-8 py-20 lg:py-28">
-          <div className="text-center mb-12">
+          <div className="text-center mb-10">
             <div className="inline-flex items-center gap-2 rounded-full bg-warm-700 border border-warm-600 px-4 py-1.5 text-xs font-semibold text-warm-300 uppercase tracking-wider mb-4">
               Interactive Demo
             </div>
             <h2 className="text-3xl sm:text-4xl font-bold text-white font-display mb-4">
-              See Why Foundations Matter
+              See What&rsquo;s Inside
             </h2>
             <p className="text-warm-400 max-w-2xl mx-auto text-lg">
-              Click any domain to weaken it and watch the impact cascade upward.
-              This is why effective intervention starts at the bottom.
+              Explore the tools that 200+ BCBAs use every day to transform assessment into action.
             </p>
           </div>
-          <Suspense fallback={
-            <div className="bg-[#1a1a1e] rounded-2xl p-6 sm:p-8 max-w-2xl mx-auto shadow-2xl">
-              {/* Skeleton: cascade animation toolbar */}
-              <div className="flex items-center gap-2 mb-6">
-                {[1,2,3,4].map(i => (
-                  <div key={i} className="h-8 w-16 rounded-lg bg-warm-200/10 animate-pulse" />
-                ))}
-                <div className="ml-auto h-8 w-24 rounded-lg bg-warm-200/10 animate-pulse" />
-              </div>
-              {/* Skeleton: tiered domain node grid (3 rows like the cascade pyramid) */}
-              <div className="space-y-4">
-                {/* Foundation tier — 3 nodes */}
-                <div className="flex justify-center gap-3">
-                  {[1,2,3].map(i => (
-                    <div key={i} className="h-14 w-24 sm:w-28 rounded-xl bg-warm-200/10 animate-pulse" />
-                  ))}
-                </div>
-                {/* Integration tier — 3 nodes */}
-                <div className="flex justify-center gap-3">
-                  {[1,2,3].map(i => (
-                    <div key={i} className="h-14 w-24 sm:w-28 rounded-xl bg-warm-200/10 animate-pulse" />
-                  ))}
-                </div>
-                {/* Applied tier — 3 nodes */}
-                <div className="flex justify-center gap-3">
-                  {[1,2,3].map(i => (
-                    <div key={i} className="h-14 w-24 sm:w-28 rounded-xl bg-warm-200/10 animate-pulse" />
-                  ))}
-                </div>
-              </div>
-              {/* Skeleton: legend bar */}
-              <div className="flex items-center justify-center gap-4 mt-6">
-                {[1,2,3,4,5].map(i => (
-                  <div key={i} className="flex items-center gap-1.5">
-                    <div className="h-3 w-3 rounded-full bg-warm-200/10 animate-pulse" />
-                    <div className="h-3 w-10 rounded bg-warm-200/10 animate-pulse" />
+
+          {/* Tab bar */}
+          <div className="flex justify-center mb-8">
+            <div className="flex gap-1 overflow-x-auto pb-2 -mx-2 px-2 scrollbar-hide" role="tablist">
+              {DEMO_TABS.map((tab) => {
+                const Icon = tab.icon
+                const isActive = activeDemo === tab.id
+                return (
+                  <button
+                    key={tab.id}
+                    role="tab"
+                    aria-selected={isActive}
+                    onClick={() => setActiveDemo(tab.id)}
+                    className={`flex items-center gap-2 px-4 py-2.5 rounded-lg text-sm font-medium whitespace-nowrap transition-all ${
+                      isActive
+                        ? 'bg-white text-warm-800 shadow-lg'
+                        : 'text-warm-400 hover:text-warm-200 hover:bg-warm-700/50'
+                    }`}
+                  >
+                    <Icon className={isActive ? 'text-sage-600' : 'text-warm-500'} />
+                    <span className="hidden sm:inline">{tab.label}</span>
+                  </button>
+                )
+              })}
+            </div>
+          </div>
+
+          {/* Tab content */}
+          {DEMO_TABS.map((tab) => {
+            if (tab.id !== activeDemo) return null
+            return (
+              <div key={tab.id} className="grid grid-cols-1 lg:grid-cols-2 gap-8 lg:gap-12 items-start min-h-[360px]">
+                {/* Left: text content */}
+                <div className="flex flex-col justify-center">
+                  <h3 className="text-2xl sm:text-3xl font-bold text-white font-display mb-4">
+                    {tab.title}
+                  </h3>
+                  <p className="text-warm-300 text-base leading-relaxed mb-6">
+                    {tab.desc}
+                  </p>
+                  <ul className="space-y-2.5 mb-6">
+                    {tab.bullets.map((b) => (
+                      <li key={b} className="flex items-start gap-3 text-sm text-warm-300">
+                        <svg className="w-5 h-5 text-sage-400 shrink-0 mt-0.5" viewBox="0 0 20 20" fill="currentColor">
+                          <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+                        </svg>
+                        {b}
+                      </li>
+                    ))}
+                  </ul>
+                  <div>
+                    <Link
+                      to="/dashboard"
+                      className="inline-flex items-center gap-2 bg-sage-500 text-white px-6 py-3 rounded-xl hover:bg-sage-600 transition-colors font-semibold text-sm shadow-lg shadow-sage-500/20"
+                    >
+                      Try It Free
+                      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
+                    </Link>
                   </div>
-                ))}
+                </div>
+
+                {/* Right: mockup visual */}
+                <div className="flex items-center justify-center">
+                  {tab.mockup === 'cascade' && (
+                    <Suspense fallback={
+                      <div className="bg-[#1a1a1e] rounded-2xl p-6 sm:p-8 w-full shadow-2xl">
+                        <div className="space-y-4">
+                          {[0,1,2].map(r => (
+                            <div key={r} className="flex justify-center gap-3">
+                              {[1,2,3].map(i => (
+                                <div key={i} className="h-14 w-24 sm:w-28 rounded-xl bg-warm-200/10 animate-pulse" />
+                              ))}
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    }>
+                      <div className="bg-[#1a1a1e] rounded-2xl p-4 sm:p-6 w-full shadow-2xl">
+                        <CascadeAnimation compact />
+                      </div>
+                    </Suspense>
+                  )}
+                  {tab.mockup === 'visualize' && <VisualizeMockup />}
+                  {tab.mockup === 'assess' && <div className="w-full max-w-md"><AssessMockup /></div>}
+                  {tab.mockup === 'intelligence' && <div className="w-full max-w-md"><IntelligenceMockup /></div>}
+                  {tab.mockup === 'ai' && <div className="w-full max-w-md"><AIMockup /></div>}
+                  {tab.mockup === 'reports' && <div className="w-full max-w-md"><ReportsMockup /></div>}
+                </div>
               </div>
-            </div>
-          }>
-            <div className="bg-[#1a1a1e] rounded-2xl p-6 sm:p-8 max-w-2xl mx-auto shadow-2xl">
-              <CascadeAnimation compact />
-            </div>
-          </Suspense>
+            )
+          })}
         </div>
       </section>
 
