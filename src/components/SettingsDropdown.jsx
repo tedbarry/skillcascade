@@ -2,6 +2,7 @@ import { useState, useEffect, useRef } from 'react'
 import { mergeUserSettings } from '../lib/supabase.js'
 import { useAuth } from '../contexts/AuthContext.jsx'
 import { safeGetItem, safeSetItem, safeRemoveItem } from '../lib/safeStorage.js'
+import { resetAllHints, getTipsDisabled, setTipsDisabled } from '../hooks/useContextualHint.js'
 
 /**
  * Minimal settings dropdown — hidden in the header.
@@ -48,10 +49,23 @@ export default function SettingsDropdown() {
     }
   }, [open])
 
-  function resetOnboarding() {
+  const [tipsEnabled, setTipsEnabled] = useState(() => !getTipsDisabled())
+
+  function handleResetTips() {
+    resetAllHints()
+    safeRemoveItem('skillcascade_checklist_dismissed')
     safeRemoveItem('skillcascade_onboarding_complete')
     setOpen(false)
     window.location.reload()
+  }
+
+  function handleToggleTips() {
+    const newValue = !tipsEnabled
+    setTipsEnabled(newValue)
+    setTipsDisabled(!newValue)
+    if (user) {
+      mergeUserSettings(user.id, { tips_disabled: !newValue })
+    }
   }
 
   return (
@@ -96,15 +110,31 @@ export default function SettingsDropdown() {
 
           <div className="border-t border-warm-100 my-1" />
 
-          {/* Reset onboarding */}
+          {/* Show Tips Toggle */}
           <button
-            onClick={resetOnboarding}
+            onClick={handleToggleTips}
+            className="w-full flex items-center justify-between px-3 py-2 text-sm text-warm-700 hover:bg-warm-50 transition-colors"
+          >
+            <div className="flex items-center gap-2">
+              <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                <path strokeLinecap="round" strokeLinejoin="round" d="M9.879 7.519c1.171-1.025 3.071-1.025 4.242 0 1.172 1.025 1.172 2.687 0 3.712-.203.179-.43.326-.67.442-.745.361-1.45.999-1.45 1.827v.75M21 12a9 9 0 11-18 0 9 9 0 0118 0zm-9 5.25h.008v.008H12v-.008z" />
+              </svg>
+              <span>Show Tips</span>
+            </div>
+            <div className={`w-8 h-4.5 rounded-full transition-colors relative ${tipsEnabled ? 'bg-sage-500' : 'bg-warm-200'}`}>
+              <div className={`absolute top-0.5 w-3.5 h-3.5 rounded-full bg-white shadow transition-transform ${tipsEnabled ? 'translate-x-4' : 'translate-x-0.5'}`} />
+            </div>
+          </button>
+
+          {/* Reset Tips */}
+          <button
+            onClick={handleResetTips}
             className="w-full flex items-center gap-2 px-3 py-2 text-sm text-warm-500 hover:bg-warm-50 hover:text-warm-700 transition-colors"
           >
             <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
               <path strokeLinecap="round" strokeLinejoin="round" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
             </svg>
-            <span>Replay Onboarding Tour</span>
+            <span>Reset Tips</span>
           </button>
 
           {/* Sign out */}

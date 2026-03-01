@@ -21,6 +21,8 @@ import AssessmentCompletionBadge from '../components/AssessmentCompletionBadge.j
 import ViewBreadcrumb from '../components/ViewBreadcrumb.jsx'
 import NotificationBell from '../components/NotificationBell.jsx'
 import UnsavedChangesDialog from '../components/UnsavedChangesDialog.jsx'
+import useContextualHint from '../hooks/useContextualHint.js'
+import ContextualHint from '../components/ContextualHint.jsx'
 
 // Lazy-loaded view components — each gets its own chunk, loaded on-demand
 const HomeDashboard = lazy(() => import('../components/HomeDashboard.jsx'))
@@ -55,7 +57,7 @@ const ComparisonView = lazy(() => import('../components/ComparisonView.jsx'))
 const KeyboardShortcuts = lazy(() => import('../components/KeyboardShortcuts.jsx'))
 const DependencyExplorer = lazy(() => import('../components/explorer/DependencyExplorer.jsx'))
 import { framework, toHierarchy, ASSESSMENT_LABELS, ASSESSMENT_COLORS, ASSESSMENT_LEVELS, isAssessed } from '../data/framework.js'
-import { generateSampleAssessments } from '../data/sampleAssessments.js'
+import { generateSampleAssessments, generateSampleSnapshots } from '../data/sampleAssessments.js'
 import { saveSnapshot, getSnapshots, deleteSnapshot, getAssessments, saveAssessment } from '../data/storage.js'
 import { useAuth } from '../contexts/AuthContext.jsx'
 
@@ -163,6 +165,7 @@ export default function Dashboard() {
   const { user } = useAuth()
   const { showToast } = useToast()
   const { isPhone, isTablet, isDesktop } = useResponsive()
+  const sunburstHint = useContextualHint('hint-sunburst')
   const [assessments, setAssessments, { undo, redo, canUndo, canRedo, resetState: resetAssessments }] = useUndoRedo({})
   const [assessmentsLoading, setAssessmentsLoading] = useState(() => !!safeGetItem('skillcascade_selected_client'))
   const [selectedNode, setSelectedNode] = useState(null)
@@ -174,6 +177,18 @@ export default function Dashboard() {
   const setActiveView = useCallback((view) => {
     setActiveViewRaw(view)
     safeSetItem('skillcascade_active_view', view)
+    // Track views visited for checklist
+    setViewsVisited(prev => {
+      if (prev.has(view)) return prev
+      const next = new Set(prev)
+      next.add(view)
+      safeSetItem('skillcascade_views_visited', JSON.stringify([...next]))
+      return next
+    })
+    if (view === 'reports') {
+      setReportsVisited(true)
+      safeSetItem('skillcascade_reports_visited', 'true')
+    }
   }, [])
   const [clientId, setClientId] = useState(() => safeGetItem('skillcascade_selected_client'))
   const [snapshots, setSnapshots] = useState([])
@@ -186,6 +201,12 @@ export default function Dashboard() {
   const [detailPanelOpen, setDetailPanelOpen] = useState(false)
   const [shortcutsOpen, setShortcutsOpen] = useState(false)
   const [tourKey, setTourKey] = useState(0)
+
+  // View tracking for Getting Started checklist
+  const [viewsVisited, setViewsVisited] = useState(() => {
+    try { return new Set(JSON.parse(safeGetItem('skillcascade_views_visited', '[]'))) } catch { return new Set() }
+  })
+  const [reportsVisited, setReportsVisited] = useState(() => safeGetItem('skillcascade_reports_visited') === 'true')
   const [navCollapsed, setNavCollapsed] = useState(() => safeGetItem('skillcascade_nav_collapsed') === 'true')
   const toggleNavCollapse = useCallback(() => {
     setNavCollapsed(prev => {
@@ -517,9 +538,9 @@ export default function Dashboard() {
     if (clientId) {
       getSnapshots(clientId).then(setSnapshots).catch(() => setSnapshots([]))
     } else {
-      setSnapshots([])
+      setSnapshots(generateSampleSnapshots(assessments))
     }
-  }, [clientId])
+  }, [clientId]) // eslint-disable-line react-hooks/exhaustive-deps
 
   async function handleSaveSnapshot(label) {
     if (!clientId) return
@@ -815,6 +836,11 @@ export default function Dashboard() {
                 clientName={clientName}
                 onChangeView={guardedSetActiveView}
                 onNavigateToAssess={handleNavigateToAssess}
+                isSampleMode={!clientId}
+                hasClient={!!clientId}
+                viewsVisited={viewsVisited}
+                reportsVisited={reportsVisited}
+                snapshotCount={clientId ? snapshots.filter(s => !s.id?.startsWith('sample-')).length : 0}
               />
             </Suspense>
           )}
@@ -835,6 +861,9 @@ export default function Dashboard() {
                 <h2 className="text-lg font-semibold text-warm-800 font-display mb-1">
                   Skills Profile — Sunburst View
                 </h2>
+                <ContextualHint show={sunburstHint.show} onDismiss={sunburstHint.dismiss} className="mb-4">
+                  The center ring shows domains, middle ring shows sub-areas, and outer ring shows individual skills. Click any segment to drill down.
+                </ContextualHint>
                 <p className="text-sm text-warm-500 mb-4">Click any segment to zoom in. Click center to zoom out.</p>
                 <ResponsiveSVG aspectRatio={1} maxWidth={700}>
                   {({ width, height }) => (
@@ -917,6 +946,7 @@ export default function Dashboard() {
                   onSelectNode={(node) => setSelectedNode({ id: node.id, name: node.name })}
                   onNavigateToAssess={handleNavigateToAssess}
                   onNavigateToGoals={handleNavigateToGoals}
+                  onOpenAI={() => setAiPanelOpen(true)}
                 />
               </div>
             </Suspense>

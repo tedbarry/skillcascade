@@ -6,7 +6,8 @@ import SubAreaPanel from './SubAreaPanel.jsx'
 import useCascadeGraph from '../../hooks/useCascadeGraph.js'
 import useResponsive from '../../hooks/useResponsive.js'
 import { framework } from '../../data/framework.js'
-import { computeDomainHealth } from '../../data/cascadeModel.js'
+import { computeDomainHealth, findSkillBottlenecks } from '../../data/cascadeModel.js'
+import { getTeachingPlaybook } from '../../data/teachingPlaybook.js'
 
 const RISK_BORDER_COLORS = {
   inversion: '#e8928a',
@@ -94,6 +95,48 @@ export default memo(function RiskMonitorView({
     return `${cascadeRisks.length} risk${cascadeRisks.length !== 1 ? 's' : ''}: ${parts.join(', ')}`
   }, [hasData, cascadeRisks])
 
+  // Prescriptive action guidance for selected risk
+  const riskActionGuidance = useMemo(() => {
+    if (selectedRisk === null || !cascadeRisks[selectedRisk]) return null
+    const risk = cascadeRisks[selectedRisk]
+    const domainName = (() => {
+      const d = framework.find(f => f.id === risk.actionDomainId)
+      return d?.name || risk.actionDomainId
+    })()
+
+    const base = { type: risk.type }
+
+    if (risk.type === 'regression') {
+      return { ...base, check: 'Has teaching context changed? New setting, different staff?', action: 'Reassess with original materials before targeting new skills.' }
+    }
+
+    if (risk.type === 'bottleneck') {
+      const bottlenecks = findSkillBottlenecks(assessments, 50)
+      const inDomain = bottlenecks.filter(b => b.domainId === risk.actionDomainId && (b.currentLevel == null || b.currentLevel < 2))
+      const top = inDomain[0] || null
+      let actionText = `Foundation skills in ${domainName} may be capping progress.`
+      let strategyText = null
+      if (top) {
+        actionText = `Target ${top.skillName} first — blocks ${top.blockedCount} other skill${top.blockedCount !== 1 ? 's' : ''}.`
+        const playbook = getTeachingPlaybook(top.skillId)
+        if (playbook?.strategies?.[0]) {
+          strategyText = playbook.strategies[0]
+        }
+      }
+      return { ...base, check: `Foundation skills in ${domainName} may be capping progress.`, action: actionText, strategy: strategyText }
+    }
+
+    if (risk.type === 'inversion') {
+      return { ...base, check: 'Prerequisites are weaker than dependent domains.', action: 'Shore up prerequisite domains before advancing higher ones.' }
+    }
+
+    if (risk.type === 'stalling') {
+      return { ...base, check: 'Review current teaching approach — may need variation.', action: 'Try alternative strategies or change the practice context.' }
+    }
+
+    return null
+  }, [selectedRisk, cascadeRisks, assessments])
+
   return (
     <div className="flex flex-1 min-h-0 overflow-hidden">
       <div className="flex-1 overflow-auto">
@@ -134,6 +177,28 @@ export default memo(function RiskMonitorView({
             )}
           </AnimatePresence>
         </div>
+
+        {/* Risk action guidance */}
+        {riskActionGuidance && (
+          <div className={`${isPhone ? 'px-3 pt-2' : 'px-5 pt-3'}`}>
+            <div className={`rounded-lg bg-[#1a2420] border border-[#2a3f35] ${isPhone ? 'px-3 py-2.5' : 'px-4 py-3'}`}>
+              <div className="text-[10px] font-mono tracking-widest text-gray-500 uppercase mb-1.5">Action Guidance</div>
+              <div className="space-y-1.5">
+                <p className="text-[11px] text-gray-400">
+                  <span className="text-gray-500 font-medium">Check: </span>{riskActionGuidance.check}
+                </p>
+                <p className="text-[11px] text-gray-300">
+                  <span className="text-gray-500 font-medium">Action: </span>{riskActionGuidance.action}
+                </p>
+                {riskActionGuidance.strategy && (
+                  <p className="text-[11px] text-gray-400 mt-1 border-t border-[#2a3f35] pt-1.5">
+                    {riskActionGuidance.strategy}
+                  </p>
+                )}
+              </div>
+            </div>
+          </div>
+        )}
 
         {/* Learning barrier banners */}
         {learningBarriers.length > 0 && (

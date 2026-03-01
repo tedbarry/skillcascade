@@ -1,8 +1,10 @@
 import { useState, useMemo, useCallback, useRef, useEffect } from 'react'
 import { framework, ASSESSMENT_LEVELS, ASSESSMENT_LABELS, ASSESSMENT_COLORS } from '../data/framework.js'
 import { getBehavioralIndicator } from '../data/behavioralIndicators.js'
-import { getStartHerePriority, getCeilingCoverage, getSkillCeiling } from '../data/skillInfluence.js'
+import { getStartHerePriority, getCeilingCoverage, getSkillCeiling, computeSkillInfluence } from '../data/skillInfluence.js'
 import useResponsive from '../hooks/useResponsive.js'
+import useContextualHint from '../hooks/useContextualHint.js'
+import ContextualHint from './ContextualHint.jsx'
 
 /**
  * AdaptiveAssessment — "Start Here" cascade-aware initial assessment
@@ -35,6 +37,7 @@ export default function AdaptiveAssessment({ assessments, onAssess, onComplete }
   const [started, setStarted] = useState(false)
   const [batchIndex, setBatchIndex] = useState(0)
   const { isPhone, isTablet } = useResponsive()
+  const hint = useContextualHint('hint-start-here')
   const contentRef = useRef(null)
   const [expandedSkill, setExpandedSkill] = useState(null)
   const [expandAll, setExpandAll] = useState(false)
@@ -98,6 +101,35 @@ export default function AdaptiveAssessment({ assessments, onAssess, onComplete }
     () => stableQueue.filter(s => assessments[s.skillId] == null).length,
     [stableQueue, assessments]
   )
+
+  // Batch insight: top constraint + domain tier coverage
+  const batchInsight = useMemo(() => {
+    if (totalRated < 5) return null
+    const influence = computeSkillInfluence(assessments)
+    // Find the skill with highest influence that's still weak
+    let topConstraint = null
+    let topScore = 0
+    for (const [skillId, inf] of Object.entries(influence)) {
+      if (inf.influenceScore > topScore && (assessments[skillId] == null || assessments[skillId] < 2)) {
+        const skillObj = framework.flatMap(d => d.subAreas.flatMap(sa => sa.skillGroups.flatMap(sg => sg.skills))).find(s => s.id === skillId)
+        if (skillObj) {
+          topConstraint = { name: skillObj.name, caps: inf.directDownstream }
+          topScore = inf.influenceScore
+        }
+      }
+    }
+    // Domain tier coverage: foundation (D1-D3), core (D4-D7), advanced (D8-D9)
+    const tiers = { foundation: { assessed: 0, total: 0 }, core: { assessed: 0, total: 0 }, advanced: { assessed: 0, total: 0 } }
+    framework.forEach(d => {
+      const tier = ['d1','d2','d3'].includes(d.id) ? 'foundation' : ['d4','d5','d6','d7'].includes(d.id) ? 'core' : 'advanced'
+      d.subAreas.forEach(sa => sa.skillGroups.forEach(sg => sg.skills.forEach(s => {
+        tiers[tier].total++
+        if (assessments[s.id] != null) tiers[tier].assessed++
+      })))
+    })
+    const tierPct = (t) => t.total > 0 ? Math.round((t.assessed / t.total) * 100) : 0
+    return { topConstraint, foundation: tierPct(tiers.foundation), core: tierPct(tiers.core), advanced: tierPct(tiers.advanced) }
+  }, [assessments, totalRated])
 
   // Current batch of skills from stable queue
   const currentBatch = useMemo(() => {
@@ -246,6 +278,11 @@ export default function AdaptiveAssessment({ assessments, onAssess, onComplete }
         )}
       </div>
 
+      {/* Contextual hint */}
+      <ContextualHint show={hint.show} onDismiss={hint.dismiss} className="mb-4 mx-3 sm:mx-4 mt-3">
+        Skills are ordered by developmental influence — each one sets ceilings for skills above it. Even 15-20 ratings gives useful cascade coverage across all 9 domains.
+      </ContextualHint>
+
       {/* Skill Cards */}
       <div ref={contentRef} className={`flex-1 overflow-y-auto ${isPhone ? 'px-3 py-3' : 'px-4 py-4'}`}>
         {currentBatch.length === 0 ? (
@@ -291,6 +328,45 @@ export default function AdaptiveAssessment({ assessments, onAssess, onComplete }
                 isPhone={isPhone}
               />
             ))}
+          </div>
+        )}
+
+        {/* Batch insight */}
+        {batchInsight && currentBatch.length > 0 && (
+          <div className="mt-4 rounded-lg border border-sage-200 bg-sage-50/50 p-3">
+            <div className="flex items-center gap-2 mb-2">
+              <span className="text-xs font-semibold text-sage-700">
+                {totalRated} skills rated — {coveragePct}% of ceiling constraints known
+              </span>
+            </div>
+            {batchInsight.topConstraint && (
+              <p className="text-[11px] text-warm-600 mb-2">
+                Top constraint: <span className="font-semibold text-warm-800">{batchInsight.topConstraint.name}</span> caps {batchInsight.topConstraint.caps} skill{batchInsight.topConstraint.caps !== 1 ? 's' : ''}
+              </p>
+            )}
+            <div className="flex items-center gap-4 text-[11px] text-warm-500">
+              <span>Foundation (D1-D3): <span className="font-semibold text-warm-700">{batchInsight.foundation}%</span></span>
+              <span>Core (D4-D7): <span className="font-semibold text-warm-700">{batchInsight.core}%</span></span>
+              <span>Advanced (D8-D9): <span className="font-semibold text-warm-700">{batchInsight.advanced}%</span></span>
+            </div>
+            {onComplete && (
+              <div className="flex items-center gap-2 mt-3">
+                {hasMore && (
+                  <button
+                    onClick={handleNextBatch}
+                    className="text-[11px] font-medium text-sage-700 hover:text-sage-800 bg-sage-100 hover:bg-sage-200 rounded px-3 py-1.5 min-h-[36px] transition-colors"
+                  >
+                    Continue
+                  </button>
+                )}
+                <button
+                  onClick={handleDone}
+                  className="text-[11px] font-medium text-warm-500 hover:text-warm-700 bg-warm-100 hover:bg-warm-200 rounded px-3 py-1.5 min-h-[36px] transition-colors"
+                >
+                  Done for now
+                </button>
+              </div>
+            )}
           </div>
         )}
 
@@ -370,16 +446,20 @@ function SkillRatingCard({ item, currentLevel, assessments, onRate, expanded, on
           <p className="text-[11px] text-warm-400 mt-0.5 leading-snug">
             {item.reason}
           </p>
-          {hasCeiling && (
-            <p className="text-[10px] mt-0.5 text-amber-600 font-medium">
-              Ceiling: {ASSESSMENT_LABELS[ceiling]}
-              {ceilingData.constrainingPrereqs[0] && (
-                <span className="text-warm-400 font-normal">
-                  {' '}(limited by prerequisite)
-                </span>
-              )}
-            </p>
-          )}
+          {hasCeiling && (() => {
+            const weakPrereq = ceilingData.constrainingPrereqs[0]
+            const prereqName = weakPrereq ? framework.flatMap(d => d.subAreas.flatMap(sa => sa.skillGroups.flatMap(sg => sg.skills))).find(s => s.id === weakPrereq.id)?.name : null
+            return (
+              <p className="text-[10px] mt-0.5 text-amber-600 font-medium">
+                Ceiling: {ASSESSMENT_LABELS[ceiling]}
+                {prereqName && (
+                  <span className="text-warm-400 font-normal">
+                    {' '}(limited by {prereqName}{weakPrereq.level != null ? ` at ${ASSESSMENT_LABELS[weakPrereq.level]}` : ' — unassessed'})
+                  </span>
+                )}
+              </p>
+            )
+          })()}
         </div>
         <svg
           className={`w-4 h-4 text-warm-400 mt-0.5 shrink-0 transition-transform ${expanded ? 'rotate-180' : ''}`}

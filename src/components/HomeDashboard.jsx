@@ -1,6 +1,9 @@
 import { useMemo, useState, useEffect, useRef, memo } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import useResponsive from '../hooks/useResponsive.js'
+import useContextualHint from '../hooks/useContextualHint.js'
+import ContextualHint from './ContextualHint.jsx'
+import GettingStartedChecklist from './GettingStartedChecklist.jsx'
 import { framework, ASSESSMENT_LEVELS, isAssessed } from '../data/framework.js'
 import { computeDomainHealth, detectCascadeRisks, computeImpactRanking } from '../data/cascadeModel.js'
 import { DOMAIN_COLORS } from '../constants/colors.js'
@@ -218,8 +221,9 @@ function QuickActionButton({ icon, label, sublabel, onClick, variant = 'default'
 
 const STORAGE_KEY = 'skillcascade_kbd_hint_seen'
 
-export default function HomeDashboard({ assessments = {}, snapshots = [], clientName, onChangeView, onNavigateToAssess }) {
+export default function HomeDashboard({ assessments = {}, snapshots = [], clientName, onChangeView, onNavigateToAssess, isSampleMode = false, hasClient = false, viewsVisited = new Set(), reportsVisited = false, snapshotCount = 0 }) {
   const { isPhone, isTablet } = useResponsive()
+  const homeHint = useContextualHint('hint-home-sample')
 
   // Keyboard shortcut hint — auto-dismisses after 3 views
   const [showKbdHint, setShowKbdHint] = useState(() => {
@@ -323,6 +327,37 @@ export default function HomeDashboard({ assessments = {}, snapshots = [], client
           {clientName ? 'Assessment overview and quick actions' : 'Select a client to get started'}
         </p>
       </div>
+
+      {/* Persistent sample data banner */}
+      {isSampleMode && (
+        <div className="mb-4 px-4 py-2.5 bg-amber-50 border border-amber-200 rounded-lg flex items-center gap-2">
+          <span className="text-amber-600 text-sm">Exploring Sample Data</span>
+          <span className="text-xs text-amber-500 flex-1">All views are live. Create a client to start your own assessments.</span>
+          <button
+            onClick={() => onChangeView('clients')}
+            className="text-xs font-medium text-amber-700 hover:text-amber-800 bg-amber-100 hover:bg-amber-200 rounded px-3 py-1.5 min-h-[44px] flex items-center transition-colors"
+          >
+            Create Client
+          </button>
+        </div>
+      )}
+
+      {/* First-visit contextual hint */}
+      {isSampleMode && (
+        <ContextualHint show={homeHint.show} onDismiss={homeHint.dismiss} className="mb-4">
+          This is sample data showing a realistic learner profile. Every view, chart, and analysis is fully interactive. Create a client when you're ready to start your own assessments.
+        </ContextualHint>
+      )}
+
+      {/* Getting Started Checklist */}
+      <GettingStartedChecklist
+        hasClient={hasClient}
+        assessedCount={hasClient ? stats.assessedSkills : 0}
+        viewsVisited={viewsVisited}
+        reportsVisited={reportsVisited}
+        snapshotCount={snapshotCount}
+        onNavigate={onChangeView}
+      />
 
       {/* Get started banner when no assessments exist */}
       {stats.assessedSkills === 0 && (

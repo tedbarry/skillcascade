@@ -6,6 +6,8 @@ import { computeConstrainedSkills, computeSkillInfluence } from '../data/skillIn
 import { generateClinicalSummary } from '../lib/narratives.js'
 import { generateDomainBarChart, generateRadarChart, generateMasteryGrid, generateScoreSummaryProfile } from '../lib/reportCharts.js'
 import { getBehavioralIndicator } from '../data/behavioralIndicators.js'
+import useContextualHint from '../hooks/useContextualHint.js'
+import ContextualHint from './ContextualHint.jsx'
 
 const REPORT_TYPES = {
   SCHOOL: 'school',
@@ -799,6 +801,7 @@ function generateInsuranceReport(clientName, date, analysis, assessments, clinic
  * ReportGenerator component — full-page view for generating audience-specific reports
  */
 export default function ReportGenerator({ assessments, clientName, snapshots, onNavigateToAssess, branding }) {
+  const hint = useContextualHint('hint-reports')
   const [selectedType, setSelectedType] = useState(null)
   const [compareSnapshotId, setCompareSnapshotId] = useState('')
   const [generating, setGenerating] = useState(false)
@@ -847,6 +850,11 @@ export default function ReportGenerator({ assessments, clientName, snapshots, on
 
   return (
     <div className="max-w-4xl mx-auto px-4 py-6 sm:px-6">
+      {/* Contextual hint */}
+      <ContextualHint show={hint.show} onDismiss={hint.dismiss} className="mb-4">
+        Generate insurance-ready clinical reports, parent-friendly summaries, and progress reports. Reports pull directly from your assessment data and cascade analysis.
+      </ContextualHint>
+
       <div className="mb-6">
         <h2 className="text-xl font-bold text-warm-800 font-display">Report Generator</h2>
         <p className="text-sm text-warm-500 mt-1">

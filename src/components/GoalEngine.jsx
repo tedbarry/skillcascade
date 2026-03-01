@@ -9,10 +9,13 @@ import {
 } from '../data/framework.js'
 import { getSkillDescription } from '../data/skillDescriptions.js'
 import { getBehavioralIndicator } from '../data/behavioralIndicators.js'
+import { getTeachingPlaybook } from '../data/teachingPlaybook.js'
 import { downloadFile, csvEscape } from '../data/exportUtils.js'
 import { getSkillCeiling, computeSkillInfluence } from '../data/skillInfluence.js'
 import EmptyState from './EmptyState.jsx'
 import useResponsive from '../hooks/useResponsive.js'
+import useContextualHint from '../hooks/useContextualHint.js'
+import ContextualHint from './ContextualHint.jsx'
 
 /* ─────────────────────────────────────────────
    Constants
@@ -313,8 +316,10 @@ function RatingBadge({ level }) {
 }
 
 function SkillCard({ rec, onNavigateToAssess, isExpanded, onToggle }) {
+  const [showTeachingNotes, setShowTeachingNotes] = useState(false)
   const config = PRIORITY_CONFIG[rec.priority]
   const desc = isExpanded ? getSkillDescription(rec.skillId) : null
+  const playbook = isExpanded ? getTeachingPlaybook(rec.skillId) : null
   const targetLevel = isAssessed(rec.level) ? Math.min(rec.level + 1, 3) : 1
   const dataCollectionHint = !isAssessed(rec.level) || rec.level === 0
     ? 'Probe-based: structured trials to establish baseline'
@@ -402,6 +407,53 @@ function SkillCard({ rec, onNavigateToAssess, isExpanded, onToggle }) {
               </div>
             )
           })()}
+          {/* Teaching Notes — collapsible */}
+          {playbook && (
+            <div>
+              <button
+                onClick={() => setShowTeachingNotes(!showTeachingNotes)}
+                className="flex items-center gap-1.5 text-[10px] font-semibold uppercase tracking-wider transition-colors"
+                style={{ color: showTeachingNotes ? '#6b7280' : '#9ca3af' }}
+              >
+                <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M12 6.042A8.967 8.967 0 006 3.75c-1.052 0-2.062.18-3 .512v14.25A8.987 8.987 0 016 18c2.305 0 4.408.867 6 2.292m0-14.25a8.966 8.966 0 016-2.292c1.052 0 2.062.18 3 .512v14.25A8.987 8.987 0 0018 18a8.967 8.967 0 00-6 2.292m0-14.25v14.25" />
+                </svg>
+                {showTeachingNotes ? 'Hide Teaching Notes' : 'Show Teaching Notes'}
+              </button>
+              {showTeachingNotes && (
+                <div className="mt-1.5 space-y-1.5">
+                  {playbook.context && (
+                    <div>
+                      <p className="text-[10px] font-semibold text-warm-500 uppercase tracking-wider mb-0.5">Context</p>
+                      <p className="text-[11px] text-warm-600 leading-relaxed">{playbook.context}</p>
+                    </div>
+                  )}
+                  {playbook.strategies?.length > 0 && (
+                    <div>
+                      <p className="text-[10px] font-semibold text-warm-500 uppercase tracking-wider mb-0.5">Strategies</p>
+                      <ul className="list-disc list-inside space-y-0.5">
+                        {playbook.strategies.map((s, i) => (
+                          <li key={i} className="text-[11px] text-warm-600 leading-relaxed">{s}</li>
+                        ))}
+                      </ul>
+                    </div>
+                  )}
+                  {playbook.barriers && (
+                    <div>
+                      <p className="text-[10px] font-semibold text-warm-500 uppercase tracking-wider mb-0.5">Common Barriers</p>
+                      <p className="text-[11px] text-warm-600 leading-relaxed">{playbook.barriers}</p>
+                    </div>
+                  )}
+                  {playbook.measurement && (
+                    <div>
+                      <p className="text-[10px] font-semibold text-warm-500 uppercase tracking-wider mb-0.5">Measurement</p>
+                      <p className="text-[11px] text-warm-600 leading-relaxed">{playbook.measurement}</p>
+                    </div>
+                  )}
+                </div>
+              )}
+            </div>
+          )}
           {/* Baseline → Target */}
           <div className="flex items-center gap-2 pt-1">
             <span className="text-[10px] font-semibold text-warm-500 uppercase tracking-wider">Baseline</span>
@@ -586,6 +638,7 @@ function TierSection({ priority, recommendations, onNavigateToAssess, defaultExp
 
 export default function GoalEngine({ assessments = {}, onNavigateToAssess, focusDomain = null, onClearFocus, clientName = '' }) {
   const { isPhone } = useResponsive()
+  const hint = useContextualHint('hint-goals')
   const allRecommendations = useMemo(() => analyzeGaps(assessments), [assessments])
 
   // Filter by focus domain if set
@@ -664,6 +717,11 @@ export default function GoalEngine({ assessments = {}, onNavigateToAssess, focus
   return (
     <div className="flex-1 overflow-y-auto">
       <div className="max-w-4xl mx-auto px-4 py-6 sm:px-6">
+        {/* Contextual hint */}
+        <ContextualHint show={hint.show} onDismiss={hint.dismiss} className="mb-4">
+          Goals are auto-prioritized by ceiling impact — foundation skills that cap the most developmental surface come first. Each goal shows exactly which skills depend on it.
+        </ContextualHint>
+
         {/* Page header */}
         <div className="flex items-start justify-between gap-4 mb-6">
           <div>

@@ -6,6 +6,8 @@ import { framework } from '../data/framework.js'
 import { DOMAIN_COLORS } from '../constants/colors.js'
 import { detectCascadeRisks } from '../data/cascadeModel.js'
 import CascadeViewTabs from './cascade/CascadeViewTabs.jsx'
+import useContextualHint from '../hooks/useContextualHint.js'
+import ContextualHint from './ContextualHint.jsx'
 
 const StatusMapView = lazy(() => import('./cascade/StatusMapView.jsx'))
 const BottleneckFinderView = lazy(() => import('./cascade/BottleneckFinderView.jsx'))
@@ -423,6 +425,55 @@ function RiskCard({ risk, isPhone }) {
   )
 }
 
+function AINudgeSection({ targetSkills, onOpenAI, onNavigateToGoals, onDismiss, isPhone }) {
+  const topTarget = targetSkills[0]
+
+  return (
+    <div className="rounded-lg bg-[#1a2420] border border-[#2a3f35] p-3">
+      <div className="flex items-center justify-between mb-2">
+        <span className="text-[10px] font-mono tracking-widest text-[#7fb589] uppercase">AI Can Help</span>
+        <button
+          onClick={onDismiss}
+          className="text-[10px] text-gray-600 hover:text-gray-400 min-h-[32px] min-w-[32px] flex items-center justify-center"
+        >
+          Dismiss
+        </button>
+      </div>
+      <div className="space-y-1.5">
+        {onNavigateToGoals && (
+          <button
+            onClick={() => onNavigateToGoals(topTarget?.domainId)}
+            className="w-full text-left text-[11px] text-gray-300 hover:text-white bg-[#1e2e26] hover:bg-[#243828] rounded px-3 py-2 min-h-[44px] flex items-center gap-2 transition-colors"
+          >
+            <span className="text-[#7fb589] shrink-0">&#8250;</span>
+            Draft goals for your top {Math.min(3, targetSkills.length)} targets
+          </button>
+        )}
+        {onOpenAI && (
+          <>
+            <button
+              onClick={onOpenAI}
+              className="w-full text-left text-[11px] text-gray-300 hover:text-white bg-[#1e2e26] hover:bg-[#243828] rounded px-3 py-2 min-h-[44px] flex items-center gap-2 transition-colors"
+            >
+              <span className="text-[#7fb589] shrink-0">&#8250;</span>
+              Write a parent summary of this profile
+            </button>
+            {topTarget && (
+              <button
+                onClick={onOpenAI}
+                className="w-full text-left text-[11px] text-gray-300 hover:text-white bg-[#1e2e26] hover:bg-[#243828] rounded px-3 py-2 min-h-[44px] flex items-center gap-2 transition-colors"
+              >
+                <span className="text-[#7fb589] shrink-0">&#8250;</span>
+                Generate teaching plan for {topTarget.skillName}
+              </button>
+            )}
+          </>
+        )}
+      </div>
+    </div>
+  )
+}
+
 /* ─── Main Component ─── */
 
 export default memo(function ClinicalIntelligence({
@@ -432,9 +483,11 @@ export default memo(function ClinicalIntelligence({
   onNavigateToAssess,
   onNavigateToGoals,
   onSelectNode,
+  onOpenAI,
 }) {
   const { isPhone, isTablet } = useResponsive()
   const intelligence = useClinicalIntelligence(assessments, snapshots, clientName)
+  const hint = useContextualHint('hint-intelligence')
   const {
     headline,
     targetSkills,
@@ -453,6 +506,20 @@ export default memo(function ClinicalIntelligence({
   const [expandedDomain, setExpandedDomain] = useState(null)
   const [pathDomain, setPathDomain] = useState(null)
   const [showAllRisks, setShowAllRisks] = useState(false)
+  const [aiNudgeDismissed, setAiNudgeDismissed] = useState(false)
+
+  // Count assessed domains for AI nudge gate
+  const assessedDomainCount = useMemo(() => {
+    let count = 0
+    framework.forEach(d => {
+      let hasSome = false
+      d.subAreas.forEach(sa => sa.skillGroups.forEach(sg =>
+        sg.skills.forEach(s => { if (assessments[s.id] != null) hasSome = true })
+      ))
+      if (hasSome) count++
+    })
+    return count
+  }, [assessments])
 
   // Risk count for tab badge
   const riskCount = useMemo(
@@ -503,6 +570,11 @@ export default memo(function ClinicalIntelligence({
 
   return (
     <div className="flex flex-col flex-1 min-h-0 overflow-hidden">
+      {/* Contextual hint */}
+      <ContextualHint show={hint.show} onDismiss={hint.dismiss} className="mb-0 mx-3 sm:mx-5 mt-3">
+        Five specialized views analyze your assessment data for bottlenecks, risks, and intervention targets. Use 'Tell me what to do' for directive guidance or 'Show me why' for deeper exploration.
+      </ContextualHint>
+
       {/* Headline banner — always visible */}
       <HeadlineBanner
         headline={headline}
@@ -552,6 +624,17 @@ export default memo(function ClinicalIntelligence({
                   ))}
                 </div>
               </Section>
+
+              {/* AI nudges */}
+              {!aiNudgeDismissed && assessedDomainCount >= 3 && targetSkills.length > 0 && (
+                <AINudgeSection
+                  targetSkills={targetSkills}
+                  onOpenAI={onOpenAI}
+                  onNavigateToGoals={onNavigateToGoals}
+                  onDismiss={() => setAiNudgeDismissed(true)}
+                  isPhone
+                />
+              )}
 
               {/* Clinical summary */}
               {mode === 'discovery' && (
@@ -707,6 +790,16 @@ export default memo(function ClinicalIntelligence({
                       </button>
                     )}
                   </Section>
+                )}
+
+                {/* AI nudges */}
+                {!aiNudgeDismissed && assessedDomainCount >= 3 && targetSkills.length > 0 && (
+                  <AINudgeSection
+                    targetSkills={targetSkills}
+                    onOpenAI={onOpenAI}
+                    onNavigateToGoals={onNavigateToGoals}
+                    onDismiss={() => setAiNudgeDismissed(true)}
+                  />
                 )}
               </div>
             </div>

@@ -7,6 +7,8 @@ import useResponsive from '../../hooks/useResponsive.js'
 import { safeGetItem, safeSetItem } from '../../lib/safeStorage.js'
 import ExplorerCoachMark, { COACH_STEPS } from './ExplorerCoachMark.jsx'
 import { DOMAIN_COLORS } from '../../constants/colors.js'
+import useContextualHint from '../../hooks/useContextualHint.js'
+import ContextualHint from '../ContextualHint.jsx'
 
 const DomainChordView = lazy(() => import('./DomainChordView.jsx'))
 const SubAreaWebView = lazy(() => import('./SubAreaWebView.jsx'))
@@ -33,6 +35,7 @@ function ViewLoader() {
 export default memo(function DependencyExplorer({ assessments = {} }) {
   const { isPhone, isTablet } = useResponsive()
   const explorer = useDependencyExplorer(assessments)
+  const hint = useContextualHint('hint-explorer')
 
   // Coach mark guide state (-1 = dismissed, 0-4 = active step)
   const [guideStep, setGuideStep] = useState(
@@ -271,6 +274,11 @@ export default memo(function DependencyExplorer({ assessments = {} }) {
           </button>
         </div>
       </nav>
+
+      {/* Contextual hint */}
+      <ContextualHint show={hint.show} onDismiss={hint.dismiss} className="mb-0 mx-3 sm:mx-5 mt-3">
+        Arcs represent domains, ribbons show dependencies between them. Click any arc to zoom into sub-area dependencies, then click again for individual skills.
+      </ContextualHint>
 
       {/* Level content */}
       <div className="flex-1 overflow-hidden relative">

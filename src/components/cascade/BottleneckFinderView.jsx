@@ -5,6 +5,9 @@ import useCascadeGraph from '../../hooks/useCascadeGraph.js'
 import useResponsive from '../../hooks/useResponsive.js'
 import { framework } from '../../data/framework.js'
 import { computeSkillInfluence } from '../../data/skillInfluence.js'
+import { getTeachingPlaybook } from '../../data/teachingPlaybook.js'
+
+const LEVEL_LABELS = { 0: 'Not Present', 1: 'Needs Work', 2: 'Developing', 3: 'Solid' }
 
 /**
  * BottleneckFinderView — "What's holding us back?"
@@ -76,6 +79,24 @@ export default memo(function BottleneckFinderView({
 
   const influence = useMemo(() => computeSkillInfluence(assessments), [assessments])
 
+  // Prescriptive action card data
+  const actionCard = useMemo(() => {
+    if (!topSkillBottleneck) return null
+    const playbook = getTeachingPlaybook(topSkillBottleneck.skillId)
+    if (!playbook || !playbook.strategies || playbook.strategies.length === 0) return null
+    const currentLevel = topSkillBottleneck.currentLevel ?? 0
+    const nextLevel = Math.min(3, currentLevel + 1)
+    const inf = influence[topSkillBottleneck.skillId]
+    const downstreamCount = inf?.directDownstream || topSkillBottleneck.blockedCount || 0
+    return {
+      skillName: topSkillBottleneck.skillName,
+      strategy: playbook.strategies[0],
+      currentLabel: LEVEL_LABELS[currentLevel] || 'Not Present',
+      nextLabel: LEVEL_LABELS[nextLevel],
+      downstreamCount,
+    }
+  }, [topSkillBottleneck, influence])
+
   // Summary sentence
   const summaryText = useMemo(() => {
     if (!bottleneck) return hasData ? 'No significant bottlenecks detected.' : 'Add assessment data to identify bottlenecks.'
@@ -112,6 +133,19 @@ export default memo(function BottleneckFinderView({
           {summaryText}
         </p>
       </div>
+
+      {/* Prescriptive action card */}
+      {actionCard && (
+        <div className={`${isPhone ? 'mx-3 my-2' : 'mx-5 my-2'} rounded-lg bg-[#1a2420] border border-[#2a3f35] ${isPhone ? 'px-3 py-2.5' : 'px-4 py-3'}`}>
+          <div className="text-[10px] font-mono tracking-widest text-gray-500 uppercase mb-1">What to do</div>
+          <p className="text-[11px] text-gray-300 leading-relaxed">
+            Target <span className="text-white font-medium">{actionCard.skillName}</span> with {actionCard.strategy.toLowerCase()}.
+          </p>
+          <p className="text-[11px] text-gray-400 mt-1">
+            Improving from {actionCard.currentLabel} to {actionCard.nextLabel} raises ceilings on {actionCard.downstreamCount} skill{actionCard.downstreamCount !== 1 ? 's' : ''}.
+          </p>
+        </div>
+      )}
 
       <div className="flex flex-1 min-h-0 overflow-hidden">
         {/* Pipeline visualization */}

@@ -2,6 +2,9 @@ import { useState, useMemo, useEffect, useCallback, useRef } from 'react'
 import { framework, ASSESSMENT_LEVELS, ASSESSMENT_LABELS, ASSESSMENT_COLORS, isAssessed } from '../data/framework.js'
 import { getSkillDescription } from '../data/skillDescriptions.js'
 import { getBehavioralIndicator } from '../data/behavioralIndicators.js'
+import { getTeachingPlaybook } from '../data/teachingPlaybook.js'
+import { getSkillCeiling } from '../data/skillInfluence.js'
+import { SKILL_PREREQUISITES } from '../data/skillDependencies.js'
 import useResponsive from '../hooks/useResponsive.js'
 import { safeGetItem, safeSetItem } from '../lib/safeStorage.js'
 
@@ -64,6 +67,14 @@ export default function AssessmentPanel({ assessments, onAssess, initialSubAreaI
     setShowAllDescs(prev => {
       const next = !prev
       safeSetItem('skillcascade_show_all_descs', String(next))
+      return next
+    })
+  }, [])
+  const [showAllTeaching, setShowAllTeaching] = useState(() => safeGetItem('skillcascade_show_all_teaching') === 'true')
+  const toggleShowAllTeaching = useCallback(() => {
+    setShowAllTeaching(prev => {
+      const next = !prev
+      safeSetItem('skillcascade_show_all_teaching', String(next))
       return next
     })
   }, [])
@@ -305,12 +316,22 @@ export default function AssessmentPanel({ assessments, onAssess, initialSubAreaI
               </svg>
               {showAllDescs ? 'Hide' : 'Info'}
             </button>
+            <button
+              onClick={toggleShowAllTeaching}
+              className="text-[10px] px-2 py-1.5 rounded-md font-medium border border-warm-200 whitespace-nowrap min-h-[44px] flex items-center gap-1"
+              style={{ backgroundColor: showAllTeaching ? 'var(--color-sage-100)' : undefined, color: showAllTeaching ? 'var(--color-sage-700)' : undefined }}
+            >
+              <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                <path strokeLinecap="round" strokeLinejoin="round" d="M12 6.042A8.967 8.967 0 006 3.75c-1.052 0-2.062.18-3 .512v14.25A8.987 8.987 0 016 18c2.305 0 4.408.867 6 2.292m0-14.25a8.966 8.966 0 016-2.292c1.052 0 2.062.18 3 .512v14.25A8.987 8.987 0 0018 18a8.967 8.967 0 00-6 2.292m0-14.25v14.25" />
+              </svg>
+              {showAllTeaching ? 'Hide' : 'Teach'}
+            </button>
           </div>
 
           {/* Skill groups */}
           <div className="space-y-6">
             {currentSubArea.skillGroups.map((sg) => (
-              <SkillGroupRater key={sg.id} skillGroup={sg} assessments={assessments} onAssess={onAssess} showAllDescs={showAllDescs} />
+              <SkillGroupRater key={sg.id} skillGroup={sg} assessments={assessments} onAssess={onAssess} showAllDescs={showAllDescs} showAllTeaching={showAllTeaching} />
             ))}
           </div>
         </div>
@@ -582,6 +603,17 @@ export default function AssessmentPanel({ assessments, onAssess, initialSubAreaI
               </svg>
               {showAllDescs ? 'Hide descriptions' : 'Show descriptions'}
             </button>
+            <button
+              onClick={toggleShowAllTeaching}
+              className="text-[10px] px-2.5 py-1 min-h-[44px] rounded-md font-medium transition-all border border-warm-200 hover:border-sage-300 flex items-center gap-1.5"
+              style={{ backgroundColor: showAllTeaching ? 'var(--color-sage-100)' : undefined, color: showAllTeaching ? 'var(--color-sage-700)' : undefined }}
+              title={showAllTeaching ? 'Hide all teaching notes' : 'Show all teaching notes'}
+            >
+              <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                <path strokeLinecap="round" strokeLinejoin="round" d="M12 6.042A8.967 8.967 0 006 3.75c-1.052 0-2.062.18-3 .512v14.25A8.987 8.987 0 016 18c2.305 0 4.408.867 6 2.292m0-14.25a8.966 8.966 0 016-2.292c1.052 0 2.062.18 3 .512v14.25A8.987 8.987 0 0018 18a8.967 8.967 0 00-6 2.292m0-14.25v14.25" />
+              </svg>
+              {showAllTeaching ? 'Hide teaching' : 'Show teaching'}
+            </button>
           </div>
 
           {/* Skill groups */}
@@ -593,6 +625,7 @@ export default function AssessmentPanel({ assessments, onAssess, initialSubAreaI
                 assessments={assessments}
                 onAssess={onAssess}
                 showAllDescs={showAllDescs}
+                showAllTeaching={showAllTeaching}
               />
             ))}
           </div>
@@ -605,7 +638,7 @@ export default function AssessmentPanel({ assessments, onAssess, initialSubAreaI
 /**
  * A single skill group with all its skills to rate
  */
-function SkillGroupRater({ skillGroup, assessments, onAssess, showAllDescs }) {
+function SkillGroupRater({ skillGroup, assessments, onAssess, showAllDescs, showAllTeaching }) {
   return (
     <div>
       <h3 className="text-sm font-semibold text-warm-700 mb-3">
@@ -617,12 +650,14 @@ function SkillGroupRater({ skillGroup, assessments, onAssess, showAllDescs }) {
             key={skill.id}
             skill={skill}
             level={assessments[skill.id] ?? null}
+            assessments={assessments}
             onRate={(newLevel) => onAssess((prev) => {
               const next = { ...prev }
               if (newLevel == null) { delete next[skill.id] } else { next[skill.id] = newLevel }
               return next
             })}
             showAllDescs={showAllDescs}
+            showAllTeaching={showAllTeaching}
           />
         ))}
       </div>
@@ -633,11 +668,19 @@ function SkillGroupRater({ skillGroup, assessments, onAssess, showAllDescs }) {
 /**
  * Individual skill rating row
  */
-function SkillRater({ skill, level, onRate, showAllDescs }) {
+function SkillRater({ skill, level, onRate, showAllDescs, showAllTeaching, assessments = {} }) {
   const [showDescLocal, setShowDescLocal] = useState(false)
+  const [showTeachingLocal, setShowTeachingLocal] = useState(false)
   const desc = getSkillDescription(skill.id)
   const indicator = getBehavioralIndicator(skill.id, level)
+  const playbook = getTeachingPlaybook(skill.id)
   const showDesc = showAllDescs || showDescLocal
+  const showTeaching = showAllTeaching || showTeachingLocal
+
+  // Prerequisite readiness check
+  const prereqIds = SKILL_PREREQUISITES[skill.id]
+  const ceilingInfo = prereqIds ? getSkillCeiling(skill.id, assessments) : null
+  const hasUnmetPrereqs = ceilingInfo && ceilingInfo.ceiling < 3 && ceilingInfo.constrainingPrereqs.some(p => p.level == null || p.level < ASSESSMENT_LEVELS.DEVELOPING)
 
   return (
     <div className="py-2 px-3 rounded-lg hover:bg-warm-50 transition-colors group">
@@ -655,6 +698,17 @@ function SkillRater({ skill, level, onRate, showAllDescs }) {
               >
                 <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
                   <path strokeLinecap="round" strokeLinejoin="round" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                </svg>
+              </button>
+            )}
+            {playbook && (
+              <button
+                onClick={() => setShowTeachingLocal(!showTeachingLocal)}
+                className={`transition-colors shrink-0 ${showTeaching ? 'text-sage-500' : 'text-warm-300 hover:text-warm-500'}`}
+                title={showTeaching ? 'Hide teaching notes' : 'Show teaching notes'}
+              >
+                <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M12 6.042A8.967 8.967 0 006 3.75c-1.052 0-2.062.18-3 .512v14.25A8.987 8.987 0 016 18c2.305 0 4.408.867 6 2.292m0-14.25a8.966 8.966 0 016-2.292c1.052 0 2.062.18 3 .512v14.25A8.987 8.987 0 0018 18a8.967 8.967 0 00-6 2.292m0-14.25v14.25" />
                 </svg>
               </button>
             )}
@@ -702,6 +756,26 @@ function SkillRater({ skill, level, onRate, showAllDescs }) {
           })}
         </div>
       </div>
+      {/* Prerequisite readiness banner */}
+      {hasUnmetPrereqs && (
+        <div className="mt-1.5 px-2.5 py-1.5 rounded-md text-[11px] leading-relaxed bg-amber-50 border-l-3 border-amber-400" style={{ borderLeft: '3px solid #d97706' }}>
+          <span className="font-medium text-amber-700">Prerequisite Check</span>
+          <span className="text-amber-600">
+            {' — '}
+            {ceilingInfo.constrainingPrereqs
+              .filter(p => p.level == null || p.level < ASSESSMENT_LEVELS.DEVELOPING)
+              .slice(0, 2)
+              .map(p => {
+                const name = framework.flatMap(d => d.subAreas.flatMap(sa => sa.skillGroups.flatMap(sg => sg.skills))).find(s => s.id === p.id)?.name
+                return name || p.id
+              })
+              .join(', ')
+            }
+            {ceilingInfo.constrainingPrereqs.filter(p => p.level == null || p.level < ASSESSMENT_LEVELS.DEVELOPING).length > 2 && ' and others'}
+            {' '}at Needs Work or unassessed. Ratings above Developing may be fragile.
+          </span>
+        </div>
+      )}
       {isAssessed(level) && indicator && (
         <div
           className="mt-1.5 px-2.5 py-1.5 rounded-md text-[11px] leading-relaxed"
@@ -721,6 +795,32 @@ function SkillRater({ skill, level, onRate, showAllDescs }) {
           <p className="text-warm-600">{desc.description}</p>
           <p className="text-sage-600"><span className="font-medium">Present:</span> {desc.looks_like}</p>
           <p className="text-coral-600"><span className="font-medium">Absent:</span> {desc.absence}</p>
+        </div>
+      )}
+      {showTeaching && playbook && (
+        <div className="mt-2 ml-0.5 text-xs space-y-1.5 border-l-2 border-sage-300 pl-3">
+          {playbook.context && (
+            <div>
+              <p className="text-[10px] font-semibold text-sage-600 uppercase tracking-wider mb-0.5">Context</p>
+              <p className="text-[11px] text-warm-600 leading-relaxed">{playbook.context}</p>
+            </div>
+          )}
+          {playbook.strategies?.length > 0 && (
+            <div>
+              <p className="text-[10px] font-semibold text-sage-600 uppercase tracking-wider mb-0.5">Strategies</p>
+              <ul className="list-disc list-inside space-y-0.5">
+                {playbook.strategies.map((s, i) => (
+                  <li key={i} className="text-[11px] text-warm-600 leading-relaxed">{s}</li>
+                ))}
+              </ul>
+            </div>
+          )}
+          {playbook.barriers && (
+            <div>
+              <p className="text-[10px] font-semibold text-sage-600 uppercase tracking-wider mb-0.5">Common Barriers</p>
+              <p className="text-[11px] text-warm-600 leading-relaxed">{playbook.barriers}</p>
+            </div>
+          )}
         </div>
       )}
     </div>

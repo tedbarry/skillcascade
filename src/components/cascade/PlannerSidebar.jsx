@@ -3,6 +3,7 @@ import { motion } from 'framer-motion'
 import { framework, DOMAIN_DEPENDENCIES } from '../../data/framework.js'
 import { computeDomainHealth, simulateCascade, findPrerequisiteChain, computePathReadiness, findSkillBottlenecks } from '../../data/cascadeModel.js'
 import { computeSkillInfluence } from '../../data/skillInfluence.js'
+import { getTeachingPlaybook } from '../../data/teachingPlaybook.js'
 import useResponsive from '../../hooks/useResponsive.js'
 import { DOMAIN_COLORS } from '../../constants/colors.js'
 
@@ -53,6 +54,15 @@ export default memo(function PlannerSidebar({
       .filter(b => b.domainId === selectedDomain && (b.currentLevel == null || b.currentLevel < 2))
       .slice(0, 5)
   }, [assessments, selectedDomain])
+
+  // Teaching playbook for top bottleneck
+  const topBottleneckPlaybook = useMemo(() => {
+    if (skillBottlenecks.length === 0) return null
+    const top = skillBottlenecks[0]
+    const playbook = getTeachingPlaybook(top.skillId)
+    if (!playbook) return null
+    return { skillName: top.skillName, ...playbook }
+  }, [skillBottlenecks])
 
   // Cascade effects when slider is moved
   const cascadeEffects = useMemo(() => {
@@ -229,6 +239,40 @@ export default memo(function PlannerSidebar({
                 </div>
               ))}
             </div>
+          </div>
+        )}
+
+        {/* Teaching strategy for top bottleneck */}
+        {skillBottlenecks.length > 0 && topBottleneckPlaybook && (
+          <div className="bg-[#1a2420] rounded-lg p-3 border border-[#2a3f35]">
+            <div className="text-[10px] text-gray-500 uppercase tracking-wider mb-2">
+              Teaching Strategy
+            </div>
+            {topBottleneckPlaybook.context && (
+              <div className="mb-2">
+                <span className="text-[10px] text-gray-500 font-medium">Context: </span>
+                <span className="text-[11px] text-gray-400">{topBottleneckPlaybook.context}</span>
+              </div>
+            )}
+            {topBottleneckPlaybook.strategies && topBottleneckPlaybook.strategies.length > 0 && (
+              <div className="mb-2">
+                <span className="text-[10px] text-gray-500 font-medium block mb-1">Strategies:</span>
+                <ul className="space-y-1">
+                  {topBottleneckPlaybook.strategies.slice(0, 3).map((s, i) => (
+                    <li key={i} className="flex items-start gap-1.5 text-[11px] text-gray-300">
+                      <span className="text-gray-600 shrink-0 mt-px">{'\u2022'}</span>
+                      <span>{s}</span>
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            )}
+            {topBottleneckPlaybook.barriers && (
+              <div>
+                <span className="text-[10px] text-gray-500 font-medium">Barriers: </span>
+                <span className="text-[11px] text-gray-400">{topBottleneckPlaybook.barriers}</span>
+              </div>
+            )}
           </div>
         )}
       </div>

@@ -5,7 +5,8 @@ import PlannerSidebar from './PlannerSidebar.jsx'
 import useCascadeGraph from '../../hooks/useCascadeGraph.js'
 import useResponsive from '../../hooks/useResponsive.js'
 import { framework } from '../../data/framework.js'
-import { computeDomainHealth, simulateCascade } from '../../data/cascadeModel.js'
+import { computeDomainHealth, simulateCascade, findSkillBottlenecks } from '../../data/cascadeModel.js'
+import { getTeachingPlaybook } from '../../data/teachingPlaybook.js'
 
 /**
  * InterventionPlannerView — "What should I target?"
@@ -78,6 +79,17 @@ export default memo(function InterventionPlannerView({
     return rec?.node.id || null
   }, [rankedDomains, hasData])
 
+  // Top skill to start with for recommended domain
+  const startWithSkill = useMemo(() => {
+    if (!recommendedId) return null
+    const bottlenecks = findSkillBottlenecks(assessments, 50)
+    const inDomain = bottlenecks.filter(b => b.domainId === recommendedId && (b.currentLevel == null || b.currentLevel < 2))
+    const top = inDomain[0] || null
+    if (!top) return null
+    const playbook = getTeachingPlaybook(top.skillId)
+    return { skillName: top.skillName, strategy: playbook?.strategies?.[0] || null }
+  }, [assessments, recommendedId])
+
   const handleRowClick = useCallback((domainId) => {
     if (domainId === selectedDomain) {
       setSelectedDomain(null)
@@ -111,6 +123,19 @@ export default memo(function InterventionPlannerView({
           {summaryText}
         </p>
       </div>
+
+      {/* Start with recommendation */}
+      {recommendedId && startWithSkill && (
+        <div className={`${isPhone ? 'mx-3 my-1.5' : 'mx-4 my-1.5'} rounded-lg bg-[#1a2420] border border-[#2a3f35] ${isPhone ? 'px-3 py-2' : 'px-4 py-2.5'}`}>
+          <p className="text-[11px] text-gray-300">
+            <span className="text-[10px] text-gray-500 font-medium">Start with: </span>
+            <span className="text-white font-medium">{startWithSkill.skillName}</span>
+          </p>
+          {startWithSkill.strategy && (
+            <p className="text-[11px] text-gray-400 mt-0.5">{startWithSkill.strategy}</p>
+          )}
+        </div>
+      )}
 
       <div className="flex flex-1 min-h-0 overflow-hidden">
         {/* Ranked list */}
