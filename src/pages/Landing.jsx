@@ -1,7 +1,6 @@
 import { useState, useEffect, useRef, lazy, Suspense } from 'react'
 import { Link } from 'react-router-dom'
 
-const CascadeAnimation = lazy(() => import('../components/CascadeAnimation.jsx'))
 const PricingPage = lazy(() => import('../components/PricingPage.jsx'))
 
 /* ── Inline SVG Icons ─────────────────────────────────────── */
@@ -142,6 +141,17 @@ function QuoteIcon({ className = '' }) {
   )
 }
 
+function DashboardIcon({ className = '' }) {
+  return (
+    <svg className={className} width="28" height="28" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+      <rect x="3" y="3" width="8" height="8" rx="1.5" stroke="currentColor" strokeWidth="1.6" />
+      <rect x="13" y="3" width="8" height="5" rx="1.5" stroke="currentColor" strokeWidth="1.6" />
+      <rect x="3" y="13" width="8" height="8" rx="1.5" stroke="currentColor" strokeWidth="1.6" />
+      <rect x="13" y="10" width="8" height="11" rx="1.5" stroke="currentColor" strokeWidth="1.6" />
+    </svg>
+  )
+}
+
 function ArrowDownIcon({ className = '' }) {
   return (
     <svg className={className} width="20" height="20" viewBox="0 0 24 24" fill="none" aria-hidden="true">
@@ -234,13 +244,13 @@ const TESTIMONIALS = [
 
 const DEMO_TABS = [
   {
-    id: 'cascade',
-    label: 'Cascade',
-    icon: CascadeIcon,
-    title: 'See Why Foundations Matter',
-    desc: 'Click any domain to weaken it and watch the impact cascade upward. This interactive demo shows exactly why effective intervention starts at the foundation.',
-    bullets: ['Interactive what-if simulation', '9-domain dependency model', 'Real-time cascade propagation'],
-    mockup: 'cascade',
+    id: 'dashboard',
+    label: 'Dashboard',
+    icon: DashboardIcon,
+    title: 'Your Command Center',
+    desc: 'See every client\'s developmental profile at a glance. Domain health grid, completion stats, cascade alerts, and quick actions \u2014 all on one screen.',
+    bullets: ['Domain health grid with 9 color-coded cards', 'Real-time cascade alerts & risk detection', 'Quick actions prioritized by leverage', 'Snapshot timeline for progress tracking'],
+    mockup: 'dashboard',
   },
   {
     id: 'visualize',
@@ -291,13 +301,68 @@ const DEMO_TABS = [
 
 /* ── Demo Mockup Illustrations ───────────────────────────── */
 
+function DashboardMockup() {
+  const domains = [
+    { name: 'Regulation', pct: 87, color: '#7fb589', state: 'Solid' },
+    { name: 'Self-Awareness', pct: 78, color: '#c4956a', state: 'Developing' },
+    { name: 'Exec Function', pct: 59, color: '#d4856a', state: 'Developing' },
+    { name: 'Problem Solving', pct: 61, color: '#d4856a', state: 'Blocked' },
+    { name: 'Communication', pct: 47, color: '#e8725c', state: 'Needs Work' },
+    { name: 'Social Understand.', pct: 53, color: '#d4856a', state: 'Blocked' },
+  ]
+  return (
+    <div className="bg-warm-700/50 rounded-xl border border-warm-600/30 overflow-hidden">
+      {/* Top stats bar */}
+      <div className="grid grid-cols-4 gap-px bg-warm-600/20">
+        {[
+          { label: 'Assessed', value: '282/282', accent: '#7fb589' },
+          { label: 'Solid', value: '86', accent: '#7fb589' },
+          { label: 'Needs Work', value: '81', accent: '#e8725c' },
+          { label: 'Alerts', value: '4', accent: '#e8725c' },
+        ].map(s => (
+          <div key={s.label} className="bg-warm-700/60 p-2.5 text-center">
+            <div className="text-sm font-bold" style={{ color: s.accent }}>{s.value}</div>
+            <div className="text-[9px] text-warm-400">{s.label}</div>
+          </div>
+        ))}
+      </div>
+      {/* Domain grid */}
+      <div className="p-3">
+        <div className="text-[10px] text-warm-400 font-medium uppercase tracking-wider mb-2">Domain Health</div>
+        <div className="grid grid-cols-3 gap-1.5">
+          {domains.map(d => (
+            <div key={d.name} className="bg-warm-800/40 rounded-lg p-2">
+              <div className="flex items-center gap-1.5 mb-1">
+                <div className="w-1.5 h-1.5 rounded-full" style={{ backgroundColor: d.color }} />
+                <span className="text-[9px] text-warm-300 truncate">{d.name}</span>
+              </div>
+              <div className="h-1 bg-warm-700/50 rounded-full overflow-hidden mb-1">
+                <div className="h-full rounded-full" style={{ width: `${d.pct}%`, backgroundColor: d.color }} />
+              </div>
+              <div className="flex items-center justify-between">
+                <span className="text-[8px] text-warm-500">{d.state}</span>
+                <span className="text-[9px] font-semibold" style={{ color: d.color }}>{d.pct}%</span>
+              </div>
+            </div>
+          ))}
+        </div>
+        {/* Alert preview */}
+        <div className="mt-2 bg-warm-800/40 rounded-lg p-2 border-l-2 border-l-amber-500/60">
+          <div className="text-[9px] text-warm-400 font-semibold uppercase">Bottleneck</div>
+          <div className="text-[10px] text-warm-300">Executive Function blocks 4 higher domains</div>
+        </div>
+      </div>
+    </div>
+  )
+}
+
 function VisualizeMockup() {
   return (
     <div className="grid grid-cols-2 gap-3">
       {/* Sunburst mockup */}
       <div className="bg-warm-700/50 rounded-xl p-4 border border-warm-600/30">
         <div className="text-[10px] text-warm-400 font-medium mb-2 uppercase tracking-wider">Sunburst</div>
-        <svg viewBox="0 0 120 120" className="w-full max-w-[120px] mx-auto">
+        <svg viewBox="0 0 120 120" className="w-full mx-auto">
           <circle cx="60" cy="60" r="18" fill="#4f8460" opacity="0.9" />
           <path d="M60 60 L60 10 A50 50 0 0 1 103 35 Z" fill="#7fb589" opacity="0.7" />
           <path d="M60 60 L103 35 A50 50 0 0 1 103 85 Z" fill="#c4956a" opacity="0.7" />
@@ -310,7 +375,7 @@ function VisualizeMockup() {
       {/* Radar mockup */}
       <div className="bg-warm-700/50 rounded-xl p-4 border border-warm-600/30">
         <div className="text-[10px] text-warm-400 font-medium mb-2 uppercase tracking-wider">Radar</div>
-        <svg viewBox="0 0 120 120" className="w-full max-w-[120px] mx-auto">
+        <svg viewBox="0 0 120 120" className="w-full mx-auto">
           <polygon points="60,15 95,35 105,70 85,100 60,110 35,100 15,70 25,35" fill="none" stroke="#4a3f35" strokeWidth="0.5" opacity="0.4" />
           <polygon points="60,30 82,43 90,68 75,90 60,97 45,90 30,68 38,43" fill="none" stroke="#4a3f35" strokeWidth="0.5" opacity="0.3" />
           <polygon points="60,45 70,52 74,66 66,78 60,82 54,78 46,66 50,52" fill="none" stroke="#4a3f35" strokeWidth="0.5" opacity="0.2" />
@@ -348,7 +413,7 @@ function VisualizeMockup() {
       {/* Explorer mockup */}
       <div className="bg-warm-700/50 rounded-xl p-4 border border-warm-600/30">
         <div className="text-[10px] text-warm-400 font-medium mb-2 uppercase tracking-wider">Explorer</div>
-        <svg viewBox="0 0 120 120" className="w-full max-w-[120px] mx-auto">
+        <svg viewBox="0 0 120 120" className="w-full mx-auto">
           {/* Chord diagram arcs */}
           <circle cx="60" cy="60" r="48" fill="none" stroke="#4a3f35" strokeWidth="0.5" opacity="0.3" />
           {[0,1,2,3,4,5].map(i => {
@@ -588,7 +653,7 @@ const FOOTER_LINKS = {
 export default function Landing() {
   const [scrolled, setScrolled] = useState(false)
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
-  const [activeDemo, setActiveDemo] = useState('cascade')
+  const [activeDemo, setActiveDemo] = useState('dashboard')
   const heroRef = useRef(null)
 
   useEffect(() => {
@@ -1033,25 +1098,7 @@ export default function Landing() {
 
                 {/* Right: mockup visual */}
                 <div className="flex items-center justify-center">
-                  {tab.mockup === 'cascade' && (
-                    <Suspense fallback={
-                      <div className="bg-[#1a1a1e] rounded-2xl p-6 sm:p-8 w-full shadow-2xl">
-                        <div className="space-y-4">
-                          {[0,1,2].map(r => (
-                            <div key={r} className="flex justify-center gap-3">
-                              {[1,2,3].map(i => (
-                                <div key={i} className="h-14 w-24 sm:w-28 rounded-xl bg-warm-200/10 animate-pulse" />
-                              ))}
-                            </div>
-                          ))}
-                        </div>
-                      </div>
-                    }>
-                      <div className="bg-[#1a1a1e] rounded-2xl p-4 sm:p-6 w-full shadow-2xl">
-                        <CascadeAnimation compact />
-                      </div>
-                    </Suspense>
-                  )}
+                  {tab.mockup === 'dashboard' && <div className="w-full max-w-md"><DashboardMockup /></div>}
                   {tab.mockup === 'visualize' && <VisualizeMockup />}
                   {tab.mockup === 'assess' && <div className="w-full max-w-md"><AssessMockup /></div>}
                   {tab.mockup === 'intelligence' && <div className="w-full max-w-md"><IntelligenceMockup /></div>}
