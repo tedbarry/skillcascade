@@ -67,23 +67,6 @@ export function AuthProvider({ children }) {
     }
   }, [user, resetInactivityTimer])
 
-  // Sync settings from Supabase to localStorage on login (e.g. AI API key)
-  useEffect(() => {
-    if (!user) return
-    supabase
-      .from('user_settings')
-      .select('settings')
-      .eq('user_id', user.id)
-      .single()
-      .then(({ data }) => {
-        if (!data?.settings) return
-        const { ai_api_key } = data.settings
-        if (ai_api_key) {
-          localStorage.setItem('skillcascade_ai_api_key', ai_api_key)
-        }
-      })
-  }, [user])
-
   // Fetch profile on mount if we have a user (background, non-blocking)
   useEffect(() => {
     if (user) {

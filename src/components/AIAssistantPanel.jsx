@@ -845,16 +845,13 @@ export default function AIAssistantPanel({ isOpen, onClose, clientName, assessme
 
   const selectedTool = AI_TOOLS.find((t) => t.id === selectedToolId)
 
-  // Check API key status when panel opens (AuthContext syncs Supabase→localStorage on login)
+  // Check API connection status when panel opens (connected = has Supabase session)
   useEffect(() => {
     if (!isOpen) return
-    const localKey = localStorage.getItem('skillcascade_ai_api_key')
-    if (localKey) {
-      setIsApiConnected(true)
-      // Migrate localStorage-only key to Supabase if not yet synced
-      if (userId) mergeUserSettings(userId, { ai_api_key: localKey })
-    }
-  }, [isOpen, userId])
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      setIsApiConnected(!!session?.access_token && !!import.meta.env.VITE_SUPABASE_URL)
+    })
+  }, [isOpen])
 
   // Compute overall assessment progress
   const assessmentProgress = useMemo(() => {
@@ -963,7 +960,6 @@ export default function AIAssistantPanel({ isOpen, onClose, clientName, assessme
         .forEach((k) => localStorage.removeItem(k))
 
       if (migrated > 0) {
-        console.log(`Migrated ${migrated} AI chats to Supabase`)
         // Reload current tool's chats
         try {
           const list = await getAiChats(selectedToolId)
@@ -1216,12 +1212,8 @@ export default function AIAssistantPanel({ isOpen, onClose, clientName, assessme
   function handleSaveKey() {
     const key = keyDraft.trim()
     if (key) {
-      localStorage.setItem('skillcascade_ai_api_key', key)
-      setIsApiConnected(true)
       if (userId) mergeUserSettings(userId, { ai_api_key: key })
     } else {
-      localStorage.removeItem('skillcascade_ai_api_key')
-      setIsApiConnected(false)
       if (userId) mergeUserSettings(userId, { ai_api_key: null })
     }
     setShowKeyInput(false)
@@ -1239,52 +1231,23 @@ export default function AIAssistantPanel({ isOpen, onClose, clientName, assessme
       { role: 'user', content: userText },
     ]
 
-    // Use Supabase Edge Function proxy if available, fall back to direct call
+    // All AI calls go through Supabase Edge Function proxy — API key stays server-side
     const supabaseUrl = import.meta.env.VITE_SUPABASE_URL
     const { data: { session } } = await supabase.auth.getSession()
 
-    if (supabaseUrl && session?.access_token) {
-      // Proxied call — API key stays server-side
-      const res = await fetch(`${supabaseUrl}/functions/v1/ai-proxy`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${session.access_token}`,
-        },
-        body: JSON.stringify({
-          messages: apiMessages,
-          model: 'gpt-4o-mini',
-          max_tokens: 2000,
-          temperature: 0.7,
-        }),
-      })
-
-      if (!res.ok) {
-        const err = await res.json().catch(() => ({}))
-        // If proxy fails with config error, fall back to direct call
-        if (res.status === 400 && err.error?.includes('No API key')) {
-          throw new Error('No API key configured. Add your OpenAI API key in the AI assistant settings.')
-        }
-        throw new Error(err.error || `API error: ${res.status}`)
-      }
-
-      const data = await res.json()
-      return data.content || 'No response generated.'
+    if (!supabaseUrl || !session?.access_token) {
+      throw new Error('Please sign in to use AI features.')
     }
 
-    // Fallback: direct call (for development or when edge function not deployed)
-    const apiKey = localStorage.getItem('skillcascade_ai_api_key')
-    if (!apiKey) throw new Error('No API key configured')
-
-    const res = await fetch('https://api.openai.com/v1/chat/completions', {
+    const res = await fetch(`${supabaseUrl}/functions/v1/ai-proxy`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
-        Authorization: `Bearer ${apiKey}`,
+        'Authorization': `Bearer ${session.access_token}`,
       },
       body: JSON.stringify({
-        model: 'gpt-4o-mini',
         messages: apiMessages,
+        model: 'gpt-4o-mini',
         max_tokens: 2000,
         temperature: 0.7,
       }),
@@ -1292,11 +1255,14 @@ export default function AIAssistantPanel({ isOpen, onClose, clientName, assessme
 
     if (!res.ok) {
       const err = await res.json().catch(() => ({}))
-      throw new Error(err.error?.message || `API error: ${res.status}`)
+      if (res.status === 400 && err.error?.includes('No API key')) {
+        throw new Error('No API key configured. Add your OpenAI API key in the AI assistant settings.')
+      }
+      throw new Error(err.error || `API error: ${res.status}`)
     }
 
     const data = await res.json()
-    return data.choices?.[0]?.message?.content || 'No response generated.'
+    return data.content || 'No response generated.'
   }
 
   const handleSendMessage = useCallback(async () => {
@@ -1738,7 +1704,7 @@ export default function AIAssistantPanel({ isOpen, onClose, clientName, assessme
                   Cancel
                 </button>
               </div>
-              <p className="text-[10px] text-warm-400">Key is stored in your browser only. Never sent to our servers.</p>
+              <p className="text-[10px] text-warm-400">Key is stored securely in your account settings.</p>
             </div>
           ) : (
             <div className="px-4 py-2.5 flex items-center gap-2">

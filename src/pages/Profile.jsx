@@ -116,9 +116,6 @@ export default function Profile() {
   // Stats
   const [stats, setStats] = useState({ clients: 0, assessments: 0, snapshots: 0 })
 
-  // Tooltip for disabled edit button
-  const [showEditTooltip, setShowEditTooltip] = useState(false)
-
   // Derive display values from auth context
   const displayName = profile?.display_name || user?.user_metadata?.display_name || 'User'
   const email = user?.email || ''
@@ -326,29 +323,6 @@ export default function Profile() {
             </div>
           </div>
 
-          {/* Disabled edit button with tooltip */}
-          <div className="relative inline-block mt-2">
-            <button
-              type="button"
-              disabled
-              className="px-4 py-2 rounded-lg bg-warm-100 text-warm-400 text-sm font-medium cursor-not-allowed min-h-[44px]"
-              onMouseEnter={() => setShowEditTooltip(true)}
-              onMouseLeave={() => setShowEditTooltip(false)}
-              onTouchStart={() => {
-                setShowEditTooltip(true)
-                setTimeout(() => setShowEditTooltip(false), 3000)
-              }}
-              aria-label="Edit account info — coming soon"
-            >
-              Edit
-            </button>
-            {showEditTooltip && (
-              <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 px-3 py-1.5 rounded-lg bg-warm-800 text-white text-xs whitespace-nowrap shadow-lg pointer-events-none z-10">
-                Coming soon
-                <div className="absolute top-full left-1/2 -translate-x-1/2 -mt-1 w-2 h-2 bg-warm-800 rotate-45" />
-              </div>
-            )}
-          </div>
         </Section>
 
         {/* ── Section 2: Organization ─────────────────────────────────── */}
