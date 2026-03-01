@@ -272,8 +272,8 @@ export default memo(function SkillExplorerView({
   )
 
   return (
-    <div ref={containerRef} className="flex-1 overflow-auto relative">
-      <svg width="100%" viewBox={`0 0 ${treeWidth} ${svgHeight}`}>
+    <div ref={containerRef} className="flex-1 overflow-auto flex flex-col items-center p-4 relative">
+      <svg width="100%" viewBox={`0 0 ${treeWidth} ${svgHeight}`} style={{ maxWidth: treeWidth, maxHeight: svgHeight }}>
         <defs>
           <marker id="arrow-to-root" viewBox="0 0 6 6" refX={5} refY={3} markerWidth={5} markerHeight={5} orient="auto">
             <path d="M 0 0 L 6 3 L 0 6 z" fill="#888" />
