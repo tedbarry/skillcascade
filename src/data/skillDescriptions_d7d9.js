@@ -1,5 +1,5 @@
-// Skill descriptions for D7 (Identity & Self-Concept), D8 (Safety & Survival Skills), D9 (Support System Skills)
-// 96 total skills: D7=38, D8=24, D9=34
+// Skill descriptions for D7 (Identity & Self-Concept), D8 (Safety & Survival Skills), D9 (Support Utilization)
+// 90 total skills: D7=38, D8=24, D9=28
 
 export const descriptions_d7d9 = {
 
@@ -402,21 +402,21 @@ export const descriptions_d7d9 = {
   },
 
   // ═══════════════════════════════════════════════════════════════════════════
-  // D9 — Support System Skills
+  // D9 — Support Utilization (individual-focused: what the CLIENT does)
   // ═══════════════════════════════════════════════════════════════════════════
 
-  // ── D9-SA1: Consistency ───────────────────────────────────────────────────
+  // ── D9-SA1: Accepting Co-Regulation ─────────────────────────────────────
 
-  // SG1: Respond predictably
+  // SG1: Tolerate supporter proximity
   'd9-sa1-sg1-s1': {
-    description: 'The support system\'s ability to deliver consistent responses to the same behaviors across occurrences, so the individual can predict what will happen based on what they do.',
-    looks_like: 'Caregivers respond to the same behavior in the same way each time — the same reinforcement for appropriate behavior, the same consequence for challenging behavior.',
-    absence: 'Responses to the same behavior vary widely depending on caregiver mood, energy, or context, making the environment unpredictable for the individual.',
+    description: 'The ability to remain in close physical proximity to a supporter during moments of distress without pulling away, escalating, or fleeing. This is the foundation of co-regulation — the individual must tolerate the helper\'s presence before benefiting from it.',
+    looks_like: 'During a difficult moment, the individual stays near the supporter, allows them to sit close or stand nearby, and does not actively move away or push the supporter back.',
+    absence: 'The individual physically withdraws, turns away, pushes the supporter, or escalates when someone approaches during distress, preventing any co-regulatory support.',
   },
   'd9-sa1-sg1-s2': {
-    description: 'The support system\'s ability to maintain consistent responding without letting their own emotional state, fatigue, or frustration alter how they handle the individual\'s behavior.',
-    looks_like: 'Caregivers deliver planned responses even when tired, stressed, or frustrated, maintaining the integrity of the behavioral plan.',
-    absence: 'Caregiver responses shift based on their own emotional state — being lenient when in a good mood and harsh when stressed, creating an unpredictable contingency environment.',
+    description: 'The ability to permit a supporter to use calming strategies such as soft voice, rhythmic patting, deep pressure, or verbal coaching without resisting or rejecting the intervention.',
+    looks_like: 'The individual allows the supporter to use a calming technique — accepting a hand on the shoulder, tolerating a slow counting sequence, or remaining still during guided breathing.',
+    absence: 'The individual rejects all attempts at calming intervention — pushing hands away, covering ears, escalating in response to soothing tone, or verbally refusing any support strategy.',
   },
   'd9-sa1-sg1-s3': {
     description: 'The ability to communicate the need for support using any available modality — speech, gesture, sign, AAC device, or behavioral signal — before reaching full dysregulation.',
@@ -424,42 +424,30 @@ export const descriptions_d7d9 = {
     absence: 'The individual does not signal need for support and either escalates to crisis without warning or withdraws entirely, leaving supporters unable to intervene proactively.',
   },
 
-  // SG2: Maintain stable expectations
+  // SG2: Accept and differentiate support
   'd9-sa1-sg2-s1': {
-    description: 'The support system\'s ability to keep rules and expectations consistent across different caregivers, staff members, and time periods.',
-    looks_like: 'All team members enforce the same expectations and follow the same protocols, regardless of who is on shift or which setting the individual is in.',
-    absence: 'Rules change depending on which adult is present, creating an environment where the individual learns to test limits with specific people rather than learning consistent expectations.',
+    description: 'The ability to accept being redirected by a supporter — such as being guided away from a triggering situation or toward a replacement activity — without escalating.',
+    looks_like: 'When a supporter redirects the individual from an unsafe or unproductive activity, the individual complies or at least tolerates the redirection without significant protest.',
+    absence: 'Any attempt to redirect the individual results in escalation, aggression, refusal, or elopement, making it impossible for supporters to guide behavior safely.',
   },
   'd9-sa1-sg2-s2': {
-    description: 'The support system\'s ability to maintain the same criteria for success and behavior over time, rather than shifting standards unpredictably.',
-    looks_like: 'Expectations are clear and stable — what earned reinforcement yesterday earns it today; what was a boundary yesterday remains a boundary today.',
-    absence: 'Standards shift without warning or explanation — tasks that were acceptable yesterday are criticized today, or behaviors that were corrected yesterday are ignored today.',
+    description: 'The ability to recognize that different situations require different levels of support and to adjust expectations for help accordingly, rather than seeking maximum support at all times or refusing all support.',
+    looks_like: 'The individual accepts full hands-on support during high-stress moments but works more independently during familiar, low-demand tasks without seeking unnecessary help.',
+    absence: 'The individual demands the same intense level of support regardless of task difficulty, or conversely refuses all support even when clearly struggling.',
   },
 
-  // SG3: Reduce ambiguity
-  'd9-sa1-sg3-s1': {
-    description: 'The support system\'s ability to make consequences and available supports clear and understandable to the individual in advance.',
-    looks_like: 'Caregivers explain what will happen if the individual does X, what supports are available, and what the expectations are, using accessible language or visuals.',
-    absence: 'The individual is left to guess what consequences will follow their behavior or what supports are available, creating anxiety and unpredictable responding.',
-  },
-  'd9-sa1-sg3-s2': {
-    description: 'The support system\'s ability to structure the environment so the individual does not need to figure out expectations through trial and error.',
-    looks_like: 'Visual schedules, clear instructions, posted rules, and predictable routines are in place so the individual knows what is expected before being asked to perform.',
-    absence: 'The individual is regularly expected to infer expectations, read implicit cues, or guess the right response, leading to frequent errors and unnecessary failure.',
-  },
+  // ── D9-SA2: Responding to Prompts & Cues ────────────────────────────────
 
-  // ── D9-SA2: Reinforcement ─────────────────────────────────────────────────
-
-  // SG1: Identify effective reinforcers
+  // SG1: Follow prompts in context
   'd9-sa2-sg1-s1': {
-    description: 'The support system\'s ability to identify reinforcers that are genuinely motivating for the specific individual, rather than relying on generic or assumed preferences.',
-    looks_like: 'Caregivers use preference assessments and observe what the individual actually works for, selecting reinforcers that produce measurable increases in target behavior.',
-    absence: 'Reinforcers are chosen based on what adults think should be motivating or what works for other clients, resulting in reinforcement systems that fail to change behavior.',
+    description: 'The ability to notice and respond to gestural prompts such as pointing, modeling, or visual cues from a supporter to guide behavior or task completion.',
+    looks_like: 'When a supporter points to the next step, gestures toward an object, or uses a hand signal, the individual follows the prompt and adjusts their behavior accordingly.',
+    absence: 'The individual does not attend to or respond to gestural cues, requiring the supporter to escalate to verbal or physical prompts for every direction.',
   },
   'd9-sa2-sg1-s2': {
-    description: 'The support system\'s ability to update reinforcer selections based on the individual\'s changing responses, avoiding satiation and maintaining motivation.',
-    looks_like: 'Caregivers rotate reinforcers, check for satiation, and update preferences regularly so the reinforcement system stays effective over time.',
-    absence: 'The same reinforcers are used indefinitely regardless of declining effectiveness, leading to motivational collapse and the false conclusion that "nothing works."',
+    description: 'The ability to follow spoken directions from a supporter during familiar routines, using verbal prompts as a guide for what to do next.',
+    looks_like: 'During daily routines, the individual responds to verbal cues like "Time to clean up" or "Put your shoes on" by initiating the appropriate action.',
+    absence: 'The individual does not respond to verbal prompts in familiar contexts, requiring physical guidance or repeated escalation of prompt level to produce the expected behavior.',
   },
   'd9-sa2-sg1-s3': {
     description: 'The ability to attend to and follow visual supports such as picture schedules, token boards, first-then boards, or visual timers to guide behavior and transitions.',
@@ -467,42 +455,30 @@ export const descriptions_d7d9 = {
     absence: 'The individual ignores or does not reference available visual supports, requiring repeated verbal prompts for transitions and task sequences that visuals are designed to scaffold.',
   },
 
-  // SG2: Deliver contingently
+  // SG2: Generalize prompt responsiveness
   'd9-sa2-sg2-s1': {
-    description: 'The support system\'s ability to deliver reinforcement immediately following specific target behaviors, creating a clear contingency between behavior and outcome.',
-    looks_like: 'Reinforcement is delivered promptly after the target behavior occurs, with clear verbal or visual linking of the reinforcer to the specific behavior.',
-    absence: 'Reinforcement is delivered at random, delayed so long that the connection to behavior is lost, or given non-contingently, undermining the learning process.',
+    description: 'The ability to maintain task performance as prompt intensity decreases — continuing to respond correctly as support fades from physical guidance to gestural to verbal to independent.',
+    looks_like: 'The individual completes steps that previously required physical prompts now with only a gesture or verbal reminder, showing that the skill is being internalized.',
+    absence: 'Performance collapses immediately when prompt level decreases, with the individual unable to complete the task without the same level of support previously provided.',
   },
   'd9-sa2-sg2-s2': {
-    description: 'The support system\'s ability to avoid accidentally reinforcing dysregulated or avoidant behavior by providing attention, escape, or tangibles following challenging behavior.',
-    looks_like: 'Caregivers maintain planned responses during challenging behavior, ensuring that escape, attention, or tangibles are not provided contingent on problem behavior.',
-    absence: 'Challenging behavior is inadvertently reinforced — tantrums produce escape from demands, aggression produces attention, or refusal produces access to preferred items.',
+    description: 'The ability to follow prompts from different supporters — not just one familiar person — demonstrating that prompt responsiveness has generalized beyond a single relationship.',
+    looks_like: 'The individual responds to gestural and verbal prompts from multiple staff, family members, or community supporters, not just one primary therapist or caregiver.',
+    absence: 'The individual only follows prompts from one specific person and ignores or resists identical prompts from others, indicating supporter-specific rather than generalized responsiveness.',
   },
 
-  // SG3: Fade strategically
-  'd9-sa2-sg3-s1': {
-    description: 'The support system\'s ability to gradually thin reinforcement schedules as the individual\'s skills stabilize, moving toward more natural contingencies.',
-    looks_like: 'As the individual demonstrates consistent mastery, the frequency and intensity of external reinforcement decrease in a planned, systematic manner.',
-    absence: 'Reinforcement is either maintained at initial intensity indefinitely (creating dependence) or removed abruptly (causing behavioral collapse).',
-  },
-  'd9-sa2-sg3-s2': {
-    description: 'The support system\'s ability to monitor for skill regression during the reinforcement fading process and adjust the pace of fading accordingly.',
-    looks_like: 'When behavior begins to deteriorate during fading, caregivers temporarily increase reinforcement and then resume fading more gradually.',
-    absence: 'Fading continues despite clear signs of behavioral deterioration, or any regression causes permanent return to maximum reinforcement without re-attempting the fade.',
-  },
+  // ── D9-SA3: Requesting & Accepting Help ─────────────────────────────────
 
-  // ── D9-SA3: Prompting ─────────────────────────────────────────────────────
-
-  // SG1: Select prompt type
+  // SG1: Initiate help-seeking
   'd9-sa3-sg1-s1': {
-    description: 'The support system\'s ability to choose the right type and level of prompt based on the individual\'s current skill level and the specific skill being targeted.',
-    looks_like: 'Caregivers use the least intrusive prompt that produces the correct response — gestural when possible, physical only when necessary, matched to the task demands.',
-    absence: 'Prompts are chosen arbitrarily or always at the same level regardless of the skill or the individual\'s demonstrated capacity, leading to prompt dependence or unnecessary failure.',
+    description: 'The ability to indicate that help is needed using any available modality — spoken words, gestures, signs, AAC, or behavioral signals — rather than struggling silently or escalating.',
+    looks_like: 'When encountering difficulty, the individual signals for help by reaching toward a supporter, pressing a help button, saying "help," or using any communicative means.',
+    absence: 'The individual does not communicate when struggling and either persists ineffectively until frustrated, shuts down, or escalates to challenging behavior without ever requesting assistance.',
   },
   'd9-sa3-sg1-s2': {
-    description: 'The support system\'s ability to avoid giving too much help (which prevents learning) or too little help (which produces failure and frustration).',
-    looks_like: 'The individual succeeds with support that challenges them just enough — not so much help that the skill is done for them, not so little that they fail repeatedly.',
-    absence: 'The individual is either fully guided through every step (never developing independence) or left to fail repeatedly (never experiencing success).',
+    description: 'The ability to accept help when it is offered without resisting, refusing, or becoming dysregulated, even if the individual did not initiate the request.',
+    looks_like: 'When a supporter offers assistance, the individual allows them to help — accepting guidance, accepting corrections, or letting the supporter demonstrate without pushing them away.',
+    absence: 'The individual rejects offered help through refusal, aggression, or avoidance, insisting on doing things independently even when clearly unable, leading to repeated failure.',
   },
   'd9-sa3-sg1-s3': {
     description: 'The ability to identify and communicate what kind of help is needed rather than making a general request, specifying the type of support that would be most useful.',
@@ -510,42 +486,30 @@ export const descriptions_d7d9 = {
     absence: 'The individual either makes only vague, undifferentiated help requests or does not request help at all, leaving supporters to guess what type of assistance is needed.',
   },
 
-  // SG2: Time prompts effectively
+  // SG2: Evaluate and advocate
   'd9-sa3-sg2-s1': {
-    description: 'The support system\'s ability to deliver prompts at the right moment — before the individual fails and becomes dysregulated, rather than after the breakdown has already occurred.',
-    looks_like: 'Caregivers provide support proactively, stepping in at the first signs of difficulty to prevent failure cascades.',
-    absence: 'Prompts arrive only after the individual has already failed and become upset, turning a learning opportunity into a crisis management situation.',
+    description: 'The ability to assess whether help received was actually useful — did the support provided solve the problem, or is more or different help needed?',
+    looks_like: 'After receiving help, the individual either continues the task successfully or communicates that they still need assistance, rather than passively accepting inadequate support.',
+    absence: 'The individual cannot distinguish between helpful and unhelpful support, either passively accepting whatever is offered or rejecting all help indiscriminately.',
   },
   'd9-sa3-sg2-s2': {
-    description: 'The support system\'s ability to hold back when the individual is working hard but has not yet failed, allowing productive struggle without premature rescue.',
-    looks_like: 'Caregivers observe and wait when the individual is effortfully working through a challenge, intervening only when failure appears imminent.',
-    absence: 'Caregivers jump in at the first sign of effort or mild frustration, preventing the individual from developing tolerance for challenge and independent problem-solving.',
+    description: 'The ability to speak up for a different kind of support when the current approach is not working, rather than simply enduring ineffective help or shutting down.',
+    looks_like: 'The individual communicates something like "That\'s not helping, can we try it this way?" or indicates through behavior that a different support strategy is needed.',
+    absence: 'The individual either passively accepts support that is not working without feedback, or escalates to challenging behavior rather than advocating for a different approach.',
   },
 
-  // SG3: Fade without abandonment
-  'd9-sa3-sg3-s1': {
-    description: 'The support system\'s ability to systematically reduce prompts over time as the individual develops competence, following a planned fading hierarchy.',
-    looks_like: 'Prompt levels decrease gradually and systematically — from physical to gestural to verbal to independent — based on data showing the individual is ready.',
-    absence: 'Prompts remain at the same level indefinitely, or are removed abruptly without a systematic plan, resulting in either chronic dependence or sudden failure.',
-  },
-  'd9-sa3-sg3-s2': {
-    description: 'The support system\'s ability to monitor whether the individual is maintaining skills as prompts are reduced, catching regression early.',
-    looks_like: 'Caregivers track independent performance during fading and notice quickly when accuracy or fluency begins to drop.',
-    absence: 'Prompts are faded without monitoring, and skill regression goes unnoticed until significant behavioral or performance problems emerge.',
-  },
+  // ── D9-SA4: Learning from Models ────────────────────────────────────────
 
-  // ── D9-SA4: Modeling ──────────────────────────────────────────────────────
-
-  // SG1: Demonstrate target behaviors
+  // SG1: Observe and imitate
   'd9-sa4-sg1-s1': {
-    description: 'The support system\'s ability to actively demonstrate the skills they are trying to teach, including regulation, flexible thinking, and repair after mistakes.',
-    looks_like: 'Caregivers visibly use the same coping strategies, flexibility, and repair skills they expect from the individual, narrating the process when appropriate.',
-    absence: 'Caregivers expect skills from the individual that they do not demonstrate themselves — demanding calm while yelling, or requiring flexibility while being rigid.',
+    description: 'The ability to orient attention to a demonstration and sustain focus while a supporter shows how to perform a skill, rather than looking away or attending to other stimuli.',
+    looks_like: 'When a supporter demonstrates a task or strategy, the individual watches the demonstration, tracks the supporter\'s movements, and attends to the key steps.',
+    absence: 'The individual does not attend to demonstrations, looking away, engaging with other objects, or failing to orient even when the supporter explicitly signals the demonstration.',
   },
   'd9-sa4-sg1-s2': {
-    description: 'The support system\'s ability to demonstrate that mistakes and imperfection are normal parts of functioning, modeling recovery rather than perfection.',
-    looks_like: 'Caregivers acknowledge their own errors openly, model self-correction, and show that mistakes do not lead to catastrophe.',
-    absence: 'Caregivers either hide their mistakes or react to them with the same dysregulation they are trying to reduce in the individual, reinforcing a fear-of-failure culture.',
+    description: 'The ability to reproduce a modeled action immediately after watching it performed, copying the key elements of the demonstration while it is still fresh.',
+    looks_like: 'Right after watching a supporter demonstrate a skill, the individual attempts the same action, approximating the core movements or steps that were modeled.',
+    absence: 'The individual does not attempt to reproduce the demonstrated action, either making no attempt or performing an unrelated action despite having attended to the model.',
   },
   'd9-sa4-sg1-s3': {
     description: 'The ability to retain and reproduce a modeled behavior after a time delay rather than only through immediate imitation, indicating the behavior has been encoded into memory.',
@@ -553,91 +517,67 @@ export const descriptions_d7d9 = {
     absence: 'The individual can only imitate actions immediately after demonstration and does not reproduce them after any delay, requiring re-modeling for each occurrence.',
   },
 
-  // SG2: Model emotional responses
+  // SG2: Generalize from models
   'd9-sa4-sg2-s1': {
-    description: 'The support system\'s ability to maintain a regulated emotional presentation during stressful moments, providing a co-regulatory anchor for the individual.',
-    looks_like: 'During difficult moments, caregivers keep their tone even, their body language non-threatening, and their facial expressions calm.',
-    absence: 'Caregivers become visibly dysregulated during the individual\'s challenging moments — raising their voice, showing frustration on their face, or becoming agitated.',
+    description: 'The ability to take a strategy learned through modeling in one context and apply it to a new, different situation where the same principle applies.',
+    looks_like: 'The individual uses a problem-solving strategy modeled during therapy in a classroom or home situation, adapting the approach to fit the new context.',
+    absence: 'Skills learned through modeling remain locked to the original context — the individual only performs the skill in the exact setting and conditions where it was taught.',
   },
   'd9-sa4-sg2-s2': {
-    description: 'The support system\'s ability to openly acknowledge and repair their own mistakes in interactions with the individual, modeling the repair process.',
-    looks_like: 'When a caregiver makes an error (e.g., snapping at the individual), they name it, apologize, and demonstrate how to move forward after a mistake.',
-    absence: 'Caregivers do not acknowledge their own errors, or only expect the individual to apologize and repair, creating an imbalanced model of relationships.',
+    description: 'The ability to evaluate which models are worth imitating based on outcomes, choosing to learn from people who demonstrate effective strategies rather than imitating indiscriminately.',
+    looks_like: 'The individual preferentially imitates peers or adults who achieve positive outcomes, and avoids copying behaviors that lead to negative results for the model.',
+    absence: 'The individual imitates indiscriminately — copying both helpful and unhelpful behaviors without evaluating whether the modeled behavior produced good results.',
   },
 
-  // ── D9-SA5: Emotional Co-Regulation ───────────────────────────────────────
+  // ── D9-SA5: Providing Feedback to Supporters ───────────────────────────
 
-  // SG1: Read arousal accurately
+  // SG1: Communicate support preferences
   'd9-sa5-sg1-s1': {
-    description: 'The support system\'s ability to detect early signs of dysregulation in the individual before a full behavioral episode occurs.',
-    looks_like: 'Caregivers notice subtle shifts — increased motor activity, changes in voice tone, facial tension — and respond proactively before escalation.',
-    absence: 'Caregivers do not notice dysregulation until it reaches crisis level, missing the window for early intervention and prevention.',
+    description: 'The ability to express a preference when given options for how to receive support, such as choosing between two types of help, two locations, or two supporters.',
+    looks_like: 'When offered "Do you want me to show you or tell you?", the individual makes a clear choice, indicating which type of support they prefer.',
+    absence: 'The individual does not indicate preferences about support delivery, accepting whatever is offered without input or refusing all options without selecting an alternative.',
   },
   'd9-sa5-sg1-s2': {
-    description: 'The support system\'s ability to calibrate the level of support to the individual\'s current arousal level, providing more support when distress is high and less when it is manageable.',
-    looks_like: 'Caregivers increase proximity, soften tone, and simplify demands when the individual is highly activated, and step back when the individual is coping adequately.',
-    absence: 'Caregivers provide the same level of support regardless of arousal — either hovering when the individual is calm or maintaining distance when the individual is in crisis.',
+    description: 'The ability to communicate whether current support is helping or not — providing real-time feedback to the supporter about the effectiveness of their approach.',
+    looks_like: 'The individual indicates through words, gestures, or behavior that the support is working ("That helps") or not working ("That\'s not helping"), giving the supporter actionable feedback.',
+    absence: 'The individual provides no feedback about support effectiveness, leaving the supporter to guess whether their approach is useful, often leading to prolonged use of ineffective strategies.',
   },
 
-  // SG2: Provide stabilizing presence
+  // SG2: Collaborate on strategy
   'd9-sa5-sg2-s1': {
-    description: 'The support system\'s ability to use their own tone of voice, pace of speech, physical proximity, and body language as tools to help the individual regulate.',
-    looks_like: 'Caregivers deliberately slow their speech, lower their voice, maintain open body posture, and position themselves at a distance that is calming rather than threatening.',
-    absence: 'Caregivers are unaware of how their own physical and vocal presentation affects the individual, or use tone, pace, and proximity in ways that escalate rather than calm.',
+    description: 'The ability to articulate what kind of support is most helpful in a given situation, going beyond simple preference to provide specific, useful guidance to the supporter.',
+    looks_like: 'The individual communicates things like "It helps when you give me a minute first" or "I do better when you show me instead of tell me," providing actionable strategy information.',
+    absence: 'The individual cannot describe what kind of support works for them, leaving supporters to rely on trial and error rather than the individual\'s own insight into their needs.',
   },
   'd9-sa5-sg2-s2': {
-    description: 'The support system\'s ability to avoid adding to the individual\'s dysregulation through their own emotional reactions, instructions, or physical interventions.',
-    looks_like: 'During episodes, caregivers minimize verbal demands, avoid confrontational language, and do not add stimulation to an already overloaded individual.',
-    absence: 'Caregivers escalate the individual\'s dysregulation by talking too much, issuing demands during peak distress, using threatening tones, or crowding the individual.',
+    description: 'The ability to work jointly with a supporter to develop or adjust strategies, contributing to the planning process rather than being a passive recipient of support decisions.',
+    looks_like: 'The individual participates in discussions about their own support plan, offering suggestions, agreeing to try new approaches, and providing input on what should change.',
+    absence: 'The individual is entirely passive in support planning, never offering input or suggestions, and does not engage when invited to participate in decisions about their own support.',
   },
 
-  // SG3: Withdraw support appropriately
-  'd9-sa5-sg3-s1': {
-    description: 'The support system\'s ability to gradually reduce co-regulatory support as the individual develops their own self-regulation capacity.',
-    looks_like: 'As the individual shows more independent regulation, caregivers step back, providing less proximity, fewer verbal cues, and more space for self-management.',
-    absence: 'Caregivers maintain the same level of co-regulatory support regardless of the individual\'s growing capacity, preventing the development of self-regulation skills.',
-  },
-  'd9-sa5-sg3-s2': {
-    description: 'The support system\'s ability to prevent the individual from becoming dependent on external co-regulation, ensuring that support develops the individual\'s own skills rather than replacing them.',
-    looks_like: 'Caregivers pair co-regulation with explicit teaching of self-regulation strategies, gradually transferring the regulation function to the individual.',
-    absence: 'The individual relies entirely on caregiver presence to regulate and shows no growth in independent regulation, having learned that dysregulation always produces co-regulatory support.',
-  },
+  // ── D9-SA6: Maintaining Support Relationships ──────────────────────────
 
-  // ── D9-SA6: Data-Based Adjustment ─────────────────────────────────────────
-
-  // SG1: Track response to intervention
+  // SG1: Recognize and trust supporters
   'd9-sa6-sg1-s1': {
-    description: 'The support system\'s ability to systematically monitor whether their interventions are producing the intended changes in the individual\'s behavior.',
-    looks_like: 'Caregivers collect and review data on target behaviors regularly, noting trends in frequency, duration, or intensity in response to current strategies.',
-    absence: 'No systematic data collection occurs; the team relies on impressions, anecdotes, or memory to evaluate whether interventions are working.',
+    description: 'The ability to identify and distinguish familiar supporters from unfamiliar people, showing differential behavior toward known helpers versus strangers.',
+    looks_like: 'The individual greets familiar supporters, approaches them preferentially, or shows increased comfort and engagement compared to their response to unfamiliar adults.',
+    absence: 'The individual treats all adults identically — showing no differential response between trusted supporters and unfamiliar people, or failing to recognize familiar helpers across sessions.',
   },
   'd9-sa6-sg1-s2': {
-    description: 'The support system\'s ability to detect meaningful patterns in the individual\'s behavior over time, including triggers, setting events, and temporal trends.',
-    looks_like: 'The team identifies patterns such as "behavior is worse on Mondays," "escalation follows transitions," or "progress stalled after the medication change."',
-    absence: 'Each behavioral incident is treated as isolated; the team does not connect events over time or identify the conditions that predict success or difficulty.',
+    description: 'The ability to show different levels of trust and openness with different supporters based on the quality and history of the relationship, rather than trusting everyone equally or no one at all.',
+    looks_like: 'The individual is more willing to attempt difficult tasks, accept correction, or share distress with supporters who have established trust, compared to newer or less familiar supporters.',
+    absence: 'The individual either trusts all adults identically regardless of relationship history, or withholds trust from everyone equally, showing no relationship-dependent variation in openness.',
   },
 
-  // SG2: Adjust supports dynamically
+  // SG2: Sustain support engagement
   'd9-sa6-sg2-s1': {
-    description: 'The support system\'s ability to modify the environment, supports, or demands before attributing problems to the individual\'s deficits or motivation.',
-    looks_like: 'When progress stalls, the team first examines whether the environment, reinforcement, or demands need adjustment before concluding the individual "won\'t" or "can\'t."',
-    absence: 'When behavior problems persist, the team blames the individual rather than examining whether the plan itself is flawed, leading to escalating consequences without environmental change.',
+    description: 'The ability to recover a support relationship after a conflict, misunderstanding, or difficult interaction, rather than permanently withdrawing from or rejecting the supporter.',
+    looks_like: 'After a disagreement or a session that went poorly, the individual re-engages with the supporter next time, accepts repair attempts, and does not hold permanent grudges.',
+    absence: 'A single negative interaction permanently damages the individual\'s willingness to engage with that supporter — they refuse to work with them, avoid them, or remain hostile indefinitely.',
   },
   'd9-sa6-sg2-s2': {
-    description: 'The support system\'s ability to recognize when a different domain or skill layer needs to be addressed, rather than continuing to target the same area when progress has stalled.',
-    looks_like: 'The team recognizes that, for example, social skills training is not working because regulation is the actual barrier, and shifts focus accordingly.',
-    absence: 'The team continues targeting the same skill area despite persistent lack of progress, not recognizing that a prerequisite skill or a different domain is the actual bottleneck.',
-  },
-
-  // SG3: Prevent plan rigidity
-  'd9-sa6-sg3-s1': {
-    description: 'The support system\'s ability to abandon strategies that are not working, even if they were theoretically sound or required significant effort to develop.',
-    looks_like: 'The team acknowledges when a plan is not producing results and pivots to a new approach based on data rather than defending the original strategy.',
-    absence: 'The team clings to ineffective strategies, defending them with "we just need more time" or "the client isn\'t trying hard enough" rather than changing course.',
-  },
-  'd9-sa6-sg3-s2': {
-    description: 'The support system\'s ability to revise their clinical hypotheses about the individual\'s behavior when data contradicts their initial assumptions.',
-    looks_like: 'When data shows that the initial hypothesis was wrong (e.g., behavior was escape-maintained, not attention-maintained), the team updates the function and revises the plan.',
-    absence: 'The team maintains their original hypothesis despite contradictory data, continuing to implement function-based interventions that target the wrong function.',
+    description: 'The ability to sustain engagement with the support system over extended periods, continuing to participate in support relationships even when progress is slow or sessions are difficult.',
+    looks_like: 'The individual continues to attend sessions, engage with supporters, and participate in the support process over weeks and months, even through challenging periods.',
+    absence: 'The individual disengages from the support system after setbacks, refusing to continue working with supporters or becoming increasingly passive and withdrawn over time.',
   },
 }

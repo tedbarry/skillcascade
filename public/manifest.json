@@ -1,0 +1,18 @@
+{
+  "name": "SkillCascade",
+  "short_name": "SkillCascade",
+  "description": "ABA therapy skills assessment and visualization platform for BCBAs",
+  "start_url": "/",
+  "scope": "/",
+  "display": "standalone",
+  "orientation": "any",
+  "theme_color": "#4f8460",
+  "background_color": "#ffffff",
+  "icons": [
+    {
+      "src": "/favicon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml"
+    }
+  ]
+}
