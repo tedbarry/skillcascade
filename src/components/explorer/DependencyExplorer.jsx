@@ -3,6 +3,7 @@ import { AnimatePresence, motion } from 'framer-motion'
 import { framework } from '../../data/framework.js'
 import useDependencyExplorer from '../../hooks/useDependencyExplorer.js'
 import useResponsive from '../../hooks/useResponsive.js'
+import { safeGetItem, safeSetItem } from '../../lib/safeStorage.js'
 import ExplorerCoachMark, { COACH_STEPS } from './ExplorerCoachMark.jsx'
 import { DOMAIN_COLORS } from '../../constants/colors.js'
 
@@ -33,7 +34,7 @@ export default memo(function DependencyExplorer({ assessments = {} }) {
 
   // Coach mark guide state (-1 = dismissed, 0-4 = active step)
   const [guideStep, setGuideStep] = useState(
-    () => localStorage.getItem(GUIDE_KEY) ? -1 : 0
+    () => safeGetItem(GUIDE_KEY) ? -1 : 0
   )
   const guideActive = guideStep >= 0 && guideStep < COACH_STEPS.length
 
@@ -80,7 +81,7 @@ export default memo(function DependencyExplorer({ assessments = {} }) {
 
   const handleGuideDismiss = useCallback(() => {
     setGuideStep(-1)
-    localStorage.setItem(GUIDE_KEY, 'true')
+    safeSetItem(GUIDE_KEY, 'true')
   }, [])
 
   const handleGuideRestart = useCallback(() => {

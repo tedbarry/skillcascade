@@ -2,6 +2,7 @@ import { useState, useMemo, useEffect, useCallback, useRef } from 'react'
 import { framework, ASSESSMENT_LEVELS, ASSESSMENT_LABELS, ASSESSMENT_COLORS, isAssessed } from '../data/framework.js'
 import { getSkillDescription } from '../data/skillDescriptions.js'
 import useResponsive from '../hooks/useResponsive.js'
+import { safeGetItem, safeSetItem } from '../lib/safeStorage.js'
 
 /**
  * Flattened list of all sub-areas with their parent domain for sequential navigation
@@ -57,13 +58,11 @@ export default function AssessmentPanel({ assessments, onAssess, initialSubAreaI
   const { isPhone } = useResponsive()
   const [currentIndex, setCurrentIndex] = useState(0)
   const [navOverlayOpen, setNavOverlayOpen] = useState(false)
-  const [showAllDescs, setShowAllDescs] = useState(() => {
-    try { return localStorage.getItem('skillcascade_show_all_descs') === 'true' } catch { return false }
-  })
+  const [showAllDescs, setShowAllDescs] = useState(() => safeGetItem('skillcascade_show_all_descs') === 'true')
   const toggleShowAllDescs = useCallback(() => {
     setShowAllDescs(prev => {
       const next = !prev
-      localStorage.setItem('skillcascade_show_all_descs', String(next))
+      safeSetItem('skillcascade_show_all_descs', String(next))
       return next
     })
   }, [])

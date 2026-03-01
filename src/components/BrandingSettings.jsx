@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef } from 'react'
 import { supabase } from '../lib/supabase.js'
 import { useAuth } from '../contexts/AuthContext.jsx'
+import { safeGetItem, safeSetItem, safeRemoveItem } from '../lib/safeStorage.js'
 
 const STORAGE_KEY = 'skillcascade_branding'
 
@@ -16,7 +17,7 @@ const DEFAULT_BRANDING = {
 
 function loadBranding() {
   try {
-    const raw = localStorage.getItem(STORAGE_KEY)
+    const raw = safeGetItem(STORAGE_KEY)
     if (raw) return { ...DEFAULT_BRANDING, ...JSON.parse(raw) }
   } catch { /* corrupted data — fall through */ }
   return { ...DEFAULT_BRANDING }
@@ -114,7 +115,7 @@ export default function BrandingSettings({ onBrandingChange }) {
   }
 
   async function handleSave() {
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(branding))
+    safeSetItem(STORAGE_KEY, JSON.stringify(branding))
     onBrandingChange?.(branding)
 
     // Persist to Supabase organization record
@@ -132,7 +133,7 @@ export default function BrandingSettings({ onBrandingChange }) {
   async function handleReset() {
     const fresh = { ...DEFAULT_BRANDING }
     setBranding(fresh)
-    localStorage.removeItem(STORAGE_KEY)
+    safeRemoveItem(STORAGE_KEY)
     onBrandingChange?.(fresh)
     if (fileRef.current) fileRef.current.value = ''
 

@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback } from 'react'
 import { supabase, mergeUserSettings } from '../lib/supabase.js'
 import { useAuth } from '../contexts/AuthContext.jsx'
+import { safeGetItem, safeSetItem } from '../lib/safeStorage.js'
 
 const STORAGE_KEY = 'skillcascade_accessibility'
 
@@ -56,7 +57,7 @@ const ASSESSMENT_COLORS = {
 
 function loadSettings() {
   try {
-    const raw = localStorage.getItem(STORAGE_KEY)
+    const raw = safeGetItem(STORAGE_KEY)
     if (raw) return { ...DEFAULT_SETTINGS, ...JSON.parse(raw) }
   } catch { /* ignore corrupt data */ }
   return { ...DEFAULT_SETTINGS }
@@ -128,7 +129,7 @@ export default function AccessibilitySettings({ onSettingsChange }) {
   // Apply on mount + whenever settings change, persist to both localStorage and Supabase
   useEffect(() => {
     applyToDocument(settings)
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(settings))
+    safeSetItem(STORAGE_KEY, JSON.stringify(settings))
     onSettingsChange?.(settings)
 
     // Persist to Supabase

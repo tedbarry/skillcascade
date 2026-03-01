@@ -2,6 +2,7 @@ import { useState, useMemo, useCallback, useRef, useEffect } from 'react'
 import { framework, ASSESSMENT_LEVELS, ASSESSMENT_LABELS, ASSESSMENT_COLORS, isAssessed } from '../data/framework.js'
 import { getSkillDescription } from '../data/skillDescriptions.js'
 import useResponsive from '../hooks/useResponsive.js'
+import { safeSetItem } from '../lib/safeStorage.js'
 
 /**
  * AdaptiveAssessment — Quick screening mode for SkillCascade
@@ -833,7 +834,7 @@ function Phase3SkillDetail({ subAreas, skillRatings, onRate }) {
                     <button
                       onClick={() => setShowAllDescs(prev => {
                         const next = !prev
-                        localStorage.setItem('skillcascade_show_all_descs', String(next))
+                        safeSetItem('skillcascade_show_all_descs', String(next))
                         return next
                       })}
                       className="text-[10px] px-2.5 py-1 min-h-[44px] rounded-md font-medium transition-all border border-warm-200 hover:border-sage-300 flex items-center gap-1.5"

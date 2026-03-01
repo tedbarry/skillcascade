@@ -3,6 +3,7 @@ import { getClients, getAssessments, getSnapshots, saveClient, saveAssessment, s
 import { framework } from '../data/framework.js'
 import { downloadFile } from '../data/exportUtils.js'
 import { processImportFile, transformToAssessments, detectScoreValues, mapScore } from '../data/csvImportEngine.js'
+import { safeGetItem, safeSetItem } from '../lib/safeStorage.js'
 import { useAuth } from '../contexts/AuthContext.jsx'
 
 const APP_VERSION = '1.0.0'
@@ -177,7 +178,7 @@ export default function DataPortability({ onImportComplete }) {
   const [status, setStatus] = useState(null)
   const [clearConfirmText, setClearConfirmText] = useState('')
   const [showClearConfirm, setShowClearConfirm] = useState(false)
-  const [lastBackup, setLastBackup] = useState(() => localStorage.getItem('skillcascade_last_backup') || null)
+  const [lastBackup, setLastBackup] = useState(() => safeGetItem('skillcascade_last_backup'))
   const [dataSummary, setDataSummary] = useState({ clients: 0, assessments: 0, snapshots: 0 })
 
   const refreshClients = useCallback(async () => {
@@ -239,7 +240,7 @@ export default function DataPortability({ onImportComplete }) {
       const json = JSON.stringify(bundle, null, 2)
       const date = new Date().toISOString().slice(0, 10)
       downloadFile(json, `skillcascade-backup-${date}.json`, 'application/json')
-      localStorage.setItem('skillcascade_last_backup', new Date().toISOString())
+      safeSetItem('skillcascade_last_backup', new Date().toISOString())
       setLastBackup(new Date().toISOString())
       showStatus('Full backup exported successfully')
     } catch (err) {

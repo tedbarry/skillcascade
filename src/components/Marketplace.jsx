@@ -1,4 +1,5 @@
 import { useState, useMemo } from 'react'
+import { safeGetItem, safeSetItem } from '../lib/safeStorage.js'
 
 /* ─────────────────────────────────────────────
    Mock Marketplace Data
@@ -416,7 +417,7 @@ export default function Marketplace() {
   const [sortBy, setSortBy] = useState('popular')
   const [installedIds, setInstalledIds] = useState(() => {
     try {
-      const saved = localStorage.getItem('skillcascade_marketplace_installed')
+      const saved = safeGetItem('skillcascade_marketplace_installed')
       return saved ? new Set(JSON.parse(saved)) : new Set()
     } catch { return new Set() }
   })
@@ -478,7 +479,7 @@ export default function Marketplace() {
       setInstalledIds((prev) => {
         const next = new Set(prev)
         next.delete(item.id)
-        localStorage.setItem('skillcascade_marketplace_installed', JSON.stringify([...next]))
+        safeSetItem('skillcascade_marketplace_installed', JSON.stringify([...next]))
         return next
       })
       setToast({ message: `"${item.title}" uninstalled`, type: 'success' })
@@ -487,7 +488,7 @@ export default function Marketplace() {
     }
     setInstalledIds((prev) => {
       const next = new Set([...prev, item.id])
-      localStorage.setItem('skillcascade_marketplace_installed', JSON.stringify([...next]))
+      safeSetItem('skillcascade_marketplace_installed', JSON.stringify([...next]))
       return next
     })
     setToast({ message: `"${item.title}" installed successfully`, type: 'success' })

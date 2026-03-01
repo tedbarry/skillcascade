@@ -1244,7 +1244,6 @@ export default function Landing() {
             <p className="text-sm text-warm-600">
               &copy; {new Date().getFullYear()} SkillCascade. All rights reserved.
             </p>
-            {/* Social icons — will be populated when accounts are created */}
           </div>
         </div>
       </footer>

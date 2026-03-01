@@ -1,5 +1,6 @@
 import { useState, useMemo } from 'react'
 import { framework, ASSESSMENT_LEVELS } from '../data/framework.js'
+import { safeGetItem, safeSetItem } from '../lib/safeStorage.js'
 
 /* ─────────────────────────────────────────────
    Parent-Friendly Domain Names
@@ -603,7 +604,7 @@ export default function HomePractice({ assessments = {}, clientName = 'your chil
   const [timeFilter, setTimeFilter] = useState('all')
   const [triedActivities, setTriedActivities] = useState(() => {
     try {
-      const saved = localStorage.getItem('skillcascade_tried_activities')
+      const saved = safeGetItem('skillcascade_tried_activities')
       return saved ? new Set(JSON.parse(saved)) : new Set()
     } catch { return new Set() }
   })
@@ -855,7 +856,7 @@ export default function HomePractice({ assessments = {}, clientName = 'your chil
                           const next = new Set(prev)
                           if (tried) next.delete(actKey)
                           else next.add(actKey)
-                          localStorage.setItem('skillcascade_tried_activities', JSON.stringify([...next]))
+                          safeSetItem('skillcascade_tried_activities', JSON.stringify([...next]))
                           return next
                         })}
                         className="inline-flex items-center gap-1.5 text-xs font-medium px-3 py-1.5 rounded-lg transition-colors"

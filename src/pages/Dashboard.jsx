@@ -14,6 +14,7 @@ import MobileFAB from '../components/MobileFAB.jsx'
 import ResponsiveSVG from '../components/ResponsiveSVG.jsx'
 import { detectCascadeRisks } from '../data/cascadeModel.js'
 import { userErrorMessage } from '../lib/errorUtils.js'
+import { safeGetItem, safeSetItem, safeRemoveItem } from '../lib/safeStorage.js'
 import SidebarNav from '../components/SidebarNav.jsx'
 import SkeletonLoader, { SkeletonChart, SkeletonDashboard, SkeletonAssessment, SkeletonList, SkeletonGrid } from '../components/SkeletonLoader.jsx'
 import AssessmentCompletionBadge from '../components/AssessmentCompletionBadge.jsx'
@@ -172,20 +173,20 @@ export default function Dashboard() {
   const { showToast } = useToast()
   const { isPhone, isTablet, isDesktop } = useResponsive()
   const [assessments, setAssessments, { undo, redo, canUndo, canRedo, resetState: resetAssessments }] = useUndoRedo({})
-  const [assessmentsLoading, setAssessmentsLoading] = useState(() => !!localStorage.getItem('skillcascade_selected_client'))
+  const [assessmentsLoading, setAssessmentsLoading] = useState(() => !!safeGetItem('skillcascade_selected_client'))
   const [selectedNode, setSelectedNode] = useState(null)
   const [sidebarOpen, setSidebarOpen] = useState(true)
   const [activeView, setActiveViewRaw] = useState(() => {
-    const saved = localStorage.getItem('skillcascade_active_view')
+    const saved = safeGetItem('skillcascade_active_view')
     return saved && Object.values(VIEWS).includes(saved) ? saved : VIEWS.HOME
   })
   const setActiveView = useCallback((view) => {
     setActiveViewRaw(view)
-    localStorage.setItem('skillcascade_active_view', view)
+    safeSetItem('skillcascade_active_view', view)
   }, [])
-  const [clientId, setClientId] = useState(() => localStorage.getItem('skillcascade_selected_client') || null)
+  const [clientId, setClientId] = useState(() => safeGetItem('skillcascade_selected_client'))
   const [snapshots, setSnapshots] = useState([])
-  const [clientName, setClientName] = useState(() => localStorage.getItem('skillcascade_selected_client_name') || 'Sample Client')
+  const [clientName, setClientName] = useState(() => safeGetItem('skillcascade_selected_client_name', 'Sample Client'))
   const [assessTarget, setAssessTarget] = useState({ subAreaId: null, ts: 0 })
   const [compareSnapshotId, setCompareSnapshotId] = useState(null)
   const [searchOpen, setSearchOpen] = useState(false)
@@ -194,13 +195,11 @@ export default function Dashboard() {
   const [detailPanelOpen, setDetailPanelOpen] = useState(false)
   const [shortcutsOpen, setShortcutsOpen] = useState(false)
   const [tourKey, setTourKey] = useState(0)
-  const [navCollapsed, setNavCollapsed] = useState(() => {
-    try { return localStorage.getItem('skillcascade_nav_collapsed') === 'true' } catch { return false }
-  })
+  const [navCollapsed, setNavCollapsed] = useState(() => safeGetItem('skillcascade_nav_collapsed') === 'true')
   const toggleNavCollapse = useCallback(() => {
     setNavCollapsed(prev => {
       const next = !prev
-      localStorage.setItem('skillcascade_nav_collapsed', String(next))
+      safeSetItem('skillcascade_nav_collapsed', String(next))
       return next
     })
   }, [])
@@ -322,7 +321,7 @@ export default function Dashboard() {
   }
 
   function dismissDraft() {
-    if (clientId) localStorage.removeItem(DRAFT_PREFIX + clientId)
+    if (clientId) safeRemoveItem(DRAFT_PREFIX + clientId)
     setDraftAvailable(false)
   }
 
@@ -498,11 +497,11 @@ export default function Dashboard() {
     setClientId(id)
     setClientName(name || 'Sample Client')
     if (id) {
-      localStorage.setItem('skillcascade_selected_client', id)
-      localStorage.setItem('skillcascade_selected_client_name', name || 'Sample Client')
+      safeSetItem('skillcascade_selected_client', id)
+      safeSetItem('skillcascade_selected_client_name', name || 'Sample Client')
     } else {
-      localStorage.removeItem('skillcascade_selected_client')
-      localStorage.removeItem('skillcascade_selected_client_name')
+      safeRemoveItem('skillcascade_selected_client')
+      safeRemoveItem('skillcascade_selected_client_name')
     }
     setAssessmentsLoading(false)
     const newData = savedAssessments === null

@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef } from 'react'
 import { mergeUserSettings } from '../lib/supabase.js'
 import { useAuth } from '../contexts/AuthContext.jsx'
+import { safeGetItem, safeSetItem, safeRemoveItem } from '../lib/safeStorage.js'
 
 /**
  * Minimal settings dropdown — hidden in the header.
@@ -11,7 +12,7 @@ export default function SettingsDropdown() {
   const { user, signOut } = useAuth()
   const [open, setOpen] = useState(false)
   const [darkMode, setDarkMode] = useState(() => {
-    return localStorage.getItem('skillcascade_dark_mode') === 'true'
+    return safeGetItem('skillcascade_dark_mode') === 'true'
   })
   const ref = useRef(null)
 
@@ -22,7 +23,7 @@ export default function SettingsDropdown() {
     } else {
       document.documentElement.classList.remove('dark')
     }
-    localStorage.setItem('skillcascade_dark_mode', darkMode)
+    safeSetItem('skillcascade_dark_mode', darkMode)
 
     // Also sync to Supabase
     if (user) {
@@ -32,7 +33,7 @@ export default function SettingsDropdown() {
 
   // Load on mount
   useEffect(() => {
-    const saved = localStorage.getItem('skillcascade_dark_mode') === 'true'
+    const saved = safeGetItem('skillcascade_dark_mode') === 'true'
     if (saved) document.documentElement.classList.add('dark')
   }, [])
 
@@ -48,7 +49,7 @@ export default function SettingsDropdown() {
   }, [open])
 
   function resetOnboarding() {
-    localStorage.removeItem('skillcascade_onboarding_complete')
+    safeRemoveItem('skillcascade_onboarding_complete')
     setOpen(false)
     window.location.reload()
   }
