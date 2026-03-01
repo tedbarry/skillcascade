@@ -251,6 +251,7 @@ export default memo(function Sunburst({ data, assessments = {}, width = 800, hei
       .style('cursor', 'pointer')
       .style('stroke', '#fdf8f0')
       .style('stroke-width', '0.5px')
+      .style('outline', 'none')
       .attr('role', 'button')
       .attr('aria-label', (d) => getArcAriaLabel(d, assessmentsRef.current))
       .attr('tabindex', (d) => (arcVisible(d.current) ? 0 : -1))
@@ -259,6 +260,12 @@ export default memo(function Sunburst({ data, assessments = {}, width = 800, hei
           event.preventDefault()
           zoomTo(d)
         }
+      })
+      .on('focus', function () {
+        select(this).style('stroke', '#3d6b4f').style('stroke-width', '2px')
+      })
+      .on('blur', function (event, d) {
+        select(this).style('stroke', '#fdf8f0').style('stroke-width', '0.5px')
       })
 
     // Hover
@@ -403,6 +410,7 @@ export default memo(function Sunburst({ data, assessments = {}, width = 800, hei
       .attr('fill', '#fdf8f0')
       .attr('pointer-events', 'all')
       .style('cursor', 'pointer')
+      .style('outline', 'none')
       .attr('role', 'button')
       .attr('aria-label', 'Go up one level. Press Enter to zoom out.')
       .attr('tabindex', 0)

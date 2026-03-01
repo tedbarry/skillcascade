@@ -201,7 +201,7 @@ export default memo(function RadarChart({
 
       {/* Radar chart */}
       <ResponsiveContainer width="100%" height={height}>
-        <RechartsRadarChart data={chartData} cx="50%" cy="50%" outerRadius="72%">
+        <RechartsRadarChart data={chartData} cx="50%" cy="50%" outerRadius="65%">
           <PolarGrid
             stroke="#e8d5c0"
             strokeWidth={0.5}

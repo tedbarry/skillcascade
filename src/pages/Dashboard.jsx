@@ -863,7 +863,7 @@ export default function Dashboard() {
           {/* Radar view */}
           {activeView === VIEWS.RADAR && (
             <Suspense fallback={<ViewLoader view={activeView} />}>
-              <div data-tour="radar-view" className="w-full max-w-2xl">
+              <div data-tour="radar-view" className="w-full max-w-2xl mx-auto">
                 <h2 className="text-lg font-semibold text-warm-800 font-display mb-1 text-center">
                   Skills Profile — Domain Overview
                 </h2>
