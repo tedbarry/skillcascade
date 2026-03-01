@@ -24,6 +24,7 @@ const FILTER_OPTIONS = [
 ]
 
 const THIRTY_DAYS = 30 * 24 * 60 * 60 * 1000
+const PAGE_SIZE = 15
 
 /** Total individual skills across the entire framework */
 const TOTAL_SKILLS = framework.reduce(
@@ -128,6 +129,7 @@ export default function CaseloadDashboard({ currentClientId, onSelectClient }) {
   const [clientData, setClientData] = useState([])
   const [dataLoading, setDataLoading] = useState(true)
   const [searchQuery, setSearchQuery] = useState('')
+  const [visibleCount, setVisibleCount] = useState(PAGE_SIZE)
 
   /* ── Load and enrich client data ── */
 
@@ -232,6 +234,19 @@ export default function CaseloadDashboard({ currentClientId, onSelectClient }) {
     }
     return list
   }, [filtered, sortBy])
+
+  /* ── Reset pagination when sort/filter/search changes ── */
+
+  useEffect(() => {
+    setVisibleCount(PAGE_SIZE)
+  }, [sortBy, filterBy, searchQuery])
+
+  /* ── Paginated slice for rendering ── */
+
+  const visible = useMemo(
+    () => sorted.slice(0, visibleCount),
+    [sorted, visibleCount]
+  )
 
   /* ── Summary stats ── */
 
@@ -414,19 +429,36 @@ export default function CaseloadDashboard({ currentClientId, onSelectClient }) {
           </button>
         </div>
       ) : (
-        <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
-          {sorted.map((client) => (
-            <ClientCard
-              key={client.id}
-              client={client}
-              isSelected={client.id === currentClientId}
-              onSelect={() =>
-                onSelectClient(client.id, client.name, client.assessments)
-              }
-              formatRelative={formatRelative}
-            />
-          ))}
-        </div>
+        <>
+          <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
+            {visible.map((client) => (
+              <ClientCard
+                key={client.id}
+                client={client}
+                isSelected={client.id === currentClientId}
+                onSelect={() =>
+                  onSelectClient(client.id, client.name, client.assessments)
+                }
+                formatRelative={formatRelative}
+              />
+            ))}
+          </div>
+
+          {/* ── Pagination ── */}
+          <div className="flex flex-col items-center gap-2 pt-2">
+            <span className="text-xs text-warm-400">
+              Showing {visible.length} of {sorted.length} client{sorted.length !== 1 ? 's' : ''}
+            </span>
+            {visibleCount < sorted.length && (
+              <button
+                onClick={() => setVisibleCount((c) => c + PAGE_SIZE)}
+                className="bg-warm-100 text-warm-600 hover:bg-warm-200 rounded-lg px-4 py-2 text-sm font-medium min-h-[44px] transition-colors"
+              >
+                Load More
+              </button>
+            )}
+          </div>
+        </>
       )}
     </div>
   )

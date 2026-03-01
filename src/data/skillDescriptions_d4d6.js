@@ -530,6 +530,75 @@ export const descriptions_d4d6 = {
   // D6 — Social Understanding & Perspective
   // ═══════════════════════════════════════════════════════════════════════════
 
+  // D6-SA0: Shared Attention
+  // SG1: Joint Attention Foundations
+  'd6-sa0-sg1-s1': {
+    description:
+      'The ability to orient toward another person when they initiate a bid for shared attention, such as calling the individual\'s name, tapping them, or making eye contact.',
+    looks_like:
+      'The individual turns toward a communication partner who says their name or gestures for attention, establishing a brief moment of shared focus.',
+    absence:
+      'The individual does not orient or respond when others attempt to gain their attention, continuing their current activity as if no bid occurred.',
+  },
+  'd6-sa0-sg1-s2': {
+    description:
+      'The ability to shift gaze or attention in the direction another person is pointing or looking, arriving at the same referent the partner is indicating.',
+    looks_like:
+      'When an adult points to an object or looks toward something, the individual follows the gesture or gaze and attends to the same item or event.',
+    absence:
+      'The individual does not follow points or gaze shifts, either looking at the pointing hand itself or continuing to focus on their own activity.',
+  },
+  'd6-sa0-sg1-s3': {
+    description:
+      'The ability to direct another person\'s attention to an object or event for the purpose of sharing interest, not just requesting. This is a hallmark social-communicative milestone.',
+    looks_like:
+      'The individual points to something interesting (e.g., an airplane, a dog) and looks back at the communication partner to confirm shared attention.',
+    absence:
+      'The individual does not spontaneously direct others\' attention to items or events of interest, or only points instrumentally to request desired objects.',
+  },
+  'd6-sa0-sg1-s4': {
+    description:
+      'The ability to shift attention fluidly between a communication partner and an object or activity, maintaining a triadic connection among self, other, and referent.',
+    looks_like:
+      'During play or exploration, the individual looks back and forth between the object and the partner, sharing reactions and checking the partner\'s response.',
+    absence:
+      'The individual focuses exclusively on either the object or the person but does not coordinate attention between both within the same interaction.',
+  },
+
+  // SG2: Shared Engagement
+  'd6-sa0-sg2-s1': {
+    description:
+      'The ability to remain engaged in a back-and-forth interaction with a partner for at least two exchanges, demonstrating basic reciprocity.',
+    looks_like:
+      'The individual takes a turn, waits for the partner\'s turn, and responds again, sustaining a brief interactive loop such as rolling a ball back and forth.',
+    absence:
+      'The individual disengages after a single exchange or does not respond to the partner\'s turn, failing to sustain even brief reciprocal interaction.',
+  },
+  'd6-sa0-sg2-s2': {
+    description:
+      'The ability to look at or attend to a partner\'s reaction during a shared activity, using their emotional or behavioral response as social information.',
+    looks_like:
+      'The individual glances at the partner\'s face after an event (e.g., a tower falling) to check their reaction before deciding how to respond.',
+    absence:
+      'The individual does not reference the partner\'s reaction during shared activities, proceeding without regard for the partner\'s emotional or social cues.',
+  },
+  'd6-sa0-sg2-s3': {
+    description:
+      'The ability to adjust one\'s own actions during a shared activity in response to the partner\'s level of engagement, interest, or disengagement.',
+    looks_like:
+      'The individual slows down, changes the activity, or increases bids for attention when they notice a partner losing interest or becoming disengaged.',
+    absence:
+      'The individual continues the same actions regardless of whether the partner is engaged, bored, or has stopped participating entirely.',
+  },
+  'd6-sa0-sg2-s4': {
+    description:
+      'The ability to build play sequences collaboratively with a partner, where both individuals contribute ideas and actions that extend the shared narrative or activity.',
+    looks_like:
+      'The individual adds to a partner\'s play idea (e.g., partner builds a road, individual adds a bridge) and accepts the partner\'s additions in return.',
+    absence:
+      'The individual either plays in parallel without integrating the partner\'s contributions, or rigidly controls the play sequence without allowing partner input.',
+  },
+
   // D6-SA1: Perspective-Taking
   // SG1: Differentiate self vs other
   'd6-sa1-sg1-s1': {

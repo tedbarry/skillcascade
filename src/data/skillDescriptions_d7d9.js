@@ -418,6 +418,11 @@ export const descriptions_d7d9 = {
     looks_like: 'Caregivers deliver planned responses even when tired, stressed, or frustrated, maintaining the integrity of the behavioral plan.',
     absence: 'Caregiver responses shift based on their own emotional state — being lenient when in a good mood and harsh when stressed, creating an unpredictable contingency environment.',
   },
+  'd9-sa1-sg1-s3': {
+    description: 'The ability to communicate the need for support using any available modality — speech, gesture, sign, AAC device, or behavioral signal — before reaching full dysregulation.',
+    looks_like: 'The individual reaches toward a supporter, vocalizes, uses a help card, or otherwise signals that they need co-regulation before a behavioral crisis occurs.',
+    absence: 'The individual does not signal need for support and either escalates to crisis without warning or withdraws entirely, leaving supporters unable to intervene proactively.',
+  },
 
   // SG2: Maintain stable expectations
   'd9-sa1-sg2-s1': {
@@ -455,6 +460,11 @@ export const descriptions_d7d9 = {
     description: 'The support system\'s ability to update reinforcer selections based on the individual\'s changing responses, avoiding satiation and maintaining motivation.',
     looks_like: 'Caregivers rotate reinforcers, check for satiation, and update preferences regularly so the reinforcement system stays effective over time.',
     absence: 'The same reinforcers are used indefinitely regardless of declining effectiveness, leading to motivational collapse and the false conclusion that "nothing works."',
+  },
+  'd9-sa2-sg1-s3': {
+    description: 'The ability to attend to and follow visual supports such as picture schedules, token boards, first-then boards, or visual timers to guide behavior and transitions.',
+    looks_like: 'The individual checks a visual schedule before transitioning, follows a first-then board sequence, or references a token board to track progress toward reinforcement.',
+    absence: 'The individual ignores or does not reference available visual supports, requiring repeated verbal prompts for transitions and task sequences that visuals are designed to scaffold.',
   },
 
   // SG2: Deliver contingently
@@ -494,6 +504,11 @@ export const descriptions_d7d9 = {
     looks_like: 'The individual succeeds with support that challenges them just enough — not so much help that the skill is done for them, not so little that they fail repeatedly.',
     absence: 'The individual is either fully guided through every step (never developing independence) or left to fail repeatedly (never experiencing success).',
   },
+  'd9-sa3-sg1-s3': {
+    description: 'The ability to identify and communicate what kind of help is needed rather than making a general request, specifying the type of support that would be most useful.',
+    looks_like: 'The individual asks for a specific form of assistance such as "Can you hold this?" or "Show me how" rather than a generic "Help me" with no further detail.',
+    absence: 'The individual either makes only vague, undifferentiated help requests or does not request help at all, leaving supporters to guess what type of assistance is needed.',
+  },
 
   // SG2: Time prompts effectively
   'd9-sa3-sg2-s1': {
@@ -531,6 +546,11 @@ export const descriptions_d7d9 = {
     description: 'The support system\'s ability to demonstrate that mistakes and imperfection are normal parts of functioning, modeling recovery rather than perfection.',
     looks_like: 'Caregivers acknowledge their own errors openly, model self-correction, and show that mistakes do not lead to catastrophe.',
     absence: 'Caregivers either hide their mistakes or react to them with the same dysregulation they are trying to reduce in the individual, reinforcing a fear-of-failure culture.',
+  },
+  'd9-sa4-sg1-s3': {
+    description: 'The ability to retain and reproduce a modeled behavior after a time delay rather than only through immediate imitation, indicating the behavior has been encoded into memory.',
+    looks_like: 'The individual demonstrates a strategy or action that was modeled earlier in the session or on a previous day, without needing it to be re-demonstrated.',
+    absence: 'The individual can only imitate actions immediately after demonstration and does not reproduce them after any delay, requiring re-modeling for each occurrence.',
   },
 
   // SG2: Model emotional responses

@@ -11,7 +11,7 @@
 
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
 import Stripe from 'https://esm.sh/stripe@14?target=deno'
-import { corsHeaders } from '../_shared/cors.ts'
+import { getCorsHeaders } from '../_shared/cors.ts'
 
 const PLAN_PRICE_MAP: Record<string, string> = {
   starter: Deno.env.get('STRIPE_STARTER_PRICE_ID') || '',
@@ -20,6 +20,8 @@ const PLAN_PRICE_MAP: Record<string, string> = {
 }
 
 Deno.serve(async (req) => {
+  const corsHeaders = getCorsHeaders(req)
+
   if (req.method === 'OPTIONS') {
     return new Response('ok', { headers: corsHeaders })
   }
