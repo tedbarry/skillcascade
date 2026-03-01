@@ -70,22 +70,13 @@ function shallowEqual(a, b) {
 }
 
 /**
- * Migrate legacy assessments: old format used 0 for "not assessed",
- * new format uses null/undefined. Remove any keys with value 0
- * since those were never deliberately rated.
+ * Assessment data migration (identity pass-through).
+ * Previously stripped 0 values (old "not assessed" format).
+ * Now 0 = "Not Present" is a valid clinical rating — no stripping.
  */
 function migrateAssessments(assessments) {
   if (!assessments || typeof assessments !== 'object') return assessments
-  const migrated = {}
-  let changed = false
-  for (const [key, value] of Object.entries(assessments)) {
-    if (value === 0) {
-      changed = true // skip — old "not assessed" becomes absent key
-    } else {
-      migrated[key] = value
-    }
-  }
-  return changed ? migrated : assessments
+  return assessments
 }
 
 // Map views to appropriate skeleton variants for better loading UX

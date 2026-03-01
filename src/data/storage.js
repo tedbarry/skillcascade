@@ -65,23 +65,43 @@ export async function deleteClient(id) {
  * Assessments — stored as individual rows, returned as a map of skillId → level
  */
 export async function saveAssessment(clientId, assessments, userId) {
-  // Build upsert rows from the assessments map
-  const rows = Object.entries(assessments)
+  // Split entries: assessed skills (0-3) get upserted, null/undefined get deleted
+  const upsertRows = []
+  const deleteSkillIds = []
+
+  Object.entries(assessments)
     .filter(([key]) => !key.startsWith('_'))
-    .map(([skillId, level]) => ({
-      client_id: clientId,
-      skill_id: skillId,
-      level,
-      assessed_by: userId,
-      assessed_at: new Date().toISOString(),
-    }))
+    .forEach(([skillId, level]) => {
+      if (level !== null && level !== undefined) {
+        upsertRows.push({
+          client_id: clientId,
+          skill_id: skillId,
+          level,
+          assessed_by: userId,
+          assessed_at: new Date().toISOString(),
+        })
+      } else {
+        deleteSkillIds.push(skillId)
+      }
+    })
 
-  if (rows.length === 0) return {}
+  // Upsert assessed skills
+  if (upsertRows.length > 0) {
+    const { error } = await supabase
+      .from('assessments')
+      .upsert(upsertRows, { onConflict: 'client_id,skill_id' })
+    if (error) throw error
+  }
 
-  const { error } = await supabase
-    .from('assessments')
-    .upsert(rows, { onConflict: 'client_id,skill_id' })
-  if (error) throw error
+  // Delete cleared skills (null = "Not Assessed" → remove from DB)
+  if (deleteSkillIds.length > 0) {
+    const { error } = await supabase
+      .from('assessments')
+      .delete()
+      .eq('client_id', clientId)
+      .in('skill_id', deleteSkillIds)
+    if (error) throw error
+  }
 
   return assessments
 }
