@@ -53,10 +53,29 @@ const OutcomeCertification = lazy(() => import('../components/OutcomeCertificati
 const ComparisonView = lazy(() => import('../components/ComparisonView.jsx'))
 const KeyboardShortcuts = lazy(() => import('../components/KeyboardShortcuts.jsx'))
 const DependencyExplorer = lazy(() => import('../components/explorer/DependencyExplorer.jsx'))
-import { framework, toHierarchy, ASSESSMENT_LABELS, ASSESSMENT_COLORS, ASSESSMENT_LEVELS } from '../data/framework.js'
+import { framework, toHierarchy, ASSESSMENT_LABELS, ASSESSMENT_COLORS, ASSESSMENT_LEVELS, isAssessed } from '../data/framework.js'
 import { generateSampleAssessments } from '../data/sampleAssessments.js'
 import { saveSnapshot, getSnapshots, deleteSnapshot, getAssessments, saveAssessment } from '../data/storage.js'
 import { useAuth } from '../contexts/AuthContext.jsx'
+
+/**
+ * Migrate legacy assessments: old format used 0 for "not assessed",
+ * new format uses null/undefined. Remove any keys with value 0
+ * since those were never deliberately rated.
+ */
+function migrateAssessments(assessments) {
+  if (!assessments || typeof assessments !== 'object') return assessments
+  const migrated = {}
+  let changed = false
+  for (const [key, value] of Object.entries(assessments)) {
+    if (value === 0) {
+      changed = true // skip — old "not assessed" becomes absent key
+    } else {
+      migrated[key] = value
+    }
+  }
+  return changed ? migrated : assessments
+}
 
 // Map views to appropriate skeleton variants for better loading UX
 const VIEW_SKELETON = {
@@ -284,7 +303,7 @@ export default function Dashboard() {
       if (raw) {
         const draft = JSON.parse(raw)
         if (draft.assessments) {
-          resetAssessments(draft.assessments)
+          resetAssessments(migrateAssessments(draft.assessments))
           showToast('Draft restored', 'success')
         }
       }
@@ -488,7 +507,7 @@ export default function Dashboard() {
   useEffect(() => {
     if (clientId) {
       setAssessmentsLoading(true)
-      getAssessments(clientId).then((saved) => { const data = saved || {}; resetAssessments(data); lastSavedRef.current = data }).catch((err) => showToast(userErrorMessage(err, 'load assessments'), 'error')).finally(() => setAssessmentsLoading(false))
+      getAssessments(clientId).then((saved) => { const data = migrateAssessments(saved || {}); resetAssessments(data); lastSavedRef.current = data }).catch((err) => showToast(userErrorMessage(err, 'load assessments'), 'error')).finally(() => setAssessmentsLoading(false))
     } else {
       setAssessmentsLoading(false)
     }
@@ -958,6 +977,7 @@ export default function Dashboard() {
                   onNavigateToAssess={handleNavigateToAssess}
                   focusDomain={goalFocusDomain}
                   onClearFocus={() => setGoalFocusDomain(null)}
+                  clientName={clientName}
                 />
               </Suspense>
             </div>
@@ -1216,7 +1236,10 @@ export default function Dashboard() {
     <PrintReport assessments={assessments} clientName={clientName} snapshots={snapshots} branding={branding} />
     {/* Toasts now handled globally by ToastProvider in App.jsx */}
     <Suspense fallback={null}>
-      <OnboardingTour key={tourKey} onComplete={() => {}} onNavigate={(view) => setActiveView(view)} />
+      <OnboardingTour key={tourKey} onComplete={() => {}} onNavigate={(view) => {
+        if (view === 'open-ai') { setAiPanelOpen(true) }
+        else { setActiveView(view) }
+      }} />
     </Suspense>
     <Suspense fallback={null}>
       <KeyboardShortcuts
@@ -1293,7 +1316,7 @@ function DomainNavigator({ assessments, selectedId, onSelect }) {
             sa.skillGroups.flatMap((sg) => sg.skills)
           )
           const assessed = domainSkills.filter(
-            (s) => assessments[s.id] && assessments[s.id] !== ASSESSMENT_LEVELS.NOT_ASSESSED
+            (s) => isAssessed(assessments[s.id])
           )
           const avg =
             assessed.length > 0
@@ -1451,29 +1474,37 @@ function SkillGroupAssessor({ skillGroup, assessments, onAssess }) {
       <h4 className="text-xs font-semibold text-warm-700 mb-3">{skillGroup.name}</h4>
       <div className="space-y-2">
         {skillGroup.skills.map((skill) => {
-          const level = assessments[skill.id] ?? ASSESSMENT_LEVELS.NOT_ASSESSED
+          const level = assessments[skill.id] ?? null
           return (
             <div key={skill.id}>
               <div className="text-[11px] text-warm-600 mb-1.5 leading-tight">{skill.name}</div>
-              <div className="flex gap-1">
-                {[0, 1, 2, 3].map((val) => (
-                  <button
-                    key={val}
-                    onClick={() => onAssess((prev) => ({ ...prev, [skill.id]: val }))}
-                    className={`text-[9px] px-2 py-1 rounded-md transition-all font-medium ${
-                      level === val
-                        ? 'ring-2 ring-offset-1 ring-warm-400 scale-105'
-                        : 'opacity-60 hover:opacity-100'
-                    }`}
-                    style={{
-                      backgroundColor: ASSESSMENT_COLORS[val],
-                      color: val === 0 ? '#555' : '#fff',
-                    }}
-                    title={ASSESSMENT_LABELS[val]}
-                  >
-                    {ASSESSMENT_LABELS[val]}
-                  </button>
-                ))}
+              <div className="flex gap-1 items-center">
+                {!isAssessed(level) && <span className="text-[9px] text-warm-400">{'\u2014'}</span>}
+                {[0, 1, 2, 3].map((val) => {
+                  const selected = level === val
+                  return (
+                    <button
+                      key={val}
+                      onClick={() => onAssess((prev) => {
+                        const next = { ...prev }
+                        if (selected) { delete next[skill.id] } else { next[skill.id] = val }
+                        return next
+                      })}
+                      className={`text-[9px] px-2 py-1 rounded-md transition-all font-medium ${
+                        selected
+                          ? 'ring-2 ring-offset-1 ring-warm-400 scale-105'
+                          : !isAssessed(level) ? 'opacity-30 hover:opacity-80' : 'opacity-60 hover:opacity-100'
+                      }`}
+                      style={{
+                        backgroundColor: ASSESSMENT_COLORS[val],
+                        color: '#fff',
+                      }}
+                      title={selected ? 'Clear (Not Assessed)' : ASSESSMENT_LABELS[val]}
+                    >
+                      {ASSESSMENT_LABELS[val]}
+                    </button>
+                  )
+                })}
               </div>
             </div>
           )

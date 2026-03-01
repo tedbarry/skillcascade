@@ -4,8 +4,23 @@ import useClinicalIntelligence from '../hooks/useClinicalIntelligence.js'
 import useResponsive from '../hooks/useResponsive.js'
 import { framework } from '../data/framework.js'
 import { DOMAIN_COLORS } from '../constants/colors.js'
+import { detectCascadeRisks } from '../data/cascadeModel.js'
+import CascadeViewTabs from './cascade/CascadeViewTabs.jsx'
 
-const CascadeView = lazy(() => import('./cascade/CascadeView.jsx'))
+const StatusMapView = lazy(() => import('./cascade/StatusMapView.jsx'))
+const BottleneckFinderView = lazy(() => import('./cascade/BottleneckFinderView.jsx'))
+const InterventionPlannerView = lazy(() => import('./cascade/InterventionPlannerView.jsx'))
+const RiskMonitorView = lazy(() => import('./cascade/RiskMonitorView.jsx'))
+const ProgressStoryView = lazy(() => import('./cascade/ProgressStoryView.jsx'))
+
+const INTELLIGENCE_TABS = [
+  { id: 'overview',    label: 'Overview',    shortLabel: 'Overview' },
+  { id: 'status',      label: 'Status Map',  shortLabel: 'Status' },
+  { id: 'bottleneck',  label: 'Bottleneck',  shortLabel: 'Bottleneck' },
+  { id: 'planner',     label: 'Planner',     shortLabel: 'Planner' },
+  { id: 'risk',        label: 'Risks',       shortLabel: 'Risks' },
+  { id: 'story',       label: 'Story',       shortLabel: 'Story' },
+]
 
 const STATE_LABELS = {
   locked: 'Not Assessed',
@@ -432,12 +447,18 @@ export default memo(function ClinicalIntelligence({
     getPathReadiness,
   } = intelligence
 
+  const [activeTab, setActiveTab] = useState('overview')
   const [mode, setMode] = useState('directive') // 'directive' | 'discovery'
   const [expandedSkill, setExpandedSkill] = useState(null)
   const [expandedDomain, setExpandedDomain] = useState(null)
   const [pathDomain, setPathDomain] = useState(null)
-  const [showDetailedViews, setShowDetailedViews] = useState(false)
   const [showAllRisks, setShowAllRisks] = useState(false)
+
+  // Risk count for tab badge
+  const riskCount = useMemo(
+    () => detectCascadeRisks(assessments, snapshots).length,
+    [assessments, snapshots]
+  )
 
   // Toggle skill expansion
   const handleSkillToggle = (index) => {
@@ -478,34 +499,11 @@ export default memo(function ClinicalIntelligence({
       })
   }, [domainHealth])
 
-  if (showDetailedViews) {
-    return (
-      <div className="flex flex-col flex-1 min-h-0 overflow-hidden">
-        <div className={`${isPhone ? 'px-3 py-2' : 'px-5 py-2'} border-b border-[#333]/40 flex items-center gap-3`}>
-          <button
-            onClick={() => setShowDetailedViews(false)}
-            className="text-[11px] text-gray-500 hover:text-gray-300 transition-colors min-h-[32px]"
-          >
-            {'\u2190'} Back to Intelligence
-          </button>
-          <span className="text-[10px] text-gray-600 font-mono">Detailed Cascade Views</span>
-        </div>
-        <Suspense fallback={<div className="flex-1 flex items-center justify-center text-gray-600 text-sm">Loading...</div>}>
-          <CascadeView
-            assessments={assessments}
-            snapshots={snapshots}
-            clientName={clientName}
-            onSelectNode={onSelectNode}
-            onNavigateToAssess={onNavigateToAssess}
-          />
-        </Suspense>
-      </div>
-    )
-  }
+  const cascadeProps = { assessments, snapshots, clientName, onNavigateToAssess }
 
   return (
     <div className="flex flex-col flex-1 min-h-0 overflow-hidden">
-      {/* Headline banner */}
+      {/* Headline banner — always visible */}
       <HeadlineBanner
         headline={headline}
         narratives={narratives}
@@ -514,123 +512,33 @@ export default memo(function ClinicalIntelligence({
         isPhone={isPhone}
       />
 
-      {/* Scrollable content */}
-      <div className="flex-1 overflow-auto">
-        {!hasData ? (
-          <div className={`${isPhone ? 'px-3 py-8' : 'px-5 py-12'} text-center`}>
-            <p className="text-gray-500 text-sm">Complete an assessment to generate clinical insights.</p>
-            <p className="text-gray-600 text-[11px] mt-2">
-              The engine will analyze domain health, detect risks, and recommend intervention targets.
-            </p>
-          </div>
-        ) : isPhone ? (
-          /* ─── Phone: Single column ─── */
-          <div className="px-3 py-3 space-y-4">
-            {/* Mode toggle */}
-            <ModeToggle mode={mode} onModeChange={setMode} />
+      {/* Tab bar — always visible */}
+      <CascadeViewTabs
+        tabs={INTELLIGENCE_TABS}
+        activeTab={activeTab}
+        onTabChange={setActiveTab}
+        riskCount={riskCount}
+      />
 
-            {/* Target skills */}
-            <Section title="Target These Skills" count={targetSkills.length}>
-              <div className="space-y-1.5">
-                {targetSkills.map((skill, i) => (
-                  <TargetSkillCard
-                    key={skill.skillId}
-                    skill={skill}
-                    index={i}
-                    isExpanded={mode === 'discovery' || expandedSkill === i}
-                    onToggle={() => handleSkillToggle(i)}
-                    onAssess={onNavigateToAssess}
-                    isPhone
-                  />
-                ))}
-              </div>
-            </Section>
-
-            {/* Clinical summary */}
-            {mode === 'discovery' && (
-              <div className="rounded-lg bg-[#16161e] px-3 py-2.5">
-                <p className="text-[10px] text-gray-600 font-mono uppercase tracking-wider mb-1">Clinical Summary</p>
-                <p className="text-[11px] text-gray-400 leading-relaxed">{narratives.clinicalSummary}</p>
-              </div>
-            )}
-
-            {/* Domain status — horizontal scroll with inline detail */}
-            <Section title="Domain Status">
-              <div className="flex gap-2 overflow-x-auto pb-1 -mx-3 px-3 scrollbar-none relative [mask-image:linear-gradient(to_right,transparent,black_8px,black_calc(100%-24px),transparent)]">
-                {domainPills.map(d => (
-                  <DomainPill
-                    key={d.id}
-                    domainId={d.id}
-                    state={d.state}
-                    avg={d.avg}
-                    assessed={d.assessed}
-                    isPhone
-                    isExpanded={expandedDomain === d.id}
-                    onToggle={() => handleDomainToggle(d.id)}
-                  />
-                ))}
-              </div>
-              <AnimatePresence>
-                {expandedDomain && domainInsights[expandedDomain] && (
-                  <DomainDetail
-                    domainId={expandedDomain}
-                    insight={domainInsights[expandedDomain]}
-                    isPhone
-                    onAssess={onNavigateToAssess}
-                    onGoal={onNavigateToGoals}
-                    onShowPath={handleShowPath}
-                    pathSteps={pathDomain === expandedDomain ? pathSteps : null}
-                  />
-                )}
-              </AnimatePresence>
-            </Section>
-
-            {/* Risks */}
-            {risks.hasActiveRisks && (
-              <Section title="Active Risks" count={risks.combined.length}>
-                <div className="space-y-1.5">
-                  {(showAllRisks ? risks.combined : risks.combined.slice(0, 5)).map((risk) => (
-                    <RiskCard key={`${risk.type}-${risk.actionDomainId || ''}-${risk.affectedDomains?.[0] || ''}`} risk={risk} isPhone />
-                  ))}
-                </div>
-                {risks.combined.length > 5 && (
-                  <button
-                    onClick={() => setShowAllRisks(!showAllRisks)}
-                    className="text-[11px] text-gray-500 hover:text-gray-300 mt-2 transition-colors"
-                  >
-                    {showAllRisks ? 'Show fewer' : `Show all ${risks.combined.length} risks`}
-                  </button>
-                )}
-              </Section>
-            )}
-
-            {/* Rationale */}
-            {mode === 'discovery' && (
-              <div className="rounded-lg bg-[#16161e] px-3 py-2.5">
-                <p className="text-[10px] text-gray-600 font-mono uppercase tracking-wider mb-1">Why These Targets</p>
-                <p className="text-[11px] text-gray-400 leading-relaxed">{narratives.interventionRationale}</p>
-              </div>
-            )}
-
-            {/* Link to detailed views */}
-            <button
-              onClick={() => setShowDetailedViews(true)}
-              className="w-full text-center text-[11px] text-gray-600 hover:text-gray-400 py-2 transition-colors"
-            >
-              View detailed cascade visualizations {'\u2192'}
-            </button>
-          </div>
-        ) : (
-          /* ─── Tablet/Desktop: Two columns ─── */
-          <div className={`${isTablet ? 'px-4 py-3' : 'px-5 py-4'} flex gap-4 min-h-0`}>
-            {/* Left: Target skills (60%) */}
-            <div className="flex-[3] min-w-0 space-y-4">
+      {/* Tab content */}
+      {activeTab === 'overview' ? (
+        <div className="flex-1 overflow-auto">
+          {!hasData ? (
+            <div className={`${isPhone ? 'px-3 py-8' : 'px-5 py-12'} text-center`}>
+              <p className="text-gray-500 text-sm">Complete an assessment to generate clinical insights.</p>
+              <p className="text-gray-600 text-[11px] mt-2">
+                The engine will analyze domain health, detect risks, and recommend intervention targets.
+              </p>
+            </div>
+          ) : isPhone ? (
+            /* ─── Phone: Single column ─── */
+            <div className="px-3 py-3 space-y-4">
               {/* Mode toggle */}
               <ModeToggle mode={mode} onModeChange={setMode} />
 
               {/* Target skills */}
               <Section title="Target These Skills" count={targetSkills.length}>
-                <div className="space-y-2">
+                <div className="space-y-1.5">
                   {targetSkills.map((skill, i) => (
                     <TargetSkillCard
                       key={skill.skillId}
@@ -639,64 +547,49 @@ export default memo(function ClinicalIntelligence({
                       isExpanded={mode === 'discovery' || expandedSkill === i}
                       onToggle={() => handleSkillToggle(i)}
                       onAssess={onNavigateToAssess}
+                      isPhone
                     />
                   ))}
                 </div>
               </Section>
 
-              {/* Clinical summary + rationale in discovery mode */}
+              {/* Clinical summary */}
               {mode === 'discovery' && (
-                <div className="space-y-3">
-                  <div className="rounded-lg bg-[#16161e] px-4 py-3">
-                    <p className="text-[10px] text-gray-600 font-mono uppercase tracking-wider mb-1.5">Clinical Summary</p>
-                    <p className="text-[11px] text-gray-400 leading-relaxed">{narratives.clinicalSummary}</p>
-                  </div>
-                  <div className="rounded-lg bg-[#16161e] px-4 py-3">
-                    <p className="text-[10px] text-gray-600 font-mono uppercase tracking-wider mb-1.5">Why These Targets</p>
-                    <p className="text-[11px] text-gray-400 leading-relaxed">{narratives.interventionRationale}</p>
-                  </div>
+                <div className="rounded-lg bg-[#16161e] px-3 py-2.5">
+                  <p className="text-[10px] text-gray-600 font-mono uppercase tracking-wider mb-1">Clinical Summary</p>
+                  <p className="text-[11px] text-gray-400 leading-relaxed">{narratives.clinicalSummary}</p>
                 </div>
               )}
 
-              {/* Detailed views link */}
-              <button
-                onClick={() => setShowDetailedViews(true)}
-                className="text-[11px] text-gray-600 hover:text-gray-400 transition-colors"
-              >
-                View detailed cascade visualizations {'\u2192'}
-              </button>
-            </div>
-
-            {/* Right: Status + Risks (40%) */}
-            <div className="flex-[2] min-w-0 space-y-4">
-              {/* Domain status grid */}
+              {/* Domain status — horizontal scroll with inline detail */}
               <Section title="Domain Status">
-                <div className="space-y-1.5">
+                <div className="flex gap-2 overflow-x-auto pb-1 -mx-3 px-3 scrollbar-none relative [mask-image:linear-gradient(to_right,transparent,black_8px,black_calc(100%-24px),transparent)]">
                   {domainPills.map(d => (
-                    <div key={d.id}>
-                      <DomainPill
-                        domainId={d.id}
-                        state={d.state}
-                        avg={d.avg}
-                        assessed={d.assessed}
-                        isExpanded={expandedDomain === d.id}
-                        onToggle={() => handleDomainToggle(d.id)}
-                      />
-                      <AnimatePresence>
-                        {expandedDomain === d.id && domainInsights[d.id] && (
-                          <DomainDetail
-                            domainId={d.id}
-                            insight={domainInsights[d.id]}
-                            onAssess={onNavigateToAssess}
-                            onGoal={onNavigateToGoals}
-                            onShowPath={handleShowPath}
-                            pathSteps={pathDomain === d.id ? pathSteps : null}
-                          />
-                        )}
-                      </AnimatePresence>
-                    </div>
+                    <DomainPill
+                      key={d.id}
+                      domainId={d.id}
+                      state={d.state}
+                      avg={d.avg}
+                      assessed={d.assessed}
+                      isPhone
+                      isExpanded={expandedDomain === d.id}
+                      onToggle={() => handleDomainToggle(d.id)}
+                    />
                   ))}
                 </div>
+                <AnimatePresence>
+                  {expandedDomain && domainInsights[expandedDomain] && (
+                    <DomainDetail
+                      domainId={expandedDomain}
+                      insight={domainInsights[expandedDomain]}
+                      isPhone
+                      onAssess={onNavigateToAssess}
+                      onGoal={onNavigateToGoals}
+                      onShowPath={handleShowPath}
+                      pathSteps={pathDomain === expandedDomain ? pathSteps : null}
+                    />
+                  )}
+                </AnimatePresence>
               </Section>
 
               {/* Risks */}
@@ -704,7 +597,7 @@ export default memo(function ClinicalIntelligence({
                 <Section title="Active Risks" count={risks.combined.length}>
                   <div className="space-y-1.5">
                     {(showAllRisks ? risks.combined : risks.combined.slice(0, 5)).map((risk) => (
-                      <RiskCard key={`${risk.type}-${risk.actionDomainId || ''}-${risk.affectedDomains?.[0] || ''}`} risk={risk} />
+                      <RiskCard key={`${risk.type}-${risk.actionDomainId || ''}-${risk.affectedDomains?.[0] || ''}`} risk={risk} isPhone />
                     ))}
                   </div>
                   {risks.combined.length > 5 && (
@@ -717,10 +610,118 @@ export default memo(function ClinicalIntelligence({
                   )}
                 </Section>
               )}
+
+              {/* Rationale */}
+              {mode === 'discovery' && (
+                <div className="rounded-lg bg-[#16161e] px-3 py-2.5">
+                  <p className="text-[10px] text-gray-600 font-mono uppercase tracking-wider mb-1">Why These Targets</p>
+                  <p className="text-[11px] text-gray-400 leading-relaxed">{narratives.interventionRationale}</p>
+                </div>
+              )}
             </div>
-          </div>
-        )}
-      </div>
+          ) : (
+            /* ─── Tablet/Desktop: Two columns ─── */
+            <div className={`${isTablet ? 'px-4 py-3' : 'px-5 py-4'} flex gap-4 min-h-0`}>
+              {/* Left: Target skills (60%) */}
+              <div className="flex-[3] min-w-0 space-y-4">
+                {/* Mode toggle */}
+                <ModeToggle mode={mode} onModeChange={setMode} />
+
+                {/* Target skills */}
+                <Section title="Target These Skills" count={targetSkills.length}>
+                  <div className="space-y-2">
+                    {targetSkills.map((skill, i) => (
+                      <TargetSkillCard
+                        key={skill.skillId}
+                        skill={skill}
+                        index={i}
+                        isExpanded={mode === 'discovery' || expandedSkill === i}
+                        onToggle={() => handleSkillToggle(i)}
+                        onAssess={onNavigateToAssess}
+                      />
+                    ))}
+                  </div>
+                </Section>
+
+                {/* Clinical summary + rationale in discovery mode */}
+                {mode === 'discovery' && (
+                  <div className="space-y-3">
+                    <div className="rounded-lg bg-[#16161e] px-4 py-3">
+                      <p className="text-[10px] text-gray-600 font-mono uppercase tracking-wider mb-1.5">Clinical Summary</p>
+                      <p className="text-[11px] text-gray-400 leading-relaxed">{narratives.clinicalSummary}</p>
+                    </div>
+                    <div className="rounded-lg bg-[#16161e] px-4 py-3">
+                      <p className="text-[10px] text-gray-600 font-mono uppercase tracking-wider mb-1.5">Why These Targets</p>
+                      <p className="text-[11px] text-gray-400 leading-relaxed">{narratives.interventionRationale}</p>
+                    </div>
+                  </div>
+                )}
+              </div>
+
+              {/* Right: Status + Risks (40%) */}
+              <div className="flex-[2] min-w-0 space-y-4">
+                {/* Domain status grid */}
+                <Section title="Domain Status">
+                  <div className="space-y-1.5">
+                    {domainPills.map(d => (
+                      <div key={d.id}>
+                        <DomainPill
+                          domainId={d.id}
+                          state={d.state}
+                          avg={d.avg}
+                          assessed={d.assessed}
+                          isExpanded={expandedDomain === d.id}
+                          onToggle={() => handleDomainToggle(d.id)}
+                        />
+                        <AnimatePresence>
+                          {expandedDomain === d.id && domainInsights[d.id] && (
+                            <DomainDetail
+                              domainId={d.id}
+                              insight={domainInsights[d.id]}
+                              onAssess={onNavigateToAssess}
+                              onGoal={onNavigateToGoals}
+                              onShowPath={handleShowPath}
+                              pathSteps={pathDomain === d.id ? pathSteps : null}
+                            />
+                          )}
+                        </AnimatePresence>
+                      </div>
+                    ))}
+                  </div>
+                </Section>
+
+                {/* Risks */}
+                {risks.hasActiveRisks && (
+                  <Section title="Active Risks" count={risks.combined.length}>
+                    <div className="space-y-1.5">
+                      {(showAllRisks ? risks.combined : risks.combined.slice(0, 5)).map((risk) => (
+                        <RiskCard key={`${risk.type}-${risk.actionDomainId || ''}-${risk.affectedDomains?.[0] || ''}`} risk={risk} />
+                      ))}
+                    </div>
+                    {risks.combined.length > 5 && (
+                      <button
+                        onClick={() => setShowAllRisks(!showAllRisks)}
+                        className="text-[11px] text-gray-500 hover:text-gray-300 mt-2 transition-colors"
+                      >
+                        {showAllRisks ? 'Show fewer' : `Show all ${risks.combined.length} risks`}
+                      </button>
+                    )}
+                  </Section>
+                )}
+              </div>
+            </div>
+          )}
+        </div>
+      ) : (
+        /* ─── Cascade view tabs (Status Map, Bottleneck, Planner, Risks, Story) ─── */
+        <Suspense fallback={<div className="flex-1 flex items-center justify-center text-gray-600 text-sm">Loading view...</div>}>
+          {activeTab === 'status' && <StatusMapView {...cascadeProps} />}
+          {activeTab === 'bottleneck' && <BottleneckFinderView {...cascadeProps} />}
+          {activeTab === 'planner' && <InterventionPlannerView {...cascadeProps} />}
+          {activeTab === 'risk' && <RiskMonitorView {...cascadeProps} />}
+          {activeTab === 'story' && <ProgressStoryView {...cascadeProps} />}
+        </Suspense>
+      )}
     </div>
   )
 })

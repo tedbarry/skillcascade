@@ -23,7 +23,7 @@ async function generateCSVAllClients(clients) {
       for (const sa of domain.subAreas) {
         for (const sg of sa.skillGroups) {
           for (const skill of sg.skills) {
-            const score = assessments[skill.id] ?? 0
+            const score = assessments[skill.id] ?? ''
             rows.push([
               client.name,
               domain.name,

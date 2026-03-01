@@ -1,7 +1,7 @@
 import { useState, useMemo, useCallback, useEffect } from 'react'
 import { getClients, getAssessments } from '../data/storage.js'
 import { useAuth } from '../contexts/AuthContext.jsx'
-import { framework, ASSESSMENT_LEVELS, getDomainScores, ASSESSMENT_LABELS } from '../data/framework.js'
+import { framework, ASSESSMENT_LEVELS, getDomainScores, ASSESSMENT_LABELS, isAssessed } from '../data/framework.js'
 import useResponsive from '../hooks/useResponsive.js'
 import {
   RadarChart as ReRadarChart,
@@ -22,7 +22,7 @@ const SAGE_FILL = '#4f8460'
 const CORAL_STROKE = '#d44d3f'
 const CORAL_FILL = '#d44d3f'
 const SCORE_COLORS = {
-  [ASSESSMENT_LEVELS.NOT_ASSESSED]: '#9ca3af',
+  [ASSESSMENT_LEVELS.NOT_PRESENT]: '#c47070',
   [ASSESSMENT_LEVELS.NEEDS_WORK]: '#e8928a',
   [ASSESSMENT_LEVELS.DEVELOPING]: '#e5b76a',
   [ASSESSMENT_LEVELS.SOLID]: '#7fb589',
@@ -32,7 +32,7 @@ function scoreColor(score) {
   if (score >= 2.5) return SCORE_COLORS[ASSESSMENT_LEVELS.SOLID]
   if (score >= 1.5) return SCORE_COLORS[ASSESSMENT_LEVELS.DEVELOPING]
   if (score > 0) return SCORE_COLORS[ASSESSMENT_LEVELS.NEEDS_WORK]
-  return SCORE_COLORS[ASSESSMENT_LEVELS.NOT_ASSESSED]
+  return '#9ca3af'
 }
 
 function formatDate(ts) {
@@ -51,7 +51,7 @@ function getSubAreaScores(domain, assessments) {
     for (const sg of sa.skillGroups) {
       for (const skill of sg.skills) {
         const level = assessments[skill.id]
-        if (level !== undefined && level !== ASSESSMENT_LEVELS.NOT_ASSESSED) {
+        if (isAssessed(level)) {
           total += level
           count++
         }

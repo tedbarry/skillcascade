@@ -1,7 +1,7 @@
 import { useMemo, useState, useEffect, useRef, memo } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import useResponsive from '../hooks/useResponsive.js'
-import { framework, ASSESSMENT_LEVELS } from '../data/framework.js'
+import { framework, ASSESSMENT_LEVELS, isAssessed } from '../data/framework.js'
 import { computeDomainHealth, detectCascadeRisks, computeImpactRanking } from '../data/cascadeModel.js'
 import { DOMAIN_COLORS } from '../constants/colors.js'
 
@@ -249,7 +249,7 @@ export default function HomeDashboard({ assessments = {}, snapshots = [], client
     framework.forEach(d => d.subAreas.forEach(sa => sa.skillGroups.forEach(sg => sg.skills.forEach(skill => {
       totalSkills++
       const level = assessments[skill.id]
-      if (level !== undefined && level !== ASSESSMENT_LEVELS.NOT_ASSESSED) {
+      if (isAssessed(level)) {
         assessedSkills++
         if (level === ASSESSMENT_LEVELS.SOLID) solidCount++
         if (level === ASSESSMENT_LEVELS.NEEDS_WORK) needsWorkCount++
@@ -292,7 +292,7 @@ export default function HomeDashboard({ assessments = {}, snapshots = [], client
         let sum = 0, count = 0
         for (const skill of domainSkills) {
           const level = snap.assessments[skill.id]
-          if (level !== undefined && level !== ASSESSMENT_LEVELS.NOT_ASSESSED) {
+          if (isAssessed(level)) {
             sum += level; count++
           }
         }
@@ -350,7 +350,7 @@ export default function HomeDashboard({ assessments = {}, snapshots = [], client
       {snapshots.length > 0 && (() => {
         const latest = snapshots[snapshots.length - 1]
         if (!latest?.assessments) return null
-        const prevAssessed = Object.values(latest.assessments).filter(v => v !== ASSESSMENT_LEVELS.NOT_ASSESSED).length
+        const prevAssessed = Object.values(latest.assessments).filter(v => isAssessed(v)).length
         const diff = stats.assessedSkills - prevAssessed
         if (diff === 0) return null
         return (

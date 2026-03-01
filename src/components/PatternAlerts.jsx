@@ -4,6 +4,7 @@ import {
   ASSESSMENT_LEVELS,
   ASSESSMENT_LABELS,
   ASSESSMENT_COLORS,
+  isAssessed,
 } from '../data/framework.js'
 import EmptyState from './EmptyState.jsx'
 import useResponsive from '../hooks/useResponsive.js'
@@ -124,7 +125,7 @@ function getDomainStats(domain, assessments) {
       sg.skills.forEach((skill) => {
         total++
         const level = assessments[skill.id]
-        if (level !== undefined && level !== ASSESSMENT_LEVELS.NOT_ASSESSED) {
+        if (isAssessed(level)) {
           assessed++
           scoreSum += level
         }
@@ -159,8 +160,7 @@ function detectRegressions(assessments, snapshots) {
 
           // Only compare if previous was actually assessed
           if (
-            prevLevel !== undefined &&
-            prevLevel !== ASSESSMENT_LEVELS.NOT_ASSESSED &&
+            isAssessed(prevLevel) &&
             currLevel !== undefined &&
             currLevel < prevLevel
           ) {

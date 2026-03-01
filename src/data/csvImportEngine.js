@@ -194,11 +194,12 @@ export function autoMapColumns(headers) {
 
 /* ─────────────────────────────────────────────
    Score Mapping — convert external scores to 0-3
+   null = not assessed, 0 = not present
    ───────────────────────────────────────────── */
 
 const DEFAULT_SCORE_MAP = {
   // Numeric strings
-  '0': ASSESSMENT_LEVELS.NOT_ASSESSED,
+  '0': ASSESSMENT_LEVELS.NOT_PRESENT,
   '1': ASSESSMENT_LEVELS.NEEDS_WORK,
   '2': ASSESSMENT_LEVELS.DEVELOPING,
   '3': ASSESSMENT_LEVELS.SOLID,
@@ -206,12 +207,16 @@ const DEFAULT_SCORE_MAP = {
   '4': ASSESSMENT_LEVELS.SOLID,
   '5': ASSESSMENT_LEVELS.SOLID,
   // Label-based (SkillCascade labels)
-  'not assessed': ASSESSMENT_LEVELS.NOT_ASSESSED,
+  'not present': ASSESSMENT_LEVELS.NOT_PRESENT,
+  'absent': ASSESSMENT_LEVELS.NOT_PRESENT,
+  'cannot perform': ASSESSMENT_LEVELS.NOT_PRESENT,
+  'no response': ASSESSMENT_LEVELS.NOT_PRESENT,
+  'not assessed': null,
   'needs work': ASSESSMENT_LEVELS.NEEDS_WORK,
   'developing': ASSESSMENT_LEVELS.DEVELOPING,
   'solid': ASSESSMENT_LEVELS.SOLID,
   // Common external labels
-  'not started': ASSESSMENT_LEVELS.NOT_ASSESSED,
+  'not started': null,
   'not mastered': ASSESSMENT_LEVELS.NEEDS_WORK,
   'in progress': ASSESSMENT_LEVELS.DEVELOPING,
   'emerging': ASSESSMENT_LEVELS.DEVELOPING,
@@ -222,9 +227,9 @@ const DEFAULT_SCORE_MAP = {
   'prompted': ASSESSMENT_LEVELS.DEVELOPING,
   'partial': ASSESSMENT_LEVELS.DEVELOPING,
   'baseline': ASSESSMENT_LEVELS.NEEDS_WORK,
-  'na': ASSESSMENT_LEVELS.NOT_ASSESSED,
-  'n/a': ASSESSMENT_LEVELS.NOT_ASSESSED,
-  '': ASSESSMENT_LEVELS.NOT_ASSESSED,
+  'na': null,
+  'n/a': null,
+  '': null,
 }
 
 export function mapScore(rawValue, customScoreMap) {
@@ -236,13 +241,13 @@ export function mapScore(rawValue, customScoreMap) {
   // Try numeric parse for percentage-based scores (0-100)
   const num = parseFloat(key)
   if (!isNaN(num)) {
-    if (num <= 0) return ASSESSMENT_LEVELS.NOT_ASSESSED
+    if (num <= 0) return ASSESSMENT_LEVELS.NOT_PRESENT
     if (num <= 33) return ASSESSMENT_LEVELS.NEEDS_WORK
     if (num <= 66) return ASSESSMENT_LEVELS.DEVELOPING
     return ASSESSMENT_LEVELS.SOLID
   }
 
-  return ASSESSMENT_LEVELS.NOT_ASSESSED
+  return null
 }
 
 /* ─────────────────────────────────────────────
@@ -304,8 +309,8 @@ export function transformToAssessments(rows, columnMapping, customScoreMap) {
     if (columnMapping.skillId !== null && columnMapping.skillId !== undefined) {
       const rawId = (row[columnMapping.skillId] || '').trim()
       if (rawId && skillById[rawId]) {
-        const score = columnMapping.score !== null ? mapScore(row[columnMapping.score], customScoreMap) : ASSESSMENT_LEVELS.NOT_ASSESSED
-        if (score > 0) {
+        const score = columnMapping.score !== null ? mapScore(row[columnMapping.score], customScoreMap) : null
+        if (score != null) {
           assessments[rawId] = score
           mapped++
         }
@@ -328,8 +333,8 @@ export function transformToAssessments(rows, columnMapping, customScoreMap) {
 
       const skillId = matchSkill(rawName, domainHint)
       if (skillId) {
-        const score = columnMapping.score !== null ? mapScore(row[columnMapping.score], customScoreMap) : ASSESSMENT_LEVELS.NOT_ASSESSED
-        if (score > 0) {
+        const score = columnMapping.score !== null ? mapScore(row[columnMapping.score], customScoreMap) : null
+        if (score != null) {
           assessments[skillId] = score
           mapped++
         }

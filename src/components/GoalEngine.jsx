@@ -5,7 +5,10 @@ import {
   ASSESSMENT_LABELS,
   ASSESSMENT_COLORS,
   DOMAIN_DEPENDENCIES,
+  isAssessed,
 } from '../data/framework.js'
+import { getSkillDescription } from '../data/skillDescriptions.js'
+import { downloadFile, csvEscape } from '../data/exportUtils.js'
 import EmptyState from './EmptyState.jsx'
 import useResponsive from '../hooks/useResponsive.js'
 
@@ -75,7 +78,7 @@ function getDomainAvg(domainId, assessments) {
       sg.skills.forEach((skill) => {
         total++
         const level = assessments[skill.id]
-        if (level !== undefined && level !== ASSESSMENT_LEVELS.NOT_ASSESSED) {
+        if (isAssessed(level)) {
           assessed++
           scoreSum += level
         }
@@ -187,7 +190,7 @@ function analyzeGaps(assessments) {
     domain.subAreas.forEach((sa) => {
       sa.skillGroups.forEach((sg) => {
         sg.skills.forEach((skill) => {
-          const level = assessments[skill.id] ?? ASSESSMENT_LEVELS.NOT_ASSESSED
+          const level = assessments[skill.id] ?? null
 
           // Only recommend skills that aren't already "Solid"
           if (level === ASSESSMENT_LEVELS.SOLID) return
@@ -263,13 +266,16 @@ function SummaryCard({ label, count, color, bg, border, icon }) {
 }
 
 function RatingBadge({ level }) {
+  const color = isAssessed(level) ? ASSESSMENT_COLORS[level] : '#9ca3af'
+  const label = isAssessed(level) ? ASSESSMENT_LABELS[level] : 'Not Assessed'
+
   return (
     <span
       className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-semibold whitespace-nowrap"
       style={{
-        backgroundColor: ASSESSMENT_COLORS[level] + '25',
+        backgroundColor: color + '25',
         color:
-          level === ASSESSMENT_LEVELS.NOT_ASSESSED
+          !isAssessed(level)
             ? '#6b7280'
             : level === ASSESSMENT_LEVELS.NEEDS_WORK
             ? '#b63a2e'
@@ -280,15 +286,22 @@ function RatingBadge({ level }) {
     >
       <span
         className="w-2 h-2 rounded-full shrink-0"
-        style={{ backgroundColor: ASSESSMENT_COLORS[level] }}
+        style={{ backgroundColor: color }}
       />
-      {ASSESSMENT_LABELS[level]}
+      {label}
     </span>
   )
 }
 
-function SkillCard({ rec, onNavigateToAssess }) {
+function SkillCard({ rec, onNavigateToAssess, isExpanded, onToggle }) {
   const config = PRIORITY_CONFIG[rec.priority]
+  const desc = isExpanded ? getSkillDescription(rec.skillId) : null
+  const targetLevel = isAssessed(rec.level) ? Math.min(rec.level + 1, 3) : 1
+  const dataCollectionHint = !isAssessed(rec.level) || rec.level === 0
+    ? 'Probe-based: structured trials to establish baseline'
+    : rec.level === 1
+    ? 'Trial-based: discrete trial data across settings'
+    : 'Maintenance: periodic probes to confirm consistency'
 
   return (
     <div
@@ -307,10 +320,62 @@ function SkillCard({ rec, onNavigateToAssess }) {
         <RatingBadge level={rec.level} />
       </div>
 
-      {/* Skill name */}
-      <h4 className="text-sm font-semibold text-warm-800 leading-snug mb-2.5">
-        {rec.skillName}
-      </h4>
+      {/* Skill name — clickable to expand */}
+      <button
+        onClick={onToggle}
+        className="w-full text-left mb-2.5 flex items-center gap-2"
+      >
+        <span
+          className="text-[10px] transition-transform duration-200 shrink-0 text-warm-400"
+          style={{ transform: isExpanded ? 'rotate(90deg)' : 'rotate(0deg)' }}
+        >
+          {'\u25B6'}
+        </span>
+        <h4 className="text-sm font-semibold text-warm-800 leading-snug">
+          {rec.skillName}
+        </h4>
+      </button>
+
+      {/* Expanded: operational definition */}
+      {isExpanded && (
+        <div className="mb-3 ml-5 space-y-2 border-l-2 pl-3" style={{ borderColor: config.border }}>
+          {desc ? (
+            <>
+              <div>
+                <p className="text-[10px] font-semibold text-warm-500 uppercase tracking-wider mb-0.5">Operational Definition</p>
+                <p className="text-[11px] text-warm-600 leading-relaxed">{desc.description}</p>
+              </div>
+              {desc.looks_like && (
+                <div>
+                  <p className="text-[10px] font-semibold text-sage-600 uppercase tracking-wider mb-0.5">Observable When Present</p>
+                  <p className="text-[11px] text-warm-600 leading-relaxed">{desc.looks_like}</p>
+                </div>
+              )}
+              {desc.absence && (
+                <div>
+                  <p className="text-[10px] font-semibold text-coral-600 uppercase tracking-wider mb-0.5">Observable When Absent</p>
+                  <p className="text-[11px] text-warm-600 leading-relaxed">{desc.absence}</p>
+                </div>
+              )}
+            </>
+          ) : (
+            <p className="text-[11px] text-warm-400 italic">No operational definition available for this skill.</p>
+          )}
+          {/* Baseline → Target */}
+          <div className="flex items-center gap-2 pt-1">
+            <span className="text-[10px] font-semibold text-warm-500 uppercase tracking-wider">Baseline</span>
+            <RatingBadge level={rec.level} />
+            <span className="text-warm-400">{'\u2192'}</span>
+            <span className="text-[10px] font-semibold text-warm-500 uppercase tracking-wider">Target</span>
+            <RatingBadge level={targetLevel} />
+          </div>
+          {/* Data collection suggestion */}
+          <div>
+            <p className="text-[10px] font-semibold text-warm-500 uppercase tracking-wider mb-0.5">Data Collection</p>
+            <p className="text-[11px] text-warm-600">{dataCollectionHint}</p>
+          </div>
+        </div>
+      )}
 
       {/* Bottom row: rationale + downstream + action */}
       <div className="flex items-center justify-between gap-3">
@@ -355,6 +420,7 @@ function SkillCard({ rec, onNavigateToAssess }) {
 
 function TierSection({ priority, recommendations, onNavigateToAssess, defaultExpanded }) {
   const [expanded, setExpanded] = useState(defaultExpanded)
+  const [expandedSkillId, setExpandedSkillId] = useState(null)
   const config = PRIORITY_CONFIG[priority]
   const count = recommendations.length
 
@@ -453,6 +519,8 @@ function TierSection({ priority, recommendations, onNavigateToAssess, defaultExp
                     key={rec.skillId}
                     rec={rec}
                     onNavigateToAssess={onNavigateToAssess}
+                    isExpanded={expandedSkillId === rec.skillId}
+                    onToggle={() => setExpandedSkillId(prev => prev === rec.skillId ? null : rec.skillId)}
                   />
                 ))}
               </div>
@@ -468,7 +536,7 @@ function TierSection({ priority, recommendations, onNavigateToAssess, defaultExp
    Main component
    ───────────────────────────────────────────── */
 
-export default function GoalEngine({ assessments = {}, onNavigateToAssess, focusDomain = null, onClearFocus }) {
+export default function GoalEngine({ assessments = {}, onNavigateToAssess, focusDomain = null, onClearFocus, clientName = '' }) {
   const { isPhone } = useResponsive()
   const allRecommendations = useMemo(() => analyzeGaps(assessments), [assessments])
 
@@ -494,7 +562,7 @@ export default function GoalEngine({ assessments = {}, onNavigateToAssess, focus
   // Check if any skills have been assessed at all
   const hasAssessments = useMemo(() => {
     return Object.values(assessments).some(
-      (level) => level !== undefined && level !== ASSESSMENT_LEVELS.NOT_ASSESSED
+      (level) => isAssessed(level)
     )
   }, [assessments])
 
@@ -505,18 +573,68 @@ export default function GoalEngine({ assessments = {}, onNavigateToAssess, focus
     [onNavigateToAssess]
   )
 
+  const handleExportGoals = useCallback(() => {
+    const rows = [['Client', 'Domain', 'Sub-Area', 'Skill', 'Current Level', 'Current Score',
+      'Target Level', 'Target Score', 'Operational Definition', 'Observable When Present',
+      'Observable When Absent', 'Rationale', 'Priority', 'Downstream Impact']]
+
+    for (const rec of recommendations) {
+      const desc = getSkillDescription(rec.skillId)
+      const currentLabel = isAssessed(rec.level) ? ASSESSMENT_LABELS[rec.level] : 'Not Assessed'
+      const currentScore = isAssessed(rec.level) ? String(rec.level) : ''
+      const targetLevel = isAssessed(rec.level) ? Math.min(rec.level + 1, ASSESSMENT_LEVELS.SOLID) : ASSESSMENT_LEVELS.NEEDS_WORK
+      const targetLabel = ASSESSMENT_LABELS[targetLevel]
+
+      rows.push([
+        clientName || '',
+        rec.domainName,
+        rec.subAreaName,
+        rec.skillName,
+        currentLabel,
+        currentScore,
+        targetLabel,
+        String(targetLevel),
+        desc?.description || '',
+        desc?.looks_like || '',
+        desc?.absence || '',
+        rec.rationale,
+        `P${rec.priority}`,
+        rec.downstreamSkills > 0 ? `Unlocks ${rec.downstreamSkills} skills` : '',
+      ])
+    }
+
+    const csv = rows.map((row) => row.map(csvEscape).join(',')).join('\r\n')
+    const filename = clientName
+      ? `${clientName.replace(/[^a-zA-Z0-9]/g, '_')}_goals.csv`
+      : 'goals_export.csv'
+    downloadFile(csv, filename, 'text/csv;charset=utf-8')
+  }, [recommendations, clientName])
+
   return (
     <div className="flex-1 overflow-y-auto">
       <div className="max-w-4xl mx-auto px-4 py-6 sm:px-6">
         {/* Page header */}
-        <div className="mb-6">
-          <h2 className="text-xl font-bold text-warm-800 font-display">
-            Goal Engine
-          </h2>
-          <p className="text-sm text-warm-500 mt-1">
-            Auto-suggested treatment targets based on cascade dependency logic.
-            Skills are prioritized by their position in the developmental hierarchy.
-          </p>
+        <div className="flex items-start justify-between gap-4 mb-6">
+          <div>
+            <h2 className="text-xl font-bold text-warm-800 font-display">
+              Goal Engine
+            </h2>
+            <p className="text-sm text-warm-500 mt-1">
+              Auto-suggested treatment targets based on cascade dependency logic.
+              Skills are prioritized by their position in the developmental hierarchy.
+            </p>
+          </div>
+          {hasAssessments && totalGaps > 0 && (
+            <button
+              onClick={handleExportGoals}
+              className="text-xs font-semibold px-3 py-2 min-h-[44px] rounded-lg border border-warm-200 bg-white text-warm-600 hover:bg-warm-50 hover:border-warm-300 transition-all whitespace-nowrap shrink-0 flex items-center gap-1.5"
+            >
+              <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                <path strokeLinecap="round" strokeLinejoin="round" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+              </svg>
+              Export Goals
+            </button>
+          )}
         </div>
 
         {/* Empty state */}

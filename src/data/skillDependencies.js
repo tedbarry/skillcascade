@@ -1166,7 +1166,7 @@ export function findCrossDomainBottlenecks(assessments, framework) {
         domainId,
         subAreaId: subAreaId || domainId + '-sa1',
         blockedCount,
-        currentLevel: assessments[skillId] ?? 0,
+        currentLevel: assessments[skillId] ?? null,
       }
     })
     .sort((a, b) => b.blockedCount - a.blockedCount)
@@ -1252,8 +1252,8 @@ export function getSubAreaTierBreakdown(subAreaId, assessments, framework) {
       const tier = getSkillTier(skill.id)
       if (!breakdown[tier]) breakdown[tier] = { total: 0, met: 0, skills: [] }
       breakdown[tier].total++
-      const level = assessments[skill.id] ?? 0
-      if (level >= 2) breakdown[tier].met++
+      const level = assessments[skill.id] ?? null
+      if (level != null && level >= 2) breakdown[tier].met++
       breakdown[tier].skills.push({
         id: skill.id,
         name: skill.name,

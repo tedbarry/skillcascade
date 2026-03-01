@@ -284,9 +284,9 @@ function SubAreaCard({ subArea, domainColor, isCritical, onNavigateToAssess, sho
                 {prereq.domainId.toUpperCase()} · T{prereq.tier}
               </span>
               <span className="text-[9px] shrink-0" style={{
-                color: prereq.currentLevel === 0 ? '#666' : prereq.currentLevel < 2 ? '#e8928a' : '#e5b76a'
+                color: prereq.currentLevel == null ? '#666' : prereq.currentLevel === 0 ? '#c47070' : prereq.currentLevel < 2 ? '#e8928a' : '#e5b76a'
               }}>
-                {prereq.currentLevel === 0 ? '—' : prereq.currentLevel.toFixed(0)}
+                {prereq.currentLevel == null ? '—' : prereq.currentLevel.toFixed(0)}
               </span>
             </div>
           ))}

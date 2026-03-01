@@ -48,7 +48,7 @@ export default memo(function PlannerSidebar({
     const allBottlenecks = findSkillBottlenecks(assessments, 50)
     // Filter to only show bottlenecks IN this domain (prerequisite skills that are weak)
     return allBottlenecks
-      .filter(b => b.domainId === selectedDomain && b.currentLevel < 2)
+      .filter(b => b.domainId === selectedDomain && (b.currentLevel == null || b.currentLevel < 2))
       .slice(0, 5)
   }, [assessments, selectedDomain])
 
@@ -214,9 +214,9 @@ export default memo(function PlannerSidebar({
                     </div>
                   </div>
                   <span className="text-[10px] font-mono shrink-0" style={{
-                    color: b.currentLevel === 0 ? '#666' : b.currentLevel < 2 ? '#e8928a' : '#e5b76a'
+                    color: b.currentLevel == null ? '#666' : b.currentLevel === 0 ? '#c47070' : b.currentLevel < 2 ? '#e8928a' : '#e5b76a'
                   }}>
-                    {b.currentLevel === 0 ? '—' : b.currentLevel}
+                    {b.currentLevel == null ? '—' : b.currentLevel}
                   </span>
                 </div>
               ))}

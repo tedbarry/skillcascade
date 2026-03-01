@@ -460,9 +460,9 @@ function AssessMockup() {
         </div>
         <div className="flex items-center gap-3 mt-3 pt-3 border-t border-warm-600/20">
           <div className="flex gap-1">
-            {['Not Assessed','Needs Work','Developing','Solid'].map((l, i) => (
+            {['Not Assessed','Not Present','Needs Work','Developing','Solid'].map((l, i) => (
               <div key={l} className="flex items-center gap-1">
-                <div className="w-2 h-2 rounded-full" style={{ backgroundColor: ['#4a3f35','#d4856a','#c4956a','#7fb589'][i] }} />
+                <div className="w-2 h-2 rounded-full" style={{ backgroundColor: ['#9ca3af','#c47070','#e8928a','#e5b76a','#7fb589'][i] }} />
                 <span className="text-[9px] text-warm-500">{l}</span>
               </div>
             ))}

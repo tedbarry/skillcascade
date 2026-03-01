@@ -10,14 +10,16 @@ export function generateCSV(assessments, clientName) {
     for (const sa of domain.subAreas) {
       for (const sg of sa.skillGroups) {
         for (const skill of sg.skills) {
-          const score = assessments[skill.id] ?? 0
+          const raw = assessments[skill.id]
+          const label = raw != null ? ASSESSMENT_LABELS[raw] : 'Not Assessed'
+          const score = raw != null ? String(raw) : ''
           rows.push([
             domain.name,
             sa.name,
             sg.name,
             skill.name,
-            ASSESSMENT_LABELS[score],
-            String(score),
+            label,
+            score,
           ])
         }
       }
@@ -27,7 +29,7 @@ export function generateCSV(assessments, clientName) {
   return rows.map((row) => row.map(csvEscape).join(',')).join('\r\n')
 }
 
-function csvEscape(value) {
+export function csvEscape(value) {
   if (value.includes(',') || value.includes('"') || value.includes('\n')) {
     return '"' + value.replace(/"/g, '""') + '"'
   }
@@ -88,8 +90,8 @@ export function buildPrintData(assessments, clientName) {
         const skills = sg.skills.map((skill) => ({
           id: skill.id,
           name: skill.name,
-          level: assessments[skill.id] ?? 0,
-          label: ASSESSMENT_LABELS[assessments[skill.id] ?? 0],
+          level: assessments[skill.id] ?? null,
+          label: assessments[skill.id] != null ? ASSESSMENT_LABELS[assessments[skill.id]] : 'Not Assessed',
         }))
         return { id: sg.id, name: sg.name, skills }
       })

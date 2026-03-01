@@ -20,6 +20,7 @@ html, body, #root {
 
   /* Skill assessment states */
   --color-not-assessed: #9ca3af;
+  --color-not-present: #c47070;
   --color-needs-work: #e8928a;
   --color-developing: #e5b76a;
   --color-solid: #7fb589;

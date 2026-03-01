@@ -5,28 +5,34 @@
  * 9 domains → ~47 sub-areas → ~140 skill groups → 300+ individual skills
  *
  * Assessment levels:
- *   0 = not assessed (gray)
+ *   null/undefined = not yet assessed (gray, excluded from averages)
+ *   0 = not present — clinician confirmed skill is absent (burgundy, included in averages as 0/3)
  *   1 = needs work (coral/rose)
  *   2 = developing (warm gold)
  *   3 = solid (sage green)
  */
 
 export const ASSESSMENT_LEVELS = {
-  NOT_ASSESSED: 0,
+  NOT_PRESENT: 0,
   NEEDS_WORK: 1,
   DEVELOPING: 2,
   SOLID: 3,
 }
 
+/** Check whether a skill has been assessed (any value including 0 = Not Present). */
+export function isAssessed(level) {
+  return level != null
+}
+
 export const ASSESSMENT_LABELS = {
-  [ASSESSMENT_LEVELS.NOT_ASSESSED]: 'Not Assessed',
+  [ASSESSMENT_LEVELS.NOT_PRESENT]: 'Not Present',
   [ASSESSMENT_LEVELS.NEEDS_WORK]: 'Needs Work',
   [ASSESSMENT_LEVELS.DEVELOPING]: 'Developing',
   [ASSESSMENT_LEVELS.SOLID]: 'Solid',
 }
 
 export const ASSESSMENT_COLORS = {
-  [ASSESSMENT_LEVELS.NOT_ASSESSED]: '#9ca3af',
+  [ASSESSMENT_LEVELS.NOT_PRESENT]: '#c47070',
   [ASSESSMENT_LEVELS.NEEDS_WORK]: '#e8928a',
   [ASSESSMENT_LEVELS.DEVELOPING]: '#e5b76a',
   [ASSESSMENT_LEVELS.SOLID]: '#7fb589',
@@ -1637,7 +1643,7 @@ export function getDomainScores(assessments = {}) {
       sa.skillGroups.forEach((sg) => {
         sg.skills.forEach((skill) => {
           const level = assessments[skill.id]
-          if (level !== undefined && level !== ASSESSMENT_LEVELS.NOT_ASSESSED) {
+          if (isAssessed(level)) {
             total += level
             count++
           }

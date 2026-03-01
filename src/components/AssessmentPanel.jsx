@@ -1,5 +1,5 @@
 import { useState, useMemo, useEffect, useCallback, useRef } from 'react'
-import { framework, ASSESSMENT_LEVELS, ASSESSMENT_LABELS, ASSESSMENT_COLORS } from '../data/framework.js'
+import { framework, ASSESSMENT_LEVELS, ASSESSMENT_LABELS, ASSESSMENT_COLORS, isAssessed } from '../data/framework.js'
 import { getSkillDescription } from '../data/skillDescriptions.js'
 import useResponsive from '../hooks/useResponsive.js'
 
@@ -22,7 +22,7 @@ function getSubAreaStats(subArea, assessments) {
     sg.skills.forEach((skill) => {
       total++
       const level = assessments[skill.id]
-      if (level !== undefined && level !== ASSESSMENT_LEVELS.NOT_ASSESSED) {
+      if (isAssessed(level)) {
         assessed++
         scoreSum += level
       }
@@ -42,7 +42,7 @@ function getDomainStats(domain, assessments) {
       sg.skills.forEach((skill) => {
         total++
         const level = assessments[skill.id]
-        if (level !== undefined && level !== ASSESSMENT_LEVELS.NOT_ASSESSED) {
+        if (isAssessed(level)) {
           assessed++
           scoreSum += level
         }
@@ -89,7 +89,7 @@ export default function AssessmentPanel({ assessments, onAssess, initialSubAreaI
           sg.skills.forEach((s) => {
             total++
             const level = assessments[s.id]
-            if (level !== undefined && level !== ASSESSMENT_LEVELS.NOT_ASSESSED) assessed++
+            if (isAssessed(level)) assessed++
           })
         })
       })
@@ -280,13 +280,13 @@ export default function AssessmentPanel({ assessments, onAssess, initialSubAreaI
           {/* Bulk actions */}
           <div className="flex items-center gap-1.5 mb-4 pb-4 border-b border-warm-200 overflow-x-auto scrollbar-hide">
             <span className="text-[10px] text-warm-400 shrink-0">Quick:</span>
-            {[ASSESSMENT_LEVELS.NOT_ASSESSED, ASSESSMENT_LEVELS.NEEDS_WORK, ASSESSMENT_LEVELS.DEVELOPING, ASSESSMENT_LEVELS.SOLID].map(
+            {[ASSESSMENT_LEVELS.NOT_PRESENT, ASSESSMENT_LEVELS.NEEDS_WORK, ASSESSMENT_LEVELS.DEVELOPING, ASSESSMENT_LEVELS.SOLID].map(
               (level) => (
                 <button
                   key={level}
                   onClick={() => bulkRate(level)}
                   className="text-[10px] px-2 py-1.5 rounded-md font-medium border border-warm-200 whitespace-nowrap min-h-[36px]"
-                  style={{ backgroundColor: ASSESSMENT_COLORS[level] + '20', color: level === ASSESSMENT_LEVELS.NOT_ASSESSED ? '#777' : undefined }}
+                  style={{ backgroundColor: ASSESSMENT_COLORS[level] + '20' }}
                 >
                   All "{ASSESSMENT_LABELS[level]}"
                 </button>
@@ -554,7 +554,7 @@ export default function AssessmentPanel({ assessments, onAssess, initialSubAreaI
           {/* Bulk actions */}
           <div className="flex items-center gap-2 mb-6 pb-6 border-b border-warm-200 flex-wrap">
             <span className="text-xs text-warm-400 mr-1">Quick fill:</span>
-            {[ASSESSMENT_LEVELS.NOT_ASSESSED, ASSESSMENT_LEVELS.NEEDS_WORK, ASSESSMENT_LEVELS.DEVELOPING, ASSESSMENT_LEVELS.SOLID].map(
+            {[ASSESSMENT_LEVELS.NOT_PRESENT, ASSESSMENT_LEVELS.NEEDS_WORK, ASSESSMENT_LEVELS.DEVELOPING, ASSESSMENT_LEVELS.SOLID].map(
               (level) => (
                 <button
                   key={level}
@@ -562,7 +562,6 @@ export default function AssessmentPanel({ assessments, onAssess, initialSubAreaI
                   className="text-[10px] px-2.5 py-1 rounded-md font-medium transition-all hover:scale-105 border border-warm-200 hover:border-warm-300"
                   style={{
                     backgroundColor: ASSESSMENT_COLORS[level] + '20',
-                    color: level === ASSESSMENT_LEVELS.NOT_ASSESSED ? '#777' : undefined,
                   }}
                 >
                   All "{ASSESSMENT_LABELS[level]}"
@@ -617,8 +616,12 @@ function SkillGroupRater({ skillGroup, assessments, onAssess, showAllDescs }) {
           <SkillRater
             key={skill.id}
             skill={skill}
-            level={assessments[skill.id] ?? ASSESSMENT_LEVELS.NOT_ASSESSED}
-            onRate={(level) => onAssess((prev) => ({ ...prev, [skill.id]: level }))}
+            level={assessments[skill.id] ?? null}
+            onRate={(newLevel) => onAssess((prev) => {
+              const next = { ...prev }
+              if (newLevel == null) { delete next[skill.id] } else { next[skill.id] = newLevel }
+              return next
+            })}
             showAllDescs={showAllDescs}
           />
         ))}
@@ -659,16 +662,19 @@ function SkillRater({ skill, level, onRate, showAllDescs }) {
             <p className="text-[11px] text-warm-400 truncate mt-0.5 max-w-md">{desc.description}</p>
           )}
         </div>
-        <div className="flex gap-1.5 shrink-0">
+        <div className="flex gap-1.5 shrink-0 items-center">
+          {!isAssessed(level) && (
+            <span className="text-[9px] text-warm-400 mr-0.5">—</span>
+          )}
           {[
-            ASSESSMENT_LEVELS.NOT_ASSESSED,
+            ASSESSMENT_LEVELS.NOT_PRESENT,
             ASSESSMENT_LEVELS.NEEDS_WORK,
             ASSESSMENT_LEVELS.DEVELOPING,
             ASSESSMENT_LEVELS.SOLID,
           ].map((val) => {
             const isSelected = level === val
             const labels = {
-              [ASSESSMENT_LEVELS.NOT_ASSESSED]: '—',
+              [ASSESSMENT_LEVELS.NOT_PRESENT]: '0',
               [ASSESSMENT_LEVELS.NEEDS_WORK]: '1',
               [ASSESSMENT_LEVELS.DEVELOPING]: '2',
               [ASSESSMENT_LEVELS.SOLID]: '3',
@@ -676,17 +682,17 @@ function SkillRater({ skill, level, onRate, showAllDescs }) {
             return (
               <button
                 key={val}
-                onClick={() => onRate(val)}
-                title={ASSESSMENT_LABELS[val]}
-                aria-pressed={level === val}
+                onClick={() => onRate(isSelected ? null : val)}
+                title={isSelected ? 'Clear (Not Assessed)' : ASSESSMENT_LABELS[val]}
+                aria-pressed={isSelected}
                 className={`w-8 h-8 min-w-[44px] min-h-[44px] rounded-lg text-xs font-bold transition-all ${
                   isSelected
                     ? 'ring-2 ring-offset-1 ring-warm-400 scale-110 shadow-sm'
-                    : 'opacity-40 hover:opacity-80 hover:scale-105'
+                    : !isAssessed(level) ? 'opacity-30 hover:opacity-70 hover:scale-105' : 'opacity-40 hover:opacity-80 hover:scale-105'
                 }`}
                 style={{
                   backgroundColor: ASSESSMENT_COLORS[val],
-                  color: val === ASSESSMENT_LEVELS.NOT_ASSESSED ? '#666' : '#fff',
+                  color: '#fff',
                 }}
               >
                 {labels[val]}

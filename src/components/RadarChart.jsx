@@ -105,7 +105,7 @@ function CustomTick({ payload, x, y, textAnchor, stateMap }) {
 }
 
 function scoreColor(score, assessed) {
-  if (assessed === 0) return ASSESSMENT_COLORS[ASSESSMENT_LEVELS.NOT_ASSESSED]
+  if (assessed === 0) return '#9ca3af'
   if (score >= 2.5) return ASSESSMENT_COLORS[ASSESSMENT_LEVELS.SOLID]
   if (score >= 1.5) return ASSESSMENT_COLORS[ASSESSMENT_LEVELS.DEVELOPING]
   return ASSESSMENT_COLORS[ASSESSMENT_LEVELS.NEEDS_WORK]

@@ -143,7 +143,7 @@ export default function useDependencyExplorer(assessments = {}) {
       name: skillName,
       domainId,
       tier: getSkillTier(skillId),
-      level: assessments[skillId] ?? 0,
+      level: assessments[skillId] ?? null,
       subAreaId: getSubAreaFromId(skillId),
     }
 
@@ -167,7 +167,7 @@ export default function useDependencyExplorer(assessments = {}) {
         name: pName,
         domainId: pDomain,
         tier: getSkillTier(pid),
-        level: assessments[pid] ?? 0,
+        level: assessments[pid] ?? null,
         isDirect: direct.includes(pid),
         subAreaId: getSubAreaFromId(pid),
       }
@@ -192,7 +192,7 @@ export default function useDependencyExplorer(assessments = {}) {
         name: dName,
         domainId: dDomain,
         tier: getSkillTier(did),
-        level: assessments[did] ?? 0,
+        level: assessments[did] ?? null,
         subAreaId: getSubAreaFromId(did),
       }
     })
@@ -218,7 +218,7 @@ export default function useDependencyExplorer(assessments = {}) {
           id: skill.id,
           name: skill.name,
           tier: getSkillTier(skill.id),
-          level: assessments[skill.id] ?? 0,
+          level: assessments[skill.id] ?? null,
           hasPrereqs: !!(SKILL_PREREQUISITES[skill.id]?.length),
           hasDependents: !!(reversePrereqMap[skill.id]?.length),
         })

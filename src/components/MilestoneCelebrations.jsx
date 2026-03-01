@@ -1,5 +1,5 @@
 import { useMemo, useState, useCallback } from 'react'
-import { framework, ASSESSMENT_LEVELS, getDomainScores } from '../data/framework.js'
+import { framework, ASSESSMENT_LEVELS, getDomainScores, isAssessed } from '../data/framework.js'
 
 /* ─────────────────────────────────────────────
    SVG Icons (inline, no emoji, no icon libraries)
@@ -125,7 +125,7 @@ function getDomainStats(domain, assessments) {
       sg.skills.forEach((skill) => {
         total++
         const level = assessments[skill.id]
-        if (level !== undefined && level !== ASSESSMENT_LEVELS.NOT_ASSESSED) {
+        if (isAssessed(level)) {
           assessed++
           scoreSum += level
         }
@@ -169,7 +169,7 @@ function detectMilestones(assessments, snapshots) {
   let developingOrBetter = 0
   allSkills.forEach((skill) => {
     const level = assessments[skill.id]
-    if (level !== undefined && level !== ASSESSMENT_LEVELS.NOT_ASSESSED) {
+    if (isAssessed(level)) {
       totalAssessed++
       if (level >= ASSESSMENT_LEVELS.DEVELOPING) {
         developingOrBetter++
@@ -241,7 +241,7 @@ function detectMilestones(assessments, snapshots) {
     })
   }
 
-  // 5. Assessment Complete — all skills in a domain assessed (no NOT_ASSESSED)
+  // 5. Assessment Complete — all skills in a domain assessed (no unassessed/null)
   framework.forEach((domain) => {
     const stats = getDomainStats(domain, assessments)
     if (stats.total > 0 && stats.assessed === stats.total) {

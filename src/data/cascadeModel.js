@@ -5,7 +5,7 @@
  * No React imports, no side effects — safe to call from hooks, workers, or tests.
  */
 
-import { framework, DOMAIN_DEPENDENCIES, ASSESSMENT_LEVELS } from './framework.js'
+import { framework, DOMAIN_DEPENDENCIES, ASSESSMENT_LEVELS, isAssessed } from './framework.js'
 import {
   getSkillTier,
   getSubAreaPrereqs,
@@ -39,7 +39,7 @@ export function computeDomainHealth(assessments = {}) {
         sg.skills.forEach((skill) => {
           total++
           const level = assessments[skill.id]
-          if (level !== undefined && level !== ASSESSMENT_LEVELS.NOT_ASSESSED) {
+          if (isAssessed(level)) {
             assessed++
             scoreSum += level
           }
@@ -224,7 +224,7 @@ export function computeSubAreaHealth(domainId, assessments = {}) {
       sg.skills.forEach((skill) => {
         total++
         const level = assessments[skill.id]
-        if (level !== undefined && level !== ASSESSMENT_LEVELS.NOT_ASSESSED) {
+        if (isAssessed(level)) {
           assessed++
           scoreSum += level
         }
@@ -463,7 +463,7 @@ export function detectLearningBarriers(assessments = {}, snapshots = []) {
         sg.skills.forEach(skill => {
           const level = assessments[skill.id]
           const tier = getSkillTier(skill.id)
-          if (level !== undefined && level > 0 && tier > 0) {
+          if (isAssessed(level) && level > 0 && tier > 0) {
             if (!tierScores[tier]) tierScores[tier] = { sum: 0, count: 0 }
             tierScores[tier].sum += level
             tierScores[tier].count++
@@ -519,7 +519,7 @@ export function detectLearningBarriers(assessments = {}, snapshots = []) {
       sa.skillGroups.forEach(sg => {
         sg.skills.forEach(skill => {
           const level = assessments[skill.id]
-          if (level !== undefined && level > 0) scores.push(level)
+          if (isAssessed(level) && level > 0) scores.push(level)
         })
       })
     })
@@ -620,7 +620,7 @@ export function computeSubAreaReadiness(assessments = {}) {
           sg.skills.forEach(skill => {
             totalSkills++
             const level = assessments[skill.id]
-            if (level !== undefined && level >= 2) {
+            if (isAssessed(level) && level >= 2) {
               metSkills++
             } else {
               unmetPrereqs.push({
@@ -629,7 +629,7 @@ export function computeSubAreaReadiness(assessments = {}) {
                 subAreaId: prereqSaId,
                 subAreaName: prereqSa.name,
                 domainId: prereqDomainId,
-                currentLevel: level ?? 0,
+                currentLevel: level ?? null,
                 tier: getSkillTier(skill.id),
               })
             }

@@ -1,5 +1,5 @@
 import { useState, useMemo } from 'react'
-import { framework, ASSESSMENT_LEVELS, getDomainScores } from '../data/framework.js'
+import { framework, ASSESSMENT_LEVELS, getDomainScores, isAssessed } from '../data/framework.js'
 import { downloadFile } from '../data/exportUtils.js'
 
 /* ─────────────────────────────────────────────
@@ -137,7 +137,7 @@ function getSubAreaScores(domain, assessments) {
     for (const sg of sa.skillGroups) {
       for (const skill of sg.skills) {
         const level = assessments[skill.id]
-        if (level !== undefined && level !== ASSESSMENT_LEVELS.NOT_ASSESSED) {
+        if (isAssessed(level)) {
           total += level
           count++
         }

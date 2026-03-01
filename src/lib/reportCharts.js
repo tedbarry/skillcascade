@@ -4,10 +4,11 @@
  */
 
 const LEVEL_COLORS = {
-  0: '#9ca3af', // Not Assessed
-  1: '#e8928a', // Needs Work
-  2: '#e5b76a', // Developing
-  3: '#7fb589', // Solid
+  null: '#9ca3af',  // Not Assessed (null/undefined)
+  0: '#c47070',     // Not Present
+  1: '#e8928a',     // Needs Work
+  2: '#e5b76a',     // Developing
+  3: '#7fb589',     // Solid
 }
 
 const ADAPTIVE_BANDS = [
@@ -209,7 +210,8 @@ export function generateMasteryGrid(assessments, frameworkData) {
   // Legend
   const legendY = 10
   const legendItems = [
-    { label: 'Not Assessed', color: LEVEL_COLORS[0] },
+    { label: 'Not Assessed', color: LEVEL_COLORS[null] },
+    { label: 'Not Present', color: LEVEL_COLORS[0] },
     { label: 'Needs Work', color: LEVEL_COLORS[1] },
     { label: 'Developing', color: LEVEL_COLORS[2] },
     { label: 'Solid', color: LEVEL_COLORS[3] },
@@ -234,8 +236,8 @@ export function generateMasteryGrid(assessments, frameworkData) {
 
       for (const sg of sa.skillGroups) {
         for (const skill of sg.skills) {
-          const level = assessments[skill.id] ?? 0
-          const color = LEVEL_COLORS[level]
+          const level = assessments[skill.id] ?? null
+          const color = LEVEL_COLORS[level] || LEVEL_COLORS[null]
           svg += `<rect x="${x}" y="${y + saLabelH}" width="${cellSize}" height="${cellSize}" rx="1" fill="${color}"/>`
           x += cellSize + cellGap
         }

@@ -4,7 +4,7 @@ import { arc } from 'd3-shape'
 import { interpolate } from 'd3-interpolate'
 import { select } from 'd3-selection'
 import 'd3-transition' // side-effect: patches selection.prototype.transition
-import { ASSESSMENT_COLORS, ASSESSMENT_LABELS, ASSESSMENT_LEVELS, framework } from '../data/framework.js'
+import { ASSESSMENT_COLORS, ASSESSMENT_LABELS, ASSESSMENT_LEVELS, isAssessed, framework } from '../data/framework.js'
 import { DOMAIN_COLORS } from '../constants/colors.js'
 
 /**
@@ -28,8 +28,8 @@ function getNodeColor(d, assessments) {
 
   // Leaf node (individual skill): color by assessment
   if (!d.children && !d._children) {
-    const level = assessments[d.data.id] ?? ASSESSMENT_LEVELS.NOT_ASSESSED
-    if (level !== ASSESSMENT_LEVELS.NOT_ASSESSED) {
+    const level = assessments[d.data.id] ?? null
+    if (isAssessed(level)) {
       return ASSESSMENT_COLORS[level]
     }
   }
@@ -39,7 +39,7 @@ function getNodeColor(d, assessments) {
     const leaves = d.leaves()
     const assessed = leaves.filter((l) => {
       const level = assessments[l.data.id]
-      return level !== undefined && level !== ASSESSMENT_LEVELS.NOT_ASSESSED
+      return isAssessed(level)
     })
     if (assessed.length > 0) {
       const avg = assessed.reduce((sum, l) => sum + assessments[l.data.id], 0) / assessed.length
@@ -56,7 +56,7 @@ function getNodeColor(d, assessments) {
     return adjustOpacity(DOMAIN_COLORS[domainId], opacity)
   }
 
-  return ASSESSMENT_COLORS[ASSESSMENT_LEVELS.NOT_ASSESSED]
+  return '#9ca3af'
 }
 
 function arcVisible(d) {
@@ -84,8 +84,8 @@ function getArcAriaLabel(d, assessments) {
 
   // Leaf node: show individual assessment
   if (!d.children && !d._children) {
-    const level = assessments[d.data.id] ?? ASSESSMENT_LEVELS.NOT_ASSESSED
-    const levelLabel = ASSESSMENT_LABELS[level] || 'Not assessed'
+    const level = assessments[d.data.id] ?? null
+    const levelLabel = isAssessed(level) ? (ASSESSMENT_LABELS[level] || 'Not assessed') : 'Not assessed'
     return `${depthLabel}: ${name}, ${levelLabel}. Press Enter to drill down.`
   }
 
@@ -93,7 +93,7 @@ function getArcAriaLabel(d, assessments) {
   const leaves = d.leaves()
   const assessed = leaves.filter((l) => {
     const level = assessments[l.data.id]
-    return level !== undefined && level !== ASSESSMENT_LEVELS.NOT_ASSESSED
+    return isAssessed(level)
   })
   const avgLevel =
     assessed.length > 0
@@ -274,7 +274,7 @@ export default memo(function Sunburst({ data, assessments = {}, width = 800, hei
         const leaves = d.leaves ? d.leaves() : [d]
         const assessed = leaves.filter((l) => {
           const level = assessmentsRef.current[l.data.id]
-          return level !== undefined && level !== ASSESSMENT_LEVELS.NOT_ASSESSED
+          return isAssessed(level)
         })
         const avgLevel =
           assessed.length > 0
@@ -290,7 +290,7 @@ export default memo(function Sunburst({ data, assessments = {}, width = 800, hei
           path: trail.join(' \u2192 '),
           depth: d.depth,
           level:
-            skillLevel !== undefined && skillLevel !== ASSESSMENT_LEVELS.NOT_ASSESSED
+            isAssessed(skillLevel)
               ? ASSESSMENT_LABELS[skillLevel]
               : avgLevel !== null
                 ? `Avg: ${avgLevel.toFixed(1)}/3`
@@ -328,7 +328,7 @@ export default memo(function Sunburst({ data, assessments = {}, width = 800, hei
         const leaves = d.leaves ? d.leaves() : [d]
         const assessed = leaves.filter((l) => {
           const level = assessmentsRef.current[l.data.id]
-          return level !== undefined && level !== ASSESSMENT_LEVELS.NOT_ASSESSED
+          return isAssessed(level)
         })
         const avgLevel =
           assessed.length > 0
@@ -344,7 +344,7 @@ export default memo(function Sunburst({ data, assessments = {}, width = 800, hei
           path: trail.join(' \u2192 '),
           depth: d.depth,
           level:
-            skillLevel !== undefined && skillLevel !== ASSESSMENT_LEVELS.NOT_ASSESSED
+            isAssessed(skillLevel)
               ? ASSESSMENT_LABELS[skillLevel]
               : avgLevel !== null
                 ? `Avg: ${avgLevel.toFixed(1)}/3`

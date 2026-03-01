@@ -1,12 +1,13 @@
 import { useMemo } from 'react'
 import { buildPrintData } from '../data/exportUtils.js'
-import { ASSESSMENT_COLORS, framework, ASSESSMENT_LEVELS } from '../data/framework.js'
+import { ASSESSMENT_COLORS, framework, ASSESSMENT_LEVELS, isAssessed } from '../data/framework.js'
 import { computeDomainHealth, detectCascadeRisks } from '../data/cascadeModel.js'
 import { generateClinicalSummary, generateParentSummary } from '../lib/narratives.js'
 import { computeImpactRanking } from '../data/cascadeModel.js'
 
 const PILL_COLORS = {
-  0: { bg: '#e5e7eb', color: '#6b7280', label: 'N/A' },
+  null: { bg: '#e5e7eb', color: '#6b7280', label: 'Not Assessed' },
+  0: { bg: '#f5dede', color: '#8b4444', label: 'Not Present' },
   1: { bg: '#fce0dd', color: '#b63a2e', label: 'Needs Work' },
   2: { bg: '#fef3c7', color: '#92400e', label: 'Developing' },
   3: { bg: '#dce8de', color: '#31543d', label: 'Solid' },
@@ -49,7 +50,7 @@ export default function PrintReport({ assessments, clientName, snapshots = [], b
     framework.forEach(d => d.subAreas.forEach(sa => sa.skillGroups.forEach(sg => sg.skills.forEach(skill => {
       total++
       const level = assessments[skill.id]
-      if (level !== undefined && level !== ASSESSMENT_LEVELS.NOT_ASSESSED) {
+      if (isAssessed(level)) {
         assessed++
         if (level === ASSESSMENT_LEVELS.SOLID) solidCount++
       }
@@ -166,7 +167,8 @@ export default function PrintReport({ assessments, clientName, snapshots = [], b
         {/* Legend */}
         <div style={{ display: 'flex', justifyContent: 'center', gap: '20px', marginTop: '20px', paddingTop: '12px', borderTop: '1px solid #e8d5c0' }}>
           {[
-            { label: 'Not Assessed', color: ASSESSMENT_COLORS[0] },
+            { label: 'Not Assessed', color: '#9ca3af' },
+            { label: 'Not Present (0)', color: ASSESSMENT_COLORS[0] },
             { label: 'Needs Work (1)', color: ASSESSMENT_COLORS[1] },
             { label: 'Developing (2)', color: ASSESSMENT_COLORS[2] },
             { label: 'Solid (3)', color: ASSESSMENT_COLORS[3] },
@@ -241,7 +243,7 @@ export default function PrintReport({ assessments, clientName, snapshots = [], b
                               lineHeight: '1.5',
                             }}
                           >
-                            <span style={{ width: '5px', height: '5px', borderRadius: '50%', backgroundColor: ASSESSMENT_COLORS[skill.level], display: 'inline-block', flexShrink: 0 }} />
+                            <span style={{ width: '5px', height: '5px', borderRadius: '50%', backgroundColor: ASSESSMENT_COLORS[skill.level] || '#9ca3af', display: 'inline-block', flexShrink: 0 }} />
                             {skill.name}
                           </span>
                         )

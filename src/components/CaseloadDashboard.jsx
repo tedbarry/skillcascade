@@ -1,6 +1,6 @@
 import { useState, useMemo, useEffect } from 'react'
 import { getClients, getAssessments } from '../data/storage.js'
-import { framework, ASSESSMENT_LEVELS, getDomainScores } from '../data/framework.js'
+import { framework, ASSESSMENT_LEVELS, getDomainScores, isAssessed } from '../data/framework.js'
 import { useAuth } from '../contexts/AuthContext.jsx'
 import { useToast } from './Toast.jsx'
 import { userErrorMessage } from '../lib/errorUtils.js'
@@ -147,7 +147,7 @@ export default function CaseloadDashboard({ currentClientId, onSelectClient }) {
           let assessedCount = 0
           for (const key of Object.keys(assessments)) {
             if (key.startsWith('_')) continue
-            if (assessments[key] !== ASSESSMENT_LEVELS.NOT_ASSESSED) assessedCount++
+            if (isAssessed(assessments[key])) assessedCount++
           }
 
           const completion = TOTAL_SKILLS > 0

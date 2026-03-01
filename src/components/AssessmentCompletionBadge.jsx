@@ -1,6 +1,6 @@
 import { useMemo } from 'react'
 import { motion } from 'framer-motion'
-import { framework, ASSESSMENT_LEVELS } from '../data/framework.js'
+import { framework, ASSESSMENT_LEVELS, isAssessed } from '../data/framework.js'
 
 /**
  * Compact completion ring badge for the header bar.
@@ -12,7 +12,7 @@ export default function AssessmentCompletionBadge({ assessments = {}, onClick })
     framework.forEach(d => d.subAreas.forEach(sa => sa.skillGroups.forEach(sg => sg.skills.forEach(skill => {
       total++
       const level = assessments[skill.id]
-      if (level !== undefined && level !== ASSESSMENT_LEVELS.NOT_ASSESSED) assessed++
+      if (isAssessed(level)) assessed++
     }))))
     return { total, assessed, pct: total > 0 ? Math.round((assessed / total) * 100) : 0 }
   }, [assessments])

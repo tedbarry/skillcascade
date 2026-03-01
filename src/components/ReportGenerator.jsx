@@ -1,5 +1,5 @@
 import { useState, useMemo } from 'react'
-import { framework, ASSESSMENT_LEVELS, ASSESSMENT_LABELS, getDomainScores, DOMAIN_DEPENDENCIES } from '../data/framework.js'
+import { framework, ASSESSMENT_LEVELS, ASSESSMENT_LABELS, getDomainScores, DOMAIN_DEPENDENCIES, isAssessed } from '../data/framework.js'
 import { downloadFile } from '../data/exportUtils.js'
 import { computeDomainHealth, computeImpactRanking, detectCascadeRisks } from '../data/cascadeModel.js'
 import { generateClinicalSummary } from '../lib/narratives.js'
@@ -96,8 +96,8 @@ function analyzeForReport(assessments) {
       let saTotal = 0, saCount = 0, saNW = 0
       for (const sg of sa.skillGroups) {
         for (const skill of sg.skills) {
-          const level = assessments[skill.id] ?? 0
-          if (level > 0) {
+          const level = assessments[skill.id]
+          if (isAssessed(level)) {
             assessed++
             saCount++
             saTotal += level
@@ -563,8 +563,8 @@ function generateInsuranceReport(clientName, date, analysis, assessments, clinic
         let saTotal = 0, saCount = 0
         for (const sg of sa.skillGroups) {
           for (const skill of sg.skills) {
-            const lv = assessments[skill.id] ?? 0
-            if (lv > 0) { saCount++; saTotal += lv }
+            const lv = assessments[skill.id]
+            if (isAssessed(lv)) { saCount++; saTotal += lv }
           }
         }
         saScores.push({ name: sa.name, domainName: domain.name, score: saCount > 0 ? saTotal / saCount : 0, assessed: saCount })
@@ -610,8 +610,8 @@ function generateInsuranceReport(clientName, date, analysis, assessments, clinic
         let saTotal = 0, saCount = 0
         for (const sg of sa.skillGroups) {
           for (const skill of sg.skills) {
-            const lv = assessments[skill.id] ?? 0
-            if (lv > 0) { saCount++; saTotal += lv }
+            const lv = assessments[skill.id]
+            if (isAssessed(lv)) { saCount++; saTotal += lv }
           }
         }
         const saSkillCount = sa.skillGroups.reduce((sum, sg) => sum + sg.skills.length, 0)

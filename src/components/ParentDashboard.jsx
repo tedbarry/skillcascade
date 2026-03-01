@@ -1,5 +1,5 @@
 import { useMemo } from 'react'
-import { framework, ASSESSMENT_LEVELS, getDomainScores } from '../data/framework.js'
+import { framework, ASSESSMENT_LEVELS, getDomainScores, isAssessed } from '../data/framework.js'
 
 /**
  * Parent-friendly domain labels — no clinical jargon
@@ -50,7 +50,7 @@ const GROWING_BLURBS = {
  * Parent-friendly assessment level labels
  */
 const FRIENDLY_LEVELS = {
-  [ASSESSMENT_LEVELS.NOT_ASSESSED]: 'Not Yet Explored',
+  [ASSESSMENT_LEVELS.NOT_PRESENT]: 'Not Yet Explored',
   [ASSESSMENT_LEVELS.NEEDS_WORK]: 'Growing',
   [ASSESSMENT_LEVELS.DEVELOPING]: 'Developing',
   [ASSESSMENT_LEVELS.SOLID]: 'Strong',
@@ -228,7 +228,7 @@ export default function ParentDashboard({
         sa.skillGroups.forEach((sg) => {
           sg.skills.forEach((skill) => {
             const level = assessments[skill.id]
-            if (level !== undefined && level !== ASSESSMENT_LEVELS.NOT_ASSESSED) {
+            if (isAssessed(level)) {
               total++
               if (level >= ASSESSMENT_LEVELS.DEVELOPING) {
                 developing++
@@ -245,7 +245,7 @@ export default function ParentDashboard({
   // Count total assessed skills
   const totalAssessed = useMemo(() => {
     return Object.values(assessments).filter(
-      (v) => v !== undefined && v !== ASSESSMENT_LEVELS.NOT_ASSESSED
+      (v) => isAssessed(v)
     ).length
   }, [assessments])
 

@@ -140,11 +140,21 @@ const BCBA_STEPS = [
     phase: 'Visualize',
   },
   {
-    id: 'explorer',
+    id: 'explorer-chord',
     selector: '[data-tour="explorer-view"]',
-    title: 'Dependency Explorer',
+    title: 'Explorer — Domain Connections',
     description:
-      'Three-level drill-down: Domain Chord Diagram → Sub-Area Web → Skill Explorer. Understand exactly which prerequisites are met, missing, or blocking progress.',
+      'The chord diagram shows cross-domain dependencies at a glance. Thicker ribbons mean more prerequisite links between domains. Click any domain to drill deeper.',
+    placement: 'right',
+    navigateTo: 'explorer',
+    phase: 'Visualize',
+  },
+  {
+    id: 'explorer-drill',
+    selector: '[data-tour="explorer-view"]',
+    title: 'Explorer — Drill Down',
+    description:
+      'Click a domain to see the sub-area dependency web, then click a sub-area to explore individual skill prerequisites — color-coded as met, missing, or blocking.',
     placement: 'right',
     navigateTo: 'explorer',
     phase: 'Visualize',
@@ -152,11 +162,21 @@ const BCBA_STEPS = [
 
   // ── Phase 5: Intelligence & Analysis ──
   {
-    id: 'intelligence',
+    id: 'intelligence-overview',
     selector: '[data-tour="cascade-view"]',
-    title: 'Clinical Intelligence',
+    title: 'Intelligence — Overview',
     description:
-      'Five purpose-driven views: Status Map, Bottleneck Finder, Intervention Planner, Risk Monitor, and Progress Story. Switch between "Tell me what to do" and "Show me why" modes.',
+      'The Overview tab analyzes your assessment data and surfaces the highest-priority intervention targets. Toggle between "Tell me what to do" (directive) and "Show me why" (discovery) modes.',
+    placement: 'right',
+    navigateTo: 'cascade',
+    phase: 'Analyze',
+  },
+  {
+    id: 'intelligence-views',
+    selector: '[data-tour="cascade-view"]',
+    title: 'Intelligence — Five Specialized Views',
+    description:
+      'Use the tab bar to access: Status Map (domain health grid), Bottleneck Finder (pipeline flow), Planner (ranked intervention targets), Risks (alerts & trends), and Story (progress narrative over time).',
     placement: 'right',
     navigateTo: 'cascade',
     phase: 'Analyze',
@@ -222,9 +242,10 @@ const BCBA_STEPS = [
     selector: '[data-tour="ai-tools"]',
     title: 'AI Tools',
     description:
-      '8 specialized AI assistants help write goals, BIPs, operational definitions, session notes, and reports — all pre-loaded with your client\'s current assessment data.',
+      '8 specialized AI assistants help write goals, BIPs, operational definitions, session notes, and reports — all pre-loaded with your client\'s current assessment data. Let\'s open the panel so you can see them.',
     placement: 'bottom-end',
     navigateTo: 'home',
+    action: 'open-ai',
     phase: 'Tools',
   },
   {
@@ -594,19 +615,27 @@ export default function OnboardingTour({ onComplete, onNavigate }) {
     }
   }, [])
 
-  // Navigate to the correct view when a step has `navigateTo`
+  // Navigate to the correct view when a step has `navigateTo`, and fire actions
   useEffect(() => {
     if (phase !== 'touring' || !step) return
     if (step.navigateTo && onNavigate) {
       navigationPending.current = true
       onNavigate(step.navigateTo)
+      // Fire step action (e.g., 'open-ai') after navigation settles
+      let actionTimer
+      if (step.action && onNavigate) {
+        actionTimer = setTimeout(() => onNavigate(step.action), 200)
+      }
       // Allow 400ms for the view to mount before looking for the target
       const timer = setTimeout(() => {
         navigationPending.current = false
         // Force re-render to pick up the new DOM element
         setTargetRect(null)
       }, 400)
-      return () => clearTimeout(timer)
+      return () => {
+        clearTimeout(timer)
+        if (actionTimer) clearTimeout(actionTimer)
+      }
     }
   }, [phase, currentStep, step, onNavigate])
 

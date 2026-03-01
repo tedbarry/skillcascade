@@ -1,5 +1,5 @@
 import { useState, useMemo, useCallback, useRef, useEffect } from 'react'
-import { framework, ASSESSMENT_LEVELS, ASSESSMENT_LABELS, ASSESSMENT_COLORS } from '../data/framework.js'
+import { framework, ASSESSMENT_LEVELS, ASSESSMENT_LABELS, ASSESSMENT_COLORS, isAssessed } from '../data/framework.js'
 import { getSkillDescription } from '../data/skillDescriptions.js'
 import useResponsive from '../hooks/useResponsive.js'
 
@@ -282,10 +282,8 @@ export default function AdaptiveAssessment({ assessments, onAssess, onComplete }
               return
             }
 
-            // Skip or not rated — leave as Not Assessed
-            if (domainRating === 'Skip' || saRating === 'Skip') {
-              updates[skill.id] = ASSESSMENT_LEVELS.NOT_ASSESSED
-            }
+            // Skip or not rated — leave as null (Not Assessed)
+            // Don't set anything — absence of key = not assessed
           })
         })
       })
@@ -806,7 +804,7 @@ function Phase3SkillDetail({ subAreas, skillRatings, onRate }) {
                   <div className="flex flex-wrap items-center gap-2 mb-4 pb-4 border-b border-warm-100">
                     <span className="text-xs text-warm-400 mr-1">Quick fill:</span>
                     {[
-                      ASSESSMENT_LEVELS.NOT_ASSESSED,
+                      ASSESSMENT_LEVELS.NOT_PRESENT,
                       ASSESSMENT_LEVELS.NEEDS_WORK,
                       ASSESSMENT_LEVELS.DEVELOPING,
                       ASSESSMENT_LEVELS.SOLID,
@@ -823,8 +821,6 @@ function Phase3SkillDetail({ subAreas, skillRatings, onRate }) {
                         className="text-[10px] px-2.5 py-1 rounded-md font-medium transition-all hover:scale-105 border border-warm-200 hover:border-warm-300 min-h-[44px]"
                         style={{
                           backgroundColor: ASSESSMENT_COLORS[level] + '20',
-                          color:
-                            level === ASSESSMENT_LEVELS.NOT_ASSESSED ? '#777' : undefined,
                         }}
                       >
                         All "{ASSESSMENT_LABELS[level]}"
@@ -865,10 +861,7 @@ function Phase3SkillDetail({ subAreas, skillRatings, onRate }) {
                             <SkillRater
                               key={skill.id}
                               skill={skill}
-                              level={
-                                skillRatings[skill.id] ??
-                                ASSESSMENT_LEVELS.NOT_ASSESSED
-                              }
+                              level={skillRatings[skill.id] ?? null}
                               onRate={(level) => onRate(skill.id, level)}
                               showAllDescs={showAllDescs}
                             />
@@ -925,16 +918,19 @@ function SkillRater({ skill, level, onRate, showAllDescs }) {
           </div>
         )}
       </div>
-      <div className="flex gap-1.5 shrink-0">
+      <div className="flex gap-1.5 shrink-0 items-center">
+        {!isAssessed(level) && (
+          <span className="text-[9px] text-warm-400 mr-0.5">{'\u2014'}</span>
+        )}
         {[
-          ASSESSMENT_LEVELS.NOT_ASSESSED,
+          ASSESSMENT_LEVELS.NOT_PRESENT,
           ASSESSMENT_LEVELS.NEEDS_WORK,
           ASSESSMENT_LEVELS.DEVELOPING,
           ASSESSMENT_LEVELS.SOLID,
         ].map((val) => {
           const isSelected = level === val
           const labels = {
-            [ASSESSMENT_LEVELS.NOT_ASSESSED]: '\u2014',
+            [ASSESSMENT_LEVELS.NOT_PRESENT]: '0',
             [ASSESSMENT_LEVELS.NEEDS_WORK]: '1',
             [ASSESSMENT_LEVELS.DEVELOPING]: '2',
             [ASSESSMENT_LEVELS.SOLID]: '3',
@@ -942,17 +938,17 @@ function SkillRater({ skill, level, onRate, showAllDescs }) {
           return (
             <button
               key={val}
-              onClick={() => onRate(val)}
-              title={ASSESSMENT_LABELS[val]}
-              aria-pressed={level === val}
+              onClick={() => onRate(isSelected ? null : val)}
+              title={isSelected ? 'Clear (Not Assessed)' : ASSESSMENT_LABELS[val]}
+              aria-pressed={isSelected}
               className={`w-8 h-8 min-w-[44px] min-h-[44px] rounded-lg text-xs font-bold transition-all ${
                 isSelected
                   ? 'ring-2 ring-offset-1 ring-warm-400 scale-110 shadow-sm'
-                  : 'opacity-40 hover:opacity-80 hover:scale-105'
+                  : !isAssessed(level) ? 'opacity-30 hover:opacity-70 hover:scale-105' : 'opacity-40 hover:opacity-80 hover:scale-105'
               }`}
               style={{
                 backgroundColor: ASSESSMENT_COLORS[val],
-                color: val === ASSESSMENT_LEVELS.NOT_ASSESSED ? '#666' : '#fff',
+                color: '#fff',
               }}
             >
               {labels[val]}

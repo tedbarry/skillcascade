@@ -4,7 +4,7 @@ import {
   PieChart, Pie, Cell, LineChart, Line,
 } from 'recharts'
 import { getClients, getAssessments, getSnapshots } from '../data/storage.js'
-import { framework, ASSESSMENT_LEVELS, getDomainScores } from '../data/framework.js'
+import { framework, ASSESSMENT_LEVELS, getDomainScores, isAssessed } from '../data/framework.js'
 import { useAuth } from '../contexts/AuthContext.jsx'
 import { useToast } from './Toast.jsx'
 import { userErrorMessage } from '../lib/errorUtils.js'
@@ -117,7 +117,7 @@ function computeAvgScore(assessments) {
   for (const key of Object.keys(assessments)) {
     if (key.startsWith('_')) continue
     const val = assessments[key]
-    if (val !== undefined && val !== ASSESSMENT_LEVELS.NOT_ASSESSED) {
+    if (isAssessed(val)) {
       total += val
       count++
     }
@@ -129,7 +129,7 @@ function countAssessed(assessments) {
   let count = 0
   for (const key of Object.keys(assessments)) {
     if (key.startsWith('_')) continue
-    if (assessments[key] !== undefined && assessments[key] !== ASSESSMENT_LEVELS.NOT_ASSESSED) {
+    if (isAssessed(assessments[key])) {
       count++
     }
   }
@@ -288,7 +288,7 @@ export default function OrgAnalytics() {
           sa.skillGroups.forEach((sg) => {
             sg.skills.forEach((skill) => {
               const level = client.assessments[skill.id]
-              if (level === undefined || level === ASSESSMENT_LEVELS.NOT_ASSESSED) {
+              if (!isAssessed(level)) {
                 notAssessed++
               } else if (level === ASSESSMENT_LEVELS.NEEDS_WORK) {
                 needsWork++

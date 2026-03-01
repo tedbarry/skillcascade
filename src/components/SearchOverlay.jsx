@@ -1,5 +1,5 @@
 import { useState, useEffect, useMemo, useCallback, useRef } from 'react'
-import { framework, ASSESSMENT_LEVELS, ASSESSMENT_LABELS, ASSESSMENT_COLORS } from '../data/framework.js'
+import { framework, ASSESSMENT_LEVELS, ASSESSMENT_LABELS, ASSESSMENT_COLORS, isAssessed } from '../data/framework.js'
 import useFocusTrap from '../hooks/useFocusTrap.js'
 
 /**
@@ -393,7 +393,7 @@ export default function SearchOverlay({ isOpen, onClose, onNavigate, assessments
   function getAssessmentStatus(entry) {
     if (!assessments || !entry.skillId) return null
     const level = assessments[entry.skillId]
-    if (level === undefined || level === ASSESSMENT_LEVELS.NOT_ASSESSED) return null
+    if (!isAssessed(level)) return null
     return {
       level,
       label: ASSESSMENT_LABELS[level],

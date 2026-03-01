@@ -84,7 +84,9 @@ describe('mapScore', () => {
   it('maps label-based scores', () => {
     expect(mapScore('Mastered')).toBe(3)
     expect(mapScore('emerging')).toBe(2)
-    expect(mapScore('not started')).toBe(0)
+    expect(mapScore('not started')).toBeNull() // not started = not assessed = null
+    expect(mapScore('not present')).toBe(0)    // not present = deliberately absent
+    expect(mapScore('absent')).toBe(0)
   })
 
   it('maps percentage-based scores', () => {
@@ -128,10 +130,20 @@ describe('transformToAssessments', () => {
     expect(result.assessments['d1-sa1-sg1-s2']).toBe(2)
   })
 
-  it('skips rows with score 0', () => {
+  it('imports rows with score 0 as Not Present', () => {
     const rows = [
       ['Skill ID', 'Score'],
       ['d1-sa1-sg1-s1', '0'],
+    ]
+    const result = transformToAssessments(rows, { skillId: 0, skillName: null, score: 1, domain: null, subArea: null, clientName: null })
+    expect(result.mapped).toBe(1)
+    expect(result.assessments['d1-sa1-sg1-s1']).toBe(0) // 0 = Not Present
+  })
+
+  it('skips rows with null score (not assessed)', () => {
+    const rows = [
+      ['Skill ID', 'Score'],
+      ['d1-sa1-sg1-s1', 'n/a'],
     ]
     const result = transformToAssessments(rows, { skillId: 0, skillName: null, score: 1, domain: null, subArea: null, clientName: null })
     expect(result.mapped).toBe(0)

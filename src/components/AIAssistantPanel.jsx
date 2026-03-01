@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef, useMemo, useCallback } from 'react'
-import { framework, ASSESSMENT_LEVELS, ASSESSMENT_LABELS } from '../data/framework.js'
+import { framework, ASSESSMENT_LEVELS, ASSESSMENT_LABELS, isAssessed } from '../data/framework.js'
 import { useAuth } from '../contexts/AuthContext.jsx'
 import { getAiChats, saveAiChat, deleteAiChat } from '../data/storage.js'
 import { supabase, mergeUserSettings } from '../lib/supabase.js'
@@ -186,7 +186,7 @@ function summarizeAssessments(assessments) {
           dTotal++
           saTotal++
           const level = assessments[skill.id]
-          if (level !== undefined && level !== ASSESSMENT_LEVELS.NOT_ASSESSED) {
+          if (isAssessed(level)) {
             assessed++
             dAssessed++
             saAssessed++

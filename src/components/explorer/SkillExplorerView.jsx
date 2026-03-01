@@ -5,15 +5,16 @@ import { getDomainFromId } from '../../data/skillDependencies.js'
 import useResponsive from '../../hooks/useResponsive.js'
 import ExplorerTooltip from './ExplorerTooltip.jsx'
 import { DOMAIN_COLORS } from '../../constants/colors.js'
-
-const LEVEL_COLORS = ['#ef4444', '#f59e0b', '#3b82f6', '#22c55e'] // 0,1,2,3
+import { ASSESSMENT_COLORS, ASSESSMENT_LABELS, isAssessed } from '../../data/framework.js'
 
 function getStatusColor(level) {
-  return LEVEL_COLORS[level] ?? '#666'
+  if (!isAssessed(level)) return '#666'
+  return ASSESSMENT_COLORS[level] ?? '#666'
 }
 
 function getStatusLabel(level) {
-  return ['Not assessed', 'Needs work', 'Developing', 'Mastered'][level] ?? 'Unknown'
+  if (!isAssessed(level)) return 'Not Assessed'
+  return ASSESSMENT_LABELS[level] ?? 'Unknown'
 }
 
 /**

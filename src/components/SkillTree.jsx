@@ -1,5 +1,5 @@
 import { useRef, useEffect, useState, useMemo, memo } from 'react'
-import { framework, getDomainScores, DOMAIN_DEPENDENCIES, ASSESSMENT_LEVELS, ASSESSMENT_COLORS, ASSESSMENT_LABELS } from '../data/framework.js'
+import { framework, getDomainScores, DOMAIN_DEPENDENCIES, ASSESSMENT_LEVELS, ASSESSMENT_COLORS, ASSESSMENT_LABELS, isAssessed } from '../data/framework.js'
 
 /**
  * Layout tiers — vertical position based on prerequisite depth
@@ -570,7 +570,7 @@ function SubAreaNodes({ domain, pos, nodeW, nodeH, assessments }) {
           sg.skills.forEach((skill) => {
             total++
             const level = assessments[skill.id]
-            if (level !== undefined && level !== ASSESSMENT_LEVELS.NOT_ASSESSED) {
+            if (isAssessed(level)) {
               assessed++
               scoreSum += level
             }
