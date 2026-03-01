@@ -67,6 +67,47 @@ export default memo(function SkillExplorerView({
     setTooltip(t => ({ ...t, visible: false }))
   }, [])
 
+  // Desktop/Tablet tree layout constants
+  const treeWidth = 900
+  const centerX = treeWidth / 2
+  const levelH = 60
+
+  // Extract tree parts (safe defaults when no tree data)
+  const root = treeData?.root ?? null
+  const upstream = treeData?.upstream ?? []
+  const downstream = treeData?.downstream ?? []
+
+  // Build upstream tree layout (left side) — must be before early returns (Rules of Hooks)
+  const upstreamLayout = useMemo(() => {
+    if (upstream.length === 0) return []
+    const byDomain = {}
+    upstream.forEach(s => {
+      if (!byDomain[s.domainId]) byDomain[s.domainId] = []
+      byDomain[s.domainId].push(s)
+    })
+    const domains = Object.keys(byDomain).sort()
+    const nodes = []
+    let idx = 0
+    domains.forEach(domId => {
+      byDomain[domId].forEach(skill => {
+        const y = 60 + idx * levelH
+        const x = centerX - 180
+        nodes.push({ ...skill, x, y, idx: idx++ })
+      })
+    })
+    return nodes
+  }, [upstream, centerX, levelH])
+
+  // Build downstream tree layout (right side)
+  const downstreamLayout = useMemo(() => {
+    if (downstream.length === 0) return []
+    return downstream.map((skill, idx) => ({
+      ...skill,
+      x: centerX + 180,
+      y: 60 + idx * levelH,
+    }))
+  }, [downstream, centerX, levelH])
+
   // Skill picker for sub-area drill-down
   if (subAreaSkills && !focusSkillId) {
     const domainId = getDomainFromId(focusSubAreaId)
@@ -114,15 +155,13 @@ export default memo(function SkillExplorerView({
     )
   }
 
-  if (!treeData || !treeData.root) {
+  if (!root) {
     return (
       <div className="flex-1 flex items-center justify-center text-gray-500 text-sm">
         Select a skill to explore its dependencies
       </div>
     )
   }
-
-  const { root, upstream, downstream } = treeData
 
   // Phone: vertical accordion layout
   if (isPhone) {
@@ -220,44 +259,6 @@ export default memo(function SkillExplorerView({
   }
 
   // Desktop/Tablet: horizontal tree layout
-  const treeWidth = 900
-  const centerX = treeWidth / 2
-  const nodeR = 6
-  const levelH = 60
-
-  // Build upstream tree (left side)
-  const upstreamLayout = useMemo(() => {
-    if (upstream.length === 0) return []
-    // Group by domain for visual clustering
-    const byDomain = {}
-    upstream.forEach(s => {
-      if (!byDomain[s.domainId]) byDomain[s.domainId] = []
-      byDomain[s.domainId].push(s)
-    })
-    const domains = Object.keys(byDomain).sort()
-    const totalNodes = upstream.length
-    const nodes = []
-    let idx = 0
-    domains.forEach(domId => {
-      byDomain[domId].forEach(skill => {
-        const y = 60 + idx * levelH
-        const x = centerX - 180
-        nodes.push({ ...skill, x, y, idx: idx++ })
-      })
-    })
-    return nodes
-  }, [upstream, centerX])
-
-  // Build downstream tree (right side)
-  const downstreamLayout = useMemo(() => {
-    if (downstream.length === 0) return []
-    return downstream.map((skill, idx) => ({
-      ...skill,
-      x: centerX + 180,
-      y: 60 + idx * levelH,
-    }))
-  }, [downstream, centerX])
-
   const rootY = Math.max(
     upstreamLayout.length > 0 ? (upstreamLayout[0].y + upstreamLayout[upstreamLayout.length - 1].y) / 2 : 200,
     downstreamLayout.length > 0 ? (downstreamLayout[0].y + downstreamLayout[downstreamLayout.length - 1].y) / 2 : 200,
@@ -385,7 +386,7 @@ export default memo(function SkillExplorerView({
               height={32}
               rx={6}
               fill="#0f172a"
-              stroke={DOMAIN_COLORS[skill.domainId] + '80'}
+              stroke={(DOMAIN_COLORS[skill.domainId] || '#666') + '80'}
               strokeWidth={1}
               opacity={0.9}
             />
