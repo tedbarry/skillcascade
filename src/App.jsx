@@ -1,4 +1,4 @@
-import { lazy, Suspense } from 'react'
+import { lazy, Suspense, useEffect } from 'react'
 import { Routes, Route, useLocation, Link } from 'react-router-dom'
 import { AnimatePresence, motion } from 'framer-motion'
 import { AuthProvider } from './contexts/AuthContext.jsx'
@@ -55,8 +55,28 @@ const pageFade = {
   transition: { duration: 0.15, ease: 'easeInOut' },
 }
 
+const PAGE_TITLES = {
+  '/': 'SkillCascade — Developmental Assessment & Visualization',
+  '/login': 'Sign In — SkillCascade',
+  '/signup': 'Create Account — SkillCascade',
+  '/forgot-password': 'Reset Password — SkillCascade',
+  '/reset-password': 'Set New Password — SkillCascade',
+  '/dashboard': 'Dashboard — SkillCascade',
+  '/profile': 'Profile — SkillCascade',
+  '/contact': 'Contact Us — SkillCascade',
+}
+
 export default function App() {
   const location = useLocation()
+
+  useEffect(() => {
+    const path = location.pathname
+    const title = PAGE_TITLES[path]
+      || (path.startsWith('/legal/') && 'Legal — SkillCascade')
+      || (path.startsWith('/profile') && 'Profile — SkillCascade')
+      || 'SkillCascade'
+    document.title = title
+  }, [location.pathname])
 
   return (
     <ErrorBoundary>

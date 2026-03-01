@@ -171,7 +171,7 @@ export default memo(function SkillExplorerView({
         {/* Upstream prerequisites */}
         <button
           onClick={() => setExpandedUpstream(!expandedUpstream)}
-          className="flex items-center justify-between w-full mb-2 min-h-[36px]"
+          className="flex items-center justify-between w-full mb-2 min-h-[44px]"
         >
           <span className="text-xs font-semibold text-gray-400">
             Prerequisites ({upstream.length})
@@ -217,7 +217,7 @@ export default memo(function SkillExplorerView({
         {/* Downstream dependents */}
         <button
           onClick={() => setExpandedDownstream(!expandedDownstream)}
-          className="flex items-center justify-between w-full mb-2 min-h-[36px]"
+          className="flex items-center justify-between w-full mb-2 min-h-[44px]"
         >
           <span className="text-xs font-semibold text-gray-400">
             Dependents ({downstream.length})

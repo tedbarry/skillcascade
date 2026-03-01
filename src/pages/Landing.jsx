@@ -1244,28 +1244,7 @@ export default function Landing() {
             <p className="text-sm text-warm-600">
               &copy; {new Date().getFullYear()} SkillCascade. All rights reserved.
             </p>
-            {/* Social icons */}
-            <div className="flex gap-4">
-              {/* Twitter/X */}
-              <a href="#" className="text-warm-600 hover:text-white transition-colors" aria-label="Twitter">
-                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" aria-hidden="true">
-                  <path d="M4 4l6.5 8L4 20h2l5.5-6.8L16 20h4l-6.8-8.5L19.5 4h-2l-5.2 6.3L8 4H4z" stroke="currentColor" strokeWidth="1.6" strokeLinejoin="round" />
-                </svg>
-              </a>
-              {/* LinkedIn */}
-              <a href="#" className="text-warm-600 hover:text-white transition-colors" aria-label="LinkedIn">
-                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" aria-hidden="true">
-                  <rect x="3" y="3" width="18" height="18" rx="3" stroke="currentColor" strokeWidth="1.6" />
-                  <path d="M8 11v5M8 8v.5M12 16v-4c0-1.1.9-2 2-2s2 .9 2 2v4" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" />
-                </svg>
-              </a>
-              {/* GitHub */}
-              <a href="#" className="text-warm-600 hover:text-white transition-colors" aria-label="GitHub">
-                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" aria-hidden="true">
-                  <path d="M12 2C6.48 2 2 6.48 2 12c0 4.42 2.87 8.17 6.84 9.49.5.09.66-.22.66-.48v-1.7c-2.78.6-3.37-1.34-3.37-1.34-.45-1.16-1.11-1.47-1.11-1.47-.91-.62.07-.61.07-.61 1 .07 1.53 1.03 1.53 1.03.89 1.53 2.34 1.09 2.91.83.09-.65.35-1.09.63-1.34-2.22-.25-4.56-1.11-4.56-4.95 0-1.09.39-1.98 1.03-2.68-.1-.25-.45-1.27.1-2.64 0 0 .84-.27 2.75 1.02A9.56 9.56 0 0112 6.8c.85 0 1.7.11 2.5.34 1.91-1.29 2.75-1.02 2.75-1.02.55 1.37.2 2.39.1 2.64.64.7 1.03 1.59 1.03 2.68 0 3.85-2.34 4.7-4.57 4.95.36.31.68.92.68 1.85v2.74c0 .27.16.58.67.48A10 10 0 0022 12c0-5.52-4.48-10-10-10z" stroke="currentColor" strokeWidth="1.4" />
-                </svg>
-              </a>
-            </div>
+            {/* Social icons — will be populated when accounts are created */}
           </div>
         </div>
       </footer>

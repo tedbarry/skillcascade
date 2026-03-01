@@ -40,7 +40,11 @@ Deno.serve(async (req) => {
     }
 
     // Parse request body
-    const { messages, model = 'gpt-4o-mini', max_tokens = 2000, temperature = 0.7 } = await req.json()
+    const body = await req.json()
+    const messages = body.messages
+    const model = body.model || 'gpt-4o-mini'
+    const max_tokens = Math.min(body.max_tokens || 2000, 4000)
+    const temperature = Math.min(Math.max(body.temperature ?? 0.7, 0), 2)
 
     if (!messages || !Array.isArray(messages)) {
       return new Response(JSON.stringify({ error: 'Messages array is required' }), {

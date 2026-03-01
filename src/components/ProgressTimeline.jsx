@@ -190,7 +190,7 @@ export default function ProgressTimeline({
               />
               <button
                 onClick={handleSaveSnapshot}
-                className="text-xs px-3 py-1.5 rounded-md bg-sage-500 text-white hover:bg-sage-600 transition-colors font-medium shrink-0 min-h-[36px]"
+                className="text-xs px-3 py-1.5 rounded-md bg-sage-500 text-white hover:bg-sage-600 transition-colors font-medium shrink-0 min-h-[44px]"
               >
                 Save
               </button>
@@ -280,7 +280,7 @@ export default function ProgressTimeline({
                 setCompareB('current')
               }
             }}
-            className={`w-full text-xs px-3 py-2 rounded-lg font-medium transition-colors min-h-[36px] ${
+            className={`w-full text-xs px-3 py-2 rounded-lg font-medium transition-colors min-h-[44px] ${
               compareMode
                 ? 'bg-sage-500 text-white'
                 : 'bg-warm-100 text-warm-600 hover:bg-warm-200'

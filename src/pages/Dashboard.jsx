@@ -58,6 +58,16 @@ import { generateSampleAssessments } from '../data/sampleAssessments.js'
 import { saveSnapshot, getSnapshots, deleteSnapshot, getAssessments, saveAssessment } from '../data/storage.js'
 import { useAuth } from '../contexts/AuthContext.jsx'
 
+/** Shallow equality for flat assessment objects (key→number|null). */
+function shallowEqual(a, b) {
+  if (a === b) return true
+  if (!a || !b) return false
+  const keysA = Object.keys(a)
+  const keysB = Object.keys(b)
+  if (keysA.length !== keysB.length) return false
+  return keysA.every(k => a[k] === b[k])
+}
+
 /**
  * Migrate legacy assessments: old format used 0 for "not assessed",
  * new format uses null/undefined. Remove any keys with value 0
@@ -255,7 +265,7 @@ export default function Dashboard() {
     clearTimeout(autoSaveTimerRef.current)
     autoSaveTimerRef.current = setTimeout(() => {
       if (!user || !clientId) return
-      if (JSON.stringify(assessments) === JSON.stringify(lastSavedRef.current)) return
+      if (shallowEqual(assessments, lastSavedRef.current)) return
 
       setAutoSaveStatus('saving')
       saveAssessment(clientId, assessments, user.id)
@@ -320,8 +330,7 @@ export default function Dashboard() {
   const lastSavedRef = useRef(assessments)
   useEffect(() => {
     if (!clientId) return
-    const hasUnsaved = JSON.stringify(assessments) !== JSON.stringify(lastSavedRef.current)
-    if (!hasUnsaved) return
+    if (shallowEqual(assessments, lastSavedRef.current)) return
     const handler = (e) => { e.preventDefault(); e.returnValue = '' }
     window.addEventListener('beforeunload', handler)
     return () => window.removeEventListener('beforeunload', handler)
@@ -334,7 +343,7 @@ export default function Dashboard() {
 
   const hasUnsavedChanges = useCallback(() => {
     if (!clientId) return false
-    return JSON.stringify(assessments) !== JSON.stringify(lastSavedRef.current)
+    return !shallowEqual(assessments, lastSavedRef.current)
   }, [clientId, assessments])
 
   // Guarded view switch — shows confirmation dialog when dirty
@@ -496,11 +505,11 @@ export default function Dashboard() {
       localStorage.removeItem('skillcascade_selected_client_name')
     }
     setAssessmentsLoading(false)
-    if (savedAssessments === null) {
-      resetAssessments(generateSampleAssessments())
-    } else {
-      resetAssessments(savedAssessments || {})
-    }
+    const newData = savedAssessments === null
+      ? generateSampleAssessments()
+      : (savedAssessments || {})
+    resetAssessments(newData)
+    lastSavedRef.current = newData
   }
 
   // Load assessments for restored client on mount

@@ -112,7 +112,7 @@ export default memo(function DomainChordView({
             <button
               key={rowId}
               onClick={() => onDrillToDomain(rowId)}
-              className="flex items-center w-full min-h-[36px] hover:bg-gray-800/50 rounded transition-colors"
+              className="flex items-center w-full min-h-[44px] hover:bg-gray-800/50 rounded transition-colors"
             >
               {/* Row label */}
               <div className="w-[100px] flex items-center gap-1.5 flex-shrink-0 pr-2">

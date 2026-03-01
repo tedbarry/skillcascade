@@ -373,7 +373,7 @@ export default function ClientManager({ currentClientId, onSelectClient, assessm
                           ) : (
                             <button
                               onClick={() => setConfirmDelete(client.id)}
-                              className="text-warm-300 hover:text-red-400 transition-colors p-2 min-h-[36px] min-w-[36px] flex items-center justify-center"
+                              className="text-warm-300 hover:text-red-400 transition-colors p-2 min-h-[44px] min-w-[36px] flex items-center justify-center"
                               title="Delete client"
                             >
                               <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>

@@ -285,7 +285,7 @@ export default function AssessmentPanel({ assessments, onAssess, initialSubAreaI
                 <button
                   key={level}
                   onClick={() => bulkRate(level)}
-                  className="text-[10px] px-2 py-1.5 rounded-md font-medium border border-warm-200 whitespace-nowrap min-h-[36px]"
+                  className="text-[10px] px-2 py-1.5 rounded-md font-medium border border-warm-200 whitespace-nowrap min-h-[44px]"
                   style={{ backgroundColor: ASSESSMENT_COLORS[level] + '20' }}
                 >
                   All "{ASSESSMENT_LABELS[level]}"
@@ -294,7 +294,7 @@ export default function AssessmentPanel({ assessments, onAssess, initialSubAreaI
             )}
             <button
               onClick={toggleShowAllDescs}
-              className="text-[10px] px-2 py-1.5 rounded-md font-medium border border-warm-200 whitespace-nowrap min-h-[36px] flex items-center gap-1"
+              className="text-[10px] px-2 py-1.5 rounded-md font-medium border border-warm-200 whitespace-nowrap min-h-[44px] flex items-center gap-1"
               style={{ backgroundColor: showAllDescs ? 'var(--color-sage-100)' : undefined, color: showAllDescs ? 'var(--color-sage-700)' : undefined }}
             >
               <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>

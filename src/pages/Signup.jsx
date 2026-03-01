@@ -194,11 +194,11 @@ export default function Signup() {
           </button>
         </form>
 
-        {/* Sign in link */}
+        {/* Sign In link */}
         <p className="text-center text-sm text-warm-500 mt-4">
           Already have an account?{' '}
           <Link to="/login" className="text-sage-600 hover:text-sage-700 font-medium">
-            Sign in
+            Sign In
           </Link>
         </p>
       </div>
