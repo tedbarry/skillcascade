@@ -1229,9 +1229,6 @@ export default function AIAssistantPanel({ isOpen, onClose, clientName, assessme
   }
 
   async function callOpenAI(userText, history) {
-    const apiKey = localStorage.getItem('skillcascade_ai_api_key')
-    if (!apiKey) throw new Error('No API key configured')
-
     const systemPrompt = buildSystemPrompt(selectedToolId, clientName || 'this client', assessments || {})
 
     const apiMessages = [
@@ -1241,6 +1238,43 @@ export default function AIAssistantPanel({ isOpen, onClose, clientName, assessme
         .map((m) => ({ role: m.role, content: m.content })),
       { role: 'user', content: userText },
     ]
+
+    // Use Supabase Edge Function proxy if available, fall back to direct call
+    const supabaseUrl = import.meta.env.VITE_SUPABASE_URL
+    const { data: { session } } = await supabase.auth.getSession()
+
+    if (supabaseUrl && session?.access_token) {
+      // Proxied call — API key stays server-side
+      const res = await fetch(`${supabaseUrl}/functions/v1/ai-proxy`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${session.access_token}`,
+        },
+        body: JSON.stringify({
+          messages: apiMessages,
+          model: 'gpt-4o-mini',
+          max_tokens: 2000,
+          temperature: 0.7,
+        }),
+      })
+
+      if (!res.ok) {
+        const err = await res.json().catch(() => ({}))
+        // If proxy fails with config error, fall back to direct call
+        if (res.status === 400 && err.error?.includes('No API key')) {
+          throw new Error('No API key configured. Add your OpenAI API key in the AI assistant settings.')
+        }
+        throw new Error(err.error || `API error: ${res.status}`)
+      }
+
+      const data = await res.json()
+      return data.content || 'No response generated.'
+    }
+
+    // Fallback: direct call (for development or when edge function not deployed)
+    const apiKey = localStorage.getItem('skillcascade_ai_api_key')
+    if (!apiKey) throw new Error('No API key configured')
 
     const res = await fetch('https://api.openai.com/v1/chat/completions', {
       method: 'POST',
@@ -1396,7 +1430,7 @@ export default function AIAssistantPanel({ isOpen, onClose, clientName, assessme
       {/* Panel */}
       <div
         ref={trapRef}
-        className={`fixed top-0 right-0 z-50 h-full w-[400px] max-w-[calc(100vw-48px)] bg-warm-50 border-l border-warm-200 shadow-2xl flex flex-col transition-transform duration-300 ease-in-out print:hidden ${
+        className={`fixed top-0 right-0 z-50 h-full w-full sm:w-[400px] sm:max-w-[calc(100vw-48px)] bg-warm-50 border-l border-warm-200 shadow-2xl flex flex-col transition-transform duration-300 ease-in-out print:hidden ${
           isOpen ? 'translate-x-0' : 'translate-x-full'
         }`}
         role="dialog"

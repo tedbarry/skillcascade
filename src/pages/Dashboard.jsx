@@ -213,7 +213,10 @@ export default function Dashboard() {
   const [draftAvailable, setDraftAvailable] = useState(false)
   const draftTimerRef = useRef(null)
 
-  // Debounce-save assessments to localStorage whenever they change
+  // Debounce-save assessments to localStorage + Supabase whenever they change
+  const autoSaveTimerRef = useRef(null)
+  const [autoSaveStatus, setAutoSaveStatus] = useState(null) // null | 'saving' | 'saved' | 'error'
+
   useEffect(() => {
     if (!clientId) return
     const assessmentCount = Object.keys(assessments).filter(k => !k.startsWith('_')).length
@@ -229,8 +232,30 @@ export default function Dashboard() {
       } catch { /* quota exceeded — ignore */ }
     }, 2000) // 2s debounce
 
-    return () => clearTimeout(draftTimerRef.current)
-  }, [assessments, clientId])
+    // Also auto-save to Supabase every 30s (only if changed since last save)
+    clearTimeout(autoSaveTimerRef.current)
+    autoSaveTimerRef.current = setTimeout(() => {
+      if (!user || !clientId) return
+      if (JSON.stringify(assessments) === JSON.stringify(lastSavedRef.current)) return
+
+      setAutoSaveStatus('saving')
+      saveAssessment(clientId, assessments, user.id)
+        .then(() => {
+          lastSavedRef.current = assessments
+          setAutoSaveStatus('saved')
+          setTimeout(() => setAutoSaveStatus(null), 3000)
+        })
+        .catch(() => {
+          setAutoSaveStatus('error')
+          setTimeout(() => setAutoSaveStatus(null), 5000)
+        })
+    }, 30000) // 30s debounce for Supabase
+
+    return () => {
+      clearTimeout(draftTimerRef.current)
+      clearTimeout(autoSaveTimerRef.current)
+    }
+  }, [assessments, clientId, user])
 
   // Check for saved draft when client changes
   useEffect(() => {

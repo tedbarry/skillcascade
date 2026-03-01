@@ -1,6 +1,8 @@
-import { useState } from 'react'
-import { Link } from 'react-router-dom'
+import { useState, useCallback } from 'react'
+import { Link, useNavigate } from 'react-router-dom'
 import useResponsive from '../hooks/useResponsive'
+import { useAuth } from '../contexts/AuthContext.jsx'
+import useSubscription from '../hooks/useSubscription.js'
 
 /* ── Inline SVG Icons ─────────────────────────────────────── */
 
@@ -236,7 +238,7 @@ function BillingToggle({ isAnnual, onChange }) {
   )
 }
 
-function PricingCard({ tier, isAnnual }) {
+function PricingCard({ tier, isAnnual, onCheckout, checkoutLoading }) {
   const annualMonthly = Math.round(tier.monthlyPrice * 0.8)
   const displayPrice = isAnnual ? annualMonthly : tier.monthlyPrice
 
@@ -291,18 +293,34 @@ function PricingCard({ tier, isAnnual }) {
         </div>
 
         {/* CTA */}
-        <Link
-          to={`/signup?plan=${tier.name.toLowerCase()}`}
-          className={`mt-6 w-full rounded-lg py-2.5 text-sm font-semibold transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 block text-center ${
-            tier.popular
-              ? 'bg-sage-500 text-white hover:bg-sage-600 focus-visible:ring-sage-500'
-              : tier.name === 'Enterprise'
-                ? 'bg-warm-800 text-white hover:bg-warm-900 focus-visible:ring-warm-700'
-                : 'bg-warm-100 text-warm-800 hover:bg-warm-200 focus-visible:ring-warm-400'
-          }`}
-        >
-          {tier.cta}
-        </Link>
+        {onCheckout ? (
+          <button
+            onClick={() => onCheckout(tier.name.toLowerCase(), isAnnual)}
+            disabled={checkoutLoading}
+            className={`mt-6 w-full rounded-lg py-2.5 text-sm font-semibold transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 min-h-[44px] disabled:opacity-50 ${
+              tier.popular
+                ? 'bg-sage-500 text-white hover:bg-sage-600 focus-visible:ring-sage-500'
+                : tier.name === 'Enterprise'
+                  ? 'bg-warm-800 text-white hover:bg-warm-900 focus-visible:ring-warm-700'
+                  : 'bg-warm-100 text-warm-800 hover:bg-warm-200 focus-visible:ring-warm-400'
+            }`}
+          >
+            {checkoutLoading ? 'Loading...' : tier.cta}
+          </button>
+        ) : (
+          <Link
+            to={`/signup?plan=${tier.name.toLowerCase()}`}
+            className={`mt-6 w-full rounded-lg py-2.5 text-sm font-semibold transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 block text-center min-h-[44px] ${
+              tier.popular
+                ? 'bg-sage-500 text-white hover:bg-sage-600 focus-visible:ring-sage-500'
+                : tier.name === 'Enterprise'
+                  ? 'bg-warm-800 text-white hover:bg-warm-900 focus-visible:ring-warm-700'
+                  : 'bg-warm-100 text-warm-800 hover:bg-warm-200 focus-visible:ring-warm-400'
+            }`}
+          >
+            {tier.cta}
+          </Link>
+        )}
         {tier.cta !== 'Contact Sales' && (
           <p className="mt-2 text-center text-xs text-warm-400">
             14-day free trial. No credit card required.
@@ -639,6 +657,49 @@ function CTABanner() {
 
 export default function PricingPage() {
   const [isAnnual, setIsAnnual] = useState(false)
+  const [checkoutLoading, setCheckoutLoading] = useState(false)
+  const { user } = useAuth()
+
+  const handleCheckout = useCallback(async (planName, annual) => {
+    if (!user) return // Should not happen since onCheckout is only passed when logged in
+
+    setCheckoutLoading(true)
+    try {
+      const supabaseUrl = import.meta.env.VITE_SUPABASE_URL
+      const { supabase } = await import('../lib/supabase.js')
+      const { data: { session } } = await supabase.auth.getSession()
+
+      if (!session?.access_token) {
+        window.location.href = `/signup?plan=${planName}`
+        return
+      }
+
+      const res = await fetch(`${supabaseUrl}/functions/v1/stripe-checkout`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${session.access_token}`,
+        },
+        body: JSON.stringify({ plan: planName, annual }),
+      })
+
+      if (!res.ok) {
+        const err = await res.json().catch(() => ({}))
+        console.error('Checkout error:', err.error)
+        // Fallback to signup page
+        window.location.href = `/signup?plan=${planName}`
+        return
+      }
+
+      const { url } = await res.json()
+      if (url) window.location.href = url
+    } catch (err) {
+      console.error('Checkout error:', err)
+      window.location.href = `/signup?plan=${planName}`
+    } finally {
+      setCheckoutLoading(false)
+    }
+  }, [user])
 
   return (
     <div className="min-h-screen bg-warm-50 px-4 py-16 sm:px-6 lg:px-8">
@@ -664,7 +725,7 @@ export default function PricingPage() {
         {/* ── Pricing Cards ────────────────────────────── */}
         <div className="mt-14 grid gap-8 lg:grid-cols-3 items-start">
           {TIERS.map((tier) => (
-            <PricingCard key={tier.name} tier={tier} isAnnual={isAnnual} />
+            <PricingCard key={tier.name} tier={tier} isAnnual={isAnnual} onCheckout={user ? handleCheckout : null} checkoutLoading={checkoutLoading} />
           ))}
         </div>
 

@@ -86,10 +86,16 @@ export default function Login() {
           <button
             type="submit"
             disabled={loading}
-            className="w-full py-2.5 rounded-lg bg-sage-500 text-white text-sm font-semibold hover:bg-sage-600 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+            className="w-full py-2.5 rounded-lg bg-sage-500 text-white text-sm font-semibold hover:bg-sage-600 transition-colors disabled:opacity-50 disabled:cursor-not-allowed min-h-[44px]"
           >
             {loading ? 'Signing in...' : 'Sign In'}
           </button>
+
+          <div className="text-right">
+            <Link to="/forgot-password" className="text-xs text-warm-400 hover:text-sage-600 transition-colors">
+              Forgot your password?
+            </Link>
+          </div>
         </form>
 
         {/* Sign up link */}

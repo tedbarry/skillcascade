@@ -133,14 +133,6 @@ function CloseIcon({ className = '' }) {
   )
 }
 
-function QuoteIcon({ className = '' }) {
-  return (
-    <svg className={className} width="32" height="32" viewBox="0 0 24 24" fill="none" aria-hidden="true">
-      <path d="M10 8H6a2 2 0 00-2 2v2a2 2 0 002 2h2a2 2 0 002-2V8c0 4-2 6-4 7M20 8h-4a2 2 0 00-2 2v2a2 2 0 002 2h2a2 2 0 002-2V8c0 4-2 6-4 7" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
-    </svg>
-  )
-}
-
 function DashboardIcon({ className = '' }) {
   return (
     <svg className={className} width="28" height="28" viewBox="0 0 24 24" fill="none" aria-hidden="true">
@@ -221,24 +213,21 @@ const DOMAINS = [
   { num: 9, name: 'Support System', desc: 'Caregiver & Environment', color: 'bg-sage-200 border-sage-300', tier: 'upper' },
 ]
 
-const TESTIMONIALS = [
+const EARLY_ACCESS_FEATURES = [
   {
-    quote: "The cascade visualization changed how I think about assessment entirely. I can show parents exactly why we're targeting regulation before social skills -- it's the 'aha' moment every family deserves.",
-    name: 'Dr. Sarah Mitchell, BCBA-D',
-    role: 'Clinical Director, Bright Horizons ABA',
-    initials: 'SM',
+    icon: '9',
+    title: '9 Developmental Domains',
+    description: 'A comprehensive developmental-functional framework covering 300+ skills across communication, cognition, social, motor, self-care, play, safety, and support systems.',
   },
   {
-    quote: "We cut our assessment-to-treatment time by 60%. The AI goal engine and caseload dashboard mean my team spends less time on paperwork and more time with clients. ROI was immediate.",
-    name: 'James Thornton, MBA',
-    role: 'CEO, Spectrum Therapy Partners (12 locations)',
-    initials: 'JT',
+    icon: '5',
+    title: '5 Clinical Intelligence Views',
+    description: 'Status mapping, bottleneck detection, intervention planning, risk monitoring, and progress narratives — purpose-built for clinical decision-making.',
   },
   {
-    quote: "For the first time, I actually understand my son's progress reports. The parent portal explains everything in plain language, and the milestone celebrations make therapy feel like a team effort.",
-    name: 'Maria Gonzalez',
-    role: 'Parent & Family Advocate',
-    initials: 'MG',
+    icon: '8',
+    title: '8 AI Assistants',
+    description: 'Goal writing, BIP generation, session notes, operational definitions, and more — each pre-loaded with the client\'s current assessment data.',
   },
 ]
 
@@ -625,26 +614,17 @@ const FOOTER_LINKS = {
     { label: 'Live Demo', href: '#demo' },
     { label: 'Dashboard', href: '/dashboard' },
   ],
-  Resources: [
-    { label: 'Documentation', href: '#' },
-    { label: 'API Reference', href: '#' },
-    { label: 'Blog', href: '#' },
-    { label: 'Case Studies', href: '#' },
-    { label: 'Webinars', href: '#' },
-  ],
-  Company: [
-    { label: 'About', href: '#' },
-    { label: 'Careers', href: '#' },
-    { label: 'Contact', href: '#' },
-    { label: 'Partners', href: '#' },
-    { label: 'Press', href: '#' },
+  Support: [
+    { label: 'Contact Us', href: '/contact' },
+    { label: 'Getting Started', href: '/dashboard' },
+    { label: 'Sign In', href: '/login' },
   ],
   Legal: [
-    { label: 'Privacy Policy', href: '#' },
-    { label: 'Terms of Service', href: '#' },
-    { label: 'HIPAA Compliance', href: '#' },
-    { label: 'BAA', href: '#' },
-    { label: 'Security', href: '#' },
+    { label: 'Privacy Policy', href: '/legal/privacy' },
+    { label: 'Terms of Service', href: '/legal/terms' },
+    { label: 'HIPAA Compliance', href: '/legal/hipaa' },
+    { label: 'BAA', href: '/legal/baa' },
+    { label: 'Security', href: '/legal/security' },
   ],
 }
 
@@ -811,7 +791,7 @@ export default function Landing() {
 
           {/* Social proof */}
           <p className="text-sm text-warm-500 mb-6">
-            Trusted by <span className="font-semibold text-warm-700">200+ BCBAs</span> across <span className="font-semibold text-warm-700">50+ therapy practices</span>
+            Built for BCBAs &mdash; <span className="font-semibold text-warm-700">now in early access</span>
           </p>
 
           {/* Trust badges */}
@@ -1032,7 +1012,7 @@ export default function Landing() {
               See What&rsquo;s Inside
             </h2>
             <p className="text-warm-400 max-w-2xl mx-auto text-lg">
-              Explore the tools that 200+ BCBAs use every day to transform assessment into action.
+              Explore the tools designed to transform assessment into action.
             </p>
           </div>
 
@@ -1112,39 +1092,44 @@ export default function Landing() {
       </section>
 
       {/* ────────────────────────────────────────────────────────
-          8. Testimonials
+          8. Built for Clinical Rigor
           ──────────────────────────────────────────────────────── */}
       <section className="max-w-7xl mx-auto px-6 lg:px-8 py-20 lg:py-28">
         <div className="text-center mb-16">
-          <div className="inline-flex items-center gap-2 rounded-full bg-warm-100 border border-warm-200 px-4 py-1.5 text-xs font-semibold text-warm-600 uppercase tracking-wider mb-4">
-            What People Say
+          <div className="inline-flex items-center gap-2 rounded-full bg-sage-50 border border-sage-200 px-4 py-1.5 text-xs font-semibold text-sage-700 uppercase tracking-wider mb-4">
+            Early Access
           </div>
           <h2 className="text-3xl sm:text-4xl font-bold text-warm-900 font-display mb-4">
-            Trusted by clinicians who care about outcomes
+            Built for clinical rigor, designed for clarity
           </h2>
+          <p className="text-warm-500 max-w-2xl mx-auto">
+            SkillCascade was built by ABA professionals who needed a better way to see the whole picture.
+            We're currently in early access — join us and help shape the future of developmental assessment.
+          </p>
         </div>
 
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-          {TESTIMONIALS.map((t) => (
+          {EARLY_ACCESS_FEATURES.map((f) => (
             <div
-              key={t.name}
-              className="bg-white border border-warm-100 rounded-2xl p-8 shadow-sm hover:shadow-md transition-shadow"
+              key={f.title}
+              className="bg-white border border-warm-100 rounded-2xl p-8 shadow-sm hover:shadow-md transition-shadow text-center"
             >
-              <QuoteIcon className="text-sage-300 mb-4" />
-              <p className="text-warm-700 text-sm leading-relaxed mb-6">
-                {t.quote}
-              </p>
-              <div className="flex items-center gap-3 pt-4 border-t border-warm-100">
-                <div className="w-10 h-10 rounded-full bg-sage-100 border border-sage-200 flex items-center justify-center text-sage-700 text-xs font-bold">
-                  {t.initials}
-                </div>
-                <div>
-                  <div className="text-sm font-semibold text-warm-800">{t.name}</div>
-                  <div className="text-xs text-warm-500">{t.role}</div>
-                </div>
+              <div className="w-14 h-14 rounded-2xl bg-sage-50 border border-sage-200 flex items-center justify-center mx-auto mb-5">
+                <span className="text-2xl font-bold text-sage-600">{f.icon}</span>
               </div>
+              <h3 className="text-lg font-semibold text-warm-800 mb-2">{f.title}</h3>
+              <p className="text-sm text-warm-500 leading-relaxed">{f.description}</p>
             </div>
           ))}
+        </div>
+
+        <div className="text-center mt-10">
+          <p className="text-sm text-warm-400">
+            Interested in being a design partner?{' '}
+            <Link to="/contact" className="text-sage-600 hover:text-sage-700 font-medium">
+              Get in touch
+            </Link>
+          </p>
         </div>
       </section>
 

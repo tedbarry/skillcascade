@@ -10,8 +10,12 @@ import OfflineBanner from './components/OfflineBanner.jsx'
 const Landing = lazy(() => import('./pages/Landing.jsx'))
 const Login = lazy(() => import('./pages/Login.jsx'))
 const Signup = lazy(() => import('./pages/Signup.jsx'))
+const ForgotPassword = lazy(() => import('./pages/ForgotPassword.jsx'))
+const ResetPassword = lazy(() => import('./pages/ResetPassword.jsx'))
 const Dashboard = lazy(() => import('./pages/Dashboard.jsx'))
 const Profile = lazy(() => import('./pages/Profile.jsx'))
+const Legal = lazy(() => import('./pages/Legal.jsx'))
+const Contact = lazy(() => import('./pages/Contact.jsx'))
 
 function NotFound() {
   return (
@@ -59,12 +63,17 @@ export default function App() {
     <AuthProvider>
     <ToastProvider>
       <OfflineBanner />
+      <main id="main-content">
       <Suspense fallback={<LoadingSpinner />}>
         <AnimatePresence mode="wait">
           <Routes location={location} key={location.pathname}>
             <Route path="/" element={<motion.div {...pageFade}><Landing /></motion.div>} />
             <Route path="/login" element={<motion.div {...pageFade}><Login /></motion.div>} />
             <Route path="/signup" element={<motion.div {...pageFade}><Signup /></motion.div>} />
+            <Route path="/forgot-password" element={<motion.div {...pageFade}><ForgotPassword /></motion.div>} />
+            <Route path="/reset-password" element={<motion.div {...pageFade}><ResetPassword /></motion.div>} />
+            <Route path="/legal/:page" element={<motion.div {...pageFade}><Legal /></motion.div>} />
+            <Route path="/contact" element={<motion.div {...pageFade}><Contact /></motion.div>} />
             <Route
               path="/dashboard"
               element={
@@ -89,6 +98,7 @@ export default function App() {
           </Routes>
         </AnimatePresence>
       </Suspense>
+      </main>
     </ToastProvider>
     </AuthProvider>
     </ErrorBoundary>

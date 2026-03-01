@@ -1,8 +1,9 @@
 import { useState, useEffect, useCallback, useMemo } from 'react'
-import { Link } from 'react-router-dom'
+import { Link, useNavigate } from 'react-router-dom'
 import { motion } from 'framer-motion'
 import { useAuth } from '../contexts/AuthContext.jsx'
 import useResponsive from '../hooks/useResponsive.js'
+import useSubscription from '../hooks/useSubscription.js'
 import { supabase } from '../lib/supabase.js'
 
 const ORG_TYPES = [
@@ -96,8 +97,10 @@ function Section({ title, children, danger }) {
 // Profile page
 // ════════════════════════════════════════════════════════════════════════
 export default function Profile() {
-  const { user, profile } = useAuth()
+  const { user, profile, signOut } = useAuth()
   const { isPhone } = useResponsive()
+  const navigate = useNavigate()
+  const { subscription, plan, isTrial, openBillingPortal } = useSubscription()
 
   // Org settings (local state until saved)
   const [orgName, setOrgName] = useState('')
@@ -211,12 +214,57 @@ export default function Profile() {
     }
   }, [profile?.org_id, orgName, orgType])
 
-  // Handle delete account click
-  const handleDeleteAccount = useCallback(() => {
-    window.alert(
-      'Account deletion is not yet available. Please contact support@skillcascade.com to request account removal.'
-    )
-  }, [])
+  // Account deletion state
+  const [deleteConfirm, setDeleteConfirm] = useState('')
+  const [deleteLoading, setDeleteLoading] = useState(false)
+  const [deleteError, setDeleteError] = useState('')
+
+  const handleDeleteAccount = useCallback(async () => {
+    if (deleteConfirm !== 'DELETE') return
+    setDeleteError('')
+    setDeleteLoading(true)
+
+    try {
+      // Delete all user data via Supabase RPC (or manual cascade)
+      if (profile?.org_id) {
+        // Get client IDs for this org
+        const { data: clients } = await supabase
+          .from('clients')
+          .select('id')
+          .eq('org_id', profile.org_id)
+
+        const clientIds = (clients || []).map(c => c.id)
+
+        if (clientIds.length > 0) {
+          // Delete assessments and snapshots
+          await supabase.from('assessments').delete().in('client_id', clientIds)
+          await supabase.from('snapshots').delete().in('client_id', clientIds)
+        }
+
+        // Delete clients
+        await supabase.from('clients').delete().eq('org_id', profile.org_id)
+
+        // Delete organization
+        await supabase.from('organizations').delete().eq('id', profile.org_id)
+      }
+
+      // Delete user settings
+      await supabase.from('user_settings').delete().eq('user_id', user.id)
+
+      // Delete profile
+      await supabase.from('profiles').delete().eq('id', user.id)
+
+      // Delete audit log entries
+      await supabase.from('audit_log').delete().eq('user_id', user.id)
+
+      // Sign out and redirect
+      await signOut()
+      navigate('/')
+    } catch (err) {
+      setDeleteError(err.message || 'Failed to delete account. Please contact support@skillcascade.com')
+      setDeleteLoading(false)
+    }
+  }, [deleteConfirm, profile?.org_id, user?.id, signOut, navigate])
 
   return (
     <div className="min-h-screen bg-warm-50">
@@ -414,18 +462,81 @@ export default function Profile() {
           </div>
         </Section>
 
-        {/* ── Section 5: Danger Zone ──────────────────────────────────── */}
+        {/* ── Section 5: Subscription & Billing ───────────────────────── */}
+        <Section title="Subscription & Billing">
+          <div className="flex items-center justify-between">
+            <div>
+              <div className="text-sm text-warm-800 font-medium capitalize">
+                {plan === 'free' ? 'Free Plan' : `${plan} Plan`}
+                {isTrial && (
+                  <span className="ml-2 inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-semibold bg-sage-50 text-sage-700 border border-sage-200">
+                    Trial
+                  </span>
+                )}
+              </div>
+              {subscription?.current_period_end && plan !== 'free' && (
+                <div className="text-xs text-warm-500 mt-0.5">
+                  {subscription.cancel_at_period_end ? 'Cancels' : 'Renews'} on{' '}
+                  {new Date(subscription.current_period_end).toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })}
+                </div>
+              )}
+            </div>
+            {plan !== 'free' ? (
+              <button
+                onClick={async () => {
+                  const url = await openBillingPortal()
+                  if (url) window.location.href = url
+                }}
+                className="px-4 py-2 rounded-lg bg-warm-100 text-warm-700 text-sm font-medium hover:bg-warm-200 transition-colors min-h-[44px]"
+              >
+                Manage Billing
+              </button>
+            ) : (
+              <Link
+                to="/#pricing"
+                className="px-4 py-2 rounded-lg bg-sage-500 text-white text-sm font-medium hover:bg-sage-600 transition-colors min-h-[44px] inline-flex items-center"
+              >
+                Upgrade
+              </Link>
+            )}
+          </div>
+        </Section>
+
+        {/* ── Section 6: Danger Zone ──────────────────────────────────── */}
         <Section title="Danger Zone" danger>
           <p className="text-sm text-warm-600">
-            Permanently delete your account and all associated data. This action cannot be undone.
+            Permanently delete your account and all associated data including clients, assessments, and snapshots. This action cannot be undone.
           </p>
-          <button
-            type="button"
-            onClick={handleDeleteAccount}
-            className="px-4 py-2 rounded-lg bg-red-500 text-white text-sm font-medium hover:bg-red-600 transition-colors min-h-[44px]"
-          >
-            Delete Account
-          </button>
+
+          {deleteError && (
+            <div className="px-3 py-2 rounded-lg bg-red-50 border border-red-200 text-sm text-red-700">
+              {deleteError}
+            </div>
+          )}
+
+          <div className="space-y-3">
+            <div>
+              <label htmlFor="delete-confirm" className="block text-xs font-medium text-red-600 mb-1">
+                Type DELETE to confirm
+              </label>
+              <input
+                id="delete-confirm"
+                type="text"
+                value={deleteConfirm}
+                onChange={(e) => setDeleteConfirm(e.target.value)}
+                placeholder="Type DELETE"
+                className="w-full max-w-xs px-3 py-2 rounded-lg border border-red-200 text-sm text-warm-800 placeholder-warm-300 focus:outline-none focus:ring-2 focus:ring-red-300 focus:border-red-400 min-h-[44px]"
+              />
+            </div>
+            <button
+              type="button"
+              onClick={handleDeleteAccount}
+              disabled={deleteConfirm !== 'DELETE' || deleteLoading}
+              className="px-4 py-2 rounded-lg bg-red-500 text-white text-sm font-medium hover:bg-red-600 transition-colors disabled:opacity-50 disabled:cursor-not-allowed min-h-[44px]"
+            >
+              {deleteLoading ? 'Deleting...' : 'Permanently Delete Account'}
+            </button>
+          </div>
         </Section>
 
         {/* Bottom spacer for mobile tab bar */}

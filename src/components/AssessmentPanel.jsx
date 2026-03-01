@@ -200,7 +200,7 @@ export default function AssessmentPanel({ assessments, onAssess, initialSubAreaI
             <div className="fixed inset-0 z-50 bg-white overflow-y-auto">
               <div className="flex items-center justify-between px-4 py-3 border-b border-warm-200 sticky top-0 bg-white z-10">
                 <h3 className="text-sm font-semibold text-warm-800">Navigate Assessment</h3>
-                <button onClick={() => setNavOverlayOpen(false)} className="p-2 text-warm-400 min-h-[44px] min-w-[44px] flex items-center justify-center">
+                <button onClick={() => setNavOverlayOpen(false)} className="p-2 text-warm-400 min-h-[44px] min-w-[44px] flex items-center justify-center" aria-label="Close navigation">
                   <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
                     <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
                   </svg>
