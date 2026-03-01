@@ -142,19 +142,39 @@ const BCBA_STEPS = [
   {
     id: 'explorer-chord',
     selector: '[data-tour="explorer-view"]',
-    title: 'Explorer — Domain Connections',
+    title: 'Explorer — The Big Picture',
     description:
-      'The chord diagram shows cross-domain dependencies at a glance. Thicker ribbons mean more prerequisite links between domains. Click any domain to drill deeper.',
+      'This circle is the Domain Chord Diagram. Each colored arc around the edge is one of the 9 domains. The ribbons connecting them show which domains depend on each other — thicker ribbons mean more prerequisite links. Hover a ribbon to see the connection details.',
     placement: 'right',
     navigateTo: 'explorer',
     phase: 'Visualize',
   },
   {
-    id: 'explorer-drill',
+    id: 'explorer-drill-in',
     selector: '[data-tour="explorer-view"]',
-    title: 'Explorer — Drill Down',
+    title: 'Explorer — Click a Domain to Zoom In',
     description:
-      'Click a domain to see the sub-area dependency web, then click a sub-area to explore individual skill prerequisites — color-coded as met, missing, or blocking.',
+      'Click any domain arc on the circle to zoom inside it. This takes you to the Sub-Area Web — a map of the building blocks within that domain. Each box is a sub-area (a group of related skills), and arrows show which sub-areas must develop before others. Think of it as seeing the internal structure of a domain.',
+    placement: 'right',
+    navigateTo: 'explorer',
+    phase: 'Visualize',
+  },
+  {
+    id: 'explorer-skills',
+    selector: '[data-tour="explorer-view"]',
+    title: 'Explorer — Down to Individual Skills',
+    description:
+      'Click any sub-area box to reach the deepest level: a constellation of individual skills and their prerequisites. Edge colors show prerequisite status — green means met, amber means partial, red means missing. Select a skill to see its description, behavioral indicator, and any cross-domain connections.',
+    placement: 'right',
+    navigateTo: 'explorer',
+    phase: 'Visualize',
+  },
+  {
+    id: 'explorer-navigation',
+    selector: '[data-tour="explorer-view"]',
+    title: 'Explorer — Getting Around',
+    description:
+      'The breadcrumb bar at the top always shows where you are: Domains > Domain Name > Sub-Area. Click any breadcrumb to jump back. If a skill connects to another domain, click the link to follow it — a back button appears to return. On phone, these same 3 levels use a grid, cards, and accordion layout.',
     placement: 'right',
     navigateTo: 'explorer',
     phase: 'Visualize',
