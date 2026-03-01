@@ -37,6 +37,7 @@ export default function AdaptiveAssessment({ assessments, onAssess, onComplete }
   const { isPhone, isTablet } = useResponsive()
   const contentRef = useRef(null)
   const [expandedSkill, setExpandedSkill] = useState(null)
+  const [expandAll, setExpandAll] = useState(false)
 
   // Restore draft state
   useEffect(() => {
@@ -183,12 +184,25 @@ export default function AdaptiveAssessment({ assessments, onAssess, onComplete }
               Batch {batchIndex + 1} of {totalBatches}
             </span>
           </div>
-          <button
-            onClick={handleDone}
-            className="px-3 py-1.5 min-h-[36px] text-xs font-semibold rounded-md bg-sage-500 text-white hover:bg-sage-600 transition-colors"
-          >
-            Done for now
-          </button>
+          <div className="flex items-center gap-2">
+            <button
+              onClick={() => setExpandAll(e => !e)}
+              className={`px-2.5 py-1.5 min-h-[36px] text-xs font-medium rounded-md border transition-colors ${
+                expandAll
+                  ? 'border-sage-400 bg-sage-50 text-sage-700'
+                  : 'border-warm-300 text-warm-500 hover:bg-warm-100'
+              }`}
+              title={expandAll ? 'Collapse all descriptions' : 'Show all descriptions'}
+            >
+              {expandAll ? 'Hide All' : 'Show All'}
+            </button>
+            <button
+              onClick={handleDone}
+              className="px-3 py-1.5 min-h-[36px] text-xs font-semibold rounded-md bg-sage-500 text-white hover:bg-sage-600 transition-colors"
+            >
+              Done for now
+            </button>
+          </div>
         </div>
 
         {/* Stats row */}
@@ -259,7 +273,7 @@ export default function AdaptiveAssessment({ assessments, onAssess, onComplete }
                 currentLevel={assessments[item.skillId] ?? null}
                 assessments={assessments}
                 onRate={handleRate}
-                expanded={expandedSkill === item.skillId}
+                expanded={expandAll || expandedSkill === item.skillId}
                 onToggleExpand={() => setExpandedSkill(
                   expandedSkill === item.skillId ? null : item.skillId
                 )}
