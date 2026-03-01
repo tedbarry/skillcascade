@@ -1207,47 +1207,7 @@ export default function Landing() {
       </section>
 
       {/* ────────────────────────────────────────────────────────
-          10. Final CTA
-          ──────────────────────────────────────────────────────── */}
-      <section className="max-w-7xl mx-auto px-6 lg:px-8 py-10 pb-20">
-        <div className="rounded-2xl bg-sage-500 px-6 sm:px-12 py-16 text-center relative overflow-hidden">
-          {/* Subtle pattern overlay */}
-          <div
-            className="absolute inset-0 opacity-10"
-            style={{
-              backgroundImage: 'radial-gradient(circle, white 1px, transparent 1px)',
-              backgroundSize: '20px 20px',
-            }}
-          />
-          <div className="relative">
-            <h2 className="font-display text-3xl sm:text-4xl font-bold text-white mb-4">
-              Ready to transform your<br className="hidden sm:block" /> assessment workflow?
-            </h2>
-            <p className="text-sage-100 max-w-lg mx-auto mb-8 text-base">
-              Join 200+ BCBAs who have already made the switch. Start your 14-day
-              free trial today -- no credit card required.
-            </p>
-            <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
-              <Link
-                to="/dashboard"
-                className="rounded-xl bg-white px-8 py-4 text-base font-semibold text-sage-700 shadow-lg hover:bg-sage-50 transition-colors"
-              >
-                Start Free Trial
-              </Link>
-              <button
-                type="button"
-                onClick={() => scrollToSection('#demo')}
-                className="rounded-xl border-2 border-white/30 bg-transparent px-8 py-4 text-base font-semibold text-white hover:bg-white/10 transition-colors"
-              >
-                See the Demo
-              </button>
-            </div>
-          </div>
-        </div>
-      </section>
-
-      {/* ────────────────────────────────────────────────────────
-          11. Footer
+          10. Footer
           ──────────────────────────────────────────────────────── */}
       <footer className="bg-warm-900 text-warm-400">
         <div className="max-w-7xl mx-auto px-6 lg:px-8 py-16">
