@@ -121,14 +121,14 @@ const DomainMiniCard = memo(function DomainMiniCard({ domainId, health, sparklin
       onClick={onClick}
       className="bg-white rounded-xl border border-warm-200 p-3 sm:p-4 text-left transition-colors hover:border-warm-300 min-h-[44px]"
     >
-      <div className="flex items-center justify-between mb-2">
-        <div className="flex items-center gap-2">
+      <div className="flex items-center justify-between gap-2 mb-2">
+        <div className="flex items-center gap-2 min-w-0">
           <div className="w-2.5 h-2.5 rounded-full shrink-0" style={{ backgroundColor: color }} />
           <span className="text-xs sm:text-sm font-medium text-warm-700 truncate">{FRIENDLY_NAMES[domainId]}</span>
         </div>
-        <div className="flex items-center gap-1.5">
+        <div className="flex items-center gap-1.5 shrink-0">
           <FreshnessDot assessed={health.assessed} total={health.total} />
-          <span className={`text-[10px] px-1.5 py-0.5 rounded-full font-medium ${
+          <span className={`text-[10px] px-1.5 py-0.5 rounded-full font-medium whitespace-nowrap ${
             health.state === 'mastered' ? 'bg-sage-100 text-sage-700' :
             health.state === 'developing' ? 'bg-warm-100 text-warm-600' :
             health.state === 'needs-work' ? 'bg-coral-100 text-coral-600' :
@@ -418,7 +418,7 @@ export default function HomeDashboard({ assessments = {}, snapshots = [], client
           </button>
         </div>
         <motion.div
-          className={`grid gap-2.5 sm:gap-3 ${isPhone ? 'grid-cols-2' : isTablet ? 'grid-cols-3' : 'grid-cols-3 lg:grid-cols-4 xl:grid-cols-5'}`}
+          className={`grid gap-2.5 sm:gap-3 ${isPhone ? 'grid-cols-2' : isTablet ? 'grid-cols-3' : 'grid-cols-3 lg:grid-cols-4'}`}
           initial="hidden"
           animate="visible"
           variants={{ visible: { transition: { staggerChildren: 0.05 } } }}
