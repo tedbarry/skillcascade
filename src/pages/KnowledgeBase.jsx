@@ -1,6 +1,6 @@
 import { useMemo } from 'react'
 import { useParams, useSearchParams, Link } from 'react-router-dom'
-import { getAllEntries, getEntriesByCategory, getCategoryCounts } from '../data/knowledgeBase/kbIndex.js'
+import { getAllEntries, getEntryById, getEntriesByCategory, getCategoryCounts } from '../data/knowledgeBase/kbIndex.js'
 import { KB_CATEGORIES } from '../data/knowledgeBase/kbSchema.js'
 import { buildKBSearchIndex, searchKB } from '../data/knowledgeBase/kbSearch.js'
 import KBCategoryGrid from '../components/kb/KBCategoryGrid.jsx'
@@ -24,13 +24,19 @@ export default function KnowledgeBase() {
     try { return buildKBSearchIndex(getAllEntries()) } catch (e) { console.error('KB searchIndex error:', e); return [] }
   }, [])
 
-  // If viewing a specific entry
+  // If viewing a specific entry, resolve its category for sidebar highlighting
+  const activeEntryCategory = useMemo(() => {
+    if (!slug) return null
+    const e = getEntryById(slug)
+    return e?.category || null
+  }, [slug])
+
   if (slug) {
     return (
       <div className="min-h-screen bg-warm-50">
         <KBHeader isPhone={isPhone} />
         <div className={`max-w-5xl mx-auto px-4 py-6 ${isDesktop ? 'flex gap-8' : ''}`}>
-          {isDesktop && <KBSidebar categoryCounts={categoryCounts} activeCategory={null} />}
+          {isDesktop && <KBSidebar categoryCounts={categoryCounts} activeCategory={activeEntryCategory} />}
           <div className="flex-1 min-w-0">
             <KBEntryView entryId={slug} />
           </div>
