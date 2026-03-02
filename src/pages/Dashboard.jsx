@@ -1249,6 +1249,7 @@ export default function Dashboard() {
           handleNavigateToAssess(subAreaId)
         }}
         assessments={assessments}
+        clientName={clientName}
         onChangeView={guardedSetActiveView}
         onPrint={() => window.print()}
         onSaveSnapshot={() => { if (clientId) handleSaveSnapshot('Quick snapshot') }}

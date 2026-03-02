@@ -5,6 +5,7 @@ import { TIER_LABELS, TIER_COLORS } from '../constants/tiers.js'
 import { buildKBSearchIndex, searchKB } from '../data/knowledgeBase/kbSearch.js'
 import { getAllEntries } from '../data/knowledgeBase/kbIndex.js'
 import { KB_CATEGORIES } from '../data/knowledgeBase/kbSchema.js'
+import { askSmartSearch } from '../lib/smartSearch.js'
 import useFocusTrap from '../hooks/useFocusTrap.js'
 
 /**
@@ -223,10 +224,16 @@ function addRecentSearch(entry) {
   } catch {}
 }
 
-export default function SearchOverlay({ isOpen, onClose, onNavigate, assessments, onChangeView, onPrint, onSaveSnapshot, onOpenAI }) {
+export default function SearchOverlay({ isOpen, onClose, onNavigate, assessments, clientName, onChangeView, onPrint, onSaveSnapshot, onOpenAI }) {
   const [query, setQuery] = useState('')
   const [activeIndex, setActiveIndex] = useState(0)
   const [recentSearches, setRecentSearches] = useState([])
+  // AI search state
+  const [aiMode, setAiMode] = useState(false)
+  const [aiLoading, setAiLoading] = useState(false)
+  const [aiResponse, setAiResponse] = useState(null) // { answer, sources }
+  const [aiError, setAiError] = useState(null)
+  const abortRef = useRef(null)
   const inputRef = useRef(null)
   const listRef = useRef(null)
   const trapRef = useFocusTrap(isOpen)
@@ -355,18 +362,56 @@ export default function SearchOverlay({ isOpen, onClose, onNavigate, assessments
     setActiveIndex(0)
   }, [results])
 
-  // Focus input when overlay opens
+  // Focus input when overlay opens; reset AI state
   useEffect(() => {
     if (isOpen) {
       setQuery('')
       setActiveIndex(0)
       setRecentSearches(getRecentSearches())
-      // Small delay to ensure the overlay is rendered before focusing
+      setAiMode(false)
+      setAiResponse(null)
+      setAiError(null)
+      setAiLoading(false)
+      if (abortRef.current) { abortRef.current.abort(); abortRef.current = null }
       requestAnimationFrame(() => {
         inputRef.current?.focus()
       })
     }
   }, [isOpen])
+
+  // Cancel AI request on close
+  useEffect(() => {
+    return () => { if (abortRef.current) abortRef.current.abort() }
+  }, [])
+
+  // Handle AI search submission
+  const handleAskAI = useCallback(async (questionOverride) => {
+    const q = (questionOverride || query).trim()
+    if (!q || aiLoading) return
+
+    setAiMode(true)
+    setAiLoading(true)
+    setAiError(null)
+    setAiResponse(null)
+
+    // Abort any previous request
+    if (abortRef.current) abortRef.current.abort()
+    const controller = new AbortController()
+    abortRef.current = controller
+
+    try {
+      const result = await askSmartSearch(q, assessments, clientName, controller.signal)
+      if (!controller.signal.aborted) {
+        setAiResponse(result)
+      }
+    } catch (err) {
+      if (err.name !== 'AbortError' && !controller.signal.aborted) {
+        setAiError(err.message)
+      }
+    } finally {
+      if (!controller.signal.aborted) setAiLoading(false)
+    }
+  }, [query, assessments, clientName, aiLoading])
 
   // Scroll active item into view
   useEffect(() => {
@@ -398,14 +443,20 @@ export default function SearchOverlay({ isOpen, onClose, onNavigate, assessments
         return
       }
 
-      if (e.key === 'Enter' && flatResults.length > 0) {
+      if (e.key === 'Enter') {
         e.preventDefault()
-        const selected = flatResults[clampedActiveIndex]
-        if (selected) handleSelect(selected)
+        if (aiMode) {
+          handleAskAI()
+          return
+        }
+        if (flatResults.length > 0) {
+          const selected = flatResults[clampedActiveIndex]
+          if (selected) handleSelect(selected)
+        }
         return
       }
     },
-    [flatResults, clampedActiveIndex, onClose, onNavigate]
+    [flatResults, clampedActiveIndex, onClose, onNavigate, aiMode, handleAskAI]
   )
 
   // Global Ctrl+K / Cmd+K listener
@@ -494,31 +545,56 @@ export default function SearchOverlay({ isOpen, onClose, onNavigate, assessments
       >
         {/* Search input */}
         <div className="flex items-center gap-3 px-5 py-4 border-b border-warm-200">
-          {/* Magnifying glass SVG */}
-          <svg
-            className="w-5 h-5 text-warm-400 shrink-0"
-            viewBox="0 0 20 20"
-            fill="none"
-            stroke="currentColor"
-            strokeWidth="2"
-            strokeLinecap="round"
-            strokeLinejoin="round"
-          >
-            <circle cx="8.5" cy="8.5" r="6" />
-            <path d="M13 13 L18 18" />
-          </svg>
+          {/* Icon — magnifying glass or sparkle based on mode */}
+          {aiMode ? (
+            <svg className="w-5 h-5 text-sage-500 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+              <path strokeLinecap="round" strokeLinejoin="round" d="M9.813 15.904L9 18.75l-.813-2.846a4.5 4.5 0 00-3.09-3.09L2.25 12l2.846-.813a4.5 4.5 0 003.09-3.09L9 5.25l.813 2.846a4.5 4.5 0 003.09 3.09L15.75 12l-2.846.813a4.5 4.5 0 00-3.09 3.09zM18.259 8.715L18 9.75l-.259-1.035a3.375 3.375 0 00-2.455-2.456L14.25 6l1.036-.259a3.375 3.375 0 002.455-2.456L18 2.25l.259 1.035a3.375 3.375 0 002.455 2.456L21.75 6l-1.036.259a3.375 3.375 0 00-2.455 2.456z" />
+            </svg>
+          ) : (
+            <svg className="w-5 h-5 text-warm-400 shrink-0" viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <circle cx="8.5" cy="8.5" r="6" />
+              <path d="M13 13 L18 18" />
+            </svg>
+          )}
 
           <input
             ref={inputRef}
             type="text"
             value={query}
-            onChange={(e) => setQuery(e.target.value)}
+            onChange={(e) => { setQuery(e.target.value); if (aiResponse) { setAiResponse(null); setAiError(null) } }}
             onKeyDown={handleKeyDown}
-            placeholder="Search skills, articles, views, or type > for commands..."
+            placeholder={aiMode ? 'Ask a question about your client or the app...' : 'Search skills, articles, views, or type > for commands...'}
             className="flex-1 text-sm text-warm-800 placeholder-warm-400 bg-transparent outline-none"
             autoComplete="off"
             spellCheck="false"
           />
+
+          {/* Mode toggle button */}
+          <button
+            onClick={() => { setAiMode(!aiMode); setAiResponse(null); setAiError(null) }}
+            className={`shrink-0 flex items-center gap-1 px-2 py-1 rounded-md text-[10px] font-medium transition-colors cursor-pointer ${
+              aiMode
+                ? 'bg-sage-100 text-sage-700 border border-sage-300'
+                : 'bg-warm-50 text-warm-500 border border-warm-200 hover:bg-warm-100'
+            }`}
+            title={aiMode ? 'Switch to search mode' : 'Switch to AI mode'}
+          >
+            {aiMode ? (
+              <>
+                <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M9.813 15.904L9 18.75l-.813-2.846a4.5 4.5 0 00-3.09-3.09L2.25 12l2.846-.813a4.5 4.5 0 003.09-3.09L9 5.25l.813 2.846a4.5 4.5 0 003.09 3.09L15.75 12l-2.846.813a4.5 4.5 0 00-3.09 3.09z" />
+                </svg>
+                AI
+              </>
+            ) : (
+              <>
+                <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M9.813 15.904L9 18.75l-.813-2.846a4.5 4.5 0 00-3.09-3.09L2.25 12l2.846-.813a4.5 4.5 0 003.09-3.09L9 5.25l.813 2.846a4.5 4.5 0 003.09 3.09L15.75 12l-2.846.813a4.5 4.5 0 00-3.09 3.09z" />
+                </svg>
+                AI
+              </>
+            )}
+          </button>
 
           {/* Keyboard shortcut hint */}
           <kbd className="hidden sm:inline-flex items-center gap-0.5 px-2 py-0.5 rounded-md bg-warm-100 text-warm-400 text-[10px] font-mono border border-warm-200">
@@ -528,8 +604,94 @@ export default function SearchOverlay({ isOpen, onClose, onNavigate, assessments
 
         {/* Results area */}
         <div className="overflow-y-auto flex-1" ref={listRef}>
-          {/* Empty state — show recent searches or hint */}
-          {!query.trim() && (
+          {/* AI Mode content */}
+          {aiMode && (
+            <div className="px-5 py-3">
+              {/* AI loading */}
+              {aiLoading && (
+                <div className="flex items-center gap-3 py-8 justify-center">
+                  <div className="w-4 h-4 rounded-full border-2 border-sage-300 border-t-sage-600 animate-spin" />
+                  <span className="text-sm text-warm-500">Thinking...</span>
+                </div>
+              )}
+
+              {/* AI error */}
+              {aiError && !aiLoading && (
+                <div className="py-4">
+                  <div className="rounded-lg bg-red-50 border border-red-200 px-4 py-3">
+                    <div className="text-sm text-red-700">{aiError}</div>
+                    <button
+                      onClick={() => handleAskAI()}
+                      className="mt-2 text-xs text-red-600 hover:text-red-800 underline cursor-pointer"
+                    >
+                      Try again
+                    </button>
+                  </div>
+                </div>
+              )}
+
+              {/* AI response */}
+              {aiResponse && !aiLoading && (
+                <div className="py-2">
+                  <div className="prose prose-sm max-w-none text-warm-700 [&_h1]:text-base [&_h1]:font-semibold [&_h1]:text-warm-800 [&_h1]:mt-3 [&_h1]:mb-1 [&_h2]:text-sm [&_h2]:font-semibold [&_h2]:text-warm-800 [&_h2]:mt-3 [&_h2]:mb-1 [&_h3]:text-sm [&_h3]:font-medium [&_h3]:text-warm-700 [&_h3]:mt-2 [&_h3]:mb-1 [&_ul]:my-1 [&_ol]:my-1 [&_li]:my-0.5 [&_p]:my-1.5 [&_strong]:text-warm-800 [&_code]:text-xs [&_code]:bg-warm-100 [&_code]:px-1 [&_code]:py-0.5 [&_code]:rounded">
+                    <AIResponseRenderer text={aiResponse.answer} />
+                  </div>
+
+                  {/* Source links */}
+                  {aiResponse.sources?.length > 0 && (
+                    <div className="mt-4 pt-3 border-t border-warm-100">
+                      <div className="text-[10px] uppercase tracking-wider text-warm-400 font-semibold mb-2">Related articles</div>
+                      <div className="flex flex-wrap gap-1.5">
+                        {aiResponse.sources.map(s => (
+                          <a
+                            key={s.id}
+                            href={`/kb/${s.id}`}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="inline-flex items-center gap-1 px-2 py-1 rounded-md bg-warm-50 border border-warm-200 text-warm-600 hover:bg-warm-100 hover:text-warm-800 transition-colors text-xs"
+                          >
+                            <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                              <path strokeLinecap="round" strokeLinejoin="round" d="M12 6.042A8.967 8.967 0 006 3.75c-1.052 0-2.062.18-3 .512v14.25A8.987 8.987 0 016 18c2.305 0 4.408.867 6 2.292m0-14.25a8.966 8.966 0 016-2.292c1.052 0 2.062.18 3 .512v14.25A8.987 8.987 0 0018 18a8.967 8.967 0 00-6 2.292m0-14.25v14.25" />
+                            </svg>
+                            {s.title}
+                          </a>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+                </div>
+              )}
+
+              {/* AI empty state — no query yet */}
+              {!aiLoading && !aiResponse && !aiError && (
+                <div className="py-8 text-center">
+                  <div className="inline-flex items-center justify-center w-10 h-10 rounded-full bg-sage-50 mb-3">
+                    <svg className="w-5 h-5 text-sage-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                      <path strokeLinecap="round" strokeLinejoin="round" d="M9.813 15.904L9 18.75l-.813-2.846a4.5 4.5 0 00-3.09-3.09L2.25 12l2.846-.813a4.5 4.5 0 003.09-3.09L9 5.25l.813 2.846a4.5 4.5 0 003.09 3.09L15.75 12l-2.846.813a4.5 4.5 0 00-3.09 3.09zM18.259 8.715L18 9.75l-.259-1.035a3.375 3.375 0 00-2.455-2.456L14.25 6l1.036-.259a3.375 3.375 0 002.455-2.456L18 2.25l.259 1.035a3.375 3.375 0 002.455 2.456L21.75 6l-1.036.259a3.375 3.375 0 00-2.455 2.456z" />
+                    </svg>
+                  </div>
+                  <div className="text-warm-600 text-sm font-medium mb-1">Ask AI anything</div>
+                  <div className="text-warm-400 text-xs mb-4">
+                    Get personalized answers based on your client's assessment data
+                  </div>
+                  <div className="flex flex-wrap gap-1.5 justify-center">
+                    {['What should I work on for D3?', 'Which skills are bottlenecks?', 'Summarize my client\'s strengths'].map(q => (
+                      <button
+                        key={q}
+                        onClick={() => { setQuery(q); handleAskAI(q) }}
+                        className="px-2.5 py-1.5 rounded-lg bg-warm-50 border border-warm-200 text-xs text-warm-600 hover:bg-warm-100 hover:text-warm-800 transition-colors cursor-pointer"
+                      >
+                        {q}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              )}
+            </div>
+          )}
+
+          {/* Standard search: Empty state — show recent searches or hint */}
+          {!aiMode && !query.trim() && (
             <div className="px-2 py-3">
               {recentSearches.length > 0 ? (
                 <>
@@ -583,19 +745,28 @@ export default function SearchOverlay({ isOpen, onClose, onNavigate, assessments
           )}
 
           {/* No results */}
-          {query.trim() && results.length === 0 && (
+          {!aiMode && query.trim() && results.length === 0 && (
             <div className="px-5 py-12 text-center">
               <div className="text-warm-400 text-sm">
-                No results for "{query}"
+                No results for &ldquo;{query}&rdquo;
               </div>
               <div className="text-warm-300 text-xs mt-2">
                 Try a different search term
               </div>
+              <button
+                onClick={() => { setAiMode(true); handleAskAI() }}
+                className="mt-3 inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-sage-50 border border-sage-200 text-sage-700 text-xs font-medium hover:bg-sage-100 transition-colors cursor-pointer"
+              >
+                <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M9.813 15.904L9 18.75l-.813-2.846a4.5 4.5 0 00-3.09-3.09L2.25 12l2.846-.813a4.5 4.5 0 003.09-3.09L9 5.25l.813 2.846a4.5 4.5 0 003.09 3.09L15.75 12l-2.846.813a4.5 4.5 0 00-3.09 3.09z" />
+                </svg>
+                Ask AI instead
+              </button>
             </div>
           )}
 
           {/* Grouped results */}
-          {groupedResults.map((group) => (
+          {!aiMode && groupedResults.map((group) => (
             <div key={group.type}>
               {/* Group header */}
               <div className="px-5 pt-3 pb-1">
@@ -687,7 +858,7 @@ export default function SearchOverlay({ isOpen, onClose, onNavigate, assessments
           ))}
 
           {/* Remaining count */}
-          {remainingCount > 0 && (
+          {!aiMode && remainingCount > 0 && (
             <div className="px-5 py-3 text-center border-t border-warm-100">
               <span className="text-xs text-warm-400">
                 +{remainingCount} more result{remainingCount !== 1 ? 's' : ''} — refine your search
@@ -697,34 +868,161 @@ export default function SearchOverlay({ isOpen, onClose, onNavigate, assessments
         </div>
 
         {/* Footer with keyboard hints */}
-        {(results.length > 0 || recentSearches.length > 0) && (
+        {(aiMode || results.length > 0 || recentSearches.length > 0) && (
           <div className="px-5 py-2.5 border-t border-warm-100 bg-warm-50/50 flex items-center gap-4 text-[10px] text-warm-400 shrink-0">
-            <span className="flex items-center gap-1">
-              <kbd className="px-1 py-0.5 rounded bg-warm-100 border border-warm-200 font-mono">{'↑'}</kbd>
-              <kbd className="px-1 py-0.5 rounded bg-warm-100 border border-warm-200 font-mono">{'↓'}</kbd>
-              <span className="ml-0.5">navigate</span>
-            </span>
-            <span className="flex items-center gap-1">
-              <kbd className="px-1 py-0.5 rounded bg-warm-100 border border-warm-200 font-mono">{'↵'}</kbd>
-              <span className="ml-0.5">select</span>
-            </span>
-            <span className="flex items-center gap-1">
-              <kbd className="px-1 py-0.5 rounded bg-warm-100 border border-warm-200 font-mono">esc</kbd>
-              <span className="ml-0.5">close</span>
-            </span>
-            <span className="hidden sm:flex items-center gap-1 ml-auto">
-              <kbd className="px-1 py-0.5 rounded bg-warm-100 border border-warm-200 font-mono">/</kbd>
-              <span className="ml-0.5">search</span>
-            </span>
-            <span className="hidden sm:flex items-center gap-1">
-              <kbd className="px-1 py-0.5 rounded bg-warm-100 border border-warm-200 font-mono">?</kbd>
-              <span className="ml-0.5">shortcuts</span>
-            </span>
+            {aiMode ? (
+              <>
+                <span className="flex items-center gap-1">
+                  <kbd className="px-1 py-0.5 rounded bg-warm-100 border border-warm-200 font-mono">{'↵'}</kbd>
+                  <span className="ml-0.5">ask</span>
+                </span>
+                <span className="flex items-center gap-1">
+                  <kbd className="px-1 py-0.5 rounded bg-warm-100 border border-warm-200 font-mono">esc</kbd>
+                  <span className="ml-0.5">close</span>
+                </span>
+                <span className="ml-auto text-sage-500 text-[10px]">
+                  Powered by AI &middot; answers use your client's assessment data
+                </span>
+              </>
+            ) : (
+              <>
+                <span className="flex items-center gap-1">
+                  <kbd className="px-1 py-0.5 rounded bg-warm-100 border border-warm-200 font-mono">{'↑'}</kbd>
+                  <kbd className="px-1 py-0.5 rounded bg-warm-100 border border-warm-200 font-mono">{'↓'}</kbd>
+                  <span className="ml-0.5">navigate</span>
+                </span>
+                <span className="flex items-center gap-1">
+                  <kbd className="px-1 py-0.5 rounded bg-warm-100 border border-warm-200 font-mono">{'↵'}</kbd>
+                  <span className="ml-0.5">select</span>
+                </span>
+                <span className="flex items-center gap-1">
+                  <kbd className="px-1 py-0.5 rounded bg-warm-100 border border-warm-200 font-mono">esc</kbd>
+                  <span className="ml-0.5">close</span>
+                </span>
+                <span className="hidden sm:flex items-center gap-1 ml-auto">
+                  <kbd className="px-1 py-0.5 rounded bg-warm-100 border border-warm-200 font-mono">/</kbd>
+                  <span className="ml-0.5">search</span>
+                </span>
+                <span className="hidden sm:flex items-center gap-1">
+                  <kbd className="px-1 py-0.5 rounded bg-warm-100 border border-warm-200 font-mono">?</kbd>
+                  <span className="ml-0.5">shortcuts</span>
+                </span>
+              </>
+            )}
           </div>
         )}
       </div>
     </div>
   )
+}
+
+/**
+ * Lightweight markdown-to-JSX renderer for AI responses.
+ * Handles: headers, bold, lists, paragraphs. No external dependency.
+ */
+function AIResponseRenderer({ text }) {
+  if (!text) return null
+
+  const lines = text.split('\n')
+  const elements = []
+  let i = 0
+
+  while (i < lines.length) {
+    const line = lines[i]
+
+    // Headers
+    if (line.startsWith('### ')) {
+      elements.push(<h3 key={i}>{renderInline(line.slice(4))}</h3>)
+      i++
+      continue
+    }
+    if (line.startsWith('## ')) {
+      elements.push(<h2 key={i}>{renderInline(line.slice(3))}</h2>)
+      i++
+      continue
+    }
+    if (line.startsWith('# ')) {
+      elements.push(<h1 key={i}>{renderInline(line.slice(2))}</h1>)
+      i++
+      continue
+    }
+
+    // Unordered list
+    if (/^[-*] /.test(line)) {
+      const items = []
+      while (i < lines.length && /^[-*] /.test(lines[i])) {
+        items.push(<li key={i}>{renderInline(lines[i].slice(2))}</li>)
+        i++
+      }
+      elements.push(<ul key={`ul-${i}`}>{items}</ul>)
+      continue
+    }
+
+    // Ordered list
+    if (/^\d+\. /.test(line)) {
+      const items = []
+      while (i < lines.length && /^\d+\. /.test(lines[i])) {
+        items.push(<li key={i}>{renderInline(lines[i].replace(/^\d+\. /, ''))}</li>)
+        i++
+      }
+      elements.push(<ol key={`ol-${i}`}>{items}</ol>)
+      continue
+    }
+
+    // Empty line
+    if (!line.trim()) { i++; continue }
+
+    // Paragraph
+    elements.push(<p key={i}>{renderInline(line)}</p>)
+    i++
+  }
+
+  return <>{elements}</>
+}
+
+/** Render inline markdown: **bold**, *italic*, `code` */
+function renderInline(text) {
+  const parts = []
+  let remaining = text
+  let key = 0
+
+  while (remaining) {
+    // Bold
+    const boldMatch = remaining.match(/\*\*(.+?)\*\*/)
+    // Inline code
+    const codeMatch = remaining.match(/`(.+?)`/)
+    // Italic
+    const italicMatch = remaining.match(/(?<!\*)\*(?!\*)(.+?)(?<!\*)\*(?!\*)/)
+
+    // Find the earliest match
+    const matches = [
+      boldMatch && { type: 'bold', match: boldMatch },
+      codeMatch && { type: 'code', match: codeMatch },
+      italicMatch && { type: 'italic', match: italicMatch },
+    ].filter(Boolean).sort((a, b) => a.match.index - b.match.index)
+
+    if (matches.length === 0) {
+      parts.push(remaining)
+      break
+    }
+
+    const first = matches[0]
+    if (first.match.index > 0) {
+      parts.push(remaining.slice(0, first.match.index))
+    }
+
+    if (first.type === 'bold') {
+      parts.push(<strong key={key++}>{first.match[1]}</strong>)
+    } else if (first.type === 'code') {
+      parts.push(<code key={key++}>{first.match[1]}</code>)
+    } else {
+      parts.push(<em key={key++}>{first.match[1]}</em>)
+    }
+
+    remaining = remaining.slice(first.match.index + first.match[0].length)
+  }
+
+  return parts
 }
 
 /**
