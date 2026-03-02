@@ -7,6 +7,7 @@ import {
   isAssessed,
 } from '../data/framework.js'
 import EmptyState from './EmptyState.jsx'
+import KBHelpIcon from './kb/KBHelpIcon.jsx'
 import useResponsive from '../hooks/useResponsive.js'
 
 /* ─────────────────────────────────────────────
@@ -818,7 +819,7 @@ export default function PatternAlerts({
             <h2 className="text-sm font-semibold text-warm-800">
               {hasAlerts
                 ? `${totalAlerts.count} alert${totalAlerts.count !== 1 ? 's' : ''} detected across ${totalAlerts.domains} domain${totalAlerts.domains !== 1 ? 's' : ''}`
-                : 'No concerns detected'}
+                : 'No concerns detected'} <KBHelpIcon term="view-alerts" />
             </h2>
             <p className="text-[11px] text-warm-400 mt-0.5">
               {hasAlerts

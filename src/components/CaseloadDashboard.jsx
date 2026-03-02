@@ -3,6 +3,7 @@ import { getClients, getAssessments } from '../data/storage.js'
 import { framework, ASSESSMENT_LEVELS, getDomainScores, isAssessed } from '../data/framework.js'
 import { useAuth } from '../contexts/AuthContext.jsx'
 import { useToast } from './Toast.jsx'
+import KBHelpIcon from './kb/KBHelpIcon.jsx'
 import { userErrorMessage } from '../lib/errorUtils.js'
 
 /* ─────────────────────────────────────────────
@@ -316,7 +317,7 @@ export default function CaseloadDashboard({ currentClientId, onSelectClient }) {
       {/* ── Header ── */}
       <div>
         <h2 className="font-display text-lg font-semibold text-warm-800">
-          Caseload Overview
+          Caseload Overview <KBHelpIcon term="view-caseload" />
         </h2>
         <p className="text-xs text-warm-400 mt-0.5">
           {summary.total} client{summary.total !== 1 ? 's' : ''} across your caseload

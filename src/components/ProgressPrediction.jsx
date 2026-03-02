@@ -10,6 +10,7 @@ import {
   ReferenceLine,
 } from 'recharts'
 import { framework, ASSESSMENT_LEVELS, getDomainScores } from '../data/framework.js'
+import KBHelpIcon from './kb/KBHelpIcon.jsx'
 
 /* ─────────────────────────────────────────────
    Constants
@@ -498,7 +499,7 @@ export default function ProgressPrediction({
       {domainsWithData.length > 0 && (
         <div>
           <h3 className="font-display text-sm font-semibold text-warm-700 mb-1">
-            Projection Timeline
+            Projection Timeline <KBHelpIcon term="view-predictions" />
           </h3>
           <p className="text-xs text-warm-400 mb-4">
             Solid lines show historical data. Dashed lines show projected growth.

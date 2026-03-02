@@ -8,6 +8,7 @@ import { framework, ASSESSMENT_LEVELS, getDomainScores, isAssessed } from '../da
 import { useAuth } from '../contexts/AuthContext.jsx'
 import { useToast } from './Toast.jsx'
 import { userErrorMessage } from '../lib/errorUtils.js'
+import KBHelpIcon from './kb/KBHelpIcon.jsx'
 import useResponsive from '../hooks/useResponsive.js'
 
 /* ─────────────────────────────────────────────
@@ -477,7 +478,7 @@ export default function OrgAnalytics() {
       {/* ── Header ── */}
       <div>
         <h2 className="font-display text-lg font-semibold text-warm-800">
-          Organization Analytics
+          Organization Analytics <KBHelpIcon term="view-org-analytics" />
         </h2>
         <p className="text-xs text-warm-400 mt-0.5">
           Aggregate outcomes across {kpis.total} client{kpis.total !== 1 ? 's' : ''}

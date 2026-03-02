@@ -4,6 +4,7 @@ import { framework } from '../data/framework.js'
 import { downloadFile } from '../data/exportUtils.js'
 import { processImportFile, transformToAssessments, detectScoreValues, mapScore } from '../data/csvImportEngine.js'
 import { safeGetItem, safeSetItem } from '../lib/safeStorage.js'
+import KBHelpIcon from './kb/KBHelpIcon.jsx'
 import { useAuth } from '../contexts/AuthContext.jsx'
 
 const APP_VERSION = '1.0.0'
@@ -512,7 +513,7 @@ export default function DataPortability({ onImportComplete }) {
           <IconDatabase className="w-6 h-6 text-sage-600" />
         </div>
         <div>
-          <h2 className="font-display text-lg font-semibold text-warm-800">Data Management</h2>
+          <h2 className="font-display text-lg font-semibold text-warm-800">Data Management <KBHelpIcon term="guide-data-export" /></h2>
           <p className="text-xs text-warm-500">Backup, restore, and transfer your assessment data</p>
         </div>
       </div>

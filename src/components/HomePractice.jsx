@@ -1,5 +1,6 @@
 import { useState, useMemo } from 'react'
 import { framework, ASSESSMENT_LEVELS } from '../data/framework.js'
+import KBHelpIcon from './kb/KBHelpIcon.jsx'
 import { safeGetItem, safeSetItem } from '../lib/safeStorage.js'
 
 /* ─────────────────────────────────────────────
@@ -667,7 +668,7 @@ export default function HomePractice({ assessments = {}, clientName = 'your chil
           </div>
           <div>
             <h2 className="text-xl font-bold text-warm-800 font-display">
-              Activities to Try at Home
+              Activities to Try at Home <KBHelpIcon term="view-home-practice" />
             </h2>
             <p className="text-sm text-warm-500 mt-1 leading-relaxed">
               Simple, everyday activities to support {firstName}&rsquo;s growth.

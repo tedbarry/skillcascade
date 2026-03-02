@@ -1,5 +1,6 @@
 import { useMemo } from 'react'
 import { framework, ASSESSMENT_LEVELS, getDomainScores, isAssessed } from '../data/framework.js'
+import KBHelpIcon from './kb/KBHelpIcon.jsx'
 
 /**
  * Parent-friendly domain labels — no clinical jargon
@@ -363,7 +364,7 @@ export default function ParentDashboard({
 
           <div className="text-center sm:text-left flex-1">
             <h1 className="text-2xl sm:text-3xl font-display font-bold text-warm-800 mb-2">
-              {clientName}&apos;s Progress
+              {clientName}&apos;s Progress <KBHelpIcon term="view-parent-view" />
             </h1>
             <p className="text-warm-500 text-sm leading-relaxed">
               {getWelcomeMessage()}

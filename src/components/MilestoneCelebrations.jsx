@@ -1,5 +1,6 @@
 import { useMemo, useState, useCallback } from 'react'
 import { framework, ASSESSMENT_LEVELS, getDomainScores, isAssessed } from '../data/framework.js'
+import KBHelpIcon from './kb/KBHelpIcon.jsx'
 
 /* ─────────────────────────────────────────────
    SVG Icons (inline, no emoji, no icon libraries)
@@ -486,7 +487,7 @@ export default function MilestoneCelebrations({
           </div>
           <div>
             <h2 className="font-display text-sm font-semibold text-warm-800">
-              Milestones &amp; Achievements
+              Milestones &amp; Achievements <KBHelpIcon term="view-milestones" />
             </h2>
             <p className="text-[11px] text-warm-400">
               {clientName ? `${clientName}\u2019s` : 'Client'} progress celebrations
