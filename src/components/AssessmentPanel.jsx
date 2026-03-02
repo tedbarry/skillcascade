@@ -5,7 +5,7 @@ import { getBehavioralIndicator } from '../data/behavioralIndicators.js'
 import { getTeachingPlaybook } from '../data/teachingPlaybook.js'
 import { getSkillCeiling } from '../data/skillInfluence.js'
 import { SKILL_PREREQUISITES, buildReversePrereqMap } from '../data/skillDependencies.js'
-import { generateCeilingNarrative } from '../lib/narratives.js'
+
 
 // Lazy-cached reverse prerequisite map (skill → skills that depend on it)
 let _reversePrereqs = null
@@ -815,8 +815,41 @@ function SkillRater({ skill, level, onRate, showAllDescs, showAllTeaching, asses
             {' '}at Needs Work or unassessed. Ratings above Developing may be fragile.
           </span>
           {(() => {
-            const narrative = generateCeilingNarrative(skill.id, assessments)
-            return narrative ? <p className="text-[11px] text-amber-600 mt-1 italic">{narrative}</p> : null
+            if (!ceilingInfo) return null
+            const limiting = ceilingInfo.constrainingPrereqs.filter(p => p.imposedCeiling < 3)
+            if (limiting.length === 0) return null
+            const top = limiting[0]
+            const prereqName = framework.flatMap(d => d.subAreas.flatMap(sa => sa.skillGroups.flatMap(sg => sg.skills))).find(s => s.id === top.id)?.name || top.id
+            const prereqLabel = top.level != null ? ASSESSMENT_LABELS[top.level] : 'Not Assessed'
+            const ceilingLabel = ASSESSMENT_LABELS[ceilingInfo.ceiling] || `${ceilingInfo.ceiling}`
+            const skillName = skill.name
+
+            const prereqBtn = onNavigateToSkill ? (
+              <button
+                onClick={() => onNavigateToSkill(top.id)}
+                className="underline underline-offset-2 decoration-amber-400 hover:text-amber-800 font-medium transition-colors not-italic"
+              >
+                {prereqName}
+              </button>
+            ) : <span className="font-medium">{prereqName}</span>
+
+            if (level != null && level > ceilingInfo.ceiling) {
+              return (
+                <p className="text-[11px] text-amber-600 mt-1 italic">
+                  {skillName} is rated above its ceiling ({ASSESSMENT_LABELS[level]} vs ceiling of {ceilingLabel}).{' '}
+                  {prereqBtn} at {prereqLabel} is the limiting factor — this rating may be fragile without prerequisite support.
+                </p>
+              )
+            }
+            if (ceilingInfo.ceiling < 3) {
+              return (
+                <p className="text-[11px] text-amber-600 mt-1 italic">
+                  {skillName} is capped at {ceilingLabel} by {prereqBtn} ({prereqLabel}).{' '}
+                  Improving <span className="font-medium not-italic">{prereqName}</span> would raise this ceiling.
+                </p>
+              )
+            }
+            return null
           })()}
         </div>
       )}
