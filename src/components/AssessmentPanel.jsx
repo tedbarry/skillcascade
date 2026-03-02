@@ -70,6 +70,7 @@ export default function AssessmentPanel({ assessments, onAssess, initialSubAreaI
   const { isPhone } = useResponsive()
   const [currentIndex, setCurrentIndex] = useState(0)
   const [navOverlayOpen, setNavOverlayOpen] = useState(false)
+  const [highlightedSkillId, setHighlightedSkillId] = useState(null)
   const [showAllDescs, setShowAllDescs] = useState(() => safeGetItem('skillcascade_show_all_descs') === 'true')
   const toggleShowAllDescs = useCallback(() => {
     setShowAllDescs(prev => {
@@ -124,14 +125,21 @@ export default function AssessmentPanel({ assessments, onAssess, initialSubAreaI
     setCurrentIndex(Math.max(0, Math.min(ALL_SUB_AREAS.length - 1, index)))
   }, [])
 
-  // Navigate to the sub-area containing a specific skill
+  // Navigate to the sub-area containing a specific skill, then highlight it
   const navigateToSkill = useCallback((skillId) => {
     const idx = ALL_SUB_AREAS.findIndex(sa =>
       sa.skillGroups.some(sg => sg.skills.some(s => s.id === skillId))
     )
     if (idx >= 0) {
       setCurrentIndex(idx)
-      if (contentRef.current) contentRef.current.scrollTop = 0
+      setHighlightedSkillId(skillId)
+      // After React renders, scroll the skill into view
+      setTimeout(() => {
+        const el = document.getElementById(`skill-${skillId}`)
+        if (el) el.scrollIntoView({ behavior: 'smooth', block: 'center' })
+      }, 100)
+      // Clear highlight after 2s
+      setTimeout(() => setHighlightedSkillId(null), 2500)
     }
   }, [])
 
@@ -350,7 +358,7 @@ export default function AssessmentPanel({ assessments, onAssess, initialSubAreaI
           {/* Skill groups */}
           <div className="space-y-6">
             {currentSubArea.skillGroups.map((sg) => (
-              <SkillGroupRater key={sg.id} skillGroup={sg} assessments={assessments} onAssess={onAssess} showAllDescs={showAllDescs} showAllTeaching={showAllTeaching} onNavigateToSkill={navigateToSkill} />
+              <SkillGroupRater key={sg.id} skillGroup={sg} assessments={assessments} onAssess={onAssess} showAllDescs={showAllDescs} showAllTeaching={showAllTeaching} onNavigateToSkill={navigateToSkill} highlightedSkillId={highlightedSkillId} />
             ))}
           </div>
         </div>
@@ -657,7 +665,7 @@ export default function AssessmentPanel({ assessments, onAssess, initialSubAreaI
 /**
  * A single skill group with all its skills to rate
  */
-function SkillGroupRater({ skillGroup, assessments, onAssess, showAllDescs, showAllTeaching, onNavigateToSkill }) {
+function SkillGroupRater({ skillGroup, assessments, onAssess, showAllDescs, showAllTeaching, onNavigateToSkill, highlightedSkillId }) {
   return (
     <div>
       <h3 className="text-sm font-semibold text-warm-700 mb-3">
@@ -678,6 +686,7 @@ function SkillGroupRater({ skillGroup, assessments, onAssess, showAllDescs, show
             showAllDescs={showAllDescs}
             showAllTeaching={showAllTeaching}
             onNavigateToSkill={onNavigateToSkill}
+            isHighlighted={highlightedSkillId === skill.id}
           />
         ))}
       </div>
@@ -688,7 +697,7 @@ function SkillGroupRater({ skillGroup, assessments, onAssess, showAllDescs, show
 /**
  * Individual skill rating row
  */
-function SkillRater({ skill, level, onRate, showAllDescs, showAllTeaching, assessments = {}, onNavigateToSkill }) {
+function SkillRater({ skill, level, onRate, showAllDescs, showAllTeaching, assessments = {}, onNavigateToSkill, isHighlighted }) {
   const [showDescLocal, setShowDescLocal] = useState(false)
   const [showTeachingLocal, setShowTeachingLocal] = useState(false)
   const desc = getSkillDescription(skill.id)
@@ -707,7 +716,11 @@ function SkillRater({ skill, level, onRate, showAllDescs, showAllTeaching, asses
   const dependentCount = (reverseMap[skill.id] || []).length
 
   return (
-    <div className="py-2 px-3 rounded-lg hover:bg-warm-50 transition-colors group">
+    <div
+      id={`skill-${skill.id}`}
+      className="py-2 px-3 rounded-lg hover:bg-warm-50 transition-colors group"
+      style={isHighlighted ? { backgroundColor: '#dbeafe', outline: '2px solid #3b82f6', outlineOffset: '2px', transition: 'all 0.3s ease' } : undefined}
+    >
       <div className="flex items-start gap-4">
         <div className="flex-1 min-w-0">
           <div className="flex items-center gap-1.5 flex-wrap">
