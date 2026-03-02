@@ -32,7 +32,7 @@ function ViewLoader() {
  * Breadcrumb: Domains > [Domain Name] > [Sub-Area] > [Skill]
  * Supports cross-domain navigation with back history.
  */
-export default memo(function DependencyExplorer({ assessments = {} }) {
+export default memo(function DependencyExplorer({ assessments = {}, initialLevel, initialDomainId, initialSubAreaId, onPositionChange }) {
   const { isPhone, isTablet } = useResponsive()
   const explorer = useDependencyExplorer(assessments)
   const hint = useContextualHint('hint-explorer')
@@ -44,10 +44,19 @@ export default memo(function DependencyExplorer({ assessments = {} }) {
   const guideActive = guideStep >= 0 && guideStep < COACH_STEPS.length
 
   // Navigation state: level + context
-  const [level, setLevel] = useState(1) // 1=chord, 2=sub-area web, 3=skill constellation
-  const [focusDomainId, setFocusDomainId] = useState(null)
-  const [focusSubAreaId, setFocusSubAreaId] = useState(null)
+  const [level, setLevel] = useState(initialLevel || 1) // 1=chord, 2=sub-area web, 3=skill constellation
+  const [focusDomainId, setFocusDomainId] = useState(initialDomainId || null)
+  const [focusSubAreaId, setFocusSubAreaId] = useState(initialSubAreaId || null)
   const [focusSkillId, setFocusSkillId] = useState(null)
+
+  // Sync position to URL for refresh persistence
+  useEffect(() => {
+    onPositionChange?.({
+      l: level > 1 ? level : null,
+      d: focusDomainId,
+      sa: focusSubAreaId,
+    })
+  }, [level, focusDomainId, focusSubAreaId, onPositionChange])
 
   // Navigation history for cross-domain traversal (back button)
   const [navHistory, setNavHistory] = useState([])

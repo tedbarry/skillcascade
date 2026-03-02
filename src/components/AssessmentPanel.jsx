@@ -66,9 +66,19 @@ function getDomainStats(domain, assessments) {
   return { total, assessed, avg: assessed > 0 ? scoreSum / assessed : 0 }
 }
 
-export default function AssessmentPanel({ assessments, onAssess, initialSubAreaId }) {
+export default function AssessmentPanel({ assessments, onAssess, initialSubAreaId, initialIndex, onPositionChange }) {
   const { isPhone } = useResponsive()
-  const [currentIndex, setCurrentIndex] = useState(0)
+  const [currentIndex, setCurrentIndexRaw] = useState(() => {
+    if (initialIndex != null && initialIndex >= 0 && initialIndex < ALL_SUB_AREAS.length) return initialIndex
+    return 0
+  })
+  const setCurrentIndex = useCallback((valOrFn) => {
+    setCurrentIndexRaw(prev => {
+      const next = typeof valOrFn === 'function' ? valOrFn(prev) : valOrFn
+      onPositionChange?.(next)
+      return next
+    })
+  }, [onPositionChange])
   const [navOverlayOpen, setNavOverlayOpen] = useState(false)
   const [highlightedSkillId, setHighlightedSkillId] = useState(null)
   const [showAllDescs, setShowAllDescs] = useState(() => safeGetItem('skillcascade_show_all_descs') === 'true')

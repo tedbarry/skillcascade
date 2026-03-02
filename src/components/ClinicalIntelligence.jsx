@@ -484,6 +484,8 @@ export default memo(function ClinicalIntelligence({
   onNavigateToGoals,
   onSelectNode,
   onOpenAI,
+  initialTab,
+  onTabChange,
 }) {
   const { isPhone, isTablet } = useResponsive()
   const intelligence = useClinicalIntelligence(assessments, snapshots, clientName)
@@ -500,7 +502,11 @@ export default memo(function ClinicalIntelligence({
     getPathReadiness,
   } = intelligence
 
-  const [activeTab, setActiveTab] = useState('overview')
+  const [activeTab, setActiveTabRaw] = useState(initialTab || 'overview')
+  const setActiveTab = useCallback((tab) => {
+    setActiveTabRaw(tab)
+    onTabChange?.(tab)
+  }, [onTabChange])
   const [mode, setMode] = useState('directive') // 'directive' | 'discovery'
   const [expandedSkill, setExpandedSkill] = useState(null)
   const [expandedDomain, setExpandedDomain] = useState(null)

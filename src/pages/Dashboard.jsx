@@ -1,5 +1,6 @@
 import { useState, useMemo, useEffect, useCallback, useRef, lazy, Suspense } from 'react'
-import { Link } from 'react-router-dom'
+import { Link, useNavigate } from 'react-router-dom'
+import useViewNavigation from '../hooks/useViewNavigation.js'
 import { motion, AnimatePresence } from 'framer-motion'
 import ClientManager from '../components/ClientManager.jsx'
 import ExportMenu from '../components/ExportMenu.jsx'
@@ -170,26 +171,32 @@ export default function Dashboard() {
   const [assessmentsLoading, setAssessmentsLoading] = useState(() => !!safeGetItem('skillcascade_selected_client'))
   const [selectedNode, setSelectedNode] = useState(null)
   const [sidebarOpen, setSidebarOpen] = useState(true)
-  const [activeView, setActiveViewRaw] = useState(() => {
-    const saved = safeGetItem('skillcascade_active_view')
-    return saved && Object.values(VIEWS).includes(saved) ? saved : VIEWS.HOME
-  })
-  const setActiveView = useCallback((view) => {
-    setActiveViewRaw(view)
-    safeSetItem('skillcascade_active_view', view)
+  // URL-driven view navigation with browser back/forward support
+  const validViews = useMemo(() => Object.values(VIEWS), [])
+  const { activeView, viewParams, navigateTo, updateParams } = useViewNavigation(VIEWS.HOME, validViews)
+  const routerNavigate = useNavigate()
+
+  // Mirror activeView to localStorage as fallback
+  useEffect(() => {
+    safeSetItem('skillcascade_active_view', activeView)
     // Track views visited for checklist
     setViewsVisited(prev => {
-      if (prev.has(view)) return prev
+      if (prev.has(activeView)) return prev
       const next = new Set(prev)
-      next.add(view)
+      next.add(activeView)
       safeSetItem('skillcascade_views_visited', JSON.stringify([...next]))
       return next
     })
-    if (view === 'reports') {
+    if (activeView === 'reports') {
       setReportsVisited(true)
       safeSetItem('skillcascade_reports_visited', 'true')
     }
-  }, [])
+  }, [activeView])
+
+  // setActiveView wrapper for compatibility — delegates to navigateTo
+  const setActiveView = useCallback((view) => {
+    navigateTo(view)
+  }, [navigateTo])
   const [clientId, setClientId] = useState(() => safeGetItem('skillcascade_selected_client'))
   const [snapshots, setSnapshots] = useState([])
   const [clientName, setClientName] = useState(() => safeGetItem('skillcascade_selected_client_name', 'Sample Client'))
@@ -914,6 +921,8 @@ export default function Dashboard() {
                   onNavigateToAssess={handleNavigateToAssess}
                   onNavigateToGoals={handleNavigateToGoals}
                   onOpenAI={() => setAiPanelOpen(true)}
+                  initialTab={viewParams.tab}
+                  onTabChange={(tab) => updateParams({ tab })}
                 />
               </div>
             </Suspense>
@@ -943,6 +952,8 @@ export default function Dashboard() {
                   assessments={assessments}
                   onAssess={setAssessments}
                   initialSubAreaId={assessTarget}
+                  initialIndex={viewParams.i ? Number(viewParams.i) : undefined}
+                  onPositionChange={(i) => updateParams({ i })}
                 />
               </div>
             </Suspense>
@@ -1169,7 +1180,13 @@ export default function Dashboard() {
           {activeView === VIEWS.EXPLORER && (
             <div data-tour="explorer-view" className="w-full h-full flex flex-col">
               <Suspense fallback={<ViewLoader view={activeView} />}>
-                <DependencyExplorer assessments={assessments} />
+                <DependencyExplorer
+                  assessments={assessments}
+                  initialLevel={viewParams.l ? Number(viewParams.l) : undefined}
+                  initialDomainId={viewParams.d}
+                  initialSubAreaId={viewParams.sa}
+                  onPositionChange={(pos) => updateParams(pos)}
+                />
               </Suspense>
             </div>
           )}
