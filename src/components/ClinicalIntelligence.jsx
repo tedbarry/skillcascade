@@ -61,6 +61,10 @@ function HeadlineBanner({ headline, narratives, onAssess, onGoal, isPhone }) {
   if (!topAction && !topRisk) {
     return (
       <div className={`${isPhone ? 'px-3 py-3' : 'px-5 py-4'} border-b border-[#333]/40`}>
+        <div className="flex items-center justify-between mb-1">
+          <span className="text-[9px] font-mono tracking-widest text-gray-600 uppercase">Intelligence Overview</span>
+          <KBHelpIcon term="view-intelligence" />
+        </div>
         <p className="text-sm text-gray-500">{narratives.clinicalSummary}</p>
       </div>
     )
@@ -75,6 +79,7 @@ function HeadlineBanner({ headline, narratives, onAssess, onGoal, isPhone }) {
             <span className="text-[9px] font-mono tracking-widest text-amber-500/80 uppercase font-bold">
               Top Priority
             </span>
+            <KBHelpIcon term="view-intelligence" />
             {topRisk && (
               <span className="text-[9px] font-mono bg-red-900/30 text-red-400 px-1.5 py-0.5 rounded">
                 {topRisk.type?.replace(/-/g, ' ')}

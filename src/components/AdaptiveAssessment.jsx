@@ -6,6 +6,7 @@ import useResponsive from '../hooks/useResponsive.js'
 import useContextualHint from '../hooks/useContextualHint.js'
 import ContextualHint from './ContextualHint.jsx'
 import KBLink from './kb/KBLink.jsx'
+import KBHelpIcon from './kb/KBHelpIcon.jsx'
 
 /**
  * AdaptiveAssessment — "Start Here" cascade-aware initial assessment
@@ -223,7 +224,7 @@ export default function AdaptiveAssessment({ assessments, onAssess, onComplete }
       <div className={`sticky top-0 z-10 bg-warm-50 border-b border-warm-200 ${isPhone ? 'px-3 py-2' : 'px-4 py-3'}`}>
         <div className="flex items-center justify-between mb-1.5">
           <div className="flex items-center gap-3">
-            <h3 className="text-sm font-bold text-warm-800">Start Here</h3>
+            <h3 className="text-sm font-bold text-warm-800">Start Here <KBHelpIcon term="view-start-here" /></h3>
             <span className="text-xs text-warm-500">
               Batch {batchIndex + 1} of {totalBatches}
             </span>

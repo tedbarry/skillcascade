@@ -623,7 +623,7 @@ export default function AssessmentPanel({ assessments, onAssess, initialSubAreaI
               </span>
             </div>
             <h2 className="text-xl font-bold text-warm-800 font-display">
-              {currentSubArea.name}
+              {currentSubArea.name} <KBHelpIcon term="view-full-assessment" />
             </h2>
             {currentDomain.coreQuestion && (
               <p className="text-sm text-warm-500 italic mt-1">{currentDomain.coreQuestion}</p>

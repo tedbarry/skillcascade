@@ -842,7 +842,7 @@ export default function Dashboard() {
             <Suspense fallback={<ViewLoader view={activeView} />}>
               <div data-tour="sunburst-view" className="flex flex-col items-center w-full">
                 <h2 className="text-lg font-semibold text-warm-800 font-display mb-1">
-                  Skills Profile — Sunburst View
+                  Skills Profile — Sunburst View <KBHelpIcon term="view-sunburst" />
                 </h2>
                 <ContextualHint show={sunburstHint.show} onDismiss={sunburstHint.dismiss} className="mb-4">
                   The center ring shows domains, middle ring shows sub-areas, and outer ring shows individual skills. Click any segment to drill down. <KBLink term="view-sunburst" className="text-[#7fb589]">Learn more</KBLink>

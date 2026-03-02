@@ -10,6 +10,7 @@ import { DOMAIN_COLORS } from '../../constants/colors.js'
 import useContextualHint from '../../hooks/useContextualHint.js'
 import ContextualHint from '../ContextualHint.jsx'
 import KBLink from '../kb/KBLink.jsx'
+import KBHelpIcon from '../kb/KBHelpIcon.jsx'
 
 const DomainChordView = lazy(() => import('./DomainChordView.jsx'))
 const SubAreaWebView = lazy(() => import('./SubAreaWebView.jsx'))
@@ -312,6 +313,7 @@ export default memo(function DependencyExplorer({ assessments = {}, initialLevel
 
         {/* Right-side actions */}
         <div className="ml-auto flex items-center gap-2">
+          <KBHelpIcon term="view-explorer" />
           {level === 2 && focusDomainId && (
             <button
               onClick={handleShowFullWeb}

@@ -783,7 +783,7 @@ export default function GoalEngine({ assessments = {}, onNavigateToAssess, focus
         <div className="flex items-start justify-between gap-4 mb-6">
           <div>
             <h2 className="text-xl font-bold text-warm-800 font-display">
-              Goal Engine
+              Goal Engine <KBHelpIcon term="view-goals" />
             </h2>
             <p className="text-sm text-warm-500 mt-1">
               Auto-suggested treatment targets based on cascade dependency logic.

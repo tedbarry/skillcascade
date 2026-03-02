@@ -10,6 +10,7 @@ import { escapeHTML } from '../lib/escapeHTML.js'
 import useContextualHint from '../hooks/useContextualHint.js'
 import ContextualHint from './ContextualHint.jsx'
 import KBLink from './kb/KBLink.jsx'
+import KBHelpIcon from './kb/KBHelpIcon.jsx'
 
 const REPORT_TYPES = {
   SCHOOL: 'school',
@@ -858,7 +859,7 @@ export default function ReportGenerator({ assessments, clientName, snapshots, on
       </ContextualHint>
 
       <div className="mb-6">
-        <h2 className="text-xl font-bold text-warm-800 font-display">Report Generator</h2>
+        <h2 className="text-xl font-bold text-warm-800 font-display">Report Generator <KBHelpIcon term="view-reports" /></h2>
         <p className="text-sm text-warm-500 mt-1">
           Generate audience-specific reports from {clientName}'s assessment data.
         </p>

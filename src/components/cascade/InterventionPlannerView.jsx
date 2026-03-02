@@ -7,6 +7,7 @@ import useResponsive from '../../hooks/useResponsive.js'
 import { framework } from '../../data/framework.js'
 import { computeDomainHealth, simulateCascade, findSkillBottlenecks } from '../../data/cascadeModel.js'
 import { getTeachingPlaybook } from '../../data/teachingPlaybook.js'
+import KBHelpIcon from '../kb/KBHelpIcon.jsx'
 
 /**
  * InterventionPlannerView — "What should I target?"
@@ -117,7 +118,7 @@ export default memo(function InterventionPlannerView({
       {/* Summary header */}
       <div className={`${isPhone ? 'px-3 py-2' : 'px-4 py-2'} bg-[#12121a] border-b border-[#333]/60`}>
         <h2 className="text-[10px] font-mono tracking-widest text-gray-600 uppercase">
-          Intervention Planner
+          Intervention Planner <KBHelpIcon term="view-intervention-planner" />
         </h2>
         <p className={`text-xs mt-0.5 ${recommendedId ? 'text-[#ffd700]' : 'text-gray-500'}`}>
           {summaryText}

@@ -6,6 +6,7 @@ import ProgressBar from './ProgressBar.jsx'
 import BeforeAfterComparison from './BeforeAfterComparison.jsx'
 import useResponsive from '../../hooks/useResponsive.js'
 import { DOMAIN_COLORS } from '../../constants/colors.js'
+import KBHelpIcon from '../kb/KBHelpIcon.jsx'
 
 // Plain-language domain descriptions for parents/stakeholders
 const DOMAIN_DESCRIPTIONS = {
@@ -107,7 +108,7 @@ export default memo(function ProgressStoryView({
         {/* Header */}
         <div className="text-center mb-6">
           <h2 className={`${isPhone ? 'text-lg' : 'text-xl'} font-bold text-gray-800`}>
-            {clientName ? `${clientName}'s Progress` : 'Progress Overview'}
+            {clientName ? `${clientName}'s Progress` : 'Progress Overview'} <KBHelpIcon term="view-progress-story" />
           </h2>
           {hasData && (
             <p className="text-sm text-gray-500 mt-1">

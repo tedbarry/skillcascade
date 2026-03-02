@@ -8,6 +8,7 @@ import { computeSkillInfluence, getSkillCeiling } from '../../data/skillInfluenc
 import { getTeachingPlaybook } from '../../data/teachingPlaybook.js'
 import { generateSkillNarrative } from '../../lib/narratives.js'
 import { getSubAreaFromId } from '../../data/skillDependencies.js'
+import KBHelpIcon from '../kb/KBHelpIcon.jsx'
 
 const LEVEL_LABELS = { 0: 'Not Present', 1: 'Needs Work', 2: 'Developing', 3: 'Solid' }
 
@@ -129,7 +130,7 @@ export default memo(function BottleneckFinderView({
       {/* Summary banner */}
       <div className={`${isPhone ? 'px-3 py-2' : 'px-5 py-3'} border-b border-[#333]/40`}>
         <h2 className="text-[10px] font-mono tracking-widest text-gray-600 uppercase">
-          Bottleneck Finder
+          Bottleneck Finder <KBHelpIcon term="view-bottleneck-finder" />
         </h2>
         <p className={`text-xs mt-0.5 ${bottleneck ? 'text-orange-300' : 'text-gray-500'}`}>
           {summaryText}
