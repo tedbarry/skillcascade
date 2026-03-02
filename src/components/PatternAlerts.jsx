@@ -537,7 +537,7 @@ function RegressionCard({ alert, onNavigateToAssess }) {
             {onNavigateToAssess && (
               <button
                 onClick={() => onNavigateToAssess(skill.subAreaId)}
-                className="text-warm-300 hover:text-sage-600 transition-colors shrink-0 sm:opacity-0 sm:group-hover:opacity-100 min-h-[44px] min-w-[44px] flex items-center justify-center"
+                className="text-warm-400 hover:text-sage-600 transition-colors shrink-0 min-h-[44px] min-w-[44px] flex items-center justify-center"
                 title={`Jump to ${skill.subAreaName}`}
               >
                 {ICONS.jumpTo}

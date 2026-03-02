@@ -109,10 +109,11 @@ export default function CascadeWarnings({ risks = [], onJumpToAssess, onClose })
                 {onJumpToAssess && risk.actionDomainId && (
                   <button
                     onClick={() => onJumpToAssess(risk.actionDomainId + '-sa1')}
-                    className="text-[10px] font-medium px-2 py-1 rounded transition-colors min-h-[44px] flex items-center"
+                    className="text-[10px] font-medium px-2 py-1 rounded transition-colors min-h-[44px] flex items-center cursor-pointer"
                     style={{
                       color: colors.badge,
-                      backgroundColor: colors.badge + '15',
+                      backgroundColor: colors.badge + '30',
+                      border: `1px solid ${colors.badge}40`,
                     }}
                   >
                     Assess {'\u2192'}

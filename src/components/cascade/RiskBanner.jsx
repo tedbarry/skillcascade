@@ -78,13 +78,13 @@ export default memo(function RiskBanner({
             {risk.affectedDomains.length} domain{risk.affectedDomains.length !== 1 ? 's' : ''}
           </span>
           {onAssess && risk.actionDomainId && (
-            <span
-              className="text-[10px] font-medium px-2 py-1 rounded"
-              style={{ color: cfg.border, backgroundColor: cfg.border + '15' }}
+            <button
+              className="text-[10px] font-medium px-2 py-1 rounded cursor-pointer min-h-[44px] flex items-center"
+              style={{ color: cfg.border, backgroundColor: cfg.border + '30', border: `1px solid ${cfg.border}40` }}
               onClick={(e) => { e.stopPropagation(); onAssess() }}
             >
               View {'\u2192'}
-            </span>
+            </button>
           )}
         </div>
       </div>
