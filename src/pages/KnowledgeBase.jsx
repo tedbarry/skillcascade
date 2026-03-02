@@ -7,6 +7,7 @@ import KBCategoryGrid from '../components/kb/KBCategoryGrid.jsx'
 import KBEntryView from '../components/kb/KBEntryView.jsx'
 import KBSidebar from '../components/kb/KBSidebar.jsx'
 import KBSearch from '../components/kb/KBSearch.jsx'
+import DomainBrowser from '../components/kb/DomainBrowser.jsx'
 import useResponsive from '../hooks/useResponsive.js'
 
 export default function KnowledgeBase() {
@@ -79,7 +80,7 @@ export default function KnowledgeBase() {
                   <p className="text-sm text-warm-400 mt-1">{catInfo.description}</p>
                 )}
               </div>
-              <EntryList entries={categoryEntries} />
+              {category === 'domains' ? <DomainBrowser /> : <EntryList entries={categoryEntries} />}
             </div>
           ) : (
             /* Home view: category grid */
