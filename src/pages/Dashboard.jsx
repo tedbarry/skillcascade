@@ -453,6 +453,7 @@ export default function Dashboard() {
   const handleIntelligenceTab = useCallback((tab) => updateParams({ tab }), [updateParams])
   const handleExplorerPosition = useCallback((pos) => updateParams(pos), [updateParams])
   const handleExplorerDrillDown = useCallback((pos) => pushParams(pos), [pushParams])
+  const handleAssessDrillDown = useCallback((pos) => pushParams(pos), [pushParams])
 
   // Load sample data on mount (only if no saved client)
   useEffect(() => {
@@ -960,6 +961,7 @@ export default function Dashboard() {
                   initialSubAreaId={assessTarget}
                   initialIndex={viewParams.i ? Number(viewParams.i) : undefined}
                   onPositionChange={handleAssessPosition}
+                  onDrillDown={handleAssessDrillDown}
                 />
               </div>
             </Suspense>

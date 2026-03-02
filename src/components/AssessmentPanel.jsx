@@ -66,21 +66,39 @@ function getDomainStats(domain, assessments) {
   return { total, assessed, avg: assessed > 0 ? scoreSum / assessed : 0 }
 }
 
-export default function AssessmentPanel({ assessments, onAssess, initialSubAreaId, initialIndex, onPositionChange }) {
+export default function AssessmentPanel({ assessments, onAssess, initialSubAreaId, initialIndex, onPositionChange, onDrillDown }) {
   const { isPhone } = useResponsive()
   const onPositionChangeRef = useRef(onPositionChange)
   onPositionChangeRef.current = onPositionChange
-  const [currentIndex, setCurrentIndexRaw] = useState(() => {
+  const onDrillDownRef = useRef(onDrillDown)
+  onDrillDownRef.current = onDrillDown
+  const justPushedRef = useRef(false)
+  const skipScrollTopRef = useRef(false)
+  const [currentIndex, setCurrentIndex] = useState(() => {
     if (initialIndex != null && initialIndex >= 0 && initialIndex < ALL_SUB_AREAS.length) return initialIndex
     return 0
   })
-  const setCurrentIndex = useCallback((valOrFn) => {
-    setCurrentIndexRaw(prev => {
-      const next = typeof valOrFn === 'function' ? valOrFn(prev) : valOrFn
-      onPositionChangeRef.current?.(next)
-      return next
-    })
-  }, [])
+
+  // Sync position to URL (replaceState — skip after push)
+  useEffect(() => {
+    if (justPushedRef.current) {
+      justPushedRef.current = false
+      return
+    }
+    onPositionChangeRef.current?.(currentIndex)
+  }, [currentIndex])
+
+  // Sync from URL prop when it changes (handles browser back/forward)
+  const prevIndexRef = useRef(initialIndex)
+  useEffect(() => {
+    const prev = prevIndexRef.current
+    prevIndexRef.current = initialIndex
+    const cur = initialIndex != null ? initialIndex : 0
+    const prevVal = prev != null ? prev : 0
+    if (cur !== prevVal && cur >= 0 && cur < ALL_SUB_AREAS.length) {
+      setCurrentIndex(cur)
+    }
+  }, [initialIndex])
   const [navOverlayOpen, setNavOverlayOpen] = useState(false)
   const [highlightedSkillId, setHighlightedSkillId] = useState(null)
   const [showAllDescs, setShowAllDescs] = useState(() => safeGetItem('skillcascade_show_all_descs') === 'true')
@@ -143,19 +161,18 @@ export default function AssessmentPanel({ assessments, onAssess, initialSubAreaI
       sa.skillGroups.some(sg => sg.skills.some(s => s.id === skillId))
     )
     if (idx >= 0) {
+      skipScrollTopRef.current = true
+      justPushedRef.current = true
       setCurrentIndex(idx)
       setHighlightedSkillId(skillId)
+      onDrillDownRef.current?.({ i: idx })
       // Poll for the element (may not exist yet if sub-area is changing)
       let attempts = 0
       const tryScroll = () => {
         const el = document.getElementById(`skill-${skillId}`)
-        const container = contentRef.current
-        if (el && container) {
-          const elRect = el.getBoundingClientRect()
-          const containerRect = container.getBoundingClientRect()
-          const scrollTarget = elRect.top - containerRect.top + container.scrollTop - 40
-          container.scrollTo({ top: Math.max(0, scrollTarget), behavior: 'smooth' })
-        } else if (attempts < 10) {
+        if (el) {
+          el.scrollIntoView({ behavior: 'smooth', block: 'center' })
+        } else if (attempts < 20) {
           attempts++
           requestAnimationFrame(tryScroll)
         }
@@ -168,8 +185,12 @@ export default function AssessmentPanel({ assessments, onAssess, initialSubAreaI
 
   // Auto-scroll content to top when sub-area changes (skip when navigating to a specific skill)
   useEffect(() => {
-    if (contentRef.current && !highlightedSkillId) contentRef.current.scrollTop = 0
-  }, [currentIndex, highlightedSkillId])
+    if (skipScrollTopRef.current) {
+      skipScrollTopRef.current = false
+      return
+    }
+    if (contentRef.current) contentRef.current.scrollTop = 0
+  }, [currentIndex])
 
   // aria-live announcement for keyboard navigation
   const [navAnnouncement, setNavAnnouncement] = useState('')
@@ -725,6 +746,7 @@ function SkillGroupRater({ skillGroup, assessments, onAssess, showAllDescs, show
 function SkillRater({ skill, level, onRate, showAllDescs, showAllTeaching, assessments = {}, onNavigateToSkill, isHighlighted }) {
   const [showDescLocal, setShowDescLocal] = useState(false)
   const [showTeachingLocal, setShowTeachingLocal] = useState(false)
+  const [showDependents, setShowDependents] = useState(false)
   const desc = getSkillDescription(skill.id)
   const indicator = getBehavioralIndicator(skill.id, level)
   const playbook = getTeachingPlaybook(skill.id)
@@ -738,7 +760,8 @@ function SkillRater({ skill, level, onRate, showAllDescs, showAllTeaching, asses
 
   // Downstream dependents (skills that require this one)
   const reverseMap = getReversePrereqs()
-  const dependentCount = (reverseMap[skill.id] || []).length
+  const dependentIds = reverseMap[skill.id] || []
+  const dependentCount = dependentIds.length
 
   return (
     <div
@@ -753,9 +776,13 @@ function SkillRater({ skill, level, onRate, showAllDescs, showAllTeaching, asses
               {skill.name}
             </div>
             {dependentCount > 0 && (
-              <span className="text-[9px] font-medium text-sage-600 bg-sage-50 border border-sage-200 px-1.5 py-0.5 rounded-full shrink-0">
-                prereq for {dependentCount}
-              </span>
+              <button
+                onClick={() => setShowDependents(!showDependents)}
+                className="text-[9px] font-medium text-sage-600 bg-sage-50 border border-sage-200 px-1.5 py-0.5 rounded-full shrink-0 hover:bg-sage-100 hover:border-sage-300 transition-colors cursor-pointer"
+                title={showDependents ? 'Hide dependent skills' : 'Show which skills depend on this one'}
+              >
+                prereq for {dependentCount} {showDependents ? '▾' : '▸'}
+              </button>
             )}
             {desc && (
               <button
@@ -823,6 +850,26 @@ function SkillRater({ skill, level, onRate, showAllDescs, showAllTeaching, asses
           })}
         </div>
       </div>
+      {/* Dependent skills preview (toggle via "prereq for X" badge) */}
+      {showDependents && dependentCount > 0 && (
+        <div className="mt-1.5 px-2.5 py-1.5 rounded-md text-[11px] leading-relaxed bg-sage-50 border border-sage-200">
+          <span className="font-medium text-sage-700">This skill is a prerequisite for:</span>
+          <div className="mt-1 flex flex-wrap gap-1">
+            {dependentIds.map(depId => {
+              const depSkill = framework.flatMap(d => d.subAreas.flatMap(sa => sa.skillGroups.flatMap(sg => sg.skills))).find(s => s.id === depId)
+              return (
+                <button
+                  key={depId}
+                  onClick={() => onNavigateToSkill?.(depId)}
+                  style={{ display: 'inline-flex', padding: '1px 6px', borderRadius: '4px', border: '1px solid #86efac', backgroundColor: '#f0fdf4', color: '#166534', fontWeight: 500, cursor: 'pointer', fontSize: '11px', alignItems: 'center', gap: '2px' }}
+                >
+                  {depSkill?.name || depId} →
+                </button>
+              )
+            })}
+          </div>
+        </div>
+      )}
       {/* Prerequisite readiness banner */}
       {hasUnmetPrereqs && (
         <div className="mt-1.5 px-2.5 py-1.5 rounded-md text-[11px] leading-relaxed bg-amber-50 border-l-3 border-amber-400" style={{ borderLeft: '3px solid #d97706' }}>
