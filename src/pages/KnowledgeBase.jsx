@@ -36,7 +36,7 @@ export default function KnowledgeBase() {
       <div className="min-h-screen bg-warm-50">
         <KBHeader isPhone={isPhone} />
         <div className={`max-w-5xl mx-auto px-4 py-6 ${isDesktop ? 'flex gap-8' : ''}`}>
-          {isDesktop && <KBSidebar categoryCounts={categoryCounts} activeCategory={activeEntryCategory} />}
+          {isDesktop && <KBSidebar categoryCounts={categoryCounts} activeCategory={activeEntryCategory} activeEntryId={slug} />}
           <div className="flex-1 min-w-0">
             <KBEntryView entryId={slug} />
           </div>
