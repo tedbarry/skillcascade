@@ -12,7 +12,7 @@ import { getBehavioralIndicator } from '../data/behavioralIndicators.js'
 import { getTeachingPlaybook } from '../data/teachingPlaybook.js'
 import { downloadFile, csvEscape } from '../data/exportUtils.js'
 import { getSkillCeiling, computeSkillInfluence } from '../data/skillInfluence.js'
-import { generateCeilingNarrative } from '../lib/narratives.js'
+import { getSubAreaFromId } from '../data/skillDependencies.js'
 import EmptyState from './EmptyState.jsx'
 import useResponsive from '../hooks/useResponsive.js'
 import useContextualHint from '../hooks/useContextualHint.js'
@@ -457,10 +457,43 @@ function SkillCard({ rec, onNavigateToAssess, isExpanded, onToggle, assessments 
           )}
           {/* Ceiling narrative */}
           {(() => {
-            const narrative = assessments ? generateCeilingNarrative(rec.skillId, assessments) : null
-            return narrative ? (
-              <p className="text-xs text-amber-600 italic mt-1">{narrative}</p>
-            ) : null
+            if (!assessments) return null
+            const ceilingData = getSkillCeiling(rec.skillId, assessments)
+            if (!ceilingData) return null
+            const skillLevel = assessments[rec.skillId]
+            if (skillLevel == null) return null
+            const limiting = ceilingData.constrainingPrereqs.filter(p => p.imposedCeiling < 3)
+            if (limiting.length === 0) return null
+            const top = limiting[0]
+            const prereqName = framework.flatMap(d => d.subAreas.flatMap(sa => sa.skillGroups.flatMap(sg => sg.skills))).find(s => s.id === top.id)?.name || top.id
+            const prereqLabel = top.level != null ? ASSESSMENT_LABELS[top.level] : 'Not Assessed'
+            const ceilingLabel = ASSESSMENT_LABELS[ceilingData.ceiling] || `${ceilingData.ceiling}`
+            const prereqBtn = onNavigateToAssess ? (
+              <button
+                onClick={() => onNavigateToAssess(getSubAreaFromId(top.id))}
+                className="underline underline-offset-2 decoration-blue-400 text-blue-700 hover:text-blue-900 font-medium transition-colors not-italic cursor-pointer"
+              >
+                {prereqName}
+              </button>
+            ) : <span className="font-medium">{prereqName}</span>
+
+            if (skillLevel > ceilingData.ceiling) {
+              return (
+                <p className="text-xs text-amber-600 italic mt-1">
+                  {rec.skillName} is rated above its ceiling ({ASSESSMENT_LABELS[skillLevel]} vs {ceilingLabel}).{' '}
+                  {prereqBtn} at {prereqLabel} is the limiting factor.
+                </p>
+              )
+            }
+            if (ceilingData.ceiling < 3) {
+              return (
+                <p className="text-xs text-amber-600 italic mt-1">
+                  Capped at {ceilingLabel} by {prereqBtn} ({prereqLabel}).{' '}
+                  Improving <span className="font-medium not-italic">{prereqName}</span> would raise this ceiling.
+                </p>
+              )
+            }
+            return null
           })()}
           {/* Baseline → Target */}
           <div className="flex items-center gap-2 pt-1">

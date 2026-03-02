@@ -3,10 +3,11 @@ import PipelineFlow from './PipelineFlow.jsx'
 import SubAreaPanel from './SubAreaPanel.jsx'
 import useCascadeGraph from '../../hooks/useCascadeGraph.js'
 import useResponsive from '../../hooks/useResponsive.js'
-import { framework } from '../../data/framework.js'
-import { computeSkillInfluence } from '../../data/skillInfluence.js'
+import { framework, ASSESSMENT_LABELS } from '../../data/framework.js'
+import { computeSkillInfluence, getSkillCeiling } from '../../data/skillInfluence.js'
 import { getTeachingPlaybook } from '../../data/teachingPlaybook.js'
-import { generateCeilingNarrative, generateSkillNarrative } from '../../lib/narratives.js'
+import { generateSkillNarrative } from '../../lib/narratives.js'
+import { getSubAreaFromId } from '../../data/skillDependencies.js'
 
 const LEVEL_LABELS = { 0: 'Not Present', 1: 'Needs Work', 2: 'Developing', 3: 'Solid' }
 
@@ -148,12 +149,45 @@ export default memo(function BottleneckFinderView({
           {(() => {
             if (!topSkillBottleneck) return null
             const skillNarr = generateSkillNarrative(topSkillBottleneck.skillId, topSkillBottleneck.currentLevel)
-            const ceilingNarr = generateCeilingNarrative(topSkillBottleneck.skillId, assessments)
-            if (!skillNarr && !ceilingNarr) return null
+            const ceilingData = getSkillCeiling(topSkillBottleneck.skillId, assessments)
+            const skillLevel = assessments[topSkillBottleneck.skillId]
+            const limiting = ceilingData?.constrainingPrereqs?.filter(p => p.imposedCeiling < 3) || []
+            const top = limiting[0]
+            let ceilingJsx = null
+            if (top && skillLevel != null) {
+              const prereqName = framework.flatMap(d => d.subAreas.flatMap(sa => sa.skillGroups.flatMap(sg => sg.skills))).find(s => s.id === top.id)?.name || top.id
+              const prereqLabel = top.level != null ? ASSESSMENT_LABELS[top.level] : 'Not Assessed'
+              const ceilingLabel = ASSESSMENT_LABELS[ceilingData.ceiling] || `${ceilingData.ceiling}`
+              const prereqBtn = onNavigateToAssess ? (
+                <button
+                  onClick={() => onNavigateToAssess(getSubAreaFromId(top.id))}
+                  className="underline underline-offset-2 decoration-blue-400 text-blue-400 hover:text-blue-300 font-medium transition-colors not-italic cursor-pointer"
+                >
+                  {prereqName}
+                </button>
+              ) : <span className="font-medium">{prereqName}</span>
+
+              if (skillLevel > ceilingData.ceiling) {
+                ceilingJsx = (
+                  <p className="text-[10px] text-amber-500/70 italic">
+                    {topSkillBottleneck.skillName} is rated above its ceiling ({ASSESSMENT_LABELS[skillLevel]} vs {ceilingLabel}).{' '}
+                    {prereqBtn} at {prereqLabel} is the limiting factor.
+                  </p>
+                )
+              } else if (ceilingData.ceiling < 3) {
+                ceilingJsx = (
+                  <p className="text-[10px] text-amber-500/70 italic">
+                    Capped at {ceilingLabel} by {prereqBtn} ({prereqLabel}).{' '}
+                    Improving <span className="font-medium not-italic">{prereqName}</span> would raise this ceiling.
+                  </p>
+                )
+              }
+            }
+            if (!skillNarr && !ceilingJsx) return null
             return (
               <div className="mt-1.5 space-y-0.5">
                 {skillNarr && <p className="text-[10px] text-gray-500 italic">{skillNarr}</p>}
-                {ceilingNarr && <p className="text-[10px] text-amber-500/70 italic">{ceilingNarr}</p>}
+                {ceilingJsx}
               </div>
             )
           })()}

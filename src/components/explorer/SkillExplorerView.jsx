@@ -1,10 +1,10 @@
 import { useMemo, useEffect, useRef, useState, useCallback, memo } from 'react'
 import { framework } from '../../data/framework.js'
-import { getDomainFromId } from '../../data/skillDependencies.js'
+import { getDomainFromId, getSubAreaFromId } from '../../data/skillDependencies.js'
 import { getSkillDescription } from '../../data/skillDescriptions.js'
 import { getBehavioralIndicator } from '../../data/behavioralIndicators.js'
 import { getSkillCeiling, computeSkillInfluence } from '../../data/skillInfluence.js'
-import { generateCeilingNarrative, generateSkillNarrative } from '../../lib/narratives.js'
+import { generateSkillNarrative } from '../../lib/narratives.js'
 import useResponsive from '../../hooks/useResponsive.js'
 import ExplorerTooltip from './ExplorerTooltip.jsx'
 import { DOMAIN_COLORS } from '../../constants/colors.js'
@@ -206,6 +206,58 @@ export default memo(function SkillExplorerView({
       setSelectedSkillId(prev => prev === node.id ? null : node.id)
     }
   }, [onCrossNavigate])
+
+  // Build clickable ceiling narrative for a skill node
+  const renderCeilingNarrative = useCallback((nodeId, textClass = 'text-xs') => {
+    if (!assessments) return null
+    const ceilingData = getSkillCeiling(nodeId, assessments)
+    if (!ceilingData) return null
+    const skillLevel = assessments[nodeId]
+    if (skillLevel == null) return null
+    const limiting = ceilingData.constrainingPrereqs.filter(p => p.imposedCeiling < 3)
+    if (limiting.length === 0) return null
+    const top = limiting[0]
+    const prereqName = framework.flatMap(d => d.subAreas.flatMap(sa => sa.skillGroups.flatMap(sg => sg.skills))).find(s => s.id === top.id)?.name || top.id
+    const prereqLabel = top.level != null ? ASSESSMENT_LABELS[top.level] : 'Not Assessed'
+    const ceilingLabel = ASSESSMENT_LABELS[ceilingData.ceiling] || `${ceilingData.ceiling}`
+    const prereqSubArea = getSubAreaFromId(top.id)
+    const isLocal = prereqSubArea === focusSubAreaId
+    const handlePrereqClick = () => {
+      if (isLocal) {
+        setSelectedSkillId(top.id)
+      } else if (onCrossNavigate) {
+        const domainId = getDomainFromId(top.id)
+        const domain = framework.find(d => d.id === domainId)
+        onCrossNavigate({ id: top.id, domainId, domainName: domain?.name, subAreaId: prereqSubArea })
+      }
+    }
+    const prereqBtn = (
+      <button
+        onClick={handlePrereqClick}
+        className="underline underline-offset-2 decoration-blue-400 text-blue-400 hover:text-blue-300 font-medium transition-colors not-italic cursor-pointer"
+      >
+        {prereqName}
+      </button>
+    )
+    const skillName = framework.flatMap(d => d.subAreas.flatMap(sa => sa.skillGroups.flatMap(sg => sg.skills))).find(s => s.id === nodeId)?.name || nodeId
+    if (skillLevel > ceilingData.ceiling) {
+      return (
+        <p className={`${textClass} text-amber-500/70 italic mt-1`}>
+          {skillName} is rated above its ceiling ({ASSESSMENT_LABELS[skillLevel]} vs {ceilingLabel}).{' '}
+          {prereqBtn} at {prereqLabel} is the limiting factor.
+        </p>
+      )
+    }
+    if (ceilingData.ceiling < 3) {
+      return (
+        <p className={`${textClass} text-amber-500/70 italic mt-1`}>
+          Capped at {ceilingLabel} by {prereqBtn} ({prereqLabel}).{' '}
+          Improving <span className="font-medium not-italic">{prereqName}</span> would raise this ceiling.
+        </p>
+      )
+    }
+    return null
+  }, [assessments, focusSubAreaId, onCrossNavigate])
 
   // Selected skill detail data
   const selectedDetail = useMemo(() => {
@@ -713,10 +765,7 @@ function DetailPanel({ detail, cascadeMap, graphData, assessments }) {
             const skillNarr = generateSkillNarrative(node.id, assessments?.[node.id])
             return skillNarr ? <p className="text-xs text-gray-400 italic mt-2">{skillNarr}</p> : null
           })()}
-          {(() => {
-            const ceilingNarr = generateCeilingNarrative(node.id, assessments)
-            return ceilingNarr ? <p className="text-xs text-amber-500/70 italic mt-1">{ceilingNarr}</p> : null
-          })()}
+          {renderCeilingNarrative(node.id, 'text-xs')}
         </div>
 
         {/* Right: readiness + impact */}
@@ -896,10 +945,7 @@ function SkillCard({ node, isSelected, cascadeInfo, selectedSkillId, edges, onSe
             const skillNarr = generateSkillNarrative(node.id, assessments?.[node.id])
             return skillNarr ? <p className="text-[10px] text-gray-400 italic">{skillNarr}</p> : null
           })()}
-          {(() => {
-            const ceilingNarr = generateCeilingNarrative(node.id, assessments)
-            return ceilingNarr ? <p className="text-[10px] text-amber-500/70 italic">{ceilingNarr}</p> : null
-          })()}
+          {renderCeilingNarrative(node.id, 'text-[10px]')}
           {/* Cross-domain connections */}
           {graphData.satellites.filter(s => s.linkedLocalSkillId === node.id).map(sat => (
             <button
