@@ -5,7 +5,6 @@ import { TIER_LABELS, TIER_COLORS } from '../constants/tiers.js'
 import { buildKBSearchIndex, searchKB } from '../data/knowledgeBase/kbSearch.js'
 import { getAllEntries } from '../data/knowledgeBase/kbIndex.js'
 import { KB_CATEGORIES } from '../data/knowledgeBase/kbSchema.js'
-import { askSmartSearch } from '../lib/smartSearch.js'
 import useFocusTrap from '../hooks/useFocusTrap.js'
 
 /**
@@ -260,8 +259,13 @@ export default function SearchOverlay({ isOpen, onClose, onNavigate, assessments
 
   // KB search index (manual + concept articles, excludes skill entries to avoid duplicates)
   const kbSearchIndex = useMemo(() => {
-    const entries = getAllEntries().filter(e => e.source === 'manual')
-    return buildKBSearchIndex(entries)
+    try {
+      const entries = getAllEntries().filter(e => e.source === 'manual')
+      return buildKBSearchIndex(entries)
+    } catch (err) {
+      console.error('Failed to build KB search index:', err)
+      return []
+    }
   }, [])
 
   // Detect command-only mode (query starts with ">")
@@ -400,6 +404,7 @@ export default function SearchOverlay({ isOpen, onClose, onNavigate, assessments
     abortRef.current = controller
 
     try {
+      const { askSmartSearch } = await import('../lib/smartSearch.js')
       const result = await askSmartSearch(q, assessments, clientName, controller.signal)
       if (!controller.signal.aborted) {
         setAiResponse(result)
