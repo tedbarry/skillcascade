@@ -1,7 +1,7 @@
 import { useState, useMemo, Fragment } from 'react'
 import { Link } from 'react-router-dom'
 import { framework } from '../../data/framework.js'
-import { getSkillTier, SKILL_PREREQUISITES, buildReversePrereqMap } from '../../data/skillDependencies.js'
+import { getSkillTier, SKILL_PREREQUISITES, SUB_AREA_DEPS, buildReversePrereqMap } from '../../data/skillDependencies.js'
 import { TIER_COLORS } from '../../constants/tiers.js'
 import { DOMAIN_COLORS } from '../../constants/colors.js'
 import useResponsive from '../../hooks/useResponsive.js'
@@ -44,6 +44,19 @@ function SkillGroupSection({ skillGroup }) {
 
 function SubAreaRow({ subArea, isExpanded, onToggle }) {
   const skillCount = subArea.skillGroups.reduce((sum, sg) => sum + sg.skills.length, 0)
+  const deps = SUB_AREA_DEPS[subArea.id] || []
+
+  // Resolve dep names from framework
+  const depNames = useMemo(() => {
+    if (deps.length === 0) return []
+    return deps.map(depId => {
+      for (const d of framework) {
+        const found = d.subAreas.find(s => s.id === depId)
+        if (found) return `${found.name} (D${d.domain})`
+      }
+      return depId
+    })
+  }, [deps])
 
   return (
     <div>
@@ -73,10 +86,18 @@ function SubAreaRow({ subArea, isExpanded, onToggle }) {
         </Link>
       </button>
       {isExpanded && (
-        <div className="pl-10 pr-5 pb-4 space-y-4">
-          {subArea.skillGroups.map(sg => (
-            <SkillGroupSection key={sg.id} skillGroup={sg} />
-          ))}
+        <div className="pl-10 pr-5 pb-4">
+          {depNames.length > 0 && (
+            <p className="text-[10px] text-warm-400 mb-3">
+              <span className="font-semibold uppercase tracking-wider">Prerequisites:</span>{' '}
+              {depNames.join(', ')}
+            </p>
+          )}
+          <div className="space-y-4">
+            {subArea.skillGroups.map(sg => (
+              <SkillGroupSection key={sg.id} skillGroup={sg} />
+            ))}
+          </div>
         </div>
       )}
     </div>
@@ -99,17 +120,29 @@ function DomainExpansion({ domain, expandedSubAreas, setExpandedSubAreas }) {
       className="bg-white rounded-xl border border-warm-200 overflow-hidden"
       style={{ borderTopColor: color, borderTopWidth: '3px' }}
     >
-      <div className="px-5 py-4 border-b border-warm-100 flex items-center justify-between">
-        <div>
+      <div className="px-5 py-4 border-b border-warm-100">
+        <div className="flex items-center justify-between mb-2">
           <h3 className="text-sm font-bold text-warm-800">D{domain.domain}: {domain.name}</h3>
-          <p className="text-xs text-warm-400 mt-0.5">{domain.subtitle}</p>
+          <Link
+            to={`/kb/domain-${domain.id}`}
+            className="text-[10px] text-sage-500 hover:text-sage-700 font-medium transition-colors shrink-0"
+          >
+            Full article &rarr;
+          </Link>
         </div>
-        <Link
-          to={`/kb/domain-${domain.id}`}
-          className="text-[10px] text-sage-500 hover:text-sage-700 font-medium transition-colors shrink-0"
-        >
-          Full article &rarr;
-        </Link>
+        {domain.coreQuestion && (
+          <p className="text-xs text-warm-500 italic mb-1">{domain.coreQuestion}</p>
+        )}
+        {domain.keyInsight && (
+          <p className="text-[11px] text-warm-400 mb-1">{domain.keyInsight}</p>
+        )}
+        {domain.coreCapacities?.length > 0 && (
+          <div className="flex flex-wrap gap-1.5 mt-2">
+            {domain.coreCapacities.map((cap, i) => (
+              <span key={i} className="text-[10px] px-2 py-0.5 rounded-full bg-warm-50 text-warm-400">{cap}</span>
+            ))}
+          </div>
+        )}
       </div>
       <div className="divide-y divide-warm-100">
         {domain.subAreas.map(sa => (
