@@ -781,7 +781,7 @@ function SkillRater({ skill, level, onRate, showAllDescs, showAllTeaching, asses
                 className="text-[9px] font-medium text-sage-600 bg-sage-50 border border-sage-200 px-1.5 py-0.5 rounded-full shrink-0 hover:bg-sage-100 hover:border-sage-300 transition-colors cursor-pointer"
                 title={showDependents ? 'Hide dependent skills' : 'Show which skills depend on this one'}
               >
-                prereq for {dependentCount} {showDependents ? '▾' : '▸'}
+                supports {dependentCount} {dependentCount === 1 ? 'skill' : 'skills'} {showDependents ? '▾' : '▸'}
               </button>
             )}
             {desc && (
@@ -853,7 +853,7 @@ function SkillRater({ skill, level, onRate, showAllDescs, showAllTeaching, asses
       {/* Dependent skills preview (toggle via "prereq for X" badge) */}
       {showDependents && dependentCount > 0 && (
         <div className="mt-1.5 px-2.5 py-1.5 rounded-md text-[11px] leading-relaxed bg-sage-50 border border-sage-200">
-          <span className="font-medium text-sage-700">This skill is a prerequisite for:</span>
+          <span className="font-medium text-sage-700">This skill supports the development of:</span>
           <div className="mt-1 flex flex-wrap gap-1">
             {dependentIds.map(depId => {
               const depSkill = framework.flatMap(d => d.subAreas.flatMap(sa => sa.skillGroups.flatMap(sg => sg.skills))).find(s => s.id === depId)
