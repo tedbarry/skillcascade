@@ -6,6 +6,7 @@ import useResponsive from '../../hooks/useResponsive.js'
 import { framework } from '../../data/framework.js'
 import { computeSkillInfluence } from '../../data/skillInfluence.js'
 import { getTeachingPlaybook } from '../../data/teachingPlaybook.js'
+import { generateCeilingNarrative, generateSkillNarrative } from '../../lib/narratives.js'
 
 const LEVEL_LABELS = { 0: 'Not Present', 1: 'Needs Work', 2: 'Developing', 3: 'Solid' }
 
@@ -144,6 +145,18 @@ export default memo(function BottleneckFinderView({
           <p className="text-[11px] text-gray-400 mt-1">
             Improving from {actionCard.currentLabel} to {actionCard.nextLabel} raises ceilings on {actionCard.downstreamCount} skill{actionCard.downstreamCount !== 1 ? 's' : ''}.
           </p>
+          {(() => {
+            if (!topSkillBottleneck) return null
+            const skillNarr = generateSkillNarrative(topSkillBottleneck.skillId, topSkillBottleneck.currentLevel)
+            const ceilingNarr = generateCeilingNarrative(topSkillBottleneck.skillId, assessments)
+            if (!skillNarr && !ceilingNarr) return null
+            return (
+              <div className="mt-1.5 space-y-0.5">
+                {skillNarr && <p className="text-[10px] text-gray-500 italic">{skillNarr}</p>}
+                {ceilingNarr && <p className="text-[10px] text-amber-500/70 italic">{ceilingNarr}</p>}
+              </div>
+            )
+          })()}
         </div>
       )}
 

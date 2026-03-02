@@ -5,6 +5,7 @@ import { getBehavioralIndicator } from '../data/behavioralIndicators.js'
 import { getTeachingPlaybook } from '../data/teachingPlaybook.js'
 import { getSkillCeiling } from '../data/skillInfluence.js'
 import { SKILL_PREREQUISITES, buildReversePrereqMap } from '../data/skillDependencies.js'
+import { generateCeilingNarrative } from '../lib/narratives.js'
 
 // Lazy-cached reverse prerequisite map (skill → skills that depend on it)
 let _reversePrereqs = null
@@ -813,6 +814,10 @@ function SkillRater({ skill, level, onRate, showAllDescs, showAllTeaching, asses
             {ceilingInfo.constrainingPrereqs.filter(p => p.level == null || p.level < ASSESSMENT_LEVELS.DEVELOPING).length > 2 && ' and others'}
             {' '}at Needs Work or unassessed. Ratings above Developing may be fragile.
           </span>
+          {(() => {
+            const narrative = generateCeilingNarrative(skill.id, assessments)
+            return narrative ? <p className="text-[11px] text-amber-600 mt-1 italic">{narrative}</p> : null
+          })()}
         </div>
       )}
       {isAssessed(level) && indicator && (

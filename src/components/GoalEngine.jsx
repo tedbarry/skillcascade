@@ -12,6 +12,7 @@ import { getBehavioralIndicator } from '../data/behavioralIndicators.js'
 import { getTeachingPlaybook } from '../data/teachingPlaybook.js'
 import { downloadFile, csvEscape } from '../data/exportUtils.js'
 import { getSkillCeiling, computeSkillInfluence } from '../data/skillInfluence.js'
+import { generateCeilingNarrative } from '../lib/narratives.js'
 import EmptyState from './EmptyState.jsx'
 import useResponsive from '../hooks/useResponsive.js'
 import useContextualHint from '../hooks/useContextualHint.js'
@@ -315,7 +316,7 @@ function RatingBadge({ level }) {
   )
 }
 
-function SkillCard({ rec, onNavigateToAssess, isExpanded, onToggle }) {
+function SkillCard({ rec, onNavigateToAssess, isExpanded, onToggle, assessments }) {
   const [showTeachingNotes, setShowTeachingNotes] = useState(false)
   const config = PRIORITY_CONFIG[rec.priority]
   const desc = isExpanded ? getSkillDescription(rec.skillId) : null
@@ -454,6 +455,13 @@ function SkillCard({ rec, onNavigateToAssess, isExpanded, onToggle }) {
               )}
             </div>
           )}
+          {/* Ceiling narrative */}
+          {(() => {
+            const narrative = assessments ? generateCeilingNarrative(rec.skillId, assessments) : null
+            return narrative ? (
+              <p className="text-xs text-amber-600 italic mt-1">{narrative}</p>
+            ) : null
+          })()}
           {/* Baseline → Target */}
           <div className="flex items-center gap-2 pt-1">
             <span className="text-[10px] font-semibold text-warm-500 uppercase tracking-wider">Baseline</span>
@@ -518,7 +526,7 @@ function SkillCard({ rec, onNavigateToAssess, isExpanded, onToggle }) {
   )
 }
 
-function TierSection({ priority, recommendations, onNavigateToAssess, defaultExpanded }) {
+function TierSection({ priority, recommendations, onNavigateToAssess, defaultExpanded, assessments }) {
   const [expanded, setExpanded] = useState(defaultExpanded)
   const [expandedSkillId, setExpandedSkillId] = useState(null)
   const config = PRIORITY_CONFIG[priority]
@@ -621,6 +629,7 @@ function TierSection({ priority, recommendations, onNavigateToAssess, defaultExp
                     onNavigateToAssess={onNavigateToAssess}
                     isExpanded={expandedSkillId === rec.skillId}
                     onToggle={() => setExpandedSkillId(prev => prev === rec.skillId ? null : rec.skillId)}
+                    assessments={assessments}
                   />
                 ))}
               </div>
@@ -832,18 +841,21 @@ export default function GoalEngine({ assessments = {}, onNavigateToAssess, focus
                   recommendations={tier1}
                   onNavigateToAssess={handleNavigate}
                   defaultExpanded={isPhone ? false : true}
+                  assessments={assessments}
                 />
                 <TierSection
                   priority={2}
                   recommendations={tier2}
                   onNavigateToAssess={handleNavigate}
                   defaultExpanded={isPhone ? false : tier1.length === 0}
+                  assessments={assessments}
                 />
                 <TierSection
                   priority={3}
                   recommendations={tier3}
                   onNavigateToAssess={handleNavigate}
                   defaultExpanded={false}
+                  assessments={assessments}
                 />
               </div>
             )}

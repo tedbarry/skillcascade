@@ -4,6 +4,7 @@ import { getDomainFromId } from '../../data/skillDependencies.js'
 import { getSkillDescription } from '../../data/skillDescriptions.js'
 import { getBehavioralIndicator } from '../../data/behavioralIndicators.js'
 import { getSkillCeiling, computeSkillInfluence } from '../../data/skillInfluence.js'
+import { generateCeilingNarrative, generateSkillNarrative } from '../../lib/narratives.js'
 import useResponsive from '../../hooks/useResponsive.js'
 import ExplorerTooltip from './ExplorerTooltip.jsx'
 import { DOMAIN_COLORS } from '../../constants/colors.js'
@@ -707,6 +708,15 @@ function DetailPanel({ detail, cascadeMap, graphData, assessments }) {
               </p>
             )
           })()}
+          {/* Skill & ceiling narratives */}
+          {(() => {
+            const skillNarr = generateSkillNarrative(node.id, assessments?.[node.id])
+            return skillNarr ? <p className="text-xs text-gray-400 italic mt-2">{skillNarr}</p> : null
+          })()}
+          {(() => {
+            const ceilingNarr = generateCeilingNarrative(node.id, assessments)
+            return ceilingNarr ? <p className="text-xs text-amber-500/70 italic mt-1">{ceilingNarr}</p> : null
+          })()}
         </div>
 
         {/* Right: readiness + impact */}
@@ -881,6 +891,15 @@ function SkillCard({ node, isSelected, cascadeInfo, selectedSkillId, edges, onSe
               )}
             </div>
           )}
+          {/* Skill & ceiling narratives */}
+          {(() => {
+            const skillNarr = generateSkillNarrative(node.id, assessments?.[node.id])
+            return skillNarr ? <p className="text-[10px] text-gray-400 italic">{skillNarr}</p> : null
+          })()}
+          {(() => {
+            const ceilingNarr = generateCeilingNarrative(node.id, assessments)
+            return ceilingNarr ? <p className="text-[10px] text-amber-500/70 italic">{ceilingNarr}</p> : null
+          })()}
           {/* Cross-domain connections */}
           {graphData.satellites.filter(s => s.linkedLocalSkillId === node.id).map(sat => (
             <button
