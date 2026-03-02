@@ -448,6 +448,11 @@ export default function Dashboard() {
     guardedSetActiveView(VIEWS.GOALS)
   }, [guardedSetActiveView])
 
+  // Stable callbacks for view position sync (avoid re-render loops)
+  const handleAssessPosition = useCallback((i) => updateParams({ i }), [updateParams])
+  const handleIntelligenceTab = useCallback((tab) => updateParams({ tab }), [updateParams])
+  const handleExplorerPosition = useCallback((pos) => updateParams(pos), [updateParams])
+
   // Load sample data on mount (only if no saved client)
   useEffect(() => {
     if (!clientId) {
@@ -922,7 +927,7 @@ export default function Dashboard() {
                   onNavigateToGoals={handleNavigateToGoals}
                   onOpenAI={() => setAiPanelOpen(true)}
                   initialTab={viewParams.tab}
-                  onTabChange={(tab) => updateParams({ tab })}
+                  onTabChange={handleIntelligenceTab}
                 />
               </div>
             </Suspense>
@@ -953,7 +958,7 @@ export default function Dashboard() {
                   onAssess={setAssessments}
                   initialSubAreaId={assessTarget}
                   initialIndex={viewParams.i ? Number(viewParams.i) : undefined}
-                  onPositionChange={(i) => updateParams({ i })}
+                  onPositionChange={handleAssessPosition}
                 />
               </div>
             </Suspense>
@@ -1185,7 +1190,7 @@ export default function Dashboard() {
                   initialLevel={viewParams.l ? Number(viewParams.l) : undefined}
                   initialDomainId={viewParams.d}
                   initialSubAreaId={viewParams.sa}
-                  onPositionChange={(pos) => updateParams(pos)}
+                  onPositionChange={handleExplorerPosition}
                 />
               </Suspense>
             </div>

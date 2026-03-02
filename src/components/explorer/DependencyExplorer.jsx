@@ -1,4 +1,4 @@
-import { useState, useCallback, useMemo, useEffect, lazy, Suspense, memo } from 'react'
+import { useState, useCallback, useMemo, useEffect, useRef, lazy, Suspense, memo } from 'react'
 import { AnimatePresence, motion } from 'framer-motion'
 import { framework } from '../../data/framework.js'
 import { getDomainFromId, getSubAreaFromId } from '../../data/skillDependencies.js'
@@ -36,6 +36,8 @@ export default memo(function DependencyExplorer({ assessments = {}, initialLevel
   const { isPhone, isTablet } = useResponsive()
   const explorer = useDependencyExplorer(assessments)
   const hint = useContextualHint('hint-explorer')
+  const onPositionChangeRef = useRef(onPositionChange)
+  onPositionChangeRef.current = onPositionChange
 
   // Coach mark guide state (-1 = dismissed, 0-4 = active step)
   const [guideStep, setGuideStep] = useState(
@@ -51,12 +53,12 @@ export default memo(function DependencyExplorer({ assessments = {}, initialLevel
 
   // Sync position to URL for refresh persistence
   useEffect(() => {
-    onPositionChange?.({
+    onPositionChangeRef.current?.({
       l: level > 1 ? level : null,
       d: focusDomainId,
       sa: focusSubAreaId,
     })
-  }, [level, focusDomainId, focusSubAreaId, onPositionChange])
+  }, [level, focusDomainId, focusSubAreaId])
 
   // Navigation history for cross-domain traversal (back button)
   const [navHistory, setNavHistory] = useState([])
