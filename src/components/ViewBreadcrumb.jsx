@@ -1,4 +1,3 @@
-import { useState, useEffect, useCallback } from 'react'
 import { useNavigate } from 'react-router-dom'
 import useResponsive from '../hooks/useResponsive.js'
 
@@ -31,23 +30,9 @@ const VIEW_MAP = {
   pricing: { group: 'Settings', label: 'Pricing' },
 }
 
-export default function ViewBreadcrumb({ activeView, onNavigateHome, mainRef }) {
+export default function ViewBreadcrumb({ activeView, onNavigateHome }) {
   const { isPhone } = useResponsive()
   const navigate = useNavigate()
-  const [scrolled, setScrolled] = useState(false)
-
-  // Track scroll position on the main content area
-  const checkScroll = useCallback(() => {
-    const el = mainRef?.current
-    if (el) setScrolled(el.scrollTop > 120)
-  }, [mainRef])
-
-  useEffect(() => {
-    const el = mainRef?.current
-    if (!el) return
-    el.addEventListener('scroll', checkScroll, { passive: true })
-    return () => el.removeEventListener('scroll', checkScroll)
-  }, [mainRef, checkScroll])
 
   if (isPhone) return null // Phone uses MobileTabBar instead
 
@@ -105,12 +90,10 @@ export default function ViewBreadcrumb({ activeView, onNavigateHome, mainRef }) 
         )}
       </nav>
 
-      {/* Floating back/forward pill — appears when scrolled down */}
-      {scrolled && (
-        <div className="fixed bottom-6 left-4 z-40 flex items-center gap-0.5 bg-white/90 backdrop-blur-sm shadow-lg border border-warm-200 rounded-full px-1 py-0.5">
-          {backForwardButtons('w-4 h-4', 'min-h-[36px] min-w-[36px]')}
-        </div>
-      )}
+      {/* Floating back/forward pill — always visible at bottom-left */}
+      <div className="fixed bottom-6 left-4 z-40 flex items-center gap-0.5 bg-white/80 backdrop-blur-sm shadow-md border border-warm-200 rounded-full px-1 py-0.5 opacity-40 hover:opacity-100 transition-opacity">
+        {backForwardButtons('w-4 h-4', 'min-h-[36px] min-w-[36px]')}
+      </div>
     </>
   )
 }

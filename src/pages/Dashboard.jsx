@@ -748,7 +748,7 @@ export default function Dashboard() {
       {/* Autosave status indicator */}
 
       {/* Breadcrumb */}
-      <ViewBreadcrumb activeView={activeView} onNavigateHome={() => guardedSetActiveView(VIEWS.HOME)} mainRef={mainRef} />
+      <ViewBreadcrumb activeView={activeView} onNavigateHome={() => guardedSetActiveView(VIEWS.HOME)} />
 
       {/* Main content */}
       <div className="flex flex-1 overflow-hidden">
