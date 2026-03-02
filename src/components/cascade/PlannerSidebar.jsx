@@ -6,8 +6,7 @@ import { computeSkillInfluence } from '../../data/skillInfluence.js'
 import { getTeachingPlaybook } from '../../data/teachingPlaybook.js'
 import useResponsive from '../../hooks/useResponsive.js'
 import { DOMAIN_COLORS } from '../../constants/colors.js'
-
-const TIER_LABELS = { 1: 'Reflexive', 2: 'Recognition', 3: 'Management', 4: 'Integration', 5: 'Abstract' }
+import { TIER_LABELS } from '../../constants/tiers.js'
 
 /**
  * PlannerSidebar — Combined what-if + prerequisites + downstream impact.

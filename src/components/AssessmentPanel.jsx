@@ -4,7 +4,8 @@ import { getSkillDescription } from '../data/skillDescriptions.js'
 import { getBehavioralIndicator } from '../data/behavioralIndicators.js'
 import { getTeachingPlaybook } from '../data/teachingPlaybook.js'
 import { getSkillCeiling } from '../data/skillInfluence.js'
-import { SKILL_PREREQUISITES, buildReversePrereqMap } from '../data/skillDependencies.js'
+import { SKILL_PREREQUISITES, buildReversePrereqMap, getSkillTier } from '../data/skillDependencies.js'
+import { TIER_LABELS, TIER_COLORS } from '../constants/tiers.js'
 
 
 // Lazy-cached reverse prerequisite map (skill → skills that depend on it)
@@ -750,6 +751,7 @@ function SkillRater({ skill, level, onRate, showAllDescs, showAllTeaching, asses
   const desc = getSkillDescription(skill.id)
   const indicator = getBehavioralIndicator(skill.id, level)
   const playbook = getTeachingPlaybook(skill.id)
+  const tier = getSkillTier(skill.id)
   const showDesc = showAllDescs || showDescLocal
   const showTeaching = showAllTeaching || showTeachingLocal
 
@@ -775,6 +777,15 @@ function SkillRater({ skill, level, onRate, showAllDescs, showAllTeaching, asses
             <div className="text-sm text-warm-700 leading-snug group-hover:text-warm-900 transition-colors">
               {skill.name}
             </div>
+            {tier && (
+              <span
+                className="text-[9px] font-medium px-1.5 py-0.5 rounded-full shrink-0"
+                style={{ backgroundColor: TIER_COLORS[tier] + '18', color: TIER_COLORS[tier], border: `1px solid ${TIER_COLORS[tier]}33` }}
+                title={`Tier ${tier} — ${TIER_LABELS[tier]}`}
+              >
+                T{tier}
+              </span>
+            )}
             {dependentCount > 0 && (
               <button
                 onClick={() => setShowDependents(!showDependents)}

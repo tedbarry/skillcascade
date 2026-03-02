@@ -1,5 +1,7 @@
 import { useState, useEffect, useMemo, useCallback, useRef } from 'react'
 import { framework, ASSESSMENT_LEVELS, ASSESSMENT_LABELS, ASSESSMENT_COLORS, isAssessed } from '../data/framework.js'
+import { getSkillTier } from '../data/skillDependencies.js'
+import { TIER_LABELS, TIER_COLORS } from '../constants/tiers.js'
 import useFocusTrap from '../hooks/useFocusTrap.js'
 
 /**
@@ -132,6 +134,7 @@ function buildSearchIndex() {
 
         for (const skill of sg.skills) {
           // Individual skill entry
+          const tier = getSkillTier(skill.id)
           index.push({
             id: skill.id,
             name: skill.name,
@@ -141,6 +144,7 @@ function buildSearchIndex() {
             breadcrumb: `${domain.name} > ${sa.name} > ${sg.name}`,
             breadcrumbParts: [domain.name, sa.name, sg.name],
             skillId: skill.id,
+            tier,
           })
         }
       }
@@ -610,6 +614,17 @@ export default function SearchOverlay({ isOpen, onClose, onNavigate, assessments
                           </div>
                         )}
                       </div>
+
+                      {/* Tier badge */}
+                      {item.tier && (
+                        <span
+                          className="text-[9px] px-1.5 py-0.5 rounded-full font-medium shrink-0"
+                          style={{ backgroundColor: TIER_COLORS[item.tier] + '18', color: TIER_COLORS[item.tier] }}
+                          title={`Tier ${item.tier} — ${TIER_LABELS[item.tier]}`}
+                        >
+                          T{item.tier}
+                        </span>
+                      )}
 
                       {/* Assessment label badge */}
                       {status && (

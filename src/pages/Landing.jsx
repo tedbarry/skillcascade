@@ -616,6 +616,7 @@ const FOOTER_LINKS = {
   ],
   Support: [
     { label: 'Contact Us', href: '/contact' },
+    { label: 'Knowledge Base', href: '/kb' },
     { label: 'Getting Started', href: '/dashboard' },
     { label: 'Sign In', href: '/login' },
   ],

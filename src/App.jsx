@@ -16,6 +16,7 @@ const Dashboard = lazy(() => import('./pages/Dashboard.jsx'))
 const Profile = lazy(() => import('./pages/Profile.jsx'))
 const Legal = lazy(() => import('./pages/Legal.jsx'))
 const Contact = lazy(() => import('./pages/Contact.jsx'))
+const KnowledgeBase = lazy(() => import('./pages/KnowledgeBase.jsx'))
 
 function NotFound() {
   return (
@@ -73,6 +74,7 @@ export default function App() {
     const path = location.pathname
     const title = PAGE_TITLES[path]
       || (path.startsWith('/legal/') && 'Legal — SkillCascade')
+      || (path.startsWith('/kb') && 'Knowledge Base — SkillCascade')
       || (path.startsWith('/profile') && 'Profile — SkillCascade')
       || 'SkillCascade'
     document.title = title
@@ -94,6 +96,8 @@ export default function App() {
             <Route path="/reset-password" element={<motion.div {...pageFade}><ResetPassword /></motion.div>} />
             <Route path="/legal/:page" element={<motion.div {...pageFade}><Legal /></motion.div>} />
             <Route path="/contact" element={<motion.div {...pageFade}><Contact /></motion.div>} />
+            <Route path="/kb" element={<motion.div {...pageFade}><KnowledgeBase /></motion.div>} />
+            <Route path="/kb/:slug" element={<motion.div {...pageFade}><KnowledgeBase /></motion.div>} />
             <Route
               path="/dashboard"
               element={

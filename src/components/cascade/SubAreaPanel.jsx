@@ -4,22 +4,7 @@ import { framework } from '../../data/framework.js'
 import useResponsive from '../../hooks/useResponsive.js'
 import useFocusTrap from '../../hooks/useFocusTrap.js'
 import { DOMAIN_COLORS } from '../../constants/colors.js'
-
-const TIER_LABELS = {
-  1: 'Reflexive',
-  2: 'Recognition',
-  3: 'Management',
-  4: 'Integration',
-  5: 'Abstract',
-}
-
-const TIER_COLORS = {
-  1: '#7fb589',
-  2: '#5da87a',
-  3: '#e5b76a',
-  4: '#d4956a',
-  5: '#e07b6e',
-}
+import { TIER_LABELS, TIER_COLORS } from '../../constants/tiers.js'
 
 const STATE_LABELS = {
   0: { label: 'Not assessed', color: '#666' },

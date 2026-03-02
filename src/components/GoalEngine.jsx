@@ -12,7 +12,8 @@ import { getBehavioralIndicator } from '../data/behavioralIndicators.js'
 import { getTeachingPlaybook } from '../data/teachingPlaybook.js'
 import { downloadFile, csvEscape } from '../data/exportUtils.js'
 import { getSkillCeiling, computeSkillInfluence } from '../data/skillInfluence.js'
-import { getSubAreaFromId } from '../data/skillDependencies.js'
+import { getSubAreaFromId, getSkillTier } from '../data/skillDependencies.js'
+import { TIER_LABELS, TIER_COLORS } from '../constants/tiers.js'
 import EmptyState from './EmptyState.jsx'
 import useResponsive from '../hooks/useResponsive.js'
 import useContextualHint from '../hooks/useContextualHint.js'
@@ -333,14 +334,26 @@ function SkillCard({ rec, onNavigateToAssess, isExpanded, onToggle, assessments 
       className="rounded-xl border px-5 py-4 transition-all hover:shadow-md group"
       style={{ borderColor: config.border, backgroundColor: '#fff' }}
     >
-      {/* Top row: breadcrumb + rating */}
+      {/* Top row: breadcrumb + tier + rating */}
       <div className="flex items-start justify-between gap-4 mb-2">
-        <div className="text-[11px] text-warm-400 leading-snug min-w-0">
+        <div className="text-[11px] text-warm-400 leading-snug min-w-0 flex items-center gap-1.5 flex-wrap">
           <span className="font-medium text-warm-500">D{rec.domainNumber}</span>
-          <span className="mx-1.5">{'\u203A'}</span>
+          <span>{'\u203A'}</span>
           <span>{rec.subAreaName}</span>
-          <span className="mx-1.5">{'\u203A'}</span>
+          <span>{'\u203A'}</span>
           <span className="text-warm-300">{rec.skillGroupName}</span>
+          {(() => {
+            const t = getSkillTier(rec.skillId)
+            return t ? (
+              <span
+                className="text-[9px] font-medium px-1.5 py-0.5 rounded-full"
+                style={{ backgroundColor: TIER_COLORS[t] + '18', color: TIER_COLORS[t], border: `1px solid ${TIER_COLORS[t]}33` }}
+                title={`Tier ${t} — ${TIER_LABELS[t]}`}
+              >
+                T{t}
+              </span>
+            ) : null
+          })()}
         </div>
         <RatingBadge level={rec.level} />
       </div>
