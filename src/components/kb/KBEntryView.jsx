@@ -356,37 +356,41 @@ function SkillContent({ skillId, meta }) {
 
 function PrevNextNav({ prevEntry, nextEntry, currentIndex, totalCount }) {
   return (
-    <nav className="mt-8 pt-6 border-t border-warm-200 flex items-center justify-between gap-3">
-      {/* Prev pill */}
-      {prevEntry ? (
-        <Link
-          to={`/kb/${prevEntry.id}`}
-          className="flex items-center gap-1.5 min-h-[44px] px-3 py-2 rounded-full bg-warm-50 border border-warm-200 text-warm-600 hover:bg-sage-50 hover:border-sage-300 hover:text-sage-700 transition-colors text-xs max-w-[45%] group"
-        >
-          <span className="shrink-0 text-warm-400 group-hover:text-sage-500 transition-colors">&larr;</span>
-          <span className="truncate">{prevEntry.title}</span>
-        </Link>
-      ) : (
-        <div />
-      )}
+    <nav className="sticky bottom-0 z-10 bg-white border-t border-warm-200 px-4 py-2 mt-8 -mx-4">
+      <div className="flex items-center gap-2">
+        {/* Prev */}
+        {prevEntry ? (
+          <Link
+            to={`/kb/${prevEntry.id}`}
+            className="flex-1 flex items-center justify-center gap-1 py-2.5 rounded-lg text-sm font-medium min-h-[44px] transition-colors text-warm-600 bg-warm-100 hover:bg-warm-200"
+          >
+            ← Prev
+          </Link>
+        ) : (
+          <span className="flex-1 flex items-center justify-center gap-1 py-2.5 rounded-lg text-sm font-medium min-h-[44px] text-warm-300">
+            ← Prev
+          </span>
+        )}
 
-      {/* Counter */}
-      <span className="text-[10px] text-warm-300 shrink-0 tabular-nums">
-        {currentIndex + 1} / {totalCount}
-      </span>
+        {/* Counter */}
+        <span className="text-[10px] text-warm-400 whitespace-nowrap">
+          {currentIndex + 1}/{totalCount}
+        </span>
 
-      {/* Next pill */}
-      {nextEntry ? (
-        <Link
-          to={`/kb/${nextEntry.id}`}
-          className="flex items-center gap-1.5 min-h-[44px] px-3 py-2 rounded-full bg-warm-50 border border-warm-200 text-warm-600 hover:bg-sage-50 hover:border-sage-300 hover:text-sage-700 transition-colors text-xs max-w-[45%] group"
-        >
-          <span className="truncate text-right">{nextEntry.title}</span>
-          <span className="shrink-0 text-warm-400 group-hover:text-sage-500 transition-colors">&rarr;</span>
-        </Link>
-      ) : (
-        <div />
-      )}
+        {/* Next */}
+        {nextEntry ? (
+          <Link
+            to={`/kb/${nextEntry.id}`}
+            className="flex-1 flex items-center justify-center gap-1 py-2.5 rounded-lg text-sm font-semibold min-h-[44px] transition-colors bg-sage-500 text-white hover:bg-sage-600"
+          >
+            Next →
+          </Link>
+        ) : (
+          <span className="flex-1 flex items-center justify-center gap-1 py-2.5 rounded-lg text-sm font-medium min-h-[44px] text-warm-300">
+            Next →
+          </span>
+        )}
+      </div>
     </nav>
   )
 }
