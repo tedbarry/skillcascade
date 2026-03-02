@@ -1,6 +1,6 @@
 import { useMemo, useEffect } from 'react'
-import { Link } from 'react-router-dom'
-import { getEntryById } from '../../data/knowledgeBase/kbIndex.js'
+import { Link, useNavigate } from 'react-router-dom'
+import { getEntryById, getEntriesByCategory } from '../../data/knowledgeBase/kbIndex.js'
 import { KB_CATEGORIES } from '../../data/knowledgeBase/kbSchema.js'
 import { TIER_LABELS, TIER_COLORS } from '../../constants/tiers.js'
 
@@ -36,6 +36,24 @@ function slugify(text) {
 export default function KBEntryView({ entryId }) {
   const entry = useMemo(() => getEntryById(entryId), [entryId])
 
+  // Compute prev/next entries within the same category
+  const { prevEntry, nextEntry, currentIndex, totalCount } = useMemo(() => {
+    if (!entry) return { prevEntry: null, nextEntry: null, currentIndex: -1, totalCount: 0 }
+    const siblings = getEntriesByCategory(entry.category)
+    const idx = siblings.findIndex(e => e.id === entry.id)
+    return {
+      prevEntry: idx > 0 ? siblings[idx - 1] : null,
+      nextEntry: idx < siblings.length - 1 ? siblings[idx + 1] : null,
+      currentIndex: idx,
+      totalCount: siblings.length,
+    }
+  }, [entry])
+
+  // Scroll to top on entry change
+  useEffect(() => {
+    window.scrollTo({ top: 0, behavior: 'smooth' })
+  }, [entryId])
+
   // Scroll to hash anchor on mount
   useEffect(() => {
     const hash = window.location.hash
@@ -46,6 +64,21 @@ export default function KBEntryView({ entryId }) {
       })
     }
   }, [entryId])
+
+  // Keyboard arrow navigation
+  const navigate = useNavigate()
+  useEffect(() => {
+    function handleKey(e) {
+      if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA') return
+      if (e.key === 'ArrowLeft' && prevEntry) {
+        navigate(`/kb/${prevEntry.id}`)
+      } else if (e.key === 'ArrowRight' && nextEntry) {
+        navigate(`/kb/${nextEntry.id}`)
+      }
+    }
+    window.addEventListener('keydown', handleKey)
+    return () => window.removeEventListener('keydown', handleKey)
+  }, [prevEntry, nextEntry, navigate])
 
   if (!entry) {
     return (
@@ -107,6 +140,16 @@ export default function KBEntryView({ entryId }) {
       {/* Related entries */}
       {entry.relatedIds?.length > 0 && (
         <RelatedEntries ids={entry.relatedIds} />
+      )}
+
+      {/* Prev / Next navigation */}
+      {totalCount > 1 && (
+        <PrevNextNav
+          prevEntry={prevEntry}
+          nextEntry={nextEntry}
+          currentIndex={currentIndex}
+          totalCount={totalCount}
+        />
       )}
     </article>
   )
@@ -308,6 +351,43 @@ function SkillContent({ skillId, meta }) {
         </Section>
       )}
     </div>
+  )
+}
+
+function PrevNextNav({ prevEntry, nextEntry, currentIndex, totalCount }) {
+  return (
+    <nav className="mt-8 pt-6 border-t border-warm-200 flex items-center justify-between gap-3">
+      {/* Prev pill */}
+      {prevEntry ? (
+        <Link
+          to={`/kb/${prevEntry.id}`}
+          className="flex items-center gap-1.5 min-h-[44px] px-3 py-2 rounded-full bg-warm-50 border border-warm-200 text-warm-600 hover:bg-sage-50 hover:border-sage-300 hover:text-sage-700 transition-colors text-xs max-w-[45%] group"
+        >
+          <span className="shrink-0 text-warm-400 group-hover:text-sage-500 transition-colors">&larr;</span>
+          <span className="truncate">{prevEntry.title}</span>
+        </Link>
+      ) : (
+        <div />
+      )}
+
+      {/* Counter */}
+      <span className="text-[10px] text-warm-300 shrink-0 tabular-nums">
+        {currentIndex + 1} / {totalCount}
+      </span>
+
+      {/* Next pill */}
+      {nextEntry ? (
+        <Link
+          to={`/kb/${nextEntry.id}`}
+          className="flex items-center gap-1.5 min-h-[44px] px-3 py-2 rounded-full bg-warm-50 border border-warm-200 text-warm-600 hover:bg-sage-50 hover:border-sage-300 hover:text-sage-700 transition-colors text-xs max-w-[45%] group"
+        >
+          <span className="truncate text-right">{nextEntry.title}</span>
+          <span className="shrink-0 text-warm-400 group-hover:text-sage-500 transition-colors">&rarr;</span>
+        </Link>
+      ) : (
+        <div />
+      )}
+    </nav>
   )
 }
 
