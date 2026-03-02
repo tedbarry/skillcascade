@@ -145,15 +145,22 @@ export default function AssessmentPanel({ assessments, onAssess, initialSubAreaI
     if (idx >= 0) {
       setCurrentIndex(idx)
       setHighlightedSkillId(skillId)
-      // After React renders the new sub-area, scroll container to the target skill
-      setTimeout(() => {
+      // Poll for the element (may not exist yet if sub-area is changing)
+      let attempts = 0
+      const tryScroll = () => {
         const el = document.getElementById(`skill-${skillId}`)
         const container = contentRef.current
         if (el && container) {
-          const elTop = el.offsetTop - container.offsetTop
-          container.scrollTo({ top: Math.max(0, elTop - 40), behavior: 'smooth' })
+          const elRect = el.getBoundingClientRect()
+          const containerRect = container.getBoundingClientRect()
+          const scrollTarget = elRect.top - containerRect.top + container.scrollTop - 40
+          container.scrollTo({ top: Math.max(0, scrollTarget), behavior: 'smooth' })
+        } else if (attempts < 10) {
+          attempts++
+          requestAnimationFrame(tryScroll)
         }
-      }, 150)
+      }
+      requestAnimationFrame(tryScroll)
       // Clear highlight after 2.5s
       setTimeout(() => setHighlightedSkillId(null), 2500)
     }
