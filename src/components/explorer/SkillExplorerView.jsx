@@ -234,9 +234,9 @@ export default memo(function SkillExplorerView({
     const prereqBtn = (
       <button
         onClick={handlePrereqClick}
-        className="inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded border border-blue-500/50 bg-blue-900/40 text-blue-300 font-semibold not-italic no-underline hover:bg-blue-800/50 hover:border-blue-400 transition-colors cursor-pointer"
+        style={{ display: 'inline', padding: '1px 6px', borderRadius: '4px', border: '1px solid rgba(96,165,250,0.5)', backgroundColor: 'rgba(30,58,138,0.4)', color: '#93c5fd', fontWeight: 600, fontStyle: 'normal', textDecoration: 'none', cursor: 'pointer' }}
       >
-        {prereqName}
+        {prereqName} →
       </button>
     )
     const skillName = framework.flatMap(d => d.subAreas.flatMap(sa => sa.skillGroups.flatMap(sg => sg.skills))).find(s => s.id === nodeId)?.name || nodeId

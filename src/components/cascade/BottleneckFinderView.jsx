@@ -158,14 +158,14 @@ export default memo(function BottleneckFinderView({
               const prereqName = framework.flatMap(d => d.subAreas.flatMap(sa => sa.skillGroups.flatMap(sg => sg.skills))).find(s => s.id === top.id)?.name || top.id
               const prereqLabel = top.level != null ? ASSESSMENT_LABELS[top.level] : 'Not Assessed'
               const ceilingLabel = ASSESSMENT_LABELS[ceilingData.ceiling] || `${ceilingData.ceiling}`
-              const prereqBtn = onNavigateToAssess ? (
+              const prereqBtn = (
                 <button
-                  onClick={() => onNavigateToAssess(getSubAreaFromId(top.id))}
-                  className="inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded border border-blue-500/50 bg-blue-900/40 text-blue-300 font-semibold not-italic no-underline hover:bg-blue-800/50 hover:border-blue-400 transition-colors cursor-pointer"
+                  onClick={() => onNavigateToAssess?.(getSubAreaFromId(top.id))}
+                  style={{ display: 'inline', padding: '1px 6px', borderRadius: '4px', border: '1px solid rgba(96,165,250,0.5)', backgroundColor: 'rgba(30,58,138,0.4)', color: '#93c5fd', fontWeight: 600, fontStyle: 'normal', textDecoration: 'none', cursor: 'pointer' }}
                 >
-                  {prereqName}
+                  {prereqName} →
                 </button>
-              ) : <span className="font-medium">{prereqName}</span>
+              )
 
               if (skillLevel > ceilingData.ceiling) {
                 ceilingJsx = (

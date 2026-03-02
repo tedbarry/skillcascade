@@ -799,14 +799,12 @@ function SkillRater({ skill, level, onRate, showAllDescs, showAllTeaching, asses
                 return (
                   <span key={p.id}>
                     {i > 0 && ', '}
-                    {onNavigateToSkill ? (
-                      <button
-                        onClick={() => onNavigateToSkill(p.id)}
-                        className="inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded border border-blue-300 bg-blue-100 text-blue-800 font-semibold not-italic no-underline hover:bg-blue-200 hover:border-blue-400 transition-colors cursor-pointer"
-                      >
-                        {name || p.id}
-                      </button>
-                    ) : (name || p.id)}
+                    <button
+                      onClick={() => onNavigateToSkill?.(p.id)}
+                      style={{ display: 'inline', padding: '1px 6px', borderRadius: '4px', border: '1px solid #93c5fd', backgroundColor: '#dbeafe', color: '#1e40af', fontWeight: 600, fontStyle: 'normal', textDecoration: 'none', cursor: 'pointer', fontSize: '11px' }}
+                    >
+                      {name || p.id} →
+                    </button>
                   </span>
                 )
               })
@@ -824,14 +822,14 @@ function SkillRater({ skill, level, onRate, showAllDescs, showAllTeaching, asses
             const ceilingLabel = ASSESSMENT_LABELS[ceilingInfo.ceiling] || `${ceilingInfo.ceiling}`
             const skillName = skill.name
 
-            const prereqBtn = onNavigateToSkill ? (
+            const prereqBtn = (
               <button
-                onClick={() => onNavigateToSkill(top.id)}
-                className="inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded border border-blue-300 bg-blue-100 text-blue-800 font-semibold not-italic no-underline hover:bg-blue-200 hover:border-blue-400 transition-colors cursor-pointer"
+                onClick={() => onNavigateToSkill?.(top.id)}
+                style={{ display: 'inline', padding: '1px 6px', borderRadius: '4px', border: '1px solid #93c5fd', backgroundColor: '#dbeafe', color: '#1e40af', fontWeight: 600, fontStyle: 'normal', textDecoration: 'none', cursor: 'pointer', fontSize: '11px' }}
               >
-                {prereqName}
+                {prereqName} →
               </button>
-            ) : <span className="font-medium">{prereqName}</span>
+            )
 
             if (level != null && level > ceilingInfo.ceiling) {
               return (
