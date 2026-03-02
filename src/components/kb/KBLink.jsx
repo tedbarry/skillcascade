@@ -5,10 +5,11 @@ import { Link } from 'react-router-dom'
  * Usage: <KBLink term="ceiling-model">Ceiling Model</KBLink>
  * Or:    <KBLink term="ceiling-model" /> (auto-generates label from slug)
  */
-export default function KBLink({ term, children, className = '' }) {
+export default function KBLink({ term, children, className = '', section }) {
+  const hash = section ? `#${section}` : ''
   return (
     <Link
-      to={`/kb/${term}`}
+      to={`/kb/${term}${hash}`}
       className={`text-sage-600 hover:text-sage-700 underline decoration-sage-300 hover:decoration-sage-500 transition-colors ${className}`}
       target="_blank"
       rel="noopener"

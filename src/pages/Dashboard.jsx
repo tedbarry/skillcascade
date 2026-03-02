@@ -24,6 +24,7 @@ import NotificationBell from '../components/NotificationBell.jsx'
 import UnsavedChangesDialog from '../components/UnsavedChangesDialog.jsx'
 import useContextualHint from '../hooks/useContextualHint.js'
 import ContextualHint from '../components/ContextualHint.jsx'
+import KBLink from '../components/kb/KBLink.jsx'
 
 // Lazy-loaded view components — each gets its own chunk, loaded on-demand
 const HomeDashboard = lazy(() => import('../components/HomeDashboard.jsx'))
@@ -843,7 +844,7 @@ export default function Dashboard() {
                   Skills Profile — Sunburst View
                 </h2>
                 <ContextualHint show={sunburstHint.show} onDismiss={sunburstHint.dismiss} className="mb-4">
-                  The center ring shows domains, middle ring shows sub-areas, and outer ring shows individual skills. Click any segment to drill down.
+                  The center ring shows domains, middle ring shows sub-areas, and outer ring shows individual skills. Click any segment to drill down. <KBLink term="view-sunburst" className="text-[#7fb589]">Learn more</KBLink>
                 </ContextualHint>
                 <p className="text-sm text-warm-500 mb-4">Click any segment to zoom in. Click center to zoom out.</p>
                 <ResponsiveSVG aspectRatio={1} maxWidth={700}>

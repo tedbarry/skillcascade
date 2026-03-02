@@ -4,6 +4,7 @@ import SubAreaPanel from './SubAreaPanel.jsx'
 import useCascadeGraph from '../../hooks/useCascadeGraph.js'
 import { computeConstrainedSkills } from '../../data/skillInfluence.js'
 import useResponsive from '../../hooks/useResponsive.js'
+import KBHelpIcon from '../kb/KBHelpIcon.jsx'
 
 /**
  * StatusMapView — "Where are we?"
@@ -59,7 +60,7 @@ export default memo(function StatusMapView({
         {/* Summary header */}
         <div className={`${isPhone ? 'px-4 py-3' : 'px-6 py-4'} border-b border-[#333]/40`}>
           <h2 className="text-xs font-mono tracking-widest text-gray-500 uppercase mb-1">
-            Status Overview
+            Status Overview <KBHelpIcon term="concept-health-states" />
           </h2>
           {hasData ? (
             <p className="text-xs text-gray-400">

@@ -8,6 +8,7 @@ import { generateSkillNarrative } from '../../lib/narratives.js'
 import useResponsive from '../../hooks/useResponsive.js'
 import ExplorerTooltip from './ExplorerTooltip.jsx'
 import { DOMAIN_COLORS } from '../../constants/colors.js'
+import KBHelpIcon from '../kb/KBHelpIcon.jsx'
 import { ASSESSMENT_COLORS, ASSESSMENT_LABELS, isAssessed } from '../../data/framework.js'
 
 function getStatusColor(level) {
@@ -334,7 +335,7 @@ export default memo(function SkillExplorerView({
         {tierKeys.map(tier => (
           <div key={tier} className="mb-4">
             <div className="text-[10px] font-semibold text-gray-500 uppercase tracking-wider mb-1.5">
-              Tier {tier}
+              Tier {tier} {tier === tierKeys[0] && <KBHelpIcon term="concept-skill-tiers" />}
             </div>
             <div className="space-y-1.5">
               {tiers[tier].map(node => (

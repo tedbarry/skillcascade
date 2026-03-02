@@ -9,6 +9,7 @@ import { getBehavioralIndicator } from '../data/behavioralIndicators.js'
 import { escapeHTML } from '../lib/escapeHTML.js'
 import useContextualHint from '../hooks/useContextualHint.js'
 import ContextualHint from './ContextualHint.jsx'
+import KBLink from './kb/KBLink.jsx'
 
 const REPORT_TYPES = {
   SCHOOL: 'school',
@@ -853,7 +854,7 @@ export default function ReportGenerator({ assessments, clientName, snapshots, on
     <div className="max-w-4xl mx-auto px-4 py-6 sm:px-6">
       {/* Contextual hint */}
       <ContextualHint show={hint.show} onDismiss={hint.dismiss} className="mb-4">
-        Generate insurance-ready clinical reports, parent-friendly summaries, and progress reports. Reports pull directly from your assessment data and cascade analysis.
+        Generate insurance-ready clinical reports, parent-friendly summaries, and progress reports. Reports pull directly from your assessment data and cascade analysis. <KBLink term="view-reports" className="text-[#7fb589]">Learn more</KBLink>
       </ContextualHint>
 
       <div className="mb-6">

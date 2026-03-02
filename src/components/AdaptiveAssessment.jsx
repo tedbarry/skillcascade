@@ -5,6 +5,7 @@ import { getStartHerePriority, getCeilingCoverage, getSkillCeiling, computeSkill
 import useResponsive from '../hooks/useResponsive.js'
 import useContextualHint from '../hooks/useContextualHint.js'
 import ContextualHint from './ContextualHint.jsx'
+import KBLink from './kb/KBLink.jsx'
 
 /**
  * AdaptiveAssessment — "Start Here" cascade-aware initial assessment
@@ -280,7 +281,7 @@ export default function AdaptiveAssessment({ assessments, onAssess, onComplete }
 
       {/* Contextual hint */}
       <ContextualHint show={hint.show} onDismiss={hint.dismiss} className="mb-4 mx-3 sm:mx-4 mt-3">
-        Skills are ordered by developmental influence — each one sets ceilings for skills above it. Even 15-20 ratings gives useful cascade coverage across all 9 domains.
+        Skills are ordered by developmental influence — each one sets ceilings for skills above it. Even 15-20 ratings gives useful cascade coverage across all 9 domains. <KBLink term="view-start-here" className="text-[#7fb589]">Learn more</KBLink>
       </ContextualHint>
 
       {/* Skill Cards */}

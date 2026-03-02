@@ -80,6 +80,22 @@ Go to Goals to see prioritized skill targets with operational definitions, teach
 - 2 / Developing (gold) — The skill is present and growing. The learner demonstrates it in multiple contexts with moderate independence.
 - 3 / Solid (green) — The skill is mastered. The learner demonstrates it consistently across contexts with minimal or no support.
 
+## Level 0 — Not Present
+
+You've assessed the skill and confirmed it is absent (burgundy color, score 0). The learner does not demonstrate this behavior in any context. This IS included in health calculations and averages as 0/3.
+
+## Level 1 — Needs Work
+
+The skill is emerging but inconsistent (coral, score 1). The learner shows the behavior sometimes, in limited contexts, or with significant prompting. Formal instruction is needed.
+
+## Level 2 — Developing
+
+The skill is present and growing (gold, score 2). The learner demonstrates it in multiple contexts with moderate independence. Some support or prompting may still be needed.
+
+## Level 3 — Solid
+
+The skill is mastered (green, score 3). The learner demonstrates it consistently across contexts with minimal or no support. This is the target for most treatment goals.
+
 ## Important: Not Assessed vs Not Present
 
 This is the most common source of confusion. "Not Assessed" means you haven't looked at the skill yet — it's invisible to the system. "Not Present" (0) means you assessed it and the learner genuinely doesn't have it. The distinction matters because Not Present skills are included in health calculations and averages.

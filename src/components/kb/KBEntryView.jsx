@@ -1,4 +1,4 @@
-import { useMemo } from 'react'
+import { useMemo, useEffect } from 'react'
 import { Link } from 'react-router-dom'
 import { getEntryById } from '../../data/knowledgeBase/kbIndex.js'
 import { KB_CATEGORIES } from '../../data/knowledgeBase/kbSchema.js'
@@ -29,8 +29,23 @@ function findSkillInFramework(skillId) {
   return null
 }
 
+function slugify(text) {
+  return text.toLowerCase().replace(/[^a-z0-9\s-]/g, '').replace(/\s+/g, '-').replace(/-+/g, '-').trim()
+}
+
 export default function KBEntryView({ entryId }) {
   const entry = useMemo(() => getEntryById(entryId), [entryId])
+
+  // Scroll to hash anchor on mount
+  useEffect(() => {
+    const hash = window.location.hash
+    if (hash) {
+      requestAnimationFrame(() => {
+        const el = document.getElementById(hash.slice(1))
+        if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' })
+      })
+    }
+  }, [entryId])
 
   if (!entry) {
     return (
@@ -112,10 +127,12 @@ function ManualContent({ body }) {
 
         // Headers (lines starting with ##)
         if (trimmed.startsWith('## ')) {
-          return <h2 key={i} className="text-base font-semibold text-warm-800 mt-6 mb-2">{trimmed.slice(3)}</h2>
+          const text = trimmed.slice(3)
+          return <h2 key={i} id={slugify(text)} className="text-base font-semibold text-warm-800 mt-6 mb-2">{text}</h2>
         }
         if (trimmed.startsWith('### ')) {
-          return <h3 key={i} className="text-sm font-semibold text-warm-700 mt-4 mb-1">{trimmed.slice(4)}</h3>
+          const text = trimmed.slice(4)
+          return <h3 key={i} id={slugify(text)} className="text-sm font-semibold text-warm-700 mt-4 mb-1">{text}</h3>
         }
 
         // Bullet lists (lines starting with -)

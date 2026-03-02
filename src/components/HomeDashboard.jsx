@@ -3,6 +3,7 @@ import { motion, AnimatePresence } from 'framer-motion'
 import useResponsive from '../hooks/useResponsive.js'
 import useContextualHint from '../hooks/useContextualHint.js'
 import ContextualHint from './ContextualHint.jsx'
+import KBLink from './kb/KBLink.jsx'
 import GettingStartedChecklist from './GettingStartedChecklist.jsx'
 import { framework, ASSESSMENT_LEVELS, isAssessed } from '../data/framework.js'
 import { computeDomainHealth, detectCascadeRisks, computeImpactRanking } from '../data/cascadeModel.js'
@@ -345,7 +346,7 @@ export default function HomeDashboard({ assessments = {}, snapshots = [], client
       {/* First-visit contextual hint */}
       {isSampleMode && (
         <ContextualHint show={homeHint.show} onDismiss={homeHint.dismiss} className="mb-4">
-          This is sample data showing a realistic learner profile. Every view, chart, and analysis is fully interactive. Create a client when you're ready to start your own assessments.
+          This is sample data showing a realistic learner profile. Every view, chart, and analysis is fully interactive. Create a client when you're ready to start your own assessments. <KBLink term="guide-quick-start" className="text-[#7fb589]">Learn more</KBLink>
         </ContextualHint>
       )}
 

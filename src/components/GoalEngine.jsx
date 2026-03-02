@@ -18,6 +18,8 @@ import EmptyState from './EmptyState.jsx'
 import useResponsive from '../hooks/useResponsive.js'
 import useContextualHint from '../hooks/useContextualHint.js'
 import ContextualHint from './ContextualHint.jsx'
+import KBHelpIcon from './kb/KBHelpIcon.jsx'
+import KBLink from './kb/KBLink.jsx'
 
 /* ─────────────────────────────────────────────
    Constants
@@ -538,14 +540,14 @@ function SkillCard({ rec, onNavigateToAssess, isExpanded, onToggle, assessments 
           {/* Ceiling info — show when this skill caps downstream */}
           {rec.capsDownstream > 0 && (
             <span className="text-[10px] text-purple-400 whitespace-nowrap shrink-0">
-              Caps {rec.capsDownstream} skill{rec.capsDownstream !== 1 ? 's' : ''}
+              Caps {rec.capsDownstream} skill{rec.capsDownstream !== 1 ? 's' : ''} <KBHelpIcon term="concept-ceiling-model" section="ceiling-constraints-in-practice" />
             </span>
           )}
 
           {/* Downstream count — show for all priorities with downstream impact */}
           {rec.downstreamSkills > 0 && !rec.capsDownstream && (
             <span className="text-[10px] text-warm-400 whitespace-nowrap shrink-0">
-              Unlocks {rec.downstreamSkills} skill{rec.downstreamSkills !== 1 ? 's' : ''}
+              Unlocks {rec.downstreamSkills} skill{rec.downstreamSkills !== 1 ? 's' : ''} <KBHelpIcon term="concept-cascade-effects" />
             </span>
           )}
         </div>
@@ -774,7 +776,7 @@ export default function GoalEngine({ assessments = {}, onNavigateToAssess, focus
       <div className="max-w-4xl mx-auto px-4 py-6 sm:px-6">
         {/* Contextual hint */}
         <ContextualHint show={hint.show} onDismiss={hint.dismiss} className="mb-4">
-          Goals are auto-prioritized by ceiling impact — foundation skills that cap the most developmental surface come first. Each goal shows exactly which skills depend on it.
+          Goals are auto-prioritized by ceiling impact — foundation skills that cap the most developmental surface come first. Each goal shows exactly which skills depend on it. <KBLink term="view-goals" className="text-[#7fb589]">Learn more</KBLink>
         </ContextualHint>
 
         {/* Page header */}

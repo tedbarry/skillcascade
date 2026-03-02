@@ -8,6 +8,7 @@ import useResponsive from '../../hooks/useResponsive.js'
 import { framework } from '../../data/framework.js'
 import { computeDomainHealth, findSkillBottlenecks } from '../../data/cascadeModel.js'
 import { getTeachingPlaybook } from '../../data/teachingPlaybook.js'
+import KBHelpIcon from '../kb/KBHelpIcon.jsx'
 
 const RISK_BORDER_COLORS = {
   inversion: '#e8928a',
@@ -143,7 +144,7 @@ export default memo(function RiskMonitorView({
         {/* Summary header */}
         <div className={`${isPhone ? 'px-3 py-2' : 'px-5 py-3'} border-b border-[#333]/40`}>
           <h2 className="text-[10px] font-mono tracking-widest text-gray-600 uppercase">
-            Risk Monitor
+            Risk Monitor <KBHelpIcon term="concept-risk-types" />
           </h2>
           <p className={`text-xs mt-0.5 ${cascadeRisks.length > 0 ? 'text-orange-300' : 'text-green-400'}`}>
             {summaryText}
@@ -204,7 +205,7 @@ export default memo(function RiskMonitorView({
         {learningBarriers.length > 0 && (
           <div className={`${isPhone ? 'px-3 pt-2' : 'px-5 pt-3'} space-y-2`}>
             <div className="flex items-center gap-2 mb-1">
-              <span className="text-[9px] font-mono tracking-widest text-gray-600 uppercase">Learning Barriers</span>
+              <span className="text-[9px] font-mono tracking-widest text-gray-600 uppercase">Learning Barriers</span> <KBHelpIcon term="concept-risk-types" section="learning-barriers" />
               <span className="text-[9px] text-gray-600 bg-[#2a2a33] px-1.5 py-0.5 rounded">{learningBarriers.length}</span>
             </div>
             {learningBarriers.slice(0, 5).map((barrier, i) => {
@@ -238,7 +239,7 @@ export default memo(function RiskMonitorView({
         {constrainedSkills && constrainedSkills.length > 0 && (
           <div className={`${isPhone ? 'px-3 pt-2' : 'px-5 pt-3'} space-y-2`}>
             <div className="flex items-center gap-2 mb-1">
-              <span className="text-[9px] font-mono tracking-widest text-gray-600 uppercase">Ceiling Constraints</span>
+              <span className="text-[9px] font-mono tracking-widest text-gray-600 uppercase">Ceiling Constraints</span> <KBHelpIcon term="concept-ceiling-model" section="ceiling-constraints-in-practice" />
               <span className="text-[9px] text-gray-600 bg-[#2a2a33] px-1.5 py-0.5 rounded">{constrainedSkills.length}</span>
             </div>
             {constrainedSkills.slice(0, 4).map((cs, i) => {

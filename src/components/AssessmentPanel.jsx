@@ -16,6 +16,7 @@ function getReversePrereqs() {
 }
 import useResponsive from '../hooks/useResponsive.js'
 import { safeGetItem, safeSetItem } from '../lib/safeStorage.js'
+import KBHelpIcon from './kb/KBHelpIcon.jsx'
 
 /**
  * Flattened list of all sub-areas with their parent domain for sequential navigation
@@ -884,7 +885,7 @@ function SkillRater({ skill, level, onRate, showAllDescs, showAllTeaching, asses
       {/* Prerequisite readiness banner */}
       {hasUnmetPrereqs && (
         <div className="mt-1.5 px-2.5 py-1.5 rounded-md text-[11px] leading-relaxed bg-amber-50 border-l-3 border-amber-400" style={{ borderLeft: '3px solid #d97706' }}>
-          <span className="font-medium text-amber-700">Prerequisite Check</span>
+          <span className="font-medium text-amber-700">Prerequisite Check <KBHelpIcon term="concept-ceiling-model" /></span>
           <span className="text-amber-600">
             {' — '}
             {ceilingInfo.constrainingPrereqs

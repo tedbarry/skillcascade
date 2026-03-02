@@ -5,14 +5,15 @@ import { Link } from 'react-router-dom'
  * Sits inline next to clinical terms and jargon.
  * Usage: <KBHelpIcon term="bottleneck-detection" />
  */
-export default function KBHelpIcon({ term, label }) {
+export default function KBHelpIcon({ term, label, section }) {
+  const hash = section ? `#${section}` : ''
   const title = label || `Learn more about ${term.replace(/-/g, ' ')}`
   return (
     <Link
-      to={`/kb/${term}`}
+      to={`/kb/${term}${hash}`}
       target="_blank"
       rel="noopener"
-      className="inline-flex items-center justify-center w-4 h-4 ml-0.5 text-[9px] font-bold text-sage-500 bg-sage-50 border border-sage-200 rounded-full hover:bg-sage-100 hover:text-sage-700 transition-colors cursor-help align-middle"
+      className="inline-flex items-center justify-center w-4 h-4 ml-0.5 text-[9px] font-bold text-sage-500 bg-sage-50 border border-sage-200 rounded-full hover:bg-sage-100 hover:text-sage-700 transition-colors cursor-help align-middle relative after:absolute after:inset-[-14px] after:content-['']"
       title={title}
       aria-label={title}
     >

@@ -8,6 +8,8 @@ import { detectCascadeRisks } from '../data/cascadeModel.js'
 import CascadeViewTabs from './cascade/CascadeViewTabs.jsx'
 import useContextualHint from '../hooks/useContextualHint.js'
 import ContextualHint from './ContextualHint.jsx'
+import KBHelpIcon from './kb/KBHelpIcon.jsx'
+import KBLink from './kb/KBLink.jsx'
 
 const StatusMapView = lazy(() => import('./cascade/StatusMapView.jsx'))
 const BottleneckFinderView = lazy(() => import('./cascade/BottleneckFinderView.jsx'))
@@ -315,7 +317,7 @@ function DomainDetail({ domainId, insight, isPhone, onAssess, onGoal, onShowPath
         <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-[10px] mb-2">
           {insight.leverageScore > 0 && (
             <span className="text-gray-500">
-              Leverage: <span className="text-gray-300 font-medium">{insight.leverageScore.toFixed(1)}</span>
+              Leverage: <span className="text-gray-300 font-medium">{insight.leverageScore.toFixed(1)}</span> <KBHelpIcon term="concept-leverage-scoring" />
             </span>
           )}
           {insight.downstreamDomains > 0 && (
@@ -578,7 +580,7 @@ export default memo(function ClinicalIntelligence({
     <div className="flex flex-col flex-1 min-h-0 overflow-hidden">
       {/* Contextual hint */}
       <ContextualHint show={hint.show} onDismiss={hint.dismiss} className="mb-0 mx-3 sm:mx-5 mt-3">
-        Five specialized views analyze your assessment data for bottlenecks, risks, and intervention targets. Use 'Tell me what to do' for directive guidance or 'Show me why' for deeper exploration.
+        Five specialized views analyze your assessment data for bottlenecks, risks, and intervention targets. Use 'Tell me what to do' for directive guidance or 'Show me why' for deeper exploration. <KBLink term="view-intelligence" className="text-[#7fb589]">Learn more</KBLink>
       </ContextualHint>
 
       {/* Headline banner — always visible */}

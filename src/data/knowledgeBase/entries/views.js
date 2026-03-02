@@ -437,4 +437,331 @@ The Parent View is designed with sensitivity in mind — emphasizing growth and 
     viewLink: 'parent',
     source: 'manual',
   },
+  {
+    id: 'view-ai-assistant',
+    title: 'AI Assistant',
+    category: 'views',
+    tags: ['ai', 'assistant', 'chat', 'brain', 'clinical questions', 'guidance', 'personalized', 'panel'],
+    summary: 'An AI-powered clinical assistant that answers questions using your client\'s assessment data and the knowledge base.',
+    body: `The AI Assistant is accessed via the brain icon in the toolbar. It opens a side panel where you can ask clinical questions and receive answers grounded in your client's actual assessment data.
+
+## How it works
+
+The assistant combines your client's current assessment scores, snapshot history, and the SkillCascade knowledge base to provide personalized clinical guidance. It does not use generic responses — every answer is contextualized to the learner's developmental profile.
+
+## What you can ask
+
+- "What should I target next for this client?" — Uses the ceiling model and leverage scoring to recommend high-impact goals.
+- "Why is Domain 3 behind?" — Analyzes upstream dependencies and bottleneck patterns to explain developmental gaps.
+- "How do I teach joint attention?" — Pulls teaching strategies, barriers, and measurement tips from the Teaching Playbook.
+- "Summarize this client's progress" — Generates a narrative overview based on snapshots and current scores.
+
+## Context awareness
+
+The AI panel automatically includes your current view context. If you are looking at the Bottleneck Finder and ask a question, the assistant knows which domain you are focused on and tailors its response accordingly.
+
+## Privacy
+
+All AI queries are routed through a server-side proxy (Supabase Edge Function). Your API key is never exposed to the browser. Requests are rate-limited to 10 per minute with a 4,000-token cap per response.
+
+## Tips
+
+- Be specific: "Which Tier 2 skills in D1 should I prioritize?" gets better results than "What should I do?"
+- Use follow-up questions to drill deeper into a recommendation
+- The assistant respects the same assessment scale and terminology used throughout SkillCascade`,
+    relatedIds: ['guide-ai-features', 'concept-teaching-playbook', 'view-intelligence'],
+    source: 'manual',
+  },
+  {
+    id: 'view-progress-story',
+    title: 'Progress Story',
+    category: 'views',
+    tags: ['progress', 'story', 'narrative', 'journey', 'bars', 'light theme', 'over time'],
+    summary: 'A narrative view within Intelligence that tells the story of a client\'s developmental journey using vertical bars and plain-language summaries.',
+    body: `The Progress Story is the sixth tab inside Clinical Intelligence. It presents developmental progress as a visual narrative rather than raw numbers, making it ideal for team meetings, supervision, and parent conversations.
+
+## Visual layout
+
+Domain progress is displayed as vertical bar charts with a light, clean theme. Each bar represents a domain's health score, and bars are grouped by snapshot date so you can see the trajectory at a glance. The light color palette distinguishes it from the darker analytical views.
+
+## Narrative summaries
+
+Below the chart, template-based narratives describe the client's journey in plain language. These summaries highlight:
+- Which domains have improved the most since the first snapshot
+- Where progress has stalled or reversed
+- Key turning points where intervention appeared to take effect
+
+## When to use it
+
+Progress Story is best suited for non-technical audiences and longitudinal reviews. Use it when you need to communicate progress without overwhelming the listener with coupling strengths and cascade metrics. It answers the question "How is this learner doing over time?" in the most accessible way.
+
+## Requirements
+
+Like the Timeline view, Progress Story requires at least two saved snapshots. The more snapshots you have, the richer the narrative becomes. Saving snapshots monthly is recommended for meaningful stories.
+
+## Relationship to other views
+
+Progress Story complements the Risk Monitor (which flags problems) and the Timeline (which shows raw trend lines). Together, these three views give a complete picture of developmental change over time.`,
+    relatedIds: ['view-intelligence', 'view-timeline', 'view-risk-monitor', 'guide-snapshots'],
+    viewLink: 'cascade',
+    source: 'manual',
+  },
+  {
+    id: 'view-home-dashboard',
+    title: 'Home Dashboard',
+    category: 'views',
+    tags: ['home', 'dashboard', 'landing', 'overview', 'quick actions', 'checklist', 'sample data'],
+    summary: 'The landing page after login — shows domain health, quick actions, a getting-started checklist, and sample data mode.',
+    body: `The Home Dashboard is the first view you see after logging in. It provides a high-level summary of the current client's developmental profile and quick access to common actions.
+
+## Domain health summary
+
+A grid of domain cards shows each domain's average score and health state (Healthy, At Risk, or Critical). This gives you an instant read on how the learner is doing without navigating to a specialized view.
+
+## Quick actions
+
+Buttons for the most common workflows are displayed prominently:
+- Start an assessment (links to Start Here or Full Assessment)
+- View clinical intelligence
+- Generate a report
+- Save a snapshot
+
+## Getting Started checklist
+
+New users see a 5-step onboarding checklist that tracks progress through initial milestones: explore the views, create a client, rate 10 skills, view a report, and save a snapshot. Each milestone is checked off automatically as you complete it. The checklist disappears once all steps are done.
+
+## Sample data mode
+
+Before you create your first client, the dashboard loads sample assessment data so you can explore every view and feature without entering real ratings. Sample data is deterministic (D5 and D6 have roughly 40% gaps) and includes three sample snapshots with a D4 regression scenario. A banner reminds you that you are viewing sample data.
+
+## Contextual hints
+
+The dashboard includes a contextual hint (dismissible tooltip) explaining what you are seeing. This is part of the broader contextual hint system that appears across all major views on first visit.`,
+    relatedIds: ['guide-quick-start', 'guide-dashboard', 'view-caseload', 'guide-assessment-scale'],
+    viewLink: 'home',
+    source: 'manual',
+  },
+  {
+    id: 'view-milestones',
+    title: 'Milestones & Celebrations',
+    category: 'views',
+    tags: ['milestones', 'celebrations', 'achievements', 'mastery', 'progress', 'motivation', 'badges'],
+    summary: 'Tracks developmental milestones and celebrates progress — first mastered skills, domain completions, and assessment achievements.',
+    body: `Milestones & Celebrations tracks meaningful moments in a client's developmental journey and presents them as achievements. It helps clinicians and families recognize progress beyond just numbers.
+
+## Types of milestones
+
+- **First mastered skill**: Triggered when a skill is rated Solid (3) for the first time.
+- **Domain completion**: Triggered when all skills in a domain reach Developing (2) or above.
+- **Assessment milestones**: Reached when a certain percentage of the framework has been assessed (25%, 50%, 75%, 100%).
+- **Progress milestones**: Recognized when a domain moves from Critical to At Risk, or from At Risk to Healthy.
+- **Streak milestones**: Acknowledged when consecutive assessment sessions show improvement.
+
+## Celebration display
+
+Each milestone appears as a card with the milestone type, the skill or domain involved, and the date it was achieved. New milestones are highlighted with an animation when first detected.
+
+## Sharing milestones
+
+Use the "Copy as text" button to copy milestone summaries to your clipboard. This is useful for pasting into progress notes, parent communication emails, or team messages. The text format is clean and professional — no emojis or casual language.
+
+## Clinical purpose
+
+Milestones are not just motivational. They serve as natural anchors for progress reports and treatment reviews. When preparing a quarterly summary, the milestones list shows exactly when key breakthroughs occurred, making it easy to correlate progress with intervention changes.
+
+## Data source
+
+Milestones are derived from assessment ratings and snapshot comparisons. No manual entry is needed — the system detects them automatically each time you update ratings or load a client.`,
+    relatedIds: ['view-timeline', 'view-reports', 'guide-snapshots', 'view-parent-view'],
+    viewLink: 'milestones',
+    source: 'manual',
+  },
+  {
+    id: 'view-org-analytics',
+    title: 'Organization Analytics',
+    category: 'views',
+    tags: ['organization', 'analytics', 'aggregate', 'caseload', 'trends', 'team', 'professional'],
+    summary: 'Aggregate analytics across all clients in your organization — caseload trends, domain distributions, and team performance.',
+    body: `Organization Analytics provides a bird's-eye view of developmental data across your entire caseload. It is available on the Professional plan and above.
+
+## Caseload overview
+
+The top section shows aggregate statistics: total clients, average assessment completion, and the distribution of clients by overall health state (Healthy, At Risk, Critical). This helps supervisors quickly gauge how the caseload is doing as a whole.
+
+## Domain distributions
+
+A series of charts show how domain scores are distributed across all clients. For each domain, you can see the percentage of clients in each health state. This reveals organization-wide patterns — for example, if D1 (Attending) is consistently low across clients, it may indicate a systemic gap in programming.
+
+## Trend analysis
+
+Weekly trend charts show how aggregate domain scores have changed over time. These trends are bucketed weekly and use the earliest and latest snapshots for each client to compute improvement metrics. Rising trends indicate that interventions are working across the caseload.
+
+## Team performance
+
+If your organization has multiple clinicians, analytics can be filtered by assigned clinician. This enables supervisors to compare outcomes across team members and identify opportunities for training or support — without exposing individual client data.
+
+## Improvement metrics
+
+The improvement score for each client is computed by comparing their earliest snapshot to their most recent one. The organization-wide improvement metric aggregates these individual scores to show overall program effectiveness.
+
+## Access and privacy
+
+Organization Analytics respects row-level security. Each clinician only sees their own clients unless they have supervisor-level access. All data stays within the organization boundary enforced by Supabase RLS policies.`,
+    relatedIds: ['view-caseload', 'view-timeline', 'concept-health-states', 'guide-data-privacy'],
+    viewLink: 'org',
+    source: 'manual',
+  },
+  {
+    id: 'view-home-practice',
+    title: 'Home Practice Activities',
+    category: 'views',
+    tags: ['home practice', 'activities', 'parent', 'caregiver', 'strategies', 'generalization', 'playbook'],
+    summary: 'Suggested activities for parents and caregivers to practice skills at home, generated from the Teaching Playbook.',
+    body: `Home Practice Activities generates parent-friendly activity suggestions for skills currently being worked on. It bridges the gap between clinical sessions and everyday life by providing structured but accessible practice ideas.
+
+## How activities are generated
+
+The system identifies skills that are rated Needs Work (1) or Developing (2) — skills actively in the learning zone. For each skill, it pulls data from the Teaching Playbook including teaching strategies, generalization tips, and context recommendations. These are then translated into plain-language activities.
+
+## Activity cards
+
+Each activity card shows:
+- The skill being practiced (in everyday language, not clinical jargon)
+- A suggested activity with step-by-step guidance
+- The context where this skill naturally occurs (e.g., mealtime, play, community outings)
+- Tips for recognizing success
+
+## Filters
+
+Activities can be filtered by:
+- Domain — focus on a specific developmental area
+- Context — filter by setting (home routines, play, community)
+- Difficulty — match to the caregiver's comfort level
+
+## Relationship to the Teaching Playbook
+
+Home Practice draws directly from the Teaching Playbook data (260 skills with clinical teaching data). The generalization field in the playbook is particularly important here — it describes how a skill learned in a clinical setting transfers to natural environments.
+
+## Sharing with families
+
+Activities are designed to be shared with parents via the Parent View or printed reports. The language avoids clinical terminology and focuses on what to do rather than why. Caregivers do not need to understand developmental tiers or coupling strengths to follow the suggestions.`,
+    relatedIds: ['concept-teaching-playbook', 'view-parent-view', 'view-goals', 'concept-behavioral-indicators'],
+    viewLink: 'practice',
+    source: 'manual',
+  },
+  {
+    id: 'view-predictions',
+    title: 'Progress Predictions',
+    category: 'views',
+    tags: ['predictions', 'forecast', 'projection', 'trajectory', 'future', 'confidence', 'estimated'],
+    summary: 'Forecasting view that projects future skill development based on current trajectory and historical snapshot data.',
+    body: `Progress Predictions uses your client's snapshot history to project where domain scores are heading. It answers the question every clinician and parent asks: "At this rate, where will we be in three months?"
+
+## How predictions work
+
+The prediction engine analyzes the trend across all saved snapshots for each domain. It fits a trajectory curve to the historical data points and extrapolates forward. The more snapshots you have, the more reliable the projection becomes.
+
+## Projected scores
+
+For each domain, the view shows:
+- Current score (solid line)
+- Projected score at 1, 3, and 6 months (dashed line)
+- Confidence interval (shaded band) that widens as the projection goes further out
+
+## Confidence intervals
+
+Predictions include confidence bands that communicate uncertainty honestly. Narrow bands mean the trend is consistent and the forecast is reliable. Wide bands mean the data is volatile and the projection should be treated as a rough estimate.
+
+## Clinical use
+
+- **Treatment planning**: If projections show a domain plateauing, consider changing the intervention strategy before it stagnates.
+- **Goal setting**: Use projected scores to set realistic target dates for developmental goals.
+- **Parent communication**: Show families where their child is heading, not just where they are today.
+- **Authorization requests**: Projected trajectories can support requests for continued services by showing expected outcomes.
+
+## Limitations
+
+Predictions assume the current intervention pace continues. They do not account for environmental changes, regression events, or new interventions. Always interpret projections as estimates, not guarantees. The view displays a clear disclaimer about these limitations.
+
+## Requirements
+
+Progress Predictions requires a minimum of three snapshots to generate meaningful forecasts. With only two snapshots, the system can show a linear trend but does not produce confidence intervals.`,
+    relatedIds: ['view-timeline', 'guide-snapshots', 'view-risk-monitor', 'view-goals'],
+    viewLink: 'predictions',
+    source: 'manual',
+  },
+  {
+    id: 'view-settings',
+    title: 'Settings & Preferences',
+    category: 'views',
+    tags: ['settings', 'preferences', 'dark mode', 'accessibility', 'tips', 'gear', 'configuration', 'data management'],
+    summary: 'Configure display preferences, dark mode, accessibility options, tip visibility, and data management via the gear icon.',
+    body: `Settings & Preferences is accessed via the gear icon in the top navigation bar. It contains all user-configurable options for display, accessibility, and data management.
+
+## Display preferences
+
+- **Dark mode**: Toggle between light and dark themes. Dark mode uses CSS variable inversion with specific overrides for charts, shadows, and accent colors to maintain readability.
+- **Chart theme**: Some views adapt their color palette based on the selected theme. The Progress Story view always uses a light theme regardless of this setting.
+
+## Accessibility
+
+- **Reduced motion**: Honors the operating system's prefers-reduced-motion setting. When enabled, animations are minimized or removed throughout the application.
+- **Touch targets**: All interactive elements maintain a minimum 44px hit area on touch devices.
+- **Skip navigation**: A skip-to-content link is available for keyboard users (visible on focus).
+
+## Tip visibility
+
+- **Show Tips toggle**: Controls whether contextual hints appear on views you visit for the first time. Disabling this hides all future hints without clearing your history.
+- **Reset Tips button**: Clears the record of which hints you have seen, so they will appear again on your next visit to each view. Useful if you want a refresher or if a new team member is using your device.
+
+## Data management
+
+- **Export all data**: Download your complete assessment data as JSON for backup or migration purposes.
+- **Import data**: Load previously exported data or import from external systems (Central Reach, Raven, Passage) via CSV.
+- **Account deletion**: Permanently delete your account and all associated data. Requires typing "DELETE" as confirmation.
+
+## Scope
+
+Settings are saved per user account (via Supabase) and persist across devices. Tip visibility state is stored in localStorage for fast access and synced to the server on save.`,
+    relatedIds: ['guide-quick-start', 'guide-data-export', 'guide-data-privacy', 'guide-data-import'],
+    source: 'manual',
+  },
+  {
+    id: 'view-search',
+    title: 'Search (Ctrl+K)',
+    category: 'views',
+    tags: ['search', 'find', 'ctrl+k', 'command', 'palette', 'quick', 'navigate', 'overlay'],
+    summary: 'The unified search overlay — find skills, domains, views, commands, and knowledge base articles with keyboard-first navigation.',
+    body: `The search overlay opens with Ctrl+K (or Cmd+K on Mac) and provides a single entry point for finding anything in SkillCascade. It combines skill search, view navigation, command execution, and knowledge base lookup into one fast interface.
+
+## Skill and domain search
+
+Type any skill name, domain name, or sub-area to jump directly to it. Results show the full breadcrumb (Domain > Sub-Area > Skill) so you can distinguish between similarly named items. Clicking a result navigates to the appropriate view with that item selected.
+
+## View navigation
+
+Type a view name (e.g., "Sunburst", "Goals", "Intelligence") to jump directly to that view. This is faster than clicking through the sidebar, especially on mobile where the full navigation is hidden behind the menu.
+
+## Command mode
+
+Type ">" to enter command mode. Commands include quick actions like:
+- "> save snapshot" — Save the current assessment as a snapshot
+- "> export csv" — Export assessment data
+- "> new client" — Create a new client
+- "> dark mode" — Toggle the theme
+
+## Knowledge base search
+
+Typing a question or concept searches the built-in knowledge base. Results from KB articles appear with their title and summary. Click to open the full article in the help panel.
+
+## AI-powered search
+
+For natural language questions that do not match a specific skill or article, the search can invoke the AI assistant to provide a contextual answer. This makes search a conversational entry point — ask "Why is D3 behind?" and get an answer without opening the AI panel separately.
+
+## Keyboard navigation
+
+The overlay is designed for keyboard-first use. Arrow keys navigate results, Enter selects, and Escape closes. Recent searches are remembered and shown when the overlay first opens. The entire interaction can be completed without touching the mouse.`,
+    relatedIds: ['guide-dashboard', 'guide-ai-features', 'view-ai-assistant'],
+    source: 'manual',
+  },
 ]
