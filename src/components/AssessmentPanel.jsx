@@ -4,7 +4,14 @@ import { getSkillDescription } from '../data/skillDescriptions.js'
 import { getBehavioralIndicator } from '../data/behavioralIndicators.js'
 import { getTeachingPlaybook } from '../data/teachingPlaybook.js'
 import { getSkillCeiling } from '../data/skillInfluence.js'
-import { SKILL_PREREQUISITES } from '../data/skillDependencies.js'
+import { SKILL_PREREQUISITES, buildReversePrereqMap } from '../data/skillDependencies.js'
+
+// Lazy-cached reverse prerequisite map (skill → skills that depend on it)
+let _reversePrereqs = null
+function getReversePrereqs() {
+  if (!_reversePrereqs) _reversePrereqs = buildReversePrereqMap()
+  return _reversePrereqs
+}
 import useResponsive from '../hooks/useResponsive.js'
 import { safeGetItem, safeSetItem } from '../lib/safeStorage.js'
 
@@ -114,6 +121,17 @@ export default function AssessmentPanel({ assessments, onAssess, initialSubAreaI
 
   const goTo = useCallback((index) => {
     setCurrentIndex(Math.max(0, Math.min(ALL_SUB_AREAS.length - 1, index)))
+  }, [])
+
+  // Navigate to the sub-area containing a specific skill
+  const navigateToSkill = useCallback((skillId) => {
+    const idx = ALL_SUB_AREAS.findIndex(sa =>
+      sa.skillGroups.some(sg => sg.skills.some(s => s.id === skillId))
+    )
+    if (idx >= 0) {
+      setCurrentIndex(idx)
+      if (contentRef.current) contentRef.current.scrollTop = 0
+    }
   }, [])
 
   // Auto-scroll content to top when sub-area changes
@@ -331,7 +349,7 @@ export default function AssessmentPanel({ assessments, onAssess, initialSubAreaI
           {/* Skill groups */}
           <div className="space-y-6">
             {currentSubArea.skillGroups.map((sg) => (
-              <SkillGroupRater key={sg.id} skillGroup={sg} assessments={assessments} onAssess={onAssess} showAllDescs={showAllDescs} showAllTeaching={showAllTeaching} />
+              <SkillGroupRater key={sg.id} skillGroup={sg} assessments={assessments} onAssess={onAssess} showAllDescs={showAllDescs} showAllTeaching={showAllTeaching} onNavigateToSkill={navigateToSkill} />
             ))}
           </div>
         </div>
@@ -638,7 +656,7 @@ export default function AssessmentPanel({ assessments, onAssess, initialSubAreaI
 /**
  * A single skill group with all its skills to rate
  */
-function SkillGroupRater({ skillGroup, assessments, onAssess, showAllDescs, showAllTeaching }) {
+function SkillGroupRater({ skillGroup, assessments, onAssess, showAllDescs, showAllTeaching, onNavigateToSkill }) {
   return (
     <div>
       <h3 className="text-sm font-semibold text-warm-700 mb-3">
@@ -658,6 +676,7 @@ function SkillGroupRater({ skillGroup, assessments, onAssess, showAllDescs, show
             })}
             showAllDescs={showAllDescs}
             showAllTeaching={showAllTeaching}
+            onNavigateToSkill={onNavigateToSkill}
           />
         ))}
       </div>
@@ -668,7 +687,7 @@ function SkillGroupRater({ skillGroup, assessments, onAssess, showAllDescs, show
 /**
  * Individual skill rating row
  */
-function SkillRater({ skill, level, onRate, showAllDescs, showAllTeaching, assessments = {} }) {
+function SkillRater({ skill, level, onRate, showAllDescs, showAllTeaching, assessments = {}, onNavigateToSkill }) {
   const [showDescLocal, setShowDescLocal] = useState(false)
   const [showTeachingLocal, setShowTeachingLocal] = useState(false)
   const desc = getSkillDescription(skill.id)
@@ -682,14 +701,23 @@ function SkillRater({ skill, level, onRate, showAllDescs, showAllTeaching, asses
   const ceilingInfo = prereqIds ? getSkillCeiling(skill.id, assessments) : null
   const hasUnmetPrereqs = ceilingInfo && ceilingInfo.ceiling < 3 && ceilingInfo.constrainingPrereqs.some(p => p.level == null || p.level < ASSESSMENT_LEVELS.DEVELOPING)
 
+  // Downstream dependents (skills that require this one)
+  const reverseMap = getReversePrereqs()
+  const dependentCount = (reverseMap[skill.id] || []).length
+
   return (
     <div className="py-2 px-3 rounded-lg hover:bg-warm-50 transition-colors group">
       <div className="flex items-start gap-4">
         <div className="flex-1 min-w-0">
-          <div className="flex items-center gap-1.5">
+          <div className="flex items-center gap-1.5 flex-wrap">
             <div className="text-sm text-warm-700 leading-snug group-hover:text-warm-900 transition-colors">
               {skill.name}
             </div>
+            {dependentCount > 0 && (
+              <span className="text-[9px] font-medium text-sage-600 bg-sage-50 border border-sage-200 px-1.5 py-0.5 rounded-full shrink-0">
+                prereq for {dependentCount}
+              </span>
+            )}
             {desc && (
               <button
                 onClick={() => setShowDescLocal(!showDescLocal)}
@@ -765,11 +793,22 @@ function SkillRater({ skill, level, onRate, showAllDescs, showAllTeaching, asses
             {ceilingInfo.constrainingPrereqs
               .filter(p => p.level == null || p.level < ASSESSMENT_LEVELS.DEVELOPING)
               .slice(0, 2)
-              .map(p => {
+              .map((p, i, arr) => {
                 const name = framework.flatMap(d => d.subAreas.flatMap(sa => sa.skillGroups.flatMap(sg => sg.skills))).find(s => s.id === p.id)?.name
-                return name || p.id
+                return (
+                  <span key={p.id}>
+                    {i > 0 && ', '}
+                    {onNavigateToSkill ? (
+                      <button
+                        onClick={() => onNavigateToSkill(p.id)}
+                        className="underline underline-offset-2 decoration-amber-400 hover:text-amber-800 font-medium transition-colors"
+                      >
+                        {name || p.id}
+                      </button>
+                    ) : (name || p.id)}
+                  </span>
+                )
               })
-              .join(', ')
             }
             {ceilingInfo.constrainingPrereqs.filter(p => p.level == null || p.level < ASSESSMENT_LEVELS.DEVELOPING).length > 2 && ' and others'}
             {' '}at Needs Work or unassessed. Ratings above Developing may be fragile.
