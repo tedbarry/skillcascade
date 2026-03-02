@@ -248,12 +248,9 @@ export default function Dashboard() {
     setTourKey(k => k + 1)
   }, [])
 
-  // ─── Auto-save draft to localStorage ──────────────────────
+  // ─── Autosave to Supabase (10s) + localStorage fallback (2s) ───
   const DRAFT_PREFIX = 'skillcascade_draft_'
-  const [draftAvailable, setDraftAvailable] = useState(false)
   const draftTimerRef = useRef(null)
-
-  // Debounce-save assessments to localStorage + Supabase whenever they change
   const autoSaveTimerRef = useRef(null)
   const [autoSaveStatus, setAutoSaveStatus] = useState(null) // null | 'saving' | 'saved' | 'error'
 
@@ -262,6 +259,7 @@ export default function Dashboard() {
     const assessmentCount = Object.keys(assessments).filter(k => !k.startsWith('_')).length
     if (assessmentCount === 0) return
 
+    // 2s — localStorage fallback (crash recovery only, never shown to user)
     clearTimeout(draftTimerRef.current)
     draftTimerRef.current = setTimeout(() => {
       try {
@@ -270,9 +268,9 @@ export default function Dashboard() {
           savedAt: Date.now(),
         }))
       } catch { /* quota exceeded — ignore */ }
-    }, 2000) // 2s debounce
+    }, 2000)
 
-    // Also auto-save to Supabase every 30s (only if changed since last save)
+    // 10s — Supabase autosave (the real save)
     clearTimeout(autoSaveTimerRef.current)
     autoSaveTimerRef.current = setTimeout(() => {
       if (!user || !clientId) return
@@ -282,6 +280,8 @@ export default function Dashboard() {
       saveAssessment(clientId, assessments, user.id)
         .then(() => {
           lastSavedRef.current = assessments
+          // Clear localStorage draft after successful DB save
+          try { localStorage.removeItem(DRAFT_PREFIX + clientId) } catch {}
           setAutoSaveStatus('saved')
           setTimeout(() => setAutoSaveStatus(null), 3000)
         })
@@ -289,53 +289,13 @@ export default function Dashboard() {
           setAutoSaveStatus('error')
           setTimeout(() => setAutoSaveStatus(null), 5000)
         })
-    }, 30000) // 30s debounce for Supabase
+    }, 10000) // 10s debounce for Supabase
 
     return () => {
       clearTimeout(draftTimerRef.current)
       clearTimeout(autoSaveTimerRef.current)
     }
   }, [assessments, clientId, user])
-
-  // Check for saved draft when client changes
-  useEffect(() => {
-    if (!clientId) { setDraftAvailable(false); return }
-    try {
-      const raw = localStorage.getItem(DRAFT_PREFIX + clientId)
-      if (raw) {
-        const draft = JSON.parse(raw)
-        const ageMs = Date.now() - (draft.savedAt || 0)
-        // Only offer recovery if draft is less than 7 days old
-        if (ageMs < 7 * 24 * 60 * 60 * 1000 && draft.assessments) {
-          setDraftAvailable(true)
-        } else {
-          localStorage.removeItem(DRAFT_PREFIX + clientId)
-          setDraftAvailable(false)
-        }
-      } else {
-        setDraftAvailable(false)
-      }
-    } catch { setDraftAvailable(false) }
-  }, [clientId])
-
-  function restoreDraft() {
-    try {
-      const raw = localStorage.getItem(DRAFT_PREFIX + clientId)
-      if (raw) {
-        const draft = JSON.parse(raw)
-        if (draft.assessments) {
-          resetAssessments(migrateAssessments(draft.assessments))
-          showToast('Draft restored', 'success')
-        }
-      }
-    } catch (err) { showToast(userErrorMessage(err, 'restore draft'), 'error') }
-    setDraftAvailable(false)
-  }
-
-  function dismissDraft() {
-    if (clientId) safeRemoveItem(DRAFT_PREFIX + clientId)
-    setDraftAvailable(false)
-  }
 
   // Warn on tab close when unsaved changes exist
   const lastSavedRef = useRef(assessments)
@@ -388,6 +348,7 @@ export default function Dashboard() {
     try {
       await saveAssessment(clientId, assessments, user.id)
       lastSavedRef.current = assessments
+      try { localStorage.removeItem(DRAFT_PREFIX + clientId) } catch {}
       showToast('Assessment saved', 'success')
       setUnsavedDialogOpen(false)
       if (pendingView) setActiveView(pendingView)
@@ -527,7 +488,47 @@ export default function Dashboard() {
   useEffect(() => {
     if (clientId) {
       setAssessmentsLoading(true)
-      getAssessments(clientId).then((saved) => { const data = migrateAssessments(saved || {}); resetAssessments(data); lastSavedRef.current = data }).catch((err) => showToast(userErrorMessage(err, 'load assessments'), 'error')).finally(() => setAssessmentsLoading(false))
+      getAssessments(clientId)
+        .then((saved) => {
+          const dbData = migrateAssessments(saved || {})
+          // Silent draft recovery: if localStorage has newer data, use it
+          let useData = dbData
+          try {
+            const raw = localStorage.getItem(DRAFT_PREFIX + clientId)
+            if (raw) {
+              const draft = JSON.parse(raw)
+              const ageMs = Date.now() - (draft.savedAt || 0)
+              if (ageMs < 24 * 60 * 60 * 1000 && draft.assessments) {
+                // Draft is <24h old — check if it has more data than DB
+                const dbCount = Object.keys(dbData).length
+                const draftCount = Object.keys(draft.assessments).filter(k => !k.startsWith('_')).length
+                if (draftCount > dbCount) {
+                  useData = migrateAssessments(draft.assessments)
+                }
+              }
+              localStorage.removeItem(DRAFT_PREFIX + clientId)
+            }
+          } catch { /* ignore */ }
+          resetAssessments(useData)
+          lastSavedRef.current = useData
+        })
+        .catch((err) => {
+          // Supabase failed — try localStorage draft as fallback
+          try {
+            const raw = localStorage.getItem(DRAFT_PREFIX + clientId)
+            if (raw) {
+              const draft = JSON.parse(raw)
+              if (draft.assessments) {
+                resetAssessments(migrateAssessments(draft.assessments))
+                lastSavedRef.current = migrateAssessments(draft.assessments)
+                showToast('Loaded from local backup', 'info')
+                return
+              }
+            }
+          } catch { /* ignore */ }
+          showToast(userErrorMessage(err, 'load assessments'), 'error')
+        })
+        .finally(() => setAssessmentsLoading(false))
     } else {
       setAssessmentsLoading(false)
     }
@@ -581,7 +582,7 @@ export default function Dashboard() {
             currentClientId={clientId}
             onSelectClient={handleSelectClient}
             assessments={assessments}
-            onSaveSuccess={() => { lastSavedRef.current = assessments; showToast('Assessment saved', 'success') }}
+            onSaveSuccess={() => { lastSavedRef.current = assessments; try { localStorage.removeItem(DRAFT_PREFIX + clientId) } catch {}; showToast('Assessment saved', 'success') }}
           /></span>
           <span className="hidden sm:inline">
             <AssessmentCompletionBadge assessments={assessments} onClick={() => guardedSetActiveView(VIEWS.ASSESS)} />
@@ -730,41 +731,7 @@ export default function Dashboard() {
       </header>
       <div className="header-accent" />
 
-      {/* Draft recovery banner */}
-      <AnimatePresence>
-        {draftAvailable && (
-          <motion.div
-            initial={{ height: 0, opacity: 0 }}
-            animate={{ height: 'auto', opacity: 1 }}
-            exit={{ height: 0, opacity: 0 }}
-            transition={{ duration: 0.2 }}
-            className="overflow-hidden"
-          >
-            <div className="bg-sage-50 border-b border-sage-200 px-4 py-2 flex items-center justify-between gap-3">
-              <div className="flex items-center gap-2 min-w-0">
-                <svg className="w-4 h-4 text-sage-500 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                  <path strokeLinecap="round" strokeLinejoin="round" d="M12 9v3.75m9-.75a9 9 0 11-18 0 9 9 0 0118 0zm-9 3.75h.008v.008H12v-.008z" />
-                </svg>
-                <span className="text-sm text-sage-700 truncate">Unsaved assessment draft found for this client</span>
-              </div>
-              <div className="flex items-center gap-2 shrink-0">
-                <button
-                  onClick={restoreDraft}
-                  className="text-xs font-medium text-sage-700 bg-sage-200 hover:bg-sage-300 px-3 py-1.5 rounded-md transition-colors min-h-[32px]"
-                >
-                  Restore
-                </button>
-                <button
-                  onClick={dismissDraft}
-                  className="text-xs text-warm-500 hover:text-warm-700 px-2 py-1.5 rounded-md transition-colors min-h-[32px]"
-                >
-                  Dismiss
-                </button>
-              </div>
-            </div>
-          </motion.div>
-        )}
-      </AnimatePresence>
+      {/* Autosave status indicator */}
 
       {/* Breadcrumb */}
       <ViewBreadcrumb activeView={activeView} onNavigateHome={() => guardedSetActiveView(VIEWS.HOME)} />
