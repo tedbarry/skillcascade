@@ -22,7 +22,7 @@ const RATE_LIMIT_PATTERNS = /rate limit|429|too many requests|throttle/i
  * @param {string}       context  — what was being attempted, e.g. "save assessment"
  * @returns {{ category: string, message: string, retry: boolean }}
  */
-export function categorizeError(error, context = '') {
+function categorizeError(error, context = '') {
   const msg = (error?.message || String(error)).toLowerCase()
 
   if (NETWORK_PATTERNS.test(msg)) {

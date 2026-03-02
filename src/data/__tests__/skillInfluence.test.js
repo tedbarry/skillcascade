@@ -265,7 +265,7 @@ describe('getCeilingCoverage', () => {
       'd1-sa1-sg3-s1': 2, 'd1-sa1-sg3-s2': 2, 'd1-sa1-sg3-s3': 2,
       'd1-sa1-sg4-s1': 2, 'd1-sa1-sg4-s3': 2,
       'd1-sa3-sg3-s1': 2, 'd1-sa3-sg3-s3': 2,
-      'd1-sa4-sg2-s1': 2, 'd1-sa4-sg2-s2': 2, 'd1-sa4-sg3-s1': 2,
+      'd1-sa4-sg2-s1': 2, 'd1-sa4-sg3-s2': 2, 'd1-sa4-sg3-s1': 2,
     }
     const coverage = getCeilingCoverage(assessments)
     expect(coverage.coverage).toBeGreaterThan(0.5)

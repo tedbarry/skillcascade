@@ -122,15 +122,15 @@ export const playbook_d4d6 = {
     measurement: 'Number of distinct, plausible alternatives generated per scenario. Track whether generated options include both coping and problem-solving types.',
     generalization: 'Across problem types, emotional intensity levels, and time pressure conditions.',
     prerequisiteNote: 'Requires d3-sa4-sg1-s1 (planning and organizing). Must be able to hold the problem in mind while generating options.',
-    progressionNote: 'Feeds into d5-sa4-sg2-s1 (generating solutions in negotiation) and supports the entire flexible response system.',
+    progressionNote: 'Feeds into d4-sa3-sg2-s1 (generating alternatives in decision-making) and supports the entire flexible response system.',
   },
   'd4-sa3-sg2-s2': {
     context: 'Teach alongside alternative generation. Focus on creating a pause between impulse and action — the "decision space." Use structured practice with deliberate delay.',
     strategies: ['STOP-THINK-CHOOSE visual protocol', 'Self-talk prompt: "What are my options?" before acting', 'Countdown technique: count to 5 before choosing', 'Review past impulse decisions and their outcomes — "What would have happened if you paused?"'],
-    barriers: 'Directly competes with impulsivity. Requires d1-sa4-sg2-s2 (cognitive impulse control) and d3-sa3-sg1-s1 (response inhibition) as prerequisites. If these are weak, the pause will not hold under arousal.',
+    barriers: 'Directly competes with impulsivity. Requires d1-sa4-sg2-s1 (staying in place while uncomfortable) and d3-sa3-sg1-s1 (response inhibition) as prerequisites. If these are weak, the pause will not hold under arousal.',
     measurement: 'Frequency of pause-before-action in decision moments. Track impulse-driven vs. considered decisions in observation.',
     generalization: 'Across arousal levels, social pressure contexts, and problem types.',
-    prerequisiteNote: 'Requires d1-sa4-sg2-s2 (cognitive impulse control) and d3-sa3-sg1-s1 (inhibition). The executive architecture must support pausing.',
+    prerequisiteNote: 'Requires d1-sa4-sg2-s1 (staying in place while uncomfortable) and d3-sa3-sg1-s1 (inhibition). The executive architecture must support pausing.',
     progressionNote: 'Supports d4-sa4 (flexibility) — can\'t adjust strategy if acting on first impulse every time.',
   },
 
@@ -222,7 +222,7 @@ export const playbook_d4d6 = {
     measurement: 'Accuracy of effort/blockage self-assessment compared to observer ratings across multiple tasks.',
     generalization: 'Across academic, motor, social, and creative tasks.',
     prerequisiteNote: 'Requires d2-sa3-sg2-s1 (self-evaluation accuracy). Must have realistic self-assessment capability.',
-    progressionNote: 'Supports d5-sa1-sg2-s1 (inhibiting escape) by enabling the learner to distinguish "I want to escape" from "I genuinely need help."',
+    progressionNote: 'Supports d5-sa1-sg1-s2 (effort/blockage differentiation) by enabling the learner to distinguish "I want to escape" from "I genuinely need help."',
   },
 
   // SG2: Inhibit escape response
@@ -441,7 +441,7 @@ export const playbook_d4d6 = {
     measurement: 'Frequency of accurate disagreement identification without emotional escalation. Track across social contexts.',
     generalization: 'Across relationship types, disagreement topics, and emotional intensity levels.',
     prerequisiteNote: 'Tier 3 — requires basic perspective-taking capacity from D6 foundations.',
-    progressionNote: 'Enables d5-sa4-sg2-s1 (generating solutions) and the full negotiation sequence.',
+    progressionNote: 'Enables the full negotiation sequence and flexible conflict resolution.',
   },
 
 
@@ -560,7 +560,7 @@ export const playbook_d4d6 = {
     barriers: 'Shame (D7-SA3) can make acknowledging impact feel like admitting fault or being a bad person. Build identity resilience alongside this skill.',
     measurement: 'Quality of impact acknowledgments (sincere, specific, without excessive self-blame). Track relationship recovery after acknowledgments.',
     generalization: 'Across relationship types, harm types, and emotional contexts.',
-    prerequisiteNote: 'Requires d2-sa4-sg2-s2 (acknowledging weaknesses without shame) and d3-sa6-sg2-s1 (processing corrective information). Must handle feedback without identity collapse.',
+    prerequisiteNote: 'Requires d2-sa4-sg2-s1 (distinguishing "not now" from "can\'t") and d3-sa6-sg2-s1 (processing corrective information). Must handle feedback without identity collapse.',
     progressionNote: 'Enables d5-sa6-sg4-s1 (restoring communication channel) and supports all social repair in D6.',
   },
 
@@ -794,7 +794,7 @@ export const playbook_d4d6 = {
     barriers: 'Requires stable identity (D7) and sophisticated perspective-taking. If identity is fragile, perceived unfairness will feel like personal attack.',
     measurement: 'Quality of attributions after unfair outcomes. Track personalization frequency and emotional regulation quality.',
     generalization: 'Across unfairness types, relationship contexts, and emotional states.',
-    prerequisiteNote: 'Requires d2-sa4-sg2-s2 (acknowledging weaknesses without shame) and d7-sa1-sg2-s1 (separating behavior from identity). Identity must be stable.',
+    prerequisiteNote: 'Requires d2-sa4-sg2-s1 (distinguishing "not now" from "can\'t") and d7-sa1-sg2-s1 (separating behavior from identity). Identity must be stable.',
     progressionNote: 'Tier 5 terminal skill for D6-SA4. Supports emotional resilience and social maturity across all contexts.',
   },
 

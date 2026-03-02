@@ -1,5 +1,6 @@
 import { useState, useMemo } from 'react'
 import { safeGetItem, safeSetItem } from '../lib/safeStorage.js'
+import useFocusTrap from '../hooks/useFocusTrap.js'
 
 /* ─────────────────────────────────────────────
    Mock Marketplace Data
@@ -424,6 +425,7 @@ export default function Marketplace() {
   const [toast, setToast] = useState(null)
   const [featuredScroll, setFeaturedScroll] = useState(0)
   const [previewItem, setPreviewItem] = useState(null)
+  const previewTrapRef = useFocusTrap(!!previewItem)
 
   const featuredItems = useMemo(
     () => MARKETPLACE_ITEMS.filter((item) => item.featured),
@@ -890,7 +892,7 @@ export default function Marketplace() {
         const isInstalled = installedIds.has(previewItem.id)
         return (
           <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/40" onClick={() => setPreviewItem(null)}>
-            <div className="bg-white rounded-2xl shadow-2xl max-w-lg w-full max-h-[80vh] overflow-y-auto" onClick={(e) => e.stopPropagation()}>
+            <div ref={previewTrapRef} className="bg-white rounded-2xl shadow-2xl max-w-lg w-full max-h-[80vh] overflow-y-auto" onClick={(e) => e.stopPropagation()} role="dialog" aria-modal="true" aria-label={`Preview: ${previewItem.title}`}>
               <div className="p-6">
                 <div className="flex items-start justify-between mb-4">
                   <span className={`inline-flex px-2.5 py-0.5 rounded-full text-xs font-medium ${config.pillBg} ${config.pillText}`}>

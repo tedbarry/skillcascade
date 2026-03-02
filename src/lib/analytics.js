@@ -54,20 +54,3 @@ export function reset() {
   posthog?.reset()
 }
 
-// Pre-defined events (HIPAA-safe, no PHI)
-export const EVENTS = {
-  SIGNUP: 'user_signed_up',
-  LOGIN: 'user_logged_in',
-  ASSESSMENT_STARTED: 'assessment_started',
-  ASSESSMENT_COMPLETED: 'assessment_completed',
-  ADAPTIVE_STARTED: 'adaptive_assessment_started',
-  ADAPTIVE_COMPLETED: 'adaptive_assessment_completed',
-  VIEW_SWITCHED: 'view_switched',
-  AI_TOOL_USED: 'ai_tool_used',
-  REPORT_GENERATED: 'report_generated',
-  SNAPSHOT_SAVED: 'snapshot_saved',
-  CLIENT_CREATED: 'client_created',
-  DATA_EXPORTED: 'data_exported',
-  DATA_IMPORTED: 'data_imported',
-  CHECKOUT_STARTED: 'checkout_started',
-}

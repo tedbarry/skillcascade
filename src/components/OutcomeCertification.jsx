@@ -1,6 +1,7 @@
 import { useState, useMemo } from 'react'
 import { framework, ASSESSMENT_LEVELS, getDomainScores, isAssessed } from '../data/framework.js'
 import { downloadFile } from '../data/exportUtils.js'
+import { escapeHTML } from '../lib/escapeHTML.js'
 
 /* ─────────────────────────────────────────────
    SVG Icons (inline, no emoji, no icon libraries)
@@ -155,14 +156,14 @@ const CERT_STYLES = `*{margin:0;padding:0;box-sizing:border-box}body{font-family
 
 function buildCertHTML(clientName, certType, title, description, bodyHTML, dateStr) {
   const certId = generateCertId(clientName, certType, dateStr)
-  return `<!DOCTYPE html><html><head><meta charset="utf-8"><title>Certificate - ${clientName}</title><style>${CERT_STYLES}</style></head><body>
+  return `<!DOCTYPE html><html><head><meta charset="utf-8"><title>Certificate - ${escapeHTML(clientName)}</title><style>${CERT_STYLES}</style></head><body>
 <div class="cert"><div class="cert-border">
   <div class="corner-bl"></div><div class="corner-br"></div>
   <div class="logo">SkillCascade</div>
   <div class="heading">Certificate of Achievement</div>
   <div class="divider"></div>
   <div class="label">This certifies that</div>
-  <div class="client-name">${clientName || 'Client'}</div>
+  <div class="client-name">${escapeHTML(clientName) || 'Client'}</div>
   <div class="cert-type">${title}</div>
   <div class="cert-desc">${description}</div>
   ${bodyHTML}

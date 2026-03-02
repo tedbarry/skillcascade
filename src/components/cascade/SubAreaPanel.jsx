@@ -2,6 +2,7 @@ import { memo, useState } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { framework } from '../../data/framework.js'
 import useResponsive from '../../hooks/useResponsive.js'
+import useFocusTrap from '../../hooks/useFocusTrap.js'
 import { DOMAIN_COLORS } from '../../constants/colors.js'
 
 const TIER_LABELS = {
@@ -65,6 +66,7 @@ export default memo(function SubAreaPanel({
   showPrereqs = false,
 }) {
   const { isPhone, isTablet } = useResponsive()
+  const focusTrapRef = useFocusTrap(isPhone || isTablet)
   const domain = framework.find(d => d.id === domainId)
   const domainColor = DOMAIN_COLORS[domainId] || '#888'
 
@@ -77,11 +79,15 @@ export default memo(function SubAreaPanel({
     return (
       <AnimatePresence>
         <motion.div
+          ref={focusTrapRef}
           initial={{ y: '100%' }}
           animate={{ y: 0 }}
           exit={{ y: '100%' }}
           transition={{ type: 'spring', damping: 25, stiffness: 300 }}
           className="fixed inset-0 z-50 bg-[#12121a] flex flex-col"
+          role="dialog"
+          aria-modal="true"
+          aria-label={`${domain?.name} sub-areas`}
         >
           {/* Header */}
           <div className="flex items-center gap-3 px-4 py-3 border-b border-[#333]">
@@ -123,11 +129,13 @@ export default memo(function SubAreaPanel({
   return (
     <AnimatePresence>
       <motion.div
+        ref={isTablet ? focusTrapRef : undefined}
         initial={{ x: '100%', opacity: 0 }}
         animate={{ x: 0, opacity: 1 }}
         exit={{ x: '100%', opacity: 0 }}
         transition={{ type: 'spring', damping: 25, stiffness: 300 }}
         className={`${isTablet ? 'fixed right-0 top-0 bottom-0 z-40 w-[280px]' : 'w-[320px] shrink-0'} bg-[#12121a] border-l border-[#333] flex flex-col overflow-hidden`}
+        {...(isTablet ? { role: 'dialog', 'aria-modal': 'true', 'aria-label': `${domain?.name} sub-areas` } : {})}
       >
         {/* Backdrop for tablet */}
         {isTablet && (

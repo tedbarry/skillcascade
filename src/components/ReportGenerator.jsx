@@ -6,6 +6,7 @@ import { computeConstrainedSkills, computeSkillInfluence } from '../data/skillIn
 import { generateClinicalSummary } from '../lib/narratives.js'
 import { generateDomainBarChart, generateRadarChart, generateMasteryGrid, generateScoreSummaryProfile } from '../lib/reportCharts.js'
 import { getBehavioralIndicator } from '../data/behavioralIndicators.js'
+import { escapeHTML } from '../lib/escapeHTML.js'
 import useContextualHint from '../hooks/useContextualHint.js'
 import ContextualHint from './ContextualHint.jsx'
 
@@ -252,8 +253,8 @@ function generateReportHTML(type, clientName, assessments, analysis, snapshotCom
     }
   `
 
-  let html = `<!DOCTYPE html><html><head><meta charset="utf-8"><title>${orgName} Report - ${clientName}</title><style>${styles}</style></head><body>`
-  html += `<div class="confidential">${reportHeader}</div>`
+  let html = `<!DOCTYPE html><html><head><meta charset="utf-8"><title>${escapeHTML(orgName)} Report - ${escapeHTML(clientName)}</title><style>${styles}</style></head><body>`
+  html += `<div class="confidential">${escapeHTML(reportHeader)}</div>`
 
   if (type === REPORT_TYPES.SCHOOL) {
     html += generateSchoolReport(clientName, date, analysis, assessments)
@@ -265,7 +266,7 @@ function generateReportHTML(type, clientName, assessments, analysis, snapshotCom
     html += generateProgressReport(clientName, date, analysis, snapshotComparison, assessments)
   }
 
-  html += `<div class="footer"><span>${reportFooter} — ${clientName}</span><span>${date}${showPoweredBy ? ' • Powered by SkillCascade' : ''}</span></div>`
+  html += `<div class="footer"><span>${escapeHTML(reportFooter)} — ${escapeHTML(clientName)}</span><span>${date}${showPoweredBy ? ' • Powered by SkillCascade' : ''}</span></div>`
   html += `</body></html>`
   return html
 }
@@ -276,10 +277,10 @@ function generateSchoolReport(clientName, date, analysis, assessments) {
   let html = ''
 
   html += `<h1>Educational Support Summary</h1>`
-  html += `<p class="subtitle">${clientName} — ${date}</p>`
+  html += `<p class="subtitle">${escapeHTML(clientName)} — ${date}</p>`
 
   html += `<h2>Purpose</h2>`
-  html += `<p>This report summarizes ${clientName}'s functional skill profile across developmental domains relevant to classroom performance. It is intended to support the educational team in understanding ${clientName}'s current strengths and areas where additional support may be beneficial.</p>`
+  html += `<p>This report summarizes ${escapeHTML(clientName)}'s functional skill profile across developmental domains relevant to classroom performance. It is intended to support the educational team in understanding ${escapeHTML(clientName)}'s current strengths and areas where additional support may be beneficial.</p>`
 
   // Domain overview — only school-relevant
   html += `<h2>Functional Skill Overview</h2>`
@@ -346,7 +347,7 @@ function generateMedicalReport(clientName, date, analysis, assessments) {
   let html = ''
 
   html += `<h1>Developmental-Functional Skills Assessment</h1>`
-  html += `<p class="subtitle">${clientName} — ${date}</p>`
+  html += `<p class="subtitle">${escapeHTML(clientName)} — ${date}</p>`
 
   html += `<h2>Assessment Overview</h2>`
   html += `<p>A comprehensive developmental-functional skills assessment was conducted across 9 domains encompassing ${totalSkills} discrete skills. Of these, ${assessed} skills (${totalSkills > 0 ? Math.round((assessed / totalSkills) * 100) : 0}%) have been assessed to date.</p>`
@@ -432,7 +433,7 @@ function generateProgressReport(clientName, date, analysis, snapshotComparison, 
   let html = ''
 
   html += `<h1>Progress Summary</h1>`
-  html += `<p class="subtitle">${clientName} — ${date}</p>`
+  html += `<p class="subtitle">${escapeHTML(clientName)} — ${date}</p>`
 
   html += `<h2>Current Snapshot</h2>`
   html += `<p>${assessed} of ${totalSkills} skills assessed across 9 developmental domains.</p>`
@@ -465,7 +466,7 @@ function generateProgressReport(clientName, date, analysis, snapshotComparison, 
   // Snapshot comparison
   if (snapshotComparison) {
     const prevScores = getDomainScores(snapshotComparison.assessments)
-    html += `<h2>Changes Since "${snapshotComparison.label}"</h2>`
+    html += `<h2>Changes Since "${escapeHTML(snapshotComparison.label)}"</h2>`
     html += `<table><tr><th>Domain</th><th style="text-align:center">Previous</th><th style="text-align:center">Current</th><th style="text-align:center">Change</th></tr>`
     for (let i = 0; i < scores.length; i++) {
       const curr = scores[i]
@@ -559,14 +560,14 @@ function generateInsuranceReport(clientName, date, analysis, assessments, clinic
 
   html += `<table class="demographics-table"><tr>`
   html += `<td style="width:50%;vertical-align:top;padding-right:20px;">`
-  html += `<strong>Client:</strong> ${clientName}<br>`
-  if (clientDOB) html += `<strong>Date of Birth:</strong> ${clientDOB}<br>`
-  if (diagnosis) html += `<strong>Diagnosis:</strong> ${diagnosis}<br>`
-  if (referralSource) html += `<strong>Referral Source:</strong> ${referralSource}<br>`
+  html += `<strong>Client:</strong> ${escapeHTML(clientName)}<br>`
+  if (clientDOB) html += `<strong>Date of Birth:</strong> ${escapeHTML(clientDOB)}<br>`
+  if (diagnosis) html += `<strong>Diagnosis:</strong> ${escapeHTML(diagnosis)}<br>`
+  if (referralSource) html += `<strong>Referral Source:</strong> ${escapeHTML(referralSource)}<br>`
   html += `</td><td style="width:50%;vertical-align:top;">`
-  if (examinerName) html += `<strong>Examiner:</strong> ${examinerName}<br>`
-  if (examinerCredentials) html += `<strong>Credentials:</strong> ${examinerCredentials}<br>`
-  if (examinerLicense) html += `<strong>License #:</strong> ${examinerLicense}<br>`
+  if (examinerName) html += `<strong>Examiner:</strong> ${escapeHTML(examinerName)}<br>`
+  if (examinerCredentials) html += `<strong>Credentials:</strong> ${escapeHTML(examinerCredentials)}<br>`
+  if (examinerLicense) html += `<strong>License #:</strong> ${escapeHTML(examinerLicense)}<br>`
   html += `<strong>Assessment Date:</strong> ${date}<br>`
   html += `</td></tr></table>`
 
@@ -788,9 +789,9 @@ function generateInsuranceReport(clientName, date, analysis, assessments, clinic
   // ── Section 10: Signature Block ──
   html += `<div class="signature-block">`
   html += `<div class="sig-line"></div>`
-  html += `<p><strong>${examinerName || '______________________________'}</strong></p>`
-  if (examinerCredentials) html += `<p>${examinerCredentials}</p>`
-  if (examinerLicense) html += `<p>License #: ${examinerLicense}</p>`
+  html += `<p><strong>${examinerName ? escapeHTML(examinerName) : '______________________________'}</strong></p>`
+  if (examinerCredentials) html += `<p>${escapeHTML(examinerCredentials)}</p>`
+  if (examinerLicense) html += `<p>License #: ${escapeHTML(examinerLicense)}</p>`
   html += `<p>Date: ${date}</p>`
   html += `</div>`
 

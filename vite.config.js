@@ -16,7 +16,6 @@ export default defineConfig({
           'd3': ['d3'],
           'recharts': ['recharts'],
           'framer-motion': ['framer-motion'],
-          'three': ['three'],
         },
       },
     },

@@ -162,9 +162,9 @@ const NAV_LINKS = [
 ]
 
 const STATS = [
-  { value: '300+', label: 'Skills Assessed' },
+  { value: '260+', label: 'Skills Assessed' },
   { value: '9', label: 'Developmental Domains' },
-  { value: '47', label: 'Sub-Areas' },
+  { value: '49', label: 'Sub-Areas' },
   { value: '8', label: 'AI Tools' },
 ]
 
@@ -217,7 +217,7 @@ const EARLY_ACCESS_FEATURES = [
   {
     icon: '9',
     title: '9 Developmental Domains',
-    description: 'A comprehensive developmental-functional framework covering 300+ skills across communication, cognition, social, motor, self-care, play, safety, and support systems.',
+    description: 'A comprehensive developmental-functional framework covering 260+ skills across communication, cognition, social, motor, self-care, play, safety, and support systems.',
   },
   {
     icon: '5',
@@ -255,8 +255,8 @@ const DEMO_TABS = [
     label: 'Assess',
     icon: TargetIcon,
     title: 'Smarter Assessment',
-    desc: 'Full 300-skill assessment or adaptive quick screening that identifies key gaps in minutes. Auto-saves, keyboard navigation, and bulk rate support.',
-    bullets: ['Adaptive branching (~2 min)', 'Full 300+ skill assessment', 'Import from Central Reach / Raven / Passage', 'Auto-save with undo/redo'],
+    desc: 'Full 260-skill assessment or adaptive quick screening that identifies key gaps in minutes. Auto-saves, keyboard navigation, and bulk rate support.',
+    bullets: ['Adaptive branching (~2 min)', 'Full 260+ skill assessment', 'Import from Central Reach / Raven / Passage', 'Auto-save with undo/redo'],
     mockup: 'assess',
   },
   {
@@ -763,7 +763,7 @@ export default function Landing() {
           </h1>
 
           <p className="text-lg sm:text-xl text-warm-600 max-w-2xl mx-auto mb-10 leading-relaxed">
-            SkillCascade maps 300+ developmental-functional skills across 9 domains,
+            SkillCascade maps 260+ developmental-functional skills across 9 domains,
             revealing why foundational gaps cascade into higher-level breakdowns.
             Visualize, assess, and track — so you can intervene where it matters most.
           </p>

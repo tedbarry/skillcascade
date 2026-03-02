@@ -306,6 +306,12 @@ export const descriptions_d7d9 = {
     absence: 'Fight-or-flight responses override all instruction — the individual runs, strikes out, or becomes completely unresponsive when highly aroused.',
   },
 
+  // SG2: Trust external judgment temporarily
+  'd8-sa4-sg2-s2': {
+    description: 'The ability to follow another person\'s directions during safety situations without resistance, temporarily deferring one\'s own judgment to a trusted authority figure during emergencies, drills, or dangerous conditions.',
+    looks_like: 'During a fire drill, emergency, or safety situation, the individual follows the adult\'s directions promptly — moving where told, stopping when told, and staying with the group — without arguing, negotiating, or physically resisting.',
+    absence: 'The individual resists, argues with, or ignores directions from authority figures during safety events — insisting on doing things their own way, refusing to move, or actively working against the person directing them.',
+  },
 
   // SG3: Re-enter autonomy appropriately
   'd8-sa4-sg3-s1': {

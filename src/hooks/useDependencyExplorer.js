@@ -73,7 +73,7 @@ export default function useDependencyExplorer(assessments = {}) {
         })
       }
     } else {
-      // Full web: all 47 sub-areas
+      // Full web: all 49 sub-areas
       framework.forEach(d => d.subAreas.forEach(sa => included.add(sa.id)))
     }
 

@@ -28,7 +28,7 @@ export const playbook_d7d9 = {
     barriers: 'Deeply ingrained patterns of self-blame may resist cognitive restructuring. Trauma histories amplify this pattern. Pair with therapeutic support when needed.',
     measurement: 'Self-talk quality after errors: behavior-specific vs. identity-global statements. Track with prompted self-reports and spontaneous statements.',
     generalization: 'Across error types, severity levels, and social vs. private contexts.',
-    prerequisiteNote: 'Requires d2-sa4-sg2-s1 (recognizing personal strengths) and d2-sa4-sg2-s2 (acknowledging weaknesses without shame). Must have balanced self-view.',
+    prerequisiteNote: 'Requires d2-sa4-sg2-s1 (recognizing personal strengths). Must have balanced self-view.',
     progressionNote: 'Enables d7-sa1-sg2-s2 (avoiding global self-labels) and all resilience skills in D7-SA3/SA4.',
   },
   'd7-sa1-sg2-s2': {
@@ -37,7 +37,7 @@ export const playbook_d7d9 = {
     barriers: 'Confirmation bias makes learners seek evidence that confirms negative self-labels. Actively curate and make accessible counter-evidence.',
     measurement: 'Frequency of global vs. specific self-statements after negative events. Track changes in self-talk patterns over time.',
     generalization: 'Across failure domains (academic, social, physical), severity levels, and time contexts.',
-    prerequisiteNote: 'Requires d2-sa2-sg2-s2 (recognizing patterns in self) and d2-sa4-sg2-s2 (balanced self-evaluation). Must see oneself accurately.',
+    prerequisiteNote: 'Requires d2-sa2-sg2-s2 (recognizing patterns in self) and d2-sa4-sg2-s1 (balanced self-evaluation). Must see oneself accurately.',
     progressionNote: 'Supports d7-sa1-sg3 (updating self-narrative) and d7-sa1-sg4 (preventing distortion under stress).',
   },
 
@@ -69,7 +69,7 @@ export const playbook_d7d9 = {
     measurement: 'Frequency and severity of catastrophic self-statements during stress. Track self-correction rate.',
     generalization: 'Across stressor types, emotional intensity levels, and social contexts.',
     prerequisiteNote: 'Tier 5 — requires stable self-narrative, cognitive flexibility, and emotional regulation.',
-    progressionNote: 'Terminal skill for D7-SA1. Together with d7-sa1-sg4-s1, represents the most advanced self-narrative protection.',
+    progressionNote: 'Terminal skill for D7-SA1. Together with d7-sa1-sg4-s2, represents the most advanced self-narrative protection.',
   },
 
   // ── D7-SA2: Self-Efficacy ───────────────────────────────────────
@@ -141,7 +141,7 @@ export const playbook_d7d9 = {
     barriers: 'Perfectionism can be deeply ingrained and serve anxiety-reduction functions. Address the function (anxiety management) separately from the behavior (perfectionism).',
     measurement: 'Task completion rates despite imperfections. Track whether imperfect outcomes trigger disengagement or continued effort.',
     generalization: 'Across task types, quality expectations, and social observation conditions.',
-    prerequisiteNote: 'Requires d3-sa6-sg1-s1 (accepting "good enough") and d3-sa6-sg2-s2 (adaptive self-talk after error). Must be able to cognitively accept imperfection.',
+    prerequisiteNote: 'Requires d3-sa6-sg1-s1 (accepting "good enough") and d3-sa6-sg2-s1 (adaptive self-talk after error). Must be able to cognitively accept imperfection.',
     progressionNote: 'Supports d7-sa2-sg4-s2 (avoiding withdrawal after setbacks) and all persistence-based skills.',
   },
   'd7-sa2-sg4-s2': {
@@ -228,7 +228,7 @@ export const playbook_d7d9 = {
     barriers: 'The line between learning from errors and ruminating about them is thin. Structure the learning process with clear start and end points.',
     measurement: 'Quality of lessons extracted from errors (specific, actionable, non-self-blaming). Track whether lessons are applied in future similar situations.',
     generalization: 'Across error types, severity levels, and life domains.',
-    prerequisiteNote: 'Requires d7-sa1-sg2-s1 (behavior-identity separation) and d7-sa3-sg2-s1 (correction tolerance). Must separate error from self to learn from it.',
+    prerequisiteNote: 'Requires d7-sa1-sg2-s1 (behavior-identity separation) and d3-sa6-sg2-s1 (correction tolerance). Must separate error from self to learn from it.',
     progressionNote: 'Enables d7-sa4-sg3-s2 (maintaining motivation post-error) and represents the growth mindset in action.',
   },
   'd7-sa4-sg3-s2': {
@@ -279,7 +279,7 @@ export const playbook_d7d9 = {
     barriers: 'Masking is often deeply habitual and serves genuine protective functions. Approach with respect for what masking has provided while building alternatives.',
     measurement: 'Self-reported masking frequency and intensity. Track well-being and authenticity ratings across social contexts.',
     generalization: 'Across social contexts, relationship types, and masking functions.',
-    prerequisiteNote: 'Requires d7-sa3-sg2-s1 (correction tolerance) and d7-sa1-sg2-s1 (behavior-identity separation). Must have stable identity to risk being authentic.',
+    prerequisiteNote: 'Requires d3-sa6-sg2-s1 (correction tolerance) and d7-sa1-sg2-s1 (behavior-identity separation). Must have stable identity to risk being authentic.',
     progressionNote: 'Tier 5 advanced skill. Supports d7-sa5-sg3 (seeking fitting environments) and lifelong authentic engagement.',
   },
 
@@ -299,7 +299,7 @@ export const playbook_d7d9 = {
     barriers: 'Internalized stigma about having needs. Build D7-SA3 shame resilience alongside this skill. The learner must believe their needs are legitimate.',
     measurement: 'Frequency and quality of accommodation requests. Track whether requests are made without excessive shame, apology, or avoidance.',
     generalization: 'Across settings, accommodation types, and authority levels.',
-    prerequisiteNote: 'Requires d7-sa3-sg2-s1 (correction tolerance) and d5-sa5-sg2-s1 (advocacy language). Must advocate AND tolerate potential pushback.',
+    prerequisiteNote: 'Requires d3-sa6-sg2-s1 (correction tolerance) and d5-sa5-sg2-s1 (advocacy language). Must advocate AND tolerate potential pushback.',
     progressionNote: 'Tier 5 advanced skill. Supports d7-sa5-sg4 (maintaining engagement during difficulty) and lifelong self-advocacy.',
   },
 
@@ -319,7 +319,7 @@ export const playbook_d7d9 = {
     barriers: 'Fear of re-experiencing the difficult interaction may prevent repair initiation. Build confidence through small, successful repair experiences.',
     measurement: 'Quality and frequency of repair initiations after interpersonal difficulty. Track relationship recovery following repairs.',
     generalization: 'Across relationship types, rupture types, and emotional intensity levels.',
-    prerequisiteNote: 'Requires d6-sa5-sg3-s1 (apologizing/adjusting) and d7-sa4-sg2-s1 (task resumption after error). Must repair AND re-engage.',
+    prerequisiteNote: 'Requires d6-sa5-sg3-s1 (apologizing/adjusting) and d3-sa6-sg1-s1 (accepting "good enough"). Must repair AND re-engage.',
     progressionNote: 'Tier 5 terminal skill for D7-SA5 and among the most advanced skills in the entire framework. Represents mature, authentic relational capacity.',
   },
 
@@ -399,7 +399,7 @@ export const playbook_d7d9 = {
     barriers: 'Arousal degrades compliance in all learners. Over-learn the compliance response so it persists under stress. This requires many repetitions.',
     measurement: 'Compliance rate during high-arousal safety scenarios vs. calm conditions. Track arousal levels during compliance.',
     generalization: 'Across arousal levels, arousal sources, and safety scenarios.',
-    prerequisiteNote: 'Requires d1-sa3-sg3-s1 (calming strategies) and d1-sa4-sg2-s2 (cognitive impulse control under arousal). Must regulate AND comply simultaneously.',
+    prerequisiteNote: 'Requires d1-sa3-sg3-s1 (calming strategies) and d1-sa4-sg2-s1 (staying in place while uncomfortable). Must regulate AND comply simultaneously.',
     progressionNote: 'Supports d8-sa2-sg3 (sustained safety mode) and all emergency situations.',
   },
 
@@ -477,7 +477,7 @@ export const playbook_d7d9 = {
     barriers: 'The fight-flight system opposes freezing. Over-learn the freeze response during calm states so it\'s available under stress.',
     measurement: 'Freeze latency (time from command to full cessation) and duration (how long freeze can be maintained).',
     generalization: 'Across activities, arousal levels, and settings.',
-    prerequisiteNote: 'Requires d1-sa4-sg2-s1 (physical impulse control) and d1-sa4-sg2-s2 (cognitive impulse control). Must override flight/fight impulses.',
+    prerequisiteNote: 'Requires d1-sa4-sg2-s1 (staying in place while uncomfortable) and d1-sa4-sg1-s1 (continuing during discomfort). Must override flight/fight impulses.',
     progressionNote: 'Enables d8-sa4-sg1-s2 (sustained freeze under stress) and all crisis self-regulation.',
   },
   'd8-sa4-sg1-s2': {
@@ -487,9 +487,19 @@ export const playbook_d7d9 = {
     measurement: 'Success rate of freeze maintenance during high-arousal scenarios. Track fight-flight impulse override.',
     generalization: 'Across stress types, arousal levels, and settings.',
     prerequisiteNote: 'Requires d1-sa3-sg3-s1 (calming strategies) and d1-sa3-sg3-s3 (self-directed calming). Must calm under extreme arousal.',
-    progressionNote: 'Supports d8-sa4-sg2 (accepting external direction during crisis) and all emergency management.',
+    progressionNote: 'Supports d8-sa4-sg2-s2 (accepting external direction during crisis) and all emergency management.',
   },
 
+  // SG2: Trust external judgment temporarily
+  'd8-sa4-sg2-s2': {
+    context: 'Teach after basic compliance and impulse control are in place. Focus on temporarily deferring personal judgment to a trusted authority during safety events — fire drills, emergency evacuations, dangerous situations.',
+    strategies: ['Practice "follow the leader" during safety drills with immediate reinforcement', '"Trust the adult" role-play scenarios: adult gives direction, learner follows without question', 'Social stories explaining WHY adults take charge during emergencies', 'Graduated practice: start with familiar adults in rehearsed scenarios, progress to novel adults and real events'],
+    barriers: 'Learners with strong autonomy drives or authority resistance may experience compliance during safety as a loss of control. Frame it as temporary and purposeful — "You\'re choosing to follow because it keeps you safe."',
+    measurement: 'Compliance rate with adult directions during safety drills and simulated emergencies. Track latency from direction to compliance and presence of resistance behaviors.',
+    generalization: 'Across authority figures, safety scenario types, arousal levels, and settings.',
+    prerequisiteNote: 'Requires d8-sa2-sg1-s2 (accepting temporary external control) and d8-sa4-sg1-s2 (overriding fight/flight). Must accept authority AND control impulses simultaneously.',
+    progressionNote: 'Supports d8-sa4-sg3 (post-crisis recovery) and complete crisis management sequence. Together with d8-sa2, forms the full compliance-under-threat system.',
+  },
 
   // SG3: Post-crisis recovery
   'd8-sa4-sg3-s1': {
@@ -526,7 +536,7 @@ export const playbook_d7d9 = {
     measurement: 'Number and variety of accepted calming strategies from supporters. Track effectiveness ratings.',
     generalization: 'Across strategies, supporters, and distress levels.',
     prerequisiteNote: 'Requires d1-sa3-sg2-s3 (engagement with external calming supports). Must be receptive to external support strategies.',
-    progressionNote: 'Enables d9-sa1-sg1-s3 (signaling for support) and independent help-seeking.',
+    progressionNote: 'Enables d9-sa3-sg1-s1 (signaling for support) and independent help-seeking.',
   },
 
   // SG2: Accept redirection

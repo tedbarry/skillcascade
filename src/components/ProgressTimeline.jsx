@@ -231,8 +231,8 @@ export default function ProgressTimeline({
                 </span>
                 {confirmDeleteId === snap.id ? (
                   <span className="flex items-center gap-1">
-                    <button onClick={() => { onDeleteSnapshot?.(snap.id); setConfirmDeleteId(null) }} className="text-[9px] text-coral-600 hover:text-coral-800 font-medium min-h-[28px] px-1">Delete</button>
-                    <button onClick={() => setConfirmDeleteId(null)} className="text-[9px] text-warm-400 hover:text-warm-600 min-h-[28px] px-1">Cancel</button>
+                    <button onClick={() => { onDeleteSnapshot?.(snap.id); setConfirmDeleteId(null) }} className="text-[9px] text-coral-600 hover:text-coral-800 font-medium min-h-[44px] px-1">Delete</button>
+                    <button onClick={() => setConfirmDeleteId(null)} className="text-[9px] text-warm-400 hover:text-warm-600 min-h-[44px] px-1">Cancel</button>
                   </span>
                 ) : (
                   <button onClick={() => setConfirmDeleteId(snap.id)} className="text-warm-300 hover:text-red-400 text-sm transition-colors min-h-[44px] min-w-[44px] flex items-center justify-center" title="Delete snapshot" aria-label="Delete snapshot">{'×'}</button>

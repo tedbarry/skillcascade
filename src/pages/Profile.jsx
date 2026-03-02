@@ -466,12 +466,15 @@ export default function Profile() {
                 Manage Billing
               </button>
             ) : (
-              <Link
-                to="/#pricing"
+              <button
+                onClick={() => {
+                  try { localStorage.setItem('skillcascade_active_view', 'pricing') } catch {}
+                  navigate('/dashboard')
+                }}
                 className="px-4 py-2 rounded-lg bg-sage-500 text-white text-sm font-medium hover:bg-sage-600 transition-colors min-h-[44px] inline-flex items-center"
               >
                 Upgrade
-              </Link>
+              </button>
             )}
           </div>
         </Section>

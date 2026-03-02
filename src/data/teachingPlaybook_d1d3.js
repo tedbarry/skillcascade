@@ -634,7 +634,7 @@ export const playbook_d1d3 = {
     barriers: 'When confusion triggers emotional dysregulation, the original cognitive need gets lost. Address the emotional response first, then return to the cognitive task.',
     measurement: 'Rate of confusion episodes that escalate to emotional dysregulation. Track as percentage, aiming for decrease.',
     generalization: 'Across task types and environments.',
-    prerequisiteNote: 'Requires d1-sa3-sg3-s1 (calming cues) and d1-sa4-sg2-s2 (delaying escape). Tier 4.',
+    prerequisiteNote: 'Requires d1-sa3-sg3-s1 (calming cues) and d1-sa4-sg2-s1 (staying in place while uncomfortable). Tier 4.',
     progressionNote: 'Integration skill bridging cognitive monitoring and emotional regulation. Feeds into executive function resilience (d3).',
   },
 
@@ -673,7 +673,7 @@ export const playbook_d1d3 = {
     barriers: 'If the environment consistently ties worth to performance, this skill cannot develop. Address the system alongside the individual.',
     measurement: 'Self-report of self-worth during and after challenging tasks. Track using simple scale.',
     generalization: 'Across failure experiences and social contexts.',
-    prerequisiteNote: 'Requires d2-sa4-sg2-s2 (avoiding global judgments). Tier 4.',
+    prerequisiteNote: 'Requires d2-sa4-sg2-s1 (distinguishing "not now" from "can\'t"). Tier 4.',
     progressionNote: 'Foundation for identity resilience (D7). Leads to maintaining self-worth while adjusting expectations (d2-sa4-sg3-s2).',
   },
   'd2-sa4-sg3-s2': {
@@ -822,7 +822,7 @@ export const playbook_d1d3 = {
     barriers: 'Escape-maintained behavior requires functional analysis. Ensure replacement behaviors are taught before reducing escape access.',
     measurement: 'Rate of premature escape attempts per task. Track trend as escape tolerance increases.',
     generalization: 'Across task types and demand levels.',
-    prerequisiteNote: 'Requires d1-sa4-sg2-s1 (staying in place) and d1-sa4-sg2-s2 (delaying escape). Tier 3.',
+    prerequisiteNote: 'Requires d1-sa4-sg2-s1 (staying in place while uncomfortable). Tier 3.',
     progressionNote: 'Core persistence skill. Combined with d3-sa2-sg2, enables sustained effort through discomfort.',
   },
   'd3-sa2-sg2-s1': {
@@ -840,7 +840,7 @@ export const playbook_d1d3 = {
     barriers: 'Learners with trauma or anxiety may equate all discomfort with threat. Distinguish carefully between productive challenge and genuine overwhelm.',
     measurement: 'Duration of sustained effort in the presence of task-related discomfort. Track using self-reported comfort rating alongside task engagement.',
     generalization: 'Across task types and discomfort levels.',
-    prerequisiteNote: 'Requires d1-sa4-sg2-s2 (delaying escape during discomfort). Tier 3.',
+    prerequisiteNote: 'Requires d1-sa4-sg2-s1 (staying in place while uncomfortable). Tier 3.',
     progressionNote: 'Integrates regulation and executive function. Feeds into momentum maintenance (d3-sa2-sg3).',
   },
   'd3-sa2-sg3-s1': {
@@ -870,7 +870,7 @@ export const playbook_d1d3 = {
     barriers: 'Rigid adherence to preferred activities may have a regulatory function. Understand WHY the learner resists before targeting the behavior.',
     measurement: 'Compliance rate with activity change requests. Track across preferred activity types and warning durations.',
     generalization: 'Across preferred activities, settings, and adults requesting the change.',
-    prerequisiteNote: 'Requires calming-down skills (d1-sa3-sg3-s1) and discomfort tolerance (d1-sa4-sg2-s2). Tier 3.',
+    prerequisiteNote: 'Requires calming-down skills (d1-sa3-sg3-s1) and discomfort tolerance (d1-sa4-sg2-s1). Tier 3.',
     progressionNote: 'Foundation for all flexibility skills. Leads to releasing plans (d3-sa3-sg1-s2) and transitioning (d3-sa3-sg2).',
   },
   'd3-sa3-sg1-s2': {
@@ -1041,7 +1041,7 @@ export const playbook_d1d3 = {
     barriers: 'Deep-seated negative self-schemas may require therapeutic intervention beyond ABA. Collaborate with mental health professionals.',
     measurement: 'Self-talk after errors: track whether self-statements are task-specific ("I got that wrong") vs. global ("I\'m dumb").',
     generalization: 'Across error types and social contexts.',
-    prerequisiteNote: 'Requires d2-sa4-sg2-s1 (not now vs. can\'t) and d2-sa4-sg2-s2 (avoiding global judgments). Tier 4.',
+    prerequisiteNote: 'Requires d2-sa4-sg2-s1 (not now vs. can\'t). Tier 4.',
     progressionNote: 'Critical for long-term resilience and identity (D7). Without this, repeated errors erode self-concept.',
   },
 }

@@ -352,6 +352,13 @@ export const indicators_d7d9 = {
     3: 'Reliably resists fight/flight impulses across safety contexts and intensity levels, maintaining controlled behavior despite activation.',
   },
 
+  // SG2: Trust external judgment temporarily
+  'd8-sa4-sg2-s2': {
+    0: 'Cannot follow another person\'s direction during safety situations; resists, argues, or ignores authority figures during emergencies or drills.',
+    1: 'Occasionally follows directions from a familiar adult during low-intensity safety situations, but resists or negotiates during real emergencies or with less-familiar adults.',
+    2: 'Usually follows another person\'s direction during safety situations in familiar settings; may resist or delay compliance during novel emergencies or with unfamiliar authority figures.',
+    3: 'Reliably follows another person\'s direction during safety situations without resistance across contexts, adults, and emergency types, deferring judgment promptly.',
+  },
 
   // SG3: Return to independence
   'd8-sa4-sg3-s1': {

@@ -5,9 +5,7 @@
  * No AI — conditional templates selected by data patterns.
  */
 
-import { framework, ASSESSMENT_LABELS } from '../data/framework.js'
-import { getBehavioralIndicator } from '../data/behavioralIndicators.js'
-import { getSkillCeiling } from '../data/skillInfluence.js'
+import { framework } from '../data/framework.js'
 
 const DOMAIN_NAMES = {}
 const FRIENDLY_NAMES = {
@@ -218,83 +216,3 @@ export function generateDomainNarrative(domainId, domainHealth, risks, impactRan
   return `${dn(domainId)} at ${avg}/3, developing. ${health.assessed}/${health.total} skills assessed.`
 }
 
-/* ─── Skill Narrative ─── */
-
-/**
- * Generate a single-sentence narrative combining skill name, level label, and behavioral indicator.
- * Composable into larger narrative templates.
- */
-/**
- * Generate a ceiling constraint narrative for a skill.
- * E.g. "Heart Rate Awareness at Not Present caps 8 downstream skills at Needs Work.
- * Improving it to Developing would raise those ceilings to Solid."
- */
-export function generateCeilingNarrative(skillId, assessments) {
-  const ceilingData = getSkillCeiling(skillId, assessments)
-  if (!ceilingData) return null
-
-  const level = assessments[skillId]
-  if (level == null) return null
-
-  // Find constraining prereqs that are actually limiting
-  const limiting = ceilingData.constrainingPrereqs.filter(p => p.imposedCeiling < 3)
-  if (limiting.length === 0) return null
-
-  // Find skill name
-  let skillName = skillId
-  for (const domain of framework) {
-    for (const sa of domain.subAreas) {
-      for (const sg of sa.skillGroups) {
-        for (const skill of sg.skills) {
-          if (skill.id === skillId) { skillName = skill.name; break }
-        }
-      }
-    }
-  }
-
-  const topConstraint = limiting[0]
-  let prereqName = topConstraint.id
-  for (const domain of framework) {
-    for (const sa of domain.subAreas) {
-      for (const sg of sa.skillGroups) {
-        for (const skill of sg.skills) {
-          if (skill.id === topConstraint.id) { prereqName = skill.name; break }
-        }
-      }
-    }
-  }
-
-  const prereqLabel = topConstraint.level != null ? ASSESSMENT_LABELS[topConstraint.level] : 'Not Assessed'
-  const ceilingLabel = ASSESSMENT_LABELS[ceilingData.ceiling] || `${ceilingData.ceiling}`
-
-  if (level > ceilingData.ceiling) {
-    return `${skillName} is rated above its ceiling (${ASSESSMENT_LABELS[level]} vs ceiling of ${ceilingLabel}). ` +
-      `${prereqName} at ${prereqLabel} is the limiting factor — this skill may be fragile without prerequisite support.`
-  }
-
-  if (ceilingData.ceiling < 3) {
-    return `${skillName} is capped at ${ceilingLabel} by ${prereqName} (${prereqLabel}). ` +
-      `Improving ${prereqName} would raise this ceiling.`
-  }
-
-  return null
-}
-
-export function generateSkillNarrative(skillId, level) {
-  if (level == null) return null
-  const indicator = getBehavioralIndicator(skillId, level)
-  const label = ASSESSMENT_LABELS[level]
-  // Find the skill name from the framework
-  let skillName = skillId
-  for (const domain of framework) {
-    for (const sa of domain.subAreas) {
-      for (const sg of sa.skillGroups) {
-        for (const skill of sg.skills) {
-          if (skill.id === skillId) { skillName = skill.name; break }
-        }
-      }
-    }
-  }
-  if (!indicator) return `${skillName} is currently rated ${label}.`
-  return `${skillName} (${label}): ${indicator}`
-}

@@ -9,6 +9,7 @@ import { framework, DOMAIN_DEPENDENCIES } from '../data/framework.js'
 import { computeDomainHealth, computeSubAreaHealth, findPrerequisiteChain, computePathReadiness } from '../data/cascadeModel.js'
 import useCascadeGraph from '../hooks/useCascadeGraph.js'
 import useResponsive from '../hooks/useResponsive.js'
+import useFocusTrap from '../hooks/useFocusTrap.js'
 import { DOMAIN_COLORS } from '../constants/colors.js'
 
 const WhatIfPanel = lazy(() => import('./WhatIfPanel.jsx'))
@@ -1895,14 +1896,19 @@ function SubAreaNodesSVG({ subAreas, parentPos, nodeW, nodeH, width, height, onN
 function MobileSubAreaOverlay({ domainId, subAreas, onClose, onNavigateToAssess }) {
   const domain = framework.find((d) => d.id === domainId)
   const domainColor = DOMAIN_COLORS[domainId] || '#888'
+  const focusTrapRef = useFocusTrap(true)
 
   return (
     <motion.div
+      ref={focusTrapRef}
       className="fixed inset-0 z-50 bg-[#1a1a1e] flex flex-col"
       initial={{ opacity: 0, y: '100%' }}
       animate={{ opacity: 1, y: 0 }}
       exit={{ opacity: 0, y: '100%' }}
       transition={{ type: 'spring', damping: 25, stiffness: 300 }}
+      role="dialog"
+      aria-modal="true"
+      aria-label={`${domain?.name} sub-areas`}
     >
       {/* Header with back button */}
       <div className="flex items-center gap-3 px-4 py-3 border-b border-[#333] shrink-0">

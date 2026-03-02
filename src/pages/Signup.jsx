@@ -1,9 +1,17 @@
-import { useState } from 'react'
-import { Link, useNavigate } from 'react-router-dom'
+import { useState, useMemo } from 'react'
+import { Link, useNavigate, useSearchParams } from 'react-router-dom'
 import { useAuth } from '../contexts/AuthContext.jsx'
 import { supabase } from '../lib/supabase.js'
 
+const VALID_PLANS = ['starter', 'professional', 'enterprise']
+
 export default function Signup() {
+  const [searchParams] = useSearchParams()
+  const selectedPlan = useMemo(() => {
+    const p = searchParams.get('plan')?.toLowerCase()
+    return VALID_PLANS.includes(p) ? p : null
+  }, [searchParams])
+
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [displayName, setDisplayName] = useState('')
@@ -30,6 +38,11 @@ export default function Signup() {
         role,
         org_name: role !== 'parent' ? orgName.trim() : '',
       })
+
+      // Persist selected plan so it survives the email-confirm→login flow
+      if (selectedPlan) {
+        try { localStorage.setItem('skillcascade_pending_plan', selectedPlan) } catch {}
+      }
 
       setSuccess(true)
     } catch (err) {
@@ -75,6 +88,11 @@ export default function Signup() {
             Skill<span className="text-sage-500">Cascade</span>
           </Link>
           <p className="text-sm text-warm-500 mt-1">Create your account</p>
+          {selectedPlan && (
+            <p className="text-xs text-sage-600 mt-1 font-medium capitalize">
+              Selected plan: {selectedPlan}
+            </p>
+          )}
         </div>
 
         {/* Error */}

@@ -57,7 +57,7 @@ const LEGAL_PAGES = {
       },
       {
         heading: 'Description of Service',
-        content: 'SkillCascade is a developmental-functional assessment tool for ABA therapy professionals. The Service provides: skill assessment across 9 developmental domains (300+ skills), clinical intelligence and visualization tools, AI-assisted clinical writing, report generation, and data import/export capabilities.',
+        content: 'SkillCascade is a developmental-functional assessment tool for ABA therapy professionals. The Service provides: skill assessment across 9 developmental domains (260+ skills), clinical intelligence and visualization tools, AI-assisted clinical writing, report generation, and data import/export capabilities.',
       },
       {
         heading: 'Account Registration',
