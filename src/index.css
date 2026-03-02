@@ -173,6 +173,14 @@ body {
 .dark .border-amber-500 { border-color: #d4a017 !important; }
 .dark .ring-amber-400 { --tw-ring-color: #b8860b !important; }
 
+/* Blue → bright blue for dark mode links */
+.dark .text-blue-400 { color: #60a5fa !important; }
+.dark .text-blue-700 { color: #93c5fd !important; }
+.dark .text-blue-900 { color: #bfdbfe !important; }
+.dark .decoration-blue-400 { text-decoration-color: #60a5fa !important; }
+.dark .decoration-blue-500 { text-decoration-color: #3b82f6 !important; }
+.dark .bg-blue-50 { background-color: rgba(59, 130, 246, 0.15) !important; }
+
 /* Purple → muted violet for AI features */
 .dark .text-purple-600 { color: #b39ddb !important; }
 .dark .border-l-purple-400 { border-left-color: #9575cd !important; }

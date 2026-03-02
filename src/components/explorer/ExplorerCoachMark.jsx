@@ -74,7 +74,8 @@ export default memo(function ExplorerCoachMark({ step, onDismiss, isPhone }) {
             </div>
             <button
               onClick={onDismiss}
-              className="text-gray-500 hover:text-gray-300 transition-colors p-1 -mr-1 min-h-[28px] min-w-[28px] flex items-center justify-center"
+              aria-label="Dismiss guide"
+              className="text-gray-500 hover:text-gray-300 transition-colors p-1 -mr-1 min-h-[44px] min-w-[44px] flex items-center justify-center"
             >
               <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
                 <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />

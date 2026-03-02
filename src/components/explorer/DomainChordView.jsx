@@ -341,7 +341,7 @@ export default memo(function DomainChordView({
             onClick={() => onDrillToDomain(id)}
             onMouseEnter={(e) => handleArcHover(e, i)}
             onMouseLeave={handleArcLeave}
-            className="flex items-center gap-1.5 text-[10px] text-gray-400 hover:text-white transition-colors min-h-[28px] px-1"
+            className="flex items-center gap-1.5 text-[10px] text-gray-400 hover:text-white transition-colors min-h-[44px] px-1"
           >
             <div className="w-2 h-2 rounded-full flex-shrink-0" style={{ backgroundColor: DOMAIN_COLORS[id] }} />
             {getDomainName(id)}

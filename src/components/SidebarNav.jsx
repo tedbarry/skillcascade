@@ -310,7 +310,7 @@ export default function SidebarNav({ activeView, onChangeView, collapsed = false
                           key={view.key}
                           onClick={() => handleViewClick(view.key, group.id)}
                           {...(VIEW_TOUR_ATTR[view.key] ? { 'data-tour': VIEW_TOUR_ATTR[view.key] } : {})}
-                          className={`relative w-full flex items-center gap-2 pl-9 pr-3 py-1.5 text-left text-[13px] transition-colors min-h-[40px] ${
+                          className={`relative w-full flex items-center gap-2 pl-9 pr-3 py-1.5 text-left text-[13px] transition-colors min-h-[44px] ${
                             isActive
                               ? 'bg-sage-50 text-sage-700 font-medium'
                               : 'text-warm-500 hover:bg-warm-50 hover:text-warm-700'
@@ -344,7 +344,7 @@ export default function SidebarNav({ activeView, onChangeView, collapsed = false
         {onOpenShortcuts && (
           <button
             onClick={onOpenShortcuts}
-            className="w-full flex items-center gap-2.5 px-2 py-2 text-left text-[13px] text-warm-500 hover:text-warm-700 hover:bg-warm-50 rounded-lg transition-colors min-h-[40px]"
+            className="w-full flex items-center gap-2.5 px-2 py-2 text-left text-[13px] text-warm-500 hover:text-warm-700 hover:bg-warm-50 rounded-lg transition-colors min-h-[44px]"
           >
             <svg className="w-4 h-4 text-warm-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.75} strokeLinecap="round" strokeLinejoin="round">
               <rect x="2" y="4" width="20" height="16" rx="2" />
@@ -359,7 +359,7 @@ export default function SidebarNav({ activeView, onChangeView, collapsed = false
         {onRestartTour && (
           <button
             onClick={onRestartTour}
-            className="w-full flex items-center gap-2.5 px-2 py-2 text-left text-[13px] text-warm-500 hover:text-warm-700 hover:bg-warm-50 rounded-lg transition-colors min-h-[40px]"
+            className="w-full flex items-center gap-2.5 px-2 py-2 text-left text-[13px] text-warm-500 hover:text-warm-700 hover:bg-warm-50 rounded-lg transition-colors min-h-[44px]"
           >
             <svg className="w-4 h-4 text-warm-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.75}>
               <path strokeLinecap="round" strokeLinejoin="round" d="M4.5 12c0-4.14 3.36-7.5 7.5-7.5 2.485 0 4.687 1.21 6.05 3.07M19.5 12c0 4.14-3.36 7.5-7.5 7.5-2.485 0-4.687-1.21-6.05-3.07M19.5 4.5v3.07h-3.07M4.5 19.5v-3.07h3.07" />

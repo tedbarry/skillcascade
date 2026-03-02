@@ -215,7 +215,7 @@ export default memo(function DependencyExplorer({ assessments = {} }) {
         {navHistory.length > 0 && (
           <button
             onClick={handleNavigateBack}
-            className="flex items-center gap-1 text-xs text-gray-400 hover:text-white px-1.5 py-1 rounded transition-colors min-h-[28px] mr-1"
+            className="flex items-center gap-1 text-xs text-gray-400 hover:text-white px-1.5 py-1 rounded transition-colors min-h-[44px] mr-1"
             title="Go back"
           >
             <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
@@ -244,7 +244,7 @@ export default memo(function DependencyExplorer({ assessments = {} }) {
               ) : (
                 <button
                   onClick={() => handleGoToLevel(crumb.level)}
-                  className="text-xs text-gray-400 hover:text-white px-1 py-0.5 rounded transition-colors min-h-[28px]"
+                  className="text-xs text-gray-400 hover:text-white px-1 py-0.5 rounded transition-colors min-h-[44px]"
                 >
                   {crumb.label}
                 </button>
@@ -258,14 +258,14 @@ export default memo(function DependencyExplorer({ assessments = {} }) {
           {level === 2 && focusDomainId && (
             <button
               onClick={handleShowFullWeb}
-              className="text-[10px] text-gray-500 hover:text-gray-300 border border-gray-700 rounded px-2 py-1 transition-colors min-h-[28px]"
+              className="text-[10px] text-gray-500 hover:text-gray-300 border border-gray-700 rounded px-2 py-1 transition-colors min-h-[44px]"
             >
               Show All
             </button>
           )}
           <button
             onClick={handleGuideRestart}
-            className="text-gray-500 hover:text-gray-300 transition-colors min-h-[28px] min-w-[28px] flex items-center justify-center"
+            className="text-gray-500 hover:text-gray-300 transition-colors min-h-[44px] min-w-[44px] flex items-center justify-center"
             title="How to use the Explorer"
           >
             <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>

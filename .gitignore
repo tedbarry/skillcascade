@@ -18,5 +18,8 @@ Thumbs.db
 .env.local
 .env.*.local
 
+# Supabase temp
+supabase/.temp/
+
 # Claude Code
 .claude/

@@ -161,7 +161,7 @@ export default memo(function BottleneckFinderView({
               const prereqBtn = onNavigateToAssess ? (
                 <button
                   onClick={() => onNavigateToAssess(getSubAreaFromId(top.id))}
-                  className="underline underline-offset-2 decoration-blue-400 text-blue-400 hover:text-blue-300 font-medium transition-colors not-italic cursor-pointer"
+                  className="underline underline-offset-2 decoration-blue-400 text-blue-400 hover:text-blue-300 font-semibold bg-blue-900/30 px-0.5 rounded not-italic transition-colors cursor-pointer"
                 >
                   {prereqName}
                 </button>

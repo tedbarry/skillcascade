@@ -89,7 +89,7 @@ function HeadlineBanner({ headline, narratives, onAssess, onGoal, isPhone }) {
             {onAssess && (
               <button
                 onClick={() => onAssess(topAction.domainId + '-sa1')}
-                className="text-[11px] font-medium bg-amber-600/20 text-amber-400 hover:bg-amber-600/30 px-3 py-1.5 rounded-lg transition-colors min-h-[32px]"
+                className="text-[11px] font-medium bg-amber-600/20 text-amber-400 hover:bg-amber-600/30 px-3 py-1.5 rounded-lg transition-colors min-h-[44px]"
               >
                 Assess Now
               </button>
@@ -97,7 +97,7 @@ function HeadlineBanner({ headline, narratives, onAssess, onGoal, isPhone }) {
             {onGoal && (
               <button
                 onClick={() => onGoal(topAction.domainId)}
-                className="text-[11px] font-medium bg-[#2a2a33] text-gray-400 hover:text-gray-300 px-3 py-1.5 rounded-lg transition-colors min-h-[32px]"
+                className="text-[11px] font-medium bg-[#2a2a33] text-gray-400 hover:text-gray-300 px-3 py-1.5 rounded-lg transition-colors min-h-[44px]"
               >
                 Set Goal
               </button>
@@ -160,7 +160,7 @@ function TargetSkillCard({ skill, index, isExpanded, onToggle, onAssess, isPhone
           {onAssess && (
             <button
               onClick={(e) => { e.stopPropagation(); onAssess(skill.subAreaId || skill.domainId + '-sa1') }}
-              className="text-[10px] text-gray-500 hover:text-amber-400 px-2 py-1 rounded transition-colors shrink-0 min-h-[32px]"
+              className="text-[10px] text-gray-500 hover:text-amber-400 px-2 py-1 rounded transition-colors shrink-0 min-h-[44px]"
             >
               Assess
             </button>
@@ -363,7 +363,7 @@ function DomainDetail({ domainId, insight, isPhone, onAssess, onGoal, onShowPath
           {onAssess && (
             <button
               onClick={() => onAssess(domainId + '-sa1')}
-              className="text-[10px] font-medium bg-amber-600/20 text-amber-400 hover:bg-amber-600/30 px-2.5 py-1 rounded-md transition-colors min-h-[32px]"
+              className="text-[10px] font-medium bg-amber-600/20 text-amber-400 hover:bg-amber-600/30 px-2.5 py-1 rounded-md transition-colors min-h-[44px]"
             >
               Assess
             </button>
@@ -371,7 +371,7 @@ function DomainDetail({ domainId, insight, isPhone, onAssess, onGoal, onShowPath
           {onGoal && (
             <button
               onClick={() => onGoal(domainId)}
-              className="text-[10px] font-medium bg-[#2a2a33] text-gray-400 hover:text-gray-300 px-2.5 py-1 rounded-md transition-colors min-h-[32px]"
+              className="text-[10px] font-medium bg-[#2a2a33] text-gray-400 hover:text-gray-300 px-2.5 py-1 rounded-md transition-colors min-h-[44px]"
             >
               Set Goal
             </button>
@@ -379,7 +379,7 @@ function DomainDetail({ domainId, insight, isPhone, onAssess, onGoal, onShowPath
           {onShowPath && (
             <button
               onClick={() => onShowPath(domainId)}
-              className="text-[10px] font-medium bg-[#2a2a33] text-gray-400 hover:text-gray-300 px-2.5 py-1 rounded-md transition-colors min-h-[32px]"
+              className="text-[10px] font-medium bg-[#2a2a33] text-gray-400 hover:text-gray-300 px-2.5 py-1 rounded-md transition-colors min-h-[44px]"
             >
               {pathSteps ? 'Hide Path' : 'Show Path'}
             </button>
@@ -434,7 +434,7 @@ function AINudgeSection({ targetSkills, onOpenAI, onNavigateToGoals, onDismiss, 
         <span className="text-[10px] font-mono tracking-widest text-[#7fb589] uppercase">AI Can Help</span>
         <button
           onClick={onDismiss}
-          className="text-[10px] text-gray-600 hover:text-gray-400 min-h-[32px] min-w-[32px] flex items-center justify-center"
+          className="text-[10px] text-gray-600 hover:text-gray-400 min-h-[44px] min-w-[44px] flex items-center justify-center"
         >
           Dismiss
         </button>
@@ -826,7 +826,7 @@ function ModeToggle({ mode, onModeChange }) {
     <div className="flex items-center gap-1 bg-[#16161e] rounded-lg p-0.5 w-fit">
       <button
         onClick={() => onModeChange('directive')}
-        className={`text-[10px] font-medium px-3 py-1.5 rounded-md transition-all min-h-[32px] ${
+        className={`text-[10px] font-medium px-3 py-1.5 rounded-md transition-all min-h-[44px] ${
           mode === 'directive'
             ? 'bg-[#2a2a33] text-gray-200 shadow-sm'
             : 'text-gray-600 hover:text-gray-400'
@@ -836,7 +836,7 @@ function ModeToggle({ mode, onModeChange }) {
       </button>
       <button
         onClick={() => onModeChange('discovery')}
-        className={`text-[10px] font-medium px-3 py-1.5 rounded-md transition-all min-h-[32px] ${
+        className={`text-[10px] font-medium px-3 py-1.5 rounded-md transition-all min-h-[44px] ${
           mode === 'discovery'
             ? 'bg-[#2a2a33] text-gray-200 shadow-sm'
             : 'text-gray-600 hover:text-gray-400'

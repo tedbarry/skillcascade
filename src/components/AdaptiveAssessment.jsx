@@ -230,7 +230,7 @@ export default function AdaptiveAssessment({ assessments, onAssess, onComplete }
           <div className="flex items-center gap-2">
             <button
               onClick={() => setExpandAll(e => !e)}
-              className={`px-2.5 py-1.5 min-h-[36px] text-xs font-medium rounded-md border transition-colors ${
+              className={`px-2.5 py-1.5 min-h-[44px] text-xs font-medium rounded-md border transition-colors ${
                 expandAll
                   ? 'border-sage-400 bg-sage-50 text-sage-700'
                   : 'border-warm-300 text-warm-500 hover:bg-warm-100'
@@ -241,7 +241,7 @@ export default function AdaptiveAssessment({ assessments, onAssess, onComplete }
             </button>
             <button
               onClick={handleDone}
-              className="px-3 py-1.5 min-h-[36px] text-xs font-semibold rounded-md bg-sage-500 text-white hover:bg-sage-600 transition-colors"
+              className="px-3 py-1.5 min-h-[44px] text-xs font-semibold rounded-md bg-sage-500 text-white hover:bg-sage-600 transition-colors"
             >
               Done for now
             </button>
@@ -354,14 +354,14 @@ export default function AdaptiveAssessment({ assessments, onAssess, onComplete }
                 {hasMore && (
                   <button
                     onClick={handleNextBatch}
-                    className="text-[11px] font-medium text-sage-700 hover:text-sage-800 bg-sage-100 hover:bg-sage-200 rounded px-3 py-1.5 min-h-[36px] transition-colors"
+                    className="text-[11px] font-medium text-sage-700 hover:text-sage-800 bg-sage-100 hover:bg-sage-200 rounded px-3 py-1.5 min-h-[44px] transition-colors"
                   >
                     Continue
                   </button>
                 )}
                 <button
                   onClick={handleDone}
-                  className="text-[11px] font-medium text-warm-500 hover:text-warm-700 bg-warm-100 hover:bg-warm-200 rounded px-3 py-1.5 min-h-[36px] transition-colors"
+                  className="text-[11px] font-medium text-warm-500 hover:text-warm-700 bg-warm-100 hover:bg-warm-200 rounded px-3 py-1.5 min-h-[44px] transition-colors"
                 >
                   Done for now
                 </button>
@@ -478,7 +478,7 @@ function SkillRatingCard({ item, currentLevel, assessments, onRate, expanded, on
             <button
               key={opt.level}
               onClick={() => onRate(item.skillId, opt.level)}
-              className={`flex-1 py-1.5 min-h-[36px] rounded-md text-xs font-semibold transition-all ${
+              className={`flex-1 py-1.5 min-h-[44px] rounded-md text-xs font-semibold transition-all ${
                 isSelected
                   ? 'ring-2 ring-offset-1 shadow-sm'
                   : aboveCeiling

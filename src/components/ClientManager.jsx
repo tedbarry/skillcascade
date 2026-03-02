@@ -359,13 +359,13 @@ export default function ClientManager({ currentClientId, onSelectClient, assessm
                             <div className="flex gap-1">
                               <button
                                 onClick={() => handleDelete(client.id)}
-                                className="text-[10px] px-2.5 py-1.5 rounded bg-red-500 text-white hover:bg-red-600 min-h-[32px]"
+                                className="text-[10px] px-2.5 py-1.5 rounded bg-red-500 text-white hover:bg-red-600 min-h-[44px]"
                               >
                                 Delete
                               </button>
                               <button
                                 onClick={() => setConfirmDelete(null)}
-                                className="text-[10px] px-2.5 py-1.5 rounded bg-warm-200 text-warm-600 hover:bg-warm-300 min-h-[32px]"
+                                className="text-[10px] px-2.5 py-1.5 rounded bg-warm-200 text-warm-600 hover:bg-warm-300 min-h-[44px]"
                               >
                                 Cancel
                               </button>

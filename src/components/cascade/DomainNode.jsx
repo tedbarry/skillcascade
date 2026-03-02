@@ -59,6 +59,7 @@ export default memo(function DomainNode({
       role="button"
       aria-label={`${node.name}: ${hasData ? node.avg.toFixed(1) + '/3' : 'Not assessed'}`}
       onClick={() => onClick?.(node.id)}
+      onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); onClick?.(node.id) } }}
       onMouseEnter={(e) => onHover?.(e, node)}
       onMouseMove={(e) => onHover?.(e, node)}
       onMouseLeave={() => onHoverEnd?.()}

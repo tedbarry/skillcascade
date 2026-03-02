@@ -471,7 +471,7 @@ function SkillCard({ rec, onNavigateToAssess, isExpanded, onToggle, assessments 
             const prereqBtn = onNavigateToAssess ? (
               <button
                 onClick={() => onNavigateToAssess(getSubAreaFromId(top.id))}
-                className="underline underline-offset-2 decoration-blue-400 text-blue-700 hover:text-blue-900 font-medium transition-colors not-italic cursor-pointer"
+                className="underline underline-offset-2 decoration-blue-500 text-blue-700 hover:text-blue-900 font-semibold bg-blue-50 px-0.5 rounded not-italic transition-colors cursor-pointer"
               >
                 {prereqName}
               </button>

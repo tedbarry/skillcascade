@@ -3,7 +3,7 @@ import { framework } from '../../data/framework.js'
 import { getDomainFromId, getSubAreaFromId } from '../../data/skillDependencies.js'
 import { getSkillDescription } from '../../data/skillDescriptions.js'
 import { getBehavioralIndicator } from '../../data/behavioralIndicators.js'
-import { getSkillCeiling, computeSkillInfluence } from '../../data/skillInfluence.js'
+import { getSkillCeiling } from '../../data/skillInfluence.js'
 import { generateSkillNarrative } from '../../lib/narratives.js'
 import useResponsive from '../../hooks/useResponsive.js'
 import ExplorerTooltip from './ExplorerTooltip.jsx'
@@ -234,7 +234,7 @@ export default memo(function SkillExplorerView({
     const prereqBtn = (
       <button
         onClick={handlePrereqClick}
-        className="underline underline-offset-2 decoration-blue-400 text-blue-400 hover:text-blue-300 font-medium transition-colors not-italic cursor-pointer"
+        className="underline underline-offset-2 decoration-blue-400 text-blue-400 hover:text-blue-300 font-semibold bg-blue-900/30 px-0.5 rounded not-italic transition-colors cursor-pointer"
       >
         {prereqName}
       </button>
@@ -952,7 +952,7 @@ function SkillCard({ node, isSelected, cascadeInfo, selectedSkillId, edges, onSe
             <button
               key={sat.id}
               onClick={() => onCrossNavigate?.(sat)}
-              className="flex items-center gap-2 text-[10px] text-gray-400 hover:text-white transition-colors min-h-[32px]"
+              className="flex items-center gap-2 text-[10px] text-gray-400 hover:text-white transition-colors min-h-[44px]"
             >
               <div className="w-2 h-2 rounded-full" style={{ backgroundColor: DOMAIN_COLORS[sat.domainId] }} />
               <span>{sat.direction === 'upstream' ? '\u2190' : '\u2192'} {sat.name}</span>
