@@ -133,20 +133,24 @@ export default function AssessmentPanel({ assessments, onAssess, initialSubAreaI
     if (idx >= 0) {
       setCurrentIndex(idx)
       setHighlightedSkillId(skillId)
-      // After React renders, scroll the skill into view
+      // After React renders the new sub-area, scroll container to the target skill
       setTimeout(() => {
         const el = document.getElementById(`skill-${skillId}`)
-        if (el) el.scrollIntoView({ behavior: 'smooth', block: 'center' })
-      }, 100)
-      // Clear highlight after 2s
+        const container = contentRef.current
+        if (el && container) {
+          const elTop = el.offsetTop - container.offsetTop
+          container.scrollTo({ top: Math.max(0, elTop - 40), behavior: 'smooth' })
+        }
+      }, 150)
+      // Clear highlight after 2.5s
       setTimeout(() => setHighlightedSkillId(null), 2500)
     }
   }, [])
 
-  // Auto-scroll content to top when sub-area changes
+  // Auto-scroll content to top when sub-area changes (skip when navigating to a specific skill)
   useEffect(() => {
-    if (contentRef.current) contentRef.current.scrollTop = 0
-  }, [currentIndex])
+    if (contentRef.current && !highlightedSkillId) contentRef.current.scrollTop = 0
+  }, [currentIndex, highlightedSkillId])
 
   // aria-live announcement for keyboard navigation
   const [navAnnouncement, setNavAnnouncement] = useState('')
