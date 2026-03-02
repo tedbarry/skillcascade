@@ -25,6 +25,7 @@ import UnsavedChangesDialog from '../components/UnsavedChangesDialog.jsx'
 import useContextualHint from '../hooks/useContextualHint.js'
 import ContextualHint from '../components/ContextualHint.jsx'
 import KBLink from '../components/kb/KBLink.jsx'
+import KBHelpIcon from '../components/kb/KBHelpIcon.jsx'
 
 // Lazy-loaded view components — each gets its own chunk, loaded on-demand
 const HomeDashboard = lazy(() => import('../components/HomeDashboard.jsx'))
@@ -867,7 +868,7 @@ export default function Dashboard() {
             <Suspense fallback={<ViewLoader view={activeView} />}>
               <div data-tour="radar-view" className="w-full max-w-2xl mx-auto">
                 <h2 className="text-lg font-semibold text-warm-800 font-display mb-1 text-center">
-                  Skills Profile — Domain Overview
+                  Skills Profile — Domain Overview <KBHelpIcon term="view-radar-chart" />
                 </h2>
                 <p className="text-sm text-warm-500 mb-4 text-center">
                   Average score per domain across all assessed skills.
@@ -904,7 +905,7 @@ export default function Dashboard() {
             <Suspense fallback={<ViewLoader view={activeView} />}>
               <div data-tour="tree-view" className="w-full max-w-4xl mx-auto">
                 <h2 className="text-lg font-semibold text-warm-800 font-display mb-1 text-center">
-                  Skill Tree — Domain Dependencies
+                  Skill Tree — Domain Dependencies <KBHelpIcon term="view-skill-tree" />
                 </h2>
                 <p className="text-sm text-warm-500 mb-6 text-center">
                   Developmental hierarchy — prerequisites cascade upward. Pulsing node = recommended focus area. Click to expand.
@@ -940,6 +941,12 @@ export default function Dashboard() {
           {activeView === VIEWS.TIMELINE && (
             <Suspense fallback={<ViewLoader view={activeView} />}>
               <div data-tour="timeline-view" className="w-full h-full">
+                <h2 className="text-lg font-semibold text-warm-800 font-display mb-1 text-center">
+                  Progress Timeline <KBHelpIcon term="view-timeline" />
+                </h2>
+                <p className="text-sm text-warm-500 mb-4 text-center">
+                  Track domain scores over time with snapshots. Save, compare, and visualize progress.
+                </p>
                 <ProgressTimeline
                   snapshots={snapshots}
                   currentAssessments={assessments}
@@ -1146,6 +1153,12 @@ export default function Dashboard() {
           {activeView === VIEWS.COMPARE && (
             <div className="w-full h-full overflow-y-auto">
               <Suspense fallback={<ViewLoader view={activeView} />}>
+                <h2 className="text-lg font-semibold text-warm-800 font-display mb-1 text-center">
+                  Snapshot Comparison <KBHelpIcon term="view-compare" />
+                </h2>
+                <p className="text-sm text-warm-500 mb-4 text-center">
+                  Compare two snapshots side-by-side to see what changed.
+                </p>
                 <ComparisonView
                   assessments={assessments}
                   clientName={clientName}
