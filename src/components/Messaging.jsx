@@ -2,6 +2,7 @@ import { useState, useEffect, useRef, useCallback } from 'react'
 import { supabase } from '../lib/supabase.js'
 import { useAuth } from '../contexts/AuthContext.jsx'
 import EmptyState from './EmptyState.jsx'
+import KBHelpIcon from './kb/KBHelpIcon.jsx'
 
 /* ─────────────────────────────────────────────
    SVG Icons (inline, no emoji)
@@ -286,7 +287,7 @@ export default function Messaging({
           <div className="text-sage-600">{ICONS.message}</div>
           <div>
             <h3 className="font-display text-sm font-semibold text-warm-800 leading-tight">
-              Messages
+              Messages <KBHelpIcon term="view-messaging" />
               {clientName && (
                 <span className="font-normal text-warm-500"> — {clientName}</span>
               )}

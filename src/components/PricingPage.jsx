@@ -3,6 +3,7 @@ import { Link, useNavigate } from 'react-router-dom'
 import useResponsive from '../hooks/useResponsive'
 import { useAuth } from '../contexts/AuthContext.jsx'
 import useSubscription from '../hooks/useSubscription.js'
+import KBHelpIcon from './kb/KBHelpIcon.jsx'
 
 /* ── Inline SVG Icons ─────────────────────────────────────── */
 
@@ -714,7 +715,7 @@ export default function PricingPage() {
             id="pricing-heading"
             className="font-display text-4xl font-extrabold tracking-tight text-warm-900 sm:text-5xl"
           >
-            Simple, transparent pricing
+            Simple, transparent pricing <KBHelpIcon term="view-pricing" />
           </h1>
           <p className="mx-auto mt-4 max-w-xl text-warm-500 text-base sm:text-lg">
             Every plan includes HIPAA-compliant data storage. No hidden fees.

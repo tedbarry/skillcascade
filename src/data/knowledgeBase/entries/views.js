@@ -764,4 +764,201 @@ The overlay is designed for keyboard-first use. Arrow keys navigate results, Ent
     relatedIds: ['guide-dashboard', 'guide-ai-features', 'view-ai-assistant'],
     source: 'manual',
   },
+  {
+    id: 'view-certifications',
+    title: 'Outcome Certification',
+    category: 'views',
+    tags: ['certification', 'certificate', 'achievement', 'mastery', 'milestone', 'progress', 'print', 'share', 'PDF'],
+    summary: 'Generate shareable achievement certificates that celebrate client progress — from domain mastery to individual skill milestones.',
+    body: `Outcome Certification creates professional, shareable certificates that recognize a client's achievements. Certificates can be printed, downloaded as images, or shared with families and team members.
+
+## Certificate types
+
+- **Domain Mastery**: Awarded when a client reaches a threshold score across an entire domain. Highlights the domain name, score, and date achieved.
+- **Milestone Achievement**: Recognizes specific developmental milestones such as reaching a target number of mastered skills or completing a sub-area.
+- **Growth & Progress**: Celebrates measurable improvement over time rather than absolute mastery — useful for clients making steady gains.
+- **Comprehensive**: A full-page summary certificate covering all domains, with scores and a narrative summary of the client's progress.
+
+## How to generate
+
+1. Open Outcome Certification from the sidebar or More menu.
+2. Select a certificate type from the available options.
+3. Choose the client and review the pre-filled achievement data.
+4. Customize the text if desired — the title, description, and signature line are editable.
+5. Click Print or Download to produce the certificate.
+
+## Customization
+
+Certificates use your organization's branding (name and colors) if configured in Branding Settings. The signature line defaults to the logged-in clinician's name but can be changed. Date and client name are auto-populated from assessment data.
+
+## When to use
+
+Certificates are a motivational tool. Share them during parent meetings, attach them to progress reports, or display them in the therapy room. They reinforce positive outcomes and give families tangible proof of their child's growth.`,
+    relatedIds: ['view-reports', 'view-progress-story', 'view-milestones'],
+    source: 'manual',
+  },
+  {
+    id: 'view-messaging',
+    title: 'Team Messaging',
+    category: 'views',
+    tags: ['messages', 'messaging', 'chat', 'team', 'communication', 'notes', 'templates', 'collaboration'],
+    summary: 'Send and receive messages within your clinical team — with quick templates, date grouping, and per-client conversation threads.',
+    body: `Team Messaging provides a simple, HIPAA-compliant communication channel for clinical teams. Messages are organized per client and synced via Supabase in real time.
+
+## Message threads
+
+Each client has their own message thread. When you open Messaging, you see the conversation for the currently selected client. Messages are grouped by date with clear dividers so you can quickly scan recent activity.
+
+## Quick templates
+
+Pre-built message templates speed up common communications:
+- Session summary updates
+- Skill milestone notifications
+- Schedule coordination notes
+- Parent communication drafts
+
+Click a template to insert it, then customize before sending. Templates save time on repetitive clinical notes.
+
+## Team collaboration
+
+All team members with access to a client can view and contribute to that client's message thread. This keeps clinical discussion centralized rather than scattered across email and external chat tools.
+
+## Sync and storage
+
+Messages sync to Supabase automatically. They persist across sessions and devices. Offline messages queue locally and send when connectivity is restored.`,
+    relatedIds: ['guide-quick-start', 'view-caseload', 'guide-data-privacy'],
+    source: 'manual',
+  },
+  {
+    id: 'view-branding',
+    title: 'Organization Branding',
+    category: 'views',
+    tags: ['branding', 'logo', 'organization', 'colors', 'reports', 'customization', 'theme', 'identity'],
+    summary: 'Customize your organization\'s identity — upload a logo, set brand colors, and configure how your practice appears on reports and certificates.',
+    body: `Organization Branding lets you personalize SkillCascade with your practice's identity. Your branding appears on generated reports, certificates, and exported documents.
+
+## Logo
+
+Upload your organization's logo (PNG, JPG, or SVG). The logo appears in the header of printed reports and on certificates. A preview shows how it will render at different sizes.
+
+## Organization name
+
+Set your practice or clinic name. This appears alongside the logo on reports and as the issuing organization on certificates.
+
+## Brand colors
+
+Choose a primary and secondary color for your organization. These colors are used as accents in reports and certificates, giving exported documents a consistent, professional look that matches your practice's identity.
+
+## Report customization
+
+Control which branding elements appear on different document types:
+- **Reports**: Logo, organization name, and brand colors
+- **Certificates**: Logo, organization name, color accents, and signature line
+- **Exports**: Organization name in headers
+
+## How to access
+
+Open Branding from the Settings menu or the organization settings section. Changes save automatically and apply to all future generated documents.`,
+    relatedIds: ['view-reports', 'view-certifications', 'view-settings'],
+    source: 'manual',
+  },
+  {
+    id: 'view-accessibility',
+    title: 'Accessibility Settings',
+    category: 'views',
+    tags: ['accessibility', 'a11y', 'font size', 'contrast', 'motion', 'dyslexia', 'color blind', 'vision', 'screen reader'],
+    summary: 'Adjust display settings for visual accessibility — font size, contrast, motion reduction, dyslexia-friendly fonts, and color blind filters.',
+    body: `Accessibility Settings provides display adjustments that make SkillCascade easier to use for people with different visual needs. All changes apply immediately and persist across sessions.
+
+## Font size
+
+Increase or decrease the base font size across the entire application. The slider ranges from small to extra-large. This affects all text including labels, descriptions, and chart annotations.
+
+## High contrast
+
+Enable high-contrast mode to increase the distinction between foreground and background elements. Text becomes bolder, borders become more visible, and subtle color differences are amplified. Useful in bright environments or for users with low vision.
+
+## Reduce motion
+
+Disable or minimize animations throughout the application. When enabled, transitions are instant, chart animations are skipped, and hover effects are simplified. This setting also respects the operating system's prefers-reduced-motion preference automatically.
+
+## Dyslexia-friendly mode
+
+Switch to a dyslexia-optimized font (OpenDyslexic or similar) that increases letter distinction and spacing. Line height and word spacing are also adjusted to improve readability.
+
+## Color blind filters
+
+Apply color correction filters for common forms of color vision deficiency:
+- **Protanopia** (red-blind)
+- **Deuteranopia** (green-blind)
+- **Tritanopia** (blue-blind)
+
+Filters adjust chart colors, status indicators, and tier badges so that color-coded information remains distinguishable.
+
+## Scope
+
+Settings are saved to your user profile and apply on every device you log in from. They do not affect how data appears to other users on your team.`,
+    relatedIds: ['view-settings', 'guide-quick-start'],
+    source: 'manual',
+  },
+  {
+    id: 'view-marketplace',
+    title: 'Marketplace',
+    category: 'views',
+    tags: ['marketplace', 'add-ons', 'extensions', 'community', 'install', 'templates', 'tools', 'integrations'],
+    summary: 'Browse and install community add-ons — assessment templates, report formats, data connectors, and clinical tools built by other practitioners.',
+    body: `The Marketplace is a curated catalog of add-ons and extensions that expand SkillCascade's capabilities. Browse tools built by the community and the SkillCascade team, then install them with one click.
+
+## Categories
+
+Add-ons are organized into categories:
+- **Assessment Templates**: Pre-built assessment configurations for specific populations or clinical focuses
+- **Report Formats**: Custom report layouts and export templates
+- **Data Connectors**: Import/export integrations with external practice management systems
+- **Clinical Tools**: Supplementary tools like visual supports, data sheets, and parent handouts
+- **Visualization Themes**: Alternative color schemes and chart styles
+
+## Browsing and search
+
+Use the search bar to find add-ons by name or keyword. Filter by category, popularity, or recency. Each listing shows a description, author, install count, and rating.
+
+## Installing add-ons
+
+Click Install on any add-on to activate it in your account. Installed add-ons appear in the relevant section of SkillCascade — for example, a report format add-on appears as an option in the Report Generator. Uninstall at any time from the Marketplace or Settings.
+
+## Community contributions
+
+Practitioners can submit their own templates and tools for review. Approved contributions are published to the Marketplace and credited to the author. This creates a shared knowledge base of clinical resources that grows with the community.`,
+    relatedIds: ['view-reports', 'guide-data-import', 'view-settings'],
+    source: 'manual',
+  },
+  {
+    id: 'view-pricing',
+    title: 'Pricing & Plans',
+    category: 'views',
+    tags: ['pricing', 'plans', 'subscription', 'billing', 'free', 'starter', 'professional', 'enterprise', 'stripe'],
+    summary: 'Compare subscription tiers and choose the plan that fits your practice — from a free tier for solo clinicians to enterprise plans for large organizations.',
+    body: `The Pricing page shows available subscription tiers and helps you choose the right plan for your practice. All plans include HIPAA-compliant data handling and core assessment features.
+
+## Plans overview
+
+- **Free**: For solo clinicians getting started. Includes core assessment tools, limited client slots, and basic reporting. No credit card required.
+- **Starter**: For individual practitioners with a growing caseload. Adds more client slots, snapshot history, and CSV export.
+- **Professional**: For established practices. Includes unlimited clients, AI-powered insights, advanced reporting, and priority support.
+- **Enterprise**: For organizations and multi-site practices. Adds team management, organization branding, analytics dashboards, and a dedicated account manager.
+
+## Feature comparison
+
+The pricing page includes a detailed feature comparison table so you can see exactly what each tier includes. Key differentiators include client limits, AI features, export options, and team collaboration tools.
+
+## Billing
+
+Subscriptions are managed through Stripe. You can upgrade, downgrade, or cancel at any time from your Profile page under the Billing section. Changes take effect at the start of the next billing cycle.
+
+## Early access
+
+During the early access period, additional features may be available at discounted rates. Check the pricing page for current promotions and early-adopter benefits.`,
+    relatedIds: ['guide-quick-start', 'view-settings', 'guide-data-privacy'],
+    source: 'manual',
+  },
 ]

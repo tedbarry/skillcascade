@@ -2,6 +2,7 @@ import { useState, useMemo } from 'react'
 import { framework, ASSESSMENT_LEVELS, getDomainScores, isAssessed } from '../data/framework.js'
 import { downloadFile } from '../data/exportUtils.js'
 import { escapeHTML } from '../lib/escapeHTML.js'
+import KBHelpIcon from './kb/KBHelpIcon.jsx'
 
 /* ─────────────────────────────────────────────
    SVG Icons (inline, no emoji, no icon libraries)
@@ -375,7 +376,7 @@ export default function OutcomeCertification({ assessments, clientName, snapshot
     <div className="max-w-4xl mx-auto p-6">
       {/* Header */}
       <div className="mb-6">
-        <h2 className="text-xl font-bold text-warm-800 font-display">Outcome Certification</h2>
+        <h2 className="text-xl font-bold text-warm-800 font-display">Outcome Certification <KBHelpIcon term="view-certifications" /></h2>
         <p className="text-sm text-warm-500 mt-1">
           Generate professional certificates documenting {clientName ? `${clientName}'s` : 'client'} skill achievements for records, parents, or schools.
         </p>

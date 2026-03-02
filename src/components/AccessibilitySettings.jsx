@@ -2,6 +2,7 @@ import { useState, useEffect, useCallback } from 'react'
 import { supabase, mergeUserSettings } from '../lib/supabase.js'
 import { useAuth } from '../contexts/AuthContext.jsx'
 import { safeGetItem, safeSetItem } from '../lib/safeStorage.js'
+import KBHelpIcon from './kb/KBHelpIcon.jsx'
 
 const STORAGE_KEY = 'skillcascade_accessibility'
 
@@ -167,7 +168,7 @@ export default function AccessibilitySettings({ onSettingsChange }) {
             <path strokeLinecap="round" strokeLinejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
             <path strokeLinecap="round" strokeLinejoin="round" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
           </svg>
-          Accessibility
+          Accessibility <KBHelpIcon term="view-accessibility" />
         </h3>
         <p className="text-sm text-warm-500 mt-0.5">Customize your experience</p>
       </div>

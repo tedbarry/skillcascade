@@ -2,6 +2,7 @@ import { useState, useEffect, useRef } from 'react'
 import { supabase } from '../lib/supabase.js'
 import { useAuth } from '../contexts/AuthContext.jsx'
 import { safeGetItem, safeSetItem, safeRemoveItem } from '../lib/safeStorage.js'
+import KBHelpIcon from './kb/KBHelpIcon.jsx'
 
 const STORAGE_KEY = 'skillcascade_branding'
 
@@ -163,7 +164,7 @@ export default function BrandingSettings({ onBrandingChange }) {
       <div className="flex items-start gap-3">
         <div className="p-2 rounded-lg bg-sage-50 text-sage-600 shrink-0">{Icons.building}</div>
         <div>
-          <h2 className="font-display text-lg font-semibold text-warm-800">Organization Branding</h2>
+          <h2 className="font-display text-lg font-semibold text-warm-800">Organization Branding <KBHelpIcon term="view-branding" /></h2>
           <p className="text-sm text-warm-500 mt-0.5">
             Customize how SkillCascade appears to your team and in generated reports.
             Changes take effect after saving.

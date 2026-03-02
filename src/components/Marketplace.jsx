@@ -1,5 +1,6 @@
 import { useState, useMemo } from 'react'
 import { safeGetItem, safeSetItem } from '../lib/safeStorage.js'
+import KBHelpIcon from './kb/KBHelpIcon.jsx'
 import useFocusTrap from '../hooks/useFocusTrap.js'
 
 /* ─────────────────────────────────────────────
@@ -535,7 +536,7 @@ export default function Marketplace() {
               </div>
               <div>
                 <h1 className="font-display text-2xl font-bold text-warm-900">
-                  Marketplace
+                  Marketplace <KBHelpIcon term="view-marketplace" />
                 </h1>
                 <p className="text-warm-500 text-sm mt-0.5">
                   Community-created assessments, goals, skills, and templates
