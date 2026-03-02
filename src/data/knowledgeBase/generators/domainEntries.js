@@ -17,15 +17,15 @@ export function generateDomainEntries() {
 
     const bodyParts = [
       domain.coreQuestion,
-      '',
-      `Key Insight: ${domain.keyInsight}`,
-      '',
-      `Core Capacities: ${domain.coreCapacities.join(', ')}`,
+    ]
+    if (domain.keyInsight) bodyParts.push('', `Key Insight: ${domain.keyInsight}`)
+    if (domain.coreCapacities?.length) bodyParts.push('', `Core Capacities: ${domain.coreCapacities.join(', ')}`)
+    bodyParts.push(
       '',
       `Sub-Areas (${domain.subAreas.length}): ${subAreaList}`,
       '',
       `Total Skills: ${skillCount}`,
-    ]
+    )
 
     if (depNames.length > 0) {
       bodyParts.push('', `Prerequisites: Depends on ${depNames.join(', ')}`)

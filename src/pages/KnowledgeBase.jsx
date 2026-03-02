@@ -16,8 +16,12 @@ export default function KnowledgeBase() {
   const category = searchParams.get('category') || ''
   const { isPhone, isDesktop } = useResponsive()
 
-  const categoryCounts = useMemo(() => getCategoryCounts(), [])
-  const searchIndex = useMemo(() => buildKBSearchIndex(getAllEntries()), [])
+  const categoryCounts = useMemo(() => {
+    try { return getCategoryCounts() } catch (e) { console.error('KB categoryCounts error:', e); return {} }
+  }, [])
+  const searchIndex = useMemo(() => {
+    try { return buildKBSearchIndex(getAllEntries()) } catch (e) { console.error('KB searchIndex error:', e); return [] }
+  }, [])
 
   // If viewing a specific entry
   if (slug) {
