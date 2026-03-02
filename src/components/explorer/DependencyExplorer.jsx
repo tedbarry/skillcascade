@@ -32,12 +32,15 @@ function ViewLoader() {
  * Breadcrumb: Domains > [Domain Name] > [Sub-Area] > [Skill]
  * Supports cross-domain navigation with back history.
  */
-export default memo(function DependencyExplorer({ assessments = {}, initialLevel, initialDomainId, initialSubAreaId, onPositionChange }) {
+export default memo(function DependencyExplorer({ assessments = {}, initialLevel, initialDomainId, initialSubAreaId, onPositionChange, onDrillDown }) {
   const { isPhone, isTablet } = useResponsive()
   const explorer = useDependencyExplorer(assessments)
   const hint = useContextualHint('hint-explorer')
   const onPositionChangeRef = useRef(onPositionChange)
   onPositionChangeRef.current = onPositionChange
+  const onDrillDownRef = useRef(onDrillDown)
+  onDrillDownRef.current = onDrillDown
+  const justPushedRef = useRef(false)
 
   // Coach mark guide state (-1 = dismissed, 0-4 = active step)
   const [guideStep, setGuideStep] = useState(
@@ -51,8 +54,38 @@ export default memo(function DependencyExplorer({ assessments = {}, initialLevel
   const [focusSubAreaId, setFocusSubAreaId] = useState(initialSubAreaId || null)
   const [focusSkillId, setFocusSkillId] = useState(null)
 
-  // Sync position to URL for refresh persistence
+  // Ref for reading current focusDomainId in stable callbacks
+  const focusDomainIdRef = useRef(focusDomainId)
+  focusDomainIdRef.current = focusDomainId
+
+  // Sync from URL props when they change (handles browser back/forward)
+  const prevPropsRef = useRef({ l: initialLevel, d: initialDomainId, sa: initialSubAreaId })
   useEffect(() => {
+    const prev = prevPropsRef.current
+    prevPropsRef.current = { l: initialLevel, d: initialDomainId, sa: initialSubAreaId }
+
+    const newL = initialLevel || 1
+    const newD = initialDomainId || null
+    const newSa = initialSubAreaId || null
+    const prevL = prev.l || 1
+    const prevD = prev.d || null
+    const prevSa = prev.sa || null
+
+    if (newL !== prevL || newD !== prevD || newSa !== prevSa) {
+      setLevel(newL)
+      setFocusDomainId(newD)
+      setFocusSubAreaId(newSa)
+      setFocusSkillId(null)
+      setNavHistory([])
+    }
+  }, [initialLevel, initialDomainId, initialSubAreaId])
+
+  // Sync position to URL for refresh persistence (replaceState — skip after push)
+  useEffect(() => {
+    if (justPushedRef.current) {
+      justPushedRef.current = false
+      return
+    }
     onPositionChangeRef.current?.({
       l: level > 1 ? level : null,
       d: focusDomainId,
@@ -107,13 +140,15 @@ export default memo(function DependencyExplorer({ assessments = {}, initialLevel
     setGuideStep(0)
   }, [])
 
-  // Drill-down handlers
+  // Drill-down handlers — push to browser history for back-button support
   const handleDrillToDomain = useCallback((domainId) => {
     setFocusDomainId(domainId)
     setFocusSubAreaId(null)
     setFocusSkillId(null)
     setLevel(2)
     setNavHistory([])
+    justPushedRef.current = true
+    onDrillDownRef.current?.({ l: 2, d: domainId, sa: null })
   }, [])
 
   const handleDrillToSubArea = useCallback((subAreaId) => {
@@ -122,6 +157,8 @@ export default memo(function DependencyExplorer({ assessments = {}, initialLevel
     setFocusSubAreaId(subAreaId)
     setFocusSkillId(null)
     setLevel(3)
+    justPushedRef.current = true
+    onDrillDownRef.current?.({ l: 3, d: domainId, sa: subAreaId })
   }, [])
 
   const handleDrillToSkill = useCallback((skillId) => {
@@ -143,6 +180,8 @@ export default memo(function DependencyExplorer({ assessments = {}, initialLevel
     setFocusSubAreaId(newSubAreaId)
     setFocusSkillId(skill.id)
     setLevel(3)
+    justPushedRef.current = true
+    onDrillDownRef.current?.({ l: 3, d: newDomainId, sa: newSubAreaId })
   }, [level, focusDomainId, focusSubAreaId, focusSkillId])
 
   // Navigate back through cross-domain history
@@ -162,7 +201,7 @@ export default memo(function DependencyExplorer({ assessments = {}, initialLevel
     setFocusSkillId(skillId)
   }, [])
 
-  // Breadcrumb navigation
+  // Breadcrumb navigation — push to browser history
   const handleGoToLevel = useCallback((targetLevel) => {
     if (targetLevel <= 1) {
       setLevel(1)
@@ -170,11 +209,15 @@ export default memo(function DependencyExplorer({ assessments = {}, initialLevel
       setFocusSubAreaId(null)
       setFocusSkillId(null)
       setNavHistory([])
+      justPushedRef.current = true
+      onDrillDownRef.current?.({ l: null, d: null, sa: null })
     } else if (targetLevel === 2) {
       setLevel(2)
       setFocusSubAreaId(null)
       setFocusSkillId(null)
       setNavHistory([])
+      justPushedRef.current = true
+      onDrillDownRef.current?.({ l: 2, d: focusDomainIdRef.current, sa: null })
     }
   }, [])
 
@@ -182,6 +225,8 @@ export default memo(function DependencyExplorer({ assessments = {}, initialLevel
     setFocusDomainId(null)
     setLevel(2)
     setNavHistory([])
+    justPushedRef.current = true
+    onDrillDownRef.current?.({ l: 2, d: null, sa: null })
   }, [])
 
   // Breadcrumb items — always show domain when at L3

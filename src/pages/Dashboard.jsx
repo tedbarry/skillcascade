@@ -173,7 +173,7 @@ export default function Dashboard() {
   const [sidebarOpen, setSidebarOpen] = useState(true)
   // URL-driven view navigation with browser back/forward support
   const validViews = useMemo(() => Object.values(VIEWS), [])
-  const { activeView, viewParams, navigateTo, updateParams } = useViewNavigation(VIEWS.HOME, validViews)
+  const { activeView, viewParams, navigateTo, updateParams, pushParams } = useViewNavigation(VIEWS.HOME, validViews)
   const routerNavigate = useNavigate()
 
   // Mirror activeView to localStorage as fallback
@@ -452,6 +452,7 @@ export default function Dashboard() {
   const handleAssessPosition = useCallback((i) => updateParams({ i }), [updateParams])
   const handleIntelligenceTab = useCallback((tab) => updateParams({ tab }), [updateParams])
   const handleExplorerPosition = useCallback((pos) => updateParams(pos), [updateParams])
+  const handleExplorerDrillDown = useCallback((pos) => pushParams(pos), [pushParams])
 
   // Load sample data on mount (only if no saved client)
   useEffect(() => {
@@ -1191,6 +1192,7 @@ export default function Dashboard() {
                   initialDomainId={viewParams.d}
                   initialSubAreaId={viewParams.sa}
                   onPositionChange={handleExplorerPosition}
+                  onDrillDown={handleExplorerDrillDown}
                 />
               </Suspense>
             </div>

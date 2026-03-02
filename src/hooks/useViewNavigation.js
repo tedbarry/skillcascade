@@ -56,5 +56,17 @@ export default function useViewNavigation(defaultView, validViews) {
     }, { replace: true })
   }, [setSearchParams])
 
-  return { activeView, viewParams, navigateTo, updateParams }
+  // Push params within current view — pushState, creates history entry (back-able)
+  const pushParams = useCallback((params) => {
+    setSearchParams(prev => {
+      const next = new URLSearchParams(prev)
+      for (const [k, v] of Object.entries(params)) {
+        if (v == null || v === '') next.delete(k)
+        else next.set(k, String(v))
+      }
+      return next
+    }, { replace: false })
+  }, [setSearchParams])
+
+  return { activeView, viewParams, navigateTo, updateParams, pushParams }
 }
