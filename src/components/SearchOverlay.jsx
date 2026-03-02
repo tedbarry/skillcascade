@@ -2,6 +2,9 @@ import { useState, useEffect, useMemo, useCallback, useRef } from 'react'
 import { framework, ASSESSMENT_LEVELS, ASSESSMENT_LABELS, ASSESSMENT_COLORS, isAssessed } from '../data/framework.js'
 import { getSkillTier } from '../data/skillDependencies.js'
 import { TIER_LABELS, TIER_COLORS } from '../constants/tiers.js'
+import { buildKBSearchIndex, searchKB } from '../data/knowledgeBase/kbSearch.js'
+import { getAllEntries } from '../data/knowledgeBase/kbIndex.js'
+import { KB_CATEGORIES } from '../data/knowledgeBase/kbSchema.js'
 import useFocusTrap from '../hooks/useFocusTrap.js'
 
 /**
@@ -13,6 +16,7 @@ const RESULT_TYPES = {
   SUB_AREA: 'subArea',
   SKILL_GROUP: 'skillGroup',
   SKILL: 'skill',
+  KB_ARTICLE: 'kbArticle',
 }
 
 const TYPE_LABELS = {
@@ -21,6 +25,7 @@ const TYPE_LABELS = {
   [RESULT_TYPES.SUB_AREA]: 'Sub-Areas',
   [RESULT_TYPES.SKILL_GROUP]: 'Skill Groups',
   [RESULT_TYPES.SKILL]: 'Skills',
+  [RESULT_TYPES.KB_ARTICLE]: 'Knowledge Base',
 }
 
 const MAX_RESULTS = 20
@@ -246,6 +251,12 @@ export default function SearchOverlay({ isOpen, onClose, onNavigate, assessments
     return [...commandEntries, ...skillIndex]
   }, [])
 
+  // KB search index (manual + concept articles, excludes skill entries to avoid duplicates)
+  const kbSearchIndex = useMemo(() => {
+    const entries = getAllEntries().filter(e => e.source === 'manual')
+    return buildKBSearchIndex(entries)
+  }, [])
+
   // Detect command-only mode (query starts with ">")
   const isCommandMode = query.trimStart().startsWith('>')
 
@@ -279,16 +290,34 @@ export default function SearchOverlay({ isOpen, onClose, onNavigate, assessments
       return sb - sa
     })
 
+    // Also search KB articles (unless in command mode)
+    if (!raw.startsWith('>') && queryTokens.length > 0) {
+      const kbResults = searchKB(kbSearchIndex, cleaned, 5)
+      for (const kb of kbResults) {
+        matches.push({
+          id: `kb:${kb.id}`,
+          name: kb.title,
+          nameLower: kb.titleLower,
+          type: RESULT_TYPES.KB_ARTICLE,
+          subAreaId: null,
+          breadcrumb: KB_CATEGORIES[kb.category]?.label || kb.category,
+          breadcrumbParts: [],
+          skillId: null,
+          kbSlug: kb.id,
+        })
+      }
+    }
+
     const totalMatches = matches.length
     const results = matches.slice(0, MAX_RESULTS)
 
     return { results, totalMatches }
-  }, [query, searchIndex])
+  }, [query, searchIndex, kbSearchIndex])
 
   // Group results by type for display, maintaining order within groups
   const groupedResults = useMemo(() => {
     const groups = []
-    const typeOrder = [RESULT_TYPES.COMMAND, RESULT_TYPES.DOMAIN, RESULT_TYPES.SUB_AREA, RESULT_TYPES.SKILL_GROUP, RESULT_TYPES.SKILL]
+    const typeOrder = [RESULT_TYPES.COMMAND, RESULT_TYPES.KB_ARTICLE, RESULT_TYPES.DOMAIN, RESULT_TYPES.SUB_AREA, RESULT_TYPES.SKILL_GROUP, RESULT_TYPES.SKILL]
     let flatIndex = 0
 
     for (const type of typeOrder) {
@@ -431,6 +460,11 @@ export default function SearchOverlay({ isOpen, onClose, onNavigate, assessments
       executeCommand(entry)
       return
     }
+    if (entry.type === RESULT_TYPES.KB_ARTICLE && entry.kbSlug) {
+      window.open(`/kb/${entry.kbSlug}`, '_blank', 'noopener')
+      onClose()
+      return
+    }
     if (entry.subAreaId) {
       onNavigate(entry.subAreaId)
       onClose()
@@ -480,7 +514,7 @@ export default function SearchOverlay({ isOpen, onClose, onNavigate, assessments
             value={query}
             onChange={(e) => setQuery(e.target.value)}
             onKeyDown={handleKeyDown}
-            placeholder="Search skills, navigate views, or type > for commands..."
+            placeholder="Search skills, articles, views, or type > for commands..."
             className="flex-1 text-sm text-warm-800 placeholder-warm-400 bg-transparent outline-none"
             autoComplete="off"
             spellCheck="false"
@@ -708,6 +742,12 @@ function TypeIcon({ type }) {
       return <span className={`${iconClass} bg-warm-300`} />
     case RESULT_TYPES.SKILL:
       return <span className="w-1.5 h-1.5 rounded-full bg-warm-200 shrink-0" />
+    case RESULT_TYPES.KB_ARTICLE:
+      return (
+        <svg className="w-3.5 h-3.5 text-sage-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+          <path strokeLinecap="round" strokeLinejoin="round" d="M12 6.042A8.967 8.967 0 006 3.75c-1.052 0-2.062.18-3 .512v14.25A8.987 8.987 0 016 18c2.305 0 4.408.867 6 2.292m0-14.25a8.966 8.966 0 016-2.292c1.052 0 2.062.18 3 .512v14.25A8.987 8.987 0 0018 18a8.967 8.967 0 00-6 2.292m0-14.25v14.25" />
+        </svg>
+      )
     default:
       return null
   }
