@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { useNavigate } from 'react-router-dom'
 
 // Tab group definitions — which views live under each tab
 // Primary tabs: Dashboard, Assess, Clients, Tools, More (max 5)
@@ -84,6 +85,7 @@ function TabIcon({ tab, active }) {
 }
 
 export default function MobileTabBar({ activeView, onChangeView, onOpenAI }) {
+  const navigate = useNavigate()
   const [moreOpen, setMoreOpen] = useState(false)
   const activeTab = getTabForView(activeView)
 
@@ -166,6 +168,16 @@ export default function MobileTabBar({ activeView, onChangeView, onOpenAI }) {
       {/* Sub-view strip (above bottom bar) */}
       {showSubStrip && (
         <div className="fixed bottom-14 left-0 right-0 z-30 bg-white/95 backdrop-blur-sm border-t border-warm-200 flex items-center gap-1 px-2 py-1.5 overflow-x-auto scrollbar-hide pb-safe">
+          <button
+            onClick={() => navigate(-1)}
+            className="p-1.5 rounded-full text-warm-400 hover:bg-warm-100 hover:text-warm-600 transition-colors min-h-[44px] min-w-[44px] flex items-center justify-center shrink-0"
+            aria-label="Go back"
+            title="Go back"
+          >
+            <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
+              <path strokeLinecap="round" strokeLinejoin="round" d="M15.75 19.5L8.25 12l7.5-7.5" />
+            </svg>
+          </button>
           {activeGroup.views.map((view) => (
             <button
               key={view}

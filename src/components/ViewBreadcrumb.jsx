@@ -1,3 +1,4 @@
+import { useNavigate } from 'react-router-dom'
 import useResponsive from '../hooks/useResponsive.js'
 
 const VIEW_MAP = {
@@ -31,6 +32,7 @@ const VIEW_MAP = {
 
 export default function ViewBreadcrumb({ activeView, onNavigateHome }) {
   const { isPhone } = useResponsive()
+  const navigate = useNavigate()
   if (isPhone) return null // Phone uses MobileTabBar instead
 
   const info = VIEW_MAP[activeView] || { group: 'Other', label: activeView }
@@ -38,6 +40,28 @@ export default function ViewBreadcrumb({ activeView, onNavigateHome }) {
 
   return (
     <nav aria-label="Breadcrumb" className="px-4 py-1.5 bg-warm-50 border-b border-warm-100 text-xs text-warm-500 flex items-center gap-1.5">
+      <div className="flex items-center gap-0.5 mr-1.5">
+        <button
+          onClick={() => navigate(-1)}
+          className="p-1 rounded hover:bg-warm-100 text-warm-400 hover:text-warm-600 transition-colors min-h-[28px] min-w-[28px] flex items-center justify-center"
+          aria-label="Go back"
+          title="Go back"
+        >
+          <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
+            <path strokeLinecap="round" strokeLinejoin="round" d="M15.75 19.5L8.25 12l7.5-7.5" />
+          </svg>
+        </button>
+        <button
+          onClick={() => navigate(1)}
+          className="p-1 rounded hover:bg-warm-100 text-warm-400 hover:text-warm-600 transition-colors min-h-[28px] min-w-[28px] flex items-center justify-center"
+          aria-label="Go forward"
+          title="Go forward"
+        >
+          <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
+            <path strokeLinecap="round" strokeLinejoin="round" d="M8.25 4.5l7.5 7.5-7.5 7.5" />
+          </svg>
+        </button>
+      </div>
       <button
         onClick={onNavigateHome}
         className={`hover:text-warm-700 transition-colors ${isHome ? 'text-warm-700 font-medium' : ''}`}
