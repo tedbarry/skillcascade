@@ -349,6 +349,7 @@ export default memo(function SkillExplorerView({
                   onCrossNavigate={onCrossNavigate}
                   graphData={graphData}
                   assessments={assessments}
+                  renderCeilingNarrative={renderCeilingNarrative}
                 />
               ))}
             </div>
@@ -371,7 +372,7 @@ export default memo(function SkillExplorerView({
 
         {/* Detail panel */}
         {selectedDetail && (
-          <DetailPanel detail={selectedDetail} cascadeMap={cascadeMap} graphData={graphData} assessments={assessments} />
+          <DetailPanel detail={selectedDetail} cascadeMap={cascadeMap} graphData={graphData} assessments={assessments} renderCeilingNarrative={renderCeilingNarrative} />
         )}
 
         <ExplorerTooltip
@@ -702,7 +703,7 @@ export default memo(function SkillExplorerView({
 
       {/* Detail panel below graph */}
       {selectedDetail && (
-        <DetailPanel detail={selectedDetail} cascadeMap={cascadeMap} graphData={graphData} assessments={assessments} />
+        <DetailPanel detail={selectedDetail} cascadeMap={cascadeMap} graphData={graphData} assessments={assessments} renderCeilingNarrative={renderCeilingNarrative} />
       )}
 
       <ExplorerTooltip
@@ -717,7 +718,7 @@ export default memo(function SkillExplorerView({
 })
 
 /** Detail panel shown below graph when a skill is selected */
-function DetailPanel({ detail, cascadeMap, graphData, assessments }) {
+function DetailPanel({ detail, cascadeMap, graphData, assessments, renderCeilingNarrative }) {
   const { node, desc, downstreamInGraph, upstreamInGraph, totalCascade, blockedCount } = detail
   const statusColor = getStatusColor(node.level)
   const domainColor = DOMAIN_COLORS[node.domainId] || '#888'
@@ -847,7 +848,7 @@ function DetailPanel({ detail, cascadeMap, graphData, assessments }) {
 }
 
 /** Phone card for a local skill */
-function SkillCard({ node, isSelected, cascadeInfo, selectedSkillId, edges, onSelect, onCrossNavigate, graphData, assessments }) {
+function SkillCard({ node, isSelected, cascadeInfo, selectedSkillId, edges, onSelect, onCrossNavigate, graphData, assessments, renderCeilingNarrative }) {
   const statusColor = getStatusColor(node.level)
   const domainColor = DOMAIN_COLORS[node.domainId] || '#888'
   const readinessPct = Math.round((node.readiness?.readiness ?? 1) * 100)
