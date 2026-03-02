@@ -802,7 +802,7 @@ function SkillRater({ skill, level, onRate, showAllDescs, showAllTeaching, asses
                     {onNavigateToSkill ? (
                       <button
                         onClick={() => onNavigateToSkill(p.id)}
-                        className="underline underline-offset-2 decoration-blue-500 text-blue-700 hover:text-blue-900 font-semibold bg-blue-50 px-0.5 rounded transition-colors cursor-pointer"
+                        className="inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded border border-blue-300 bg-blue-100 text-blue-800 font-semibold not-italic no-underline hover:bg-blue-200 hover:border-blue-400 transition-colors cursor-pointer"
                       >
                         {name || p.id}
                       </button>
@@ -827,7 +827,7 @@ function SkillRater({ skill, level, onRate, showAllDescs, showAllTeaching, asses
             const prereqBtn = onNavigateToSkill ? (
               <button
                 onClick={() => onNavigateToSkill(top.id)}
-                className="underline underline-offset-2 decoration-blue-500 text-blue-700 hover:text-blue-900 font-semibold bg-blue-50 px-0.5 rounded not-italic transition-colors cursor-pointer"
+                className="inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded border border-blue-300 bg-blue-100 text-blue-800 font-semibold not-italic no-underline hover:bg-blue-200 hover:border-blue-400 transition-colors cursor-pointer"
               >
                 {prereqName}
               </button>
