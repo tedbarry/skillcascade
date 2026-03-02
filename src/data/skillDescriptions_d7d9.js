@@ -15,11 +15,6 @@ export const descriptions_d7d9 = {
     looks_like: 'The individual spontaneously narrates their own experience using first-person statements during or after events.',
     absence: 'The individual does not reference their own actions or feelings verbally or through AAC, even when prompted to reflect.',
   },
-  'd7-sa1-sg1-s2': {
-    description: 'The capacity to sustain an ongoing internal commentary that tracks experience in real time. This supports self-monitoring, planning, and emotional processing.',
-    looks_like: 'The individual talks themselves through tasks, comments on their own state, or uses self-directed speech to guide behavior.',
-    absence: 'The individual appears to move through activities without any observable verbal or subvocal self-guidance, relying entirely on external cues.',
-  },
 
   // SG2: Differentiate event from identity
   'd7-sa1-sg2-s1': {
@@ -46,11 +41,6 @@ export const descriptions_d7d9 = {
   },
 
   // SG4: Maintain accuracy under stress
-  'd7-sa1-sg4-s1': {
-    description: 'The capacity to keep self-talk realistic and proportional during moments of failure, conflict, or high emotion, rather than collapsing into distorted self-evaluation.',
-    looks_like: 'During a stressful event, the individual maintains balanced self-statements like "This is hard, but I can get through it."',
-    absence: 'Under stress, self-talk becomes highly negative, distorted, or catastrophic, e.g., "Everything is ruined" or "Nobody likes me."',
-  },
   'd7-sa1-sg4-s2': {
     description: 'The skill of avoiding extreme all-or-nothing thinking patterns in self-referential statements, especially when emotionally activated.',
     looks_like: 'The individual uses measured language about themselves even when upset, avoiding absolutes like "always" or "never."',
@@ -122,11 +112,6 @@ export const descriptions_d7d9 = {
   },
 
   // SG2: Separate evaluation from worth
-  'd7-sa3-sg2-s1': {
-    description: 'The ability to receive correction about behavior or performance without experiencing it as an attack on one\'s fundamental worth as a person.',
-    looks_like: 'The individual accepts redirection or correction with manageable affect, adjusting behavior without significant emotional escalation.',
-    absence: 'Any correction triggers a threat response — the individual becomes aggressive, cries intensely, shuts down, or refuses to continue.',
-  },
   'd7-sa3-sg2-s2': {
     description: 'The capacity to acknowledge being wrong about something without that acknowledgment causing self-directed hostility or identity destabilization.',
     looks_like: 'The individual can say or accept "I was wrong" and continue engaging without prolonged distress or self-punishing behavior.',
@@ -134,28 +119,12 @@ export const descriptions_d7d9 = {
   },
 
   // SG3: Receive feedback
-  'd7-sa3-sg3-s1': {
-    description: 'The ability to hear feedback — especially critical feedback — without immediately launching into self-defense, justification, or counter-attack.',
-    looks_like: 'The individual pauses, listens, and processes feedback before responding, even when the feedback is uncomfortable.',
-    absence: 'The individual interrupts with excuses, blames others, or becomes defensive the moment any feedback is offered.',
-  },
   'd7-sa3-sg3-s2': {
     description: 'The ability to take corrective feedback and translate it into changed behavior in future situations, demonstrating that the feedback was processed and applied.',
     looks_like: 'After receiving feedback, the individual shows modified behavior in subsequent similar situations.',
     absence: 'Feedback has no observable effect on future behavior — the same errors or patterns repeat despite correction.',
   },
 
-  // SG4: Recover self-coherence
-  'd7-sa3-sg4-s1': {
-    description: 'The ability to return to a stable, typical sense of self after making an error, rather than remaining in a destabilized or shame-saturated state.',
-    looks_like: 'After an error, the individual recovers their typical demeanor and engagement level within a reasonable timeframe.',
-    absence: 'Errors cause prolonged disruption to the individual\'s sense of self, resulting in extended withdrawal, mood changes, or behavioral regression.',
-  },
-  'd7-sa3-sg4-s2': {
-    description: 'The skill of preventing a single mistake from creating lasting damage to one\'s self-concept. Errors are processed and released rather than stored as identity evidence.',
-    looks_like: 'The individual moves on from mistakes without bringing them up repeatedly, carrying visible distress, or using them as proof of inadequacy.',
-    absence: 'Past mistakes are referenced repeatedly, continue to cause distress long after the event, and accumulate into a negative self-image.',
-  },
 
   // ── D7-SA4: Resilience After Mistakes ─────────────────────────────────────
 
@@ -169,18 +138,6 @@ export const descriptions_d7d9 = {
     description: 'The ability to stop repetitive, unproductive thinking about a past error. The mistake is processed and released rather than replayed on a loop.',
     looks_like: 'The individual stops talking or visibly thinking about a past error within a reasonable period and redirects attention to current demands.',
     absence: 'The individual repeatedly revisits the mistake verbally or behaviorally, remaining stuck in a loop that prevents forward movement.',
-  },
-
-  // SG2: Behaviorally re-engage
-  'd7-sa4-sg2-s1': {
-    description: 'The ability to return to the task or interaction where the error occurred, rather than permanently abandoning it.',
-    looks_like: 'After a mistake, the individual returns to the activity or conversation and resumes participation.',
-    absence: 'The individual refuses to return to any task or interaction where they made an error, treating the context itself as aversive.',
-  },
-  'd7-sa4-sg2-s2': {
-    description: 'The skill of resisting the pattern where mistakes lead to systematic avoidance of similar situations in the future. One bad experience does not close off a category.',
-    looks_like: 'The individual continues to approach tasks and situations of the same type where they previously made errors.',
-    absence: 'The individual develops expanding avoidance patterns — one mistake in math leads to avoiding all math; one social conflict leads to avoiding all social situations.',
   },
 
   // SG3: Learn without self-punishment
@@ -251,18 +208,6 @@ export const descriptions_d7d9 = {
 
   // ── D8-SA1: Emergencies ───────────────────────────────────────────────────
 
-  // SG1: Recognize emergency cues
-  'd8-sa1-sg1-s1': {
-    description: 'The ability to identify signals that indicate an emergency is occurring, including alarms, urgent verbal directives, and warning signs in the environment.',
-    looks_like: 'When an alarm sounds or an adult gives an urgent instruction, the individual orients to the signal and shows recognition that something important is happening.',
-    absence: 'The individual does not respond differentially to emergency signals — alarms, urgent tones, or warnings are ignored or not distinguished from routine stimuli.',
-  },
-  'd8-sa1-sg1-s2': {
-    description: 'The ability to distinguish a true emergency from an inconvenience or minor problem, so that emergency-level responses are reserved for genuine threats.',
-    looks_like: 'The individual responds with urgency to real emergencies but does not treat minor setbacks (e.g., a dropped item, a schedule change) as crises.',
-    absence: 'The individual either treats all problems as emergencies (chronic panic) or treats all emergencies as minor problems (chronic under-response).',
-  },
-
   // SG2: Interrupt current action
   'd8-sa1-sg2-s1': {
     description: 'The ability to immediately stop whatever one is currently doing — including highly preferred activities — when an emergency requires it.',
@@ -290,11 +235,6 @@ export const descriptions_d7d9 = {
   // ── D8-SA2: Following Procedures ──────────────────────────────────────────
 
   // SG1: Suppress autonomy
-  'd8-sa2-sg1-s1': {
-    description: 'The ability to temporarily set aside personal preferences, choices, or desires when safety procedures require compliance with external direction.',
-    looks_like: 'The individual accepts direction to go somewhere they would not choose, stop an activity they enjoy, or wait when they want to move, all in service of safety.',
-    absence: 'The individual insists on personal choice during safety situations, arguing, negotiating, or refusing to comply with safety-related directions.',
-  },
   'd8-sa2-sg1-s2': {
     description: 'The ability to accept that another person or system is temporarily in control of one\'s actions during a safety event, without experiencing this as a violation.',
     looks_like: 'The individual follows adult or authority direction during safety events without significant resistance, understanding the temporary nature of the control.',
@@ -339,17 +279,6 @@ export const descriptions_d7d9 = {
     absence: 'The individual fails to detect progressive danger, remaining in situations that are clearly escalating until a crisis point is reached.',
   },
 
-  // SG2: Differentiate discomfort from danger
-  'd8-sa3-sg2-s1': {
-    description: 'The ability to avoid triggering emergency-level physiological and behavioral responses to situations that are merely uncomfortable but not dangerous.',
-    looks_like: 'The individual experiences discomfort (e.g., a crowded room, an unexpected change) without activating fight-flight-freeze responses.',
-    absence: 'The individual regularly reacts to non-dangerous discomfort with full threat responses — panic, aggression, or flight — as though their safety were at risk.',
-  },
-  'd8-sa3-sg2-s2': {
-    description: 'The ability to calibrate one\'s behavioral response to match the actual level of threat present, rather than defaulting to maximum-intensity reactions.',
-    looks_like: 'The individual shows graded responses — mild caution for low-risk situations, urgent action only for genuine threats.',
-    absence: 'All responses are the same intensity regardless of actual risk level — either everything is treated as a full emergency or nothing triggers adequate caution.',
-  },
 
   // SG3: Update risk assessment
   'd8-sa3-sg3-s1': {
@@ -377,17 +306,6 @@ export const descriptions_d7d9 = {
     absence: 'Fight-or-flight responses override all instruction — the individual runs, strikes out, or becomes completely unresponsive when highly aroused.',
   },
 
-  // SG2: Follow authority under stress
-  'd8-sa4-sg2-s1': {
-    description: 'The ability to accept and follow direction from an adult or authority figure during high-stress moments, even when one might prefer a different course of action.',
-    looks_like: 'During stressful or frightening situations, the individual follows adult directions without significant resistance or delay.',
-    absence: 'Under stress, the individual rejects all adult direction, either acting autonomously or becoming oppositional when guidance is most needed.',
-  },
-  'd8-sa4-sg2-s2': {
-    description: 'The ability to temporarily trust that an authority figure\'s judgment about safety is correct, even when one\'s own assessment differs, allowing compliance during critical moments.',
-    looks_like: 'The individual follows safety directions even when they do not fully understand or agree with the reasoning, trusting the adult\'s assessment in the moment.',
-    absence: 'The individual will only comply with safety instructions if they personally agree with the assessment, arguing or refusing when they disagree.',
-  },
 
   // SG3: Re-enter autonomy appropriately
   'd8-sa4-sg3-s1': {
@@ -408,28 +326,13 @@ export const descriptions_d7d9 = {
   // ── D9-SA1: Accepting Co-Regulation ─────────────────────────────────────
 
   // SG1: Tolerate supporter proximity
-  'd9-sa1-sg1-s1': {
-    description: 'The ability to remain in close physical proximity to a supporter during moments of distress without pulling away, escalating, or fleeing. This is the foundation of co-regulation — the individual must tolerate the helper\'s presence before benefiting from it.',
-    looks_like: 'During a difficult moment, the individual stays near the supporter, allows them to sit close or stand nearby, and does not actively move away or push the supporter back.',
-    absence: 'The individual physically withdraws, turns away, pushes the supporter, or escalates when someone approaches during distress, preventing any co-regulatory support.',
-  },
   'd9-sa1-sg1-s2': {
     description: 'The ability to permit a supporter to use calming strategies such as soft voice, rhythmic patting, deep pressure, or verbal coaching without resisting or rejecting the intervention.',
     looks_like: 'The individual allows the supporter to use a calming technique — accepting a hand on the shoulder, tolerating a slow counting sequence, or remaining still during guided breathing.',
     absence: 'The individual rejects all attempts at calming intervention — pushing hands away, covering ears, escalating in response to soothing tone, or verbally refusing any support strategy.',
   },
-  'd9-sa1-sg1-s3': {
-    description: 'The ability to communicate the need for support using any available modality — speech, gesture, sign, AAC device, or behavioral signal — before reaching full dysregulation.',
-    looks_like: 'The individual reaches toward a supporter, vocalizes, uses a help card, or otherwise signals that they need co-regulation before a behavioral crisis occurs.',
-    absence: 'The individual does not signal need for support and either escalates to crisis without warning or withdraws entirely, leaving supporters unable to intervene proactively.',
-  },
 
   // SG2: Accept and differentiate support
-  'd9-sa1-sg2-s1': {
-    description: 'The ability to accept being redirected by a supporter — such as being guided away from a triggering situation or toward a replacement activity — without escalating.',
-    looks_like: 'When a supporter redirects the individual from an unsafe or unproductive activity, the individual complies or at least tolerates the redirection without significant protest.',
-    absence: 'Any attempt to redirect the individual results in escalation, aggression, refusal, or elopement, making it impossible for supporters to guide behavior safely.',
-  },
   'd9-sa1-sg2-s2': {
     description: 'The ability to recognize that different situations require different levels of support and to adjust expectations for help accordingly, rather than seeking maximum support at all times or refusing all support.',
     looks_like: 'The individual accepts full hands-on support during high-stress moments but works more independently during familiar, low-demand tasks without seeking unnecessary help.',

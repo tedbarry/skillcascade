@@ -226,15 +226,6 @@ export const playbook_d4d6 = {
   },
 
   // SG2: Inhibit escape response
-  'd5-sa1-sg2-s1': {
-    context: 'Teach when the learner can detect breakdown but defaults to escape (refusal, avoidance, behavior). Focus on building the pause between "I\'m stuck" and "I quit."',
-    strategies: ['Replacement behavior: "Instead of pushing away, say I need a break"', 'Escape prevention with immediate reinforcement for staying', 'Graduated difficulty with pre-planned "stay" intervals', 'Competing response training: signal for help instead of disengage'],
-    barriers: 'Escape behavior is often highly reinforced. Extinction-based approaches may produce bursts. Ensure replacement behavior is as efficient as escape was.',
-    measurement: 'Frequency of escape behaviors vs. help-seeking behaviors during difficult tasks. Track trend over time.',
-    generalization: 'Across task types, demand levels, and settings.',
-    prerequisiteNote: 'Requires d1-sa4-sg2-s2 (cognitive impulse control). Must be able to inhibit the automatic escape response.',
-    progressionNote: 'Enables d5-sa1-sg2-s2 (choosing signaling over disengaging) and supports persistence across all domains.',
-  },
   'd5-sa1-sg2-s2': {
     context: 'Teach concurrently with escape inhibition. Focus on replacing escape with active communication — any signal that keeps the interaction going.',
     strategies: ['Signal menu: break card, help card, "hard" card, gesture, word', 'Immediate reinforcement for ANY communicative alternative to escape', 'Differential reinforcement: signal = immediate relief, escape = brief delay', 'Practice signal use in low-stakes contexts before high-demand ones'],
@@ -453,16 +444,6 @@ export const playbook_d4d6 = {
     progressionNote: 'Enables d5-sa4-sg2-s1 (generating solutions) and the full negotiation sequence.',
   },
 
-  // SG2: Generate negotiation solutions
-  'd5-sa4-sg2-s1': {
-    context: 'Teach after the learner can detect disagreement and generate alternatives (D4-SA3). Focus on applying alternative generation to social/interpersonal conflicts.',
-    strategies: ['Brainstorm compromise options together', '"Both/And" thinking: "How could we both get something we want?"', 'Solution cards with common compromises for typical conflicts', 'Role-play negotiations with guided solution generation'],
-    barriers: 'Requires flexibility (D3-SA5) and the ability to hold multiple perspectives simultaneously. If cognitive rigidity is present, work on flexibility before negotiation.',
-    measurement: 'Number and quality of compromise solutions generated in structured conflict scenarios.',
-    generalization: 'Across conflict types, relationship contexts, and stakes levels.',
-    prerequisiteNote: 'Requires d4-sa3-sg2-s1 (generating multiple response options). Must be able to brainstorm before negotiating.',
-    progressionNote: 'Enables d5-sa4-sg3-s1 (understanding partial wins) and d5-sa4-sg3-s2 (accepting compromise).',
-  },
 
   // SG3: Accept compromise
   'd5-sa4-sg3-s1': {

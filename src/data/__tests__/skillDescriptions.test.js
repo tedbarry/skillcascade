@@ -12,7 +12,7 @@ describe('getSkillDescription', () => {
   })
 
   it('returns description for a known D9 skill', () => {
-    const desc = getSkillDescription('d9-sa1-sg1-s1')
+    const desc = getSkillDescription('d9-sa1-sg1-s2')
     expect(desc).toBeTruthy()
     expect(desc.description).toBeTruthy()
   })

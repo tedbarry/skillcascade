@@ -97,7 +97,6 @@ export const SKILL_TIERS = {
   'd1-sa4-sg1-s1': 2, // Recognize unpleasant sensations as non-threatening
   'd1-sa4-sg1-s2': 2, // Avoid triggering emergency for tolerable distress
   'd1-sa4-sg2-s1': 2, // Stay in place briefly while uncomfortable
-  'd1-sa4-sg2-s2': 3, // Delay escape or discharge behaviors
   'd1-sa4-sg3-s1': 3, // Allow sensations to exist without immediate relief
   'd1-sa4-sg3-s2': 3, // Maintain safety during discomfort
   'd1-sa4-sg4-s1': 3, // Tolerate short delays after requesting help or break
@@ -149,7 +148,6 @@ export const SKILL_TIERS = {
   'd2-sa4-sg1-s1': 2, // Notice fatigue, overload, or depletion
   'd2-sa4-sg1-s2': 3, // Recognize when effort quality is declining
   'd2-sa4-sg2-s1': 3, // Distinguish "not now" from "can't"
-  'd2-sa4-sg2-s2': 4, // Avoid global self-judgments
   'd2-sa4-sg3-s1': 4, // Tolerate reduced capacity without identity collapse
   'd2-sa4-sg3-s2': 5, // Maintain self-worth while adjusting expectations
 
@@ -207,7 +205,6 @@ export const SKILL_TIERS = {
   'd3-sa6-sg1-s1': 3, // Continue task after correction
   'd3-sa6-sg1-s2': 3, // Avoid abandonment after mistakes
   'd3-sa6-sg2-s1': 4, // Separate error from self-worth
-  'd3-sa6-sg2-s2': 3, // Maintain task engagement
 
   // ═══════════════════════════════════════════
   // D4: Problem Solving & Judgment
@@ -248,7 +245,6 @@ export const SKILL_TIERS = {
   // d5-sa1: Requesting Help
   'd5-sa1-sg1-s1': 2, // Notice task breakdown, confusion, or overload
   'd5-sa1-sg1-s2': 3, // Distinguish "hard but doable" from "blocked"
-  'd5-sa1-sg2-s1': 3, // Inhibit escape or refusal
   'd5-sa1-sg2-s2': 3, // Choose signaling instead of disengaging
   'd5-sa1-sg3-s1': 3, // Identify what help is needed
   'd5-sa1-sg3-s2': 3, // Identify when help is needed
@@ -276,7 +272,6 @@ export const SKILL_TIERS = {
 
   // d5-sa4: Negotiating
   'd5-sa4-sg1-s1': 3, // Notice differences in preferences or goals
-  'd5-sa4-sg2-s1': 4, // Identify more than one possible solution
   'd5-sa4-sg3-s1': 4, // Understand partial wins
   'd5-sa4-sg3-s2': 4, // Accept compromise
   'd5-sa4-sg4-s1': 4, // Prevent escalation while negotiating
@@ -344,12 +339,10 @@ export const SKILL_TIERS = {
 
   // d7-sa1: Self-Talk
   'd7-sa1-sg1-s1': 4, // Form self-referential statements
-  'd7-sa1-sg1-s2': 4, // Maintain a running internal commentary
   'd7-sa1-sg2-s1': 4, // Distinguish "I made a mistake" from "I am a mistake"
   'd7-sa1-sg2-s2': 4, // Avoid global self-labels based on single outcomes
   'd7-sa1-sg3-s1': 5, // Revise self-talk after new experiences
   'd7-sa1-sg3-s2': 5, // Integrate corrective feedback into self-understanding
-  'd7-sa1-sg4-s1': 5, // Prevent distortion during failure or conflict
   'd7-sa1-sg4-s2': 5, // Avoid catastrophizing or all-or-nothing self-statements
 
   // d7-sa2: Confidence
@@ -365,18 +358,12 @@ export const SKILL_TIERS = {
   // d7-sa3: Shame vs Competence
   'd7-sa3-sg1-s1': 3, // Detect internal collapse, withdrawal, or defensiveness
   'd7-sa3-sg1-s2': 4, // Identify shame-driven reactions
-  'd7-sa3-sg2-s1': 4, // Accept correction without identity threat
   'd7-sa3-sg2-s2': 5, // Tolerate being wrong without self-attack
-  'd7-sa3-sg3-s1': 4, // Listen without immediate justification
   'd7-sa3-sg3-s2': 5, // Integrate correction into future action
-  'd7-sa3-sg4-s1': 5, // Return to baseline self-concept after error
-  'd7-sa3-sg4-s2': 5, // Prevent lingering identity damage
 
   // d7-sa4: Resilience After Mistakes
   'd7-sa4-sg1-s1': 3, // Regulate affect after error or failure
   'd7-sa4-sg1-s2': 4, // Prevent prolonged rumination
-  'd7-sa4-sg2-s1': 3, // Resume task or interaction
-  'd7-sa4-sg2-s2': 4, // Avoid avoidance patterns
   'd7-sa4-sg3-s1': 5, // Extract lessons without globalizing failure
   'd7-sa4-sg3-s2': 5, // Maintain motivation post-error
 
@@ -396,15 +383,12 @@ export const SKILL_TIERS = {
   // ═══════════════════════════════════════════
 
   // d8-sa1: Emergencies
-  'd8-sa1-sg1-s1': 1, // Identify alarms, warnings, urgent directives
-  'd8-sa1-sg1-s2': 2, // Distinguish emergency from inconvenience
   'd8-sa1-sg2-s1': 1, // Stop preferred or ongoing behavior immediately
   'd8-sa1-sg2-s2': 2, // Shift attention to safety demand
   'd8-sa1-sg3-s1': 2, // Follow evacuation or shelter protocols
   'd8-sa1-sg3-s2': 3, // Prioritize safety over task completion
 
   // d8-sa2: Following Procedures
-  'd8-sa2-sg1-s1': 2, // Delay personal preference or choice
   'd8-sa2-sg1-s2': 2, // Accept external control temporarily
   'd8-sa2-sg2-s1': 2, // Follow steps without negotiation
   'd8-sa2-sg2-s2': 3, // Maintain compliance under arousal
@@ -414,15 +398,12 @@ export const SKILL_TIERS = {
   // d8-sa3: Recognizing Danger
   'd8-sa3-sg1-s1': 2, // Identify unsafe objects, spaces, or actions
   'd8-sa3-sg1-s2': 3, // Recognize escalating social or physical risk
-  'd8-sa3-sg2-s1': 3, // Avoid false alarms driven by anxiety
-  'd8-sa3-sg2-s2': 3, // Respond proportionally to real threat
   'd8-sa3-sg3-s1': 4, // Adjust behavior as conditions change
   'd8-sa3-sg3-s2': 4, // Learn from near-misses or outcomes
 
   // d8-sa4: Suppressing Impulse
   'd8-sa4-sg1-s1': 2, // Delay movement, speech, or action
   'd8-sa4-sg1-s2': 3, // Resist fight/flight impulses
-  'd8-sa4-sg2-s1': 2, // Accept adult or system direction
   'd8-sa4-sg2-s2': 3, // Trust external judgment temporarily
   'd8-sa4-sg3-s1': 4, // Resume independent decision-making after safety clears
   'd8-sa4-sg3-s2': 4, // Avoid lingering overcontrol or fear
@@ -433,10 +414,7 @@ export const SKILL_TIERS = {
   // ═══════════════════════════════════════════
 
   // d9-sa1: Accepting Co-Regulation
-  'd9-sa1-sg1-s1': 1, // Accept physical proximity of supporter during distress
   'd9-sa1-sg1-s2': 1, // Allow supporter to use calming strategies
-  'd9-sa1-sg1-s3': 2, // Signal need for support (any modality)
-  'd9-sa1-sg2-s1': 2, // Tolerate redirection from supporter
   'd9-sa1-sg2-s2': 3, // Differentiate support levels needed
 
   // d9-sa2: Responding to Prompts & Cues
@@ -628,7 +606,7 @@ export const SKILL_PREREQUISITES = {
   // Recognizing missing info requires brief inward attention
   'd2-sa3-sg1-s1': ['d1-sa1-sg3-s1'],
   // Preventing confusion → dysregulation requires calming skills
-  'd2-sa3-sg3-s2': ['d1-sa3-sg3-s1', 'd1-sa4-sg2-s2'],
+  'd2-sa3-sg3-s2': ['d1-sa3-sg3-s1'],
 
   // ─── D3: Initiation requires D1 arousal management ───
   // Shifting from rest to action requires calming-up skills
@@ -641,10 +619,8 @@ export const SKILL_PREREQUISITES = {
   // ─── D3: Persistence requires D1 discomfort tolerance ───
   // Continuing despite boredom requires allowing discomfort
   'd3-sa2-sg2-s1': ['d1-sa4-sg3-s1'],
-  // Accepting discomfort of work requires delay of escape
-  'd3-sa2-sg2-s2': ['d1-sa4-sg2-s2'],
   // Resisting premature escape requires discomfort tolerance
-  'd3-sa2-sg1-s2': ['d1-sa4-sg2-s1', 'd1-sa4-sg2-s2'],
+  'd3-sa2-sg1-s2': ['d1-sa4-sg2-s1'],
 
   // ─── D3: Flexibility requires D1 calming + D2 trigger awareness ───
   // Releasing plans without escalation requires gradual de-escalation
@@ -652,7 +628,7 @@ export const SKILL_PREREQUISITES = {
   // Adapting to schedule changes requires anticipating emotional response
   'd3-sa3-sg2-s2': ['d2-sa2-sg3-s1'],
   // Stopping preferred activities requires calming-down capacity
-  'd3-sa3-sg1-s1': ['d1-sa3-sg3-s1', 'd1-sa4-sg2-s2'],
+  'd3-sa3-sg1-s1': ['d1-sa3-sg3-s1'],
 
   // ─── D3: Self-Monitoring requires D2 metacognition ───
   // Tracking progress requires recognizing confusion states
@@ -666,7 +642,7 @@ export const SKILL_PREREQUISITES = {
   // Continuing after correction requires calming down + tolerating discomfort
   'd3-sa6-sg1-s1': ['d1-sa3-sg3-s1', 'd1-sa4-sg3-s1'],
   // Separating error from self-worth requires recognizing limits without shame
-  'd3-sa6-sg2-s1': ['d2-sa4-sg2-s1', 'd2-sa4-sg2-s2'],
+  'd3-sa6-sg2-s1': ['d2-sa4-sg2-s1'],
 
   // ─── D4: Sizing Problems requires D2 naming + D1 tolerance ───
   // Recognizing feelings exceed facts requires naming feelings
@@ -686,7 +662,7 @@ export const SKILL_PREREQUISITES = {
   // Identifying multiple responses requires planning capacity
   'd4-sa3-sg2-s1': ['d3-sa4-sg1-s1'],
   // Avoiding impulse-only decisions requires delay + flexibility
-  'd4-sa3-sg2-s2': ['d1-sa4-sg2-s2', 'd3-sa3-sg1-s1'],
+  'd4-sa3-sg2-s2': ['d3-sa3-sg1-s1'],
 
   // ─── D4: Adapting to Context requires D3 self-monitoring ───
   // Adjusting behavior to setting requires self-monitoring
@@ -701,8 +677,6 @@ export const SKILL_PREREQUISITES = {
   'd5-sa1-sg1-s2': ['d2-sa3-sg2-s1'],
   // Maintaining regulation while waiting requires delay tolerance
   'd5-sa1-sg5-s2': ['d1-sa4-sg4-s1'],
-  // Inhibiting escape requires discomfort delay
-  'd5-sa1-sg2-s1': ['d1-sa4-sg2-s2'],
 
   // ─── D5: Expressing Discomfort requires D1 + D2 ───
   // Noticing strain requires interoception
@@ -721,8 +695,6 @@ export const SKILL_PREREQUISITES = {
   'd5-sa3-sg3-s1': ['d3-sa2-sg3-s1', 'd3-sa2-sg3-s2'],
 
   // ─── D5: Negotiating requires D4 strategy + D3 flexibility ───
-  // Identifying multiple solutions requires generating alternatives
-  'd5-sa4-sg2-s1': ['d4-sa3-sg2-s1'],
   // Preventing escalation during disagreement requires calming
   'd5-sa4-sg4-s1': ['d1-sa3-sg3-s3', 'd1-sa4-sg3-s1'],
   // Understanding partial wins requires consequence understanding
@@ -740,7 +712,7 @@ export const SKILL_PREREQUISITES = {
   // Restating differently requires flexibility + sequencing
   'd5-sa6-sg2-s1': ['d3-sa3-sg2-s1', 'd3-sa4-sg1-s1'],
   // Acknowledging impact without self-attack requires limit acceptance
-  'd5-sa6-sg3-s1': ['d2-sa4-sg2-s2', 'd3-sa6-sg2-s1'],
+  'd5-sa6-sg3-s1': ['d3-sa6-sg2-s1'],
 
   // ─── D6: Perspective-Taking requires D2 self-awareness ───
   // Recognizing others have separate minds requires distinguishing own emotions
@@ -770,7 +742,7 @@ export const SKILL_PREREQUISITES = {
   // Accepting short-term imbalance requires discomfort tolerance
   'd6-sa4-sg2-s1': ['d1-sa4-sg3-s1', 'd6-sa1-sg2-s1'],
   // Avoiding personalizing outcomes requires separating event from identity
-  'd6-sa4-sg3-s1': ['d2-sa4-sg2-s2', 'd7-sa1-sg2-s1'],
+  'd6-sa4-sg3-s1': ['d7-sa1-sg2-s1'],
 
   // ─── D6: Social Repair requires D6 perspective + D5 communication ───
   // Naming harm without justification requires perspective + labeling
@@ -790,13 +762,11 @@ export const SKILL_PREREQUISITES = {
   // Forming self-referential statements requires using labels consistently
   'd7-sa1-sg1-s1': ['d2-sa1-sg3-s1'],
   // Distinguishing mistake from identity requires distinguishing limits
-  'd7-sa1-sg2-s1': ['d2-sa4-sg2-s1', 'd2-sa4-sg2-s2'],
+  'd7-sa1-sg2-s1': ['d2-sa4-sg2-s1'],
   // Avoiding global labels requires trigger awareness + limit acceptance
-  'd7-sa1-sg2-s2': ['d2-sa2-sg2-s2', 'd2-sa4-sg2-s2'],
+  'd7-sa1-sg2-s2': ['d2-sa2-sg2-s2'],
   // Revising self-talk requires responding to feedback
   'd7-sa1-sg3-s1': ['d3-sa5-sg2-s2', 'd3-sa6-sg2-s1'],
-  // Preventing distortion under stress requires calming + tolerance
-  'd7-sa1-sg4-s1': ['d1-sa3-sg3-s3', 'd1-sa4-sg3-s1'],
 
   // ─── D7: Confidence requires D2 prediction + D3 initiation ───
   // Anticipating tolerable discomfort requires prediction
@@ -806,33 +776,23 @@ export const SKILL_PREREQUISITES = {
   // Recalling previous coping requires metacognitive self-monitoring
   'd7-sa2-sg3-s1': ['d3-sa5-sg1-s1', 'd2-sa5-sg1-s2'],
   // Continuing despite imperfect performance requires mistake repair
-  'd7-sa2-sg4-s1': ['d3-sa6-sg1-s1', 'd3-sa6-sg2-s2'],
+  'd7-sa2-sg4-s1': ['d3-sa6-sg1-s1'],
 
   // ─── D7: Shame vs Competence requires D1 + D2 + D3 + D6 ───
   // Detecting collapse/defensiveness requires interoception + self-awareness
   'd7-sa3-sg1-s1': ['d1-sa1-sg2-s3', 'd2-sa1-sg1-s1'],
   // Identifying shame-driven reactions requires trigger linking
   'd7-sa3-sg1-s2': ['d2-sa2-sg2-s1'],
-  // Accepting correction without identity threat requires error tolerance
-  'd7-sa3-sg2-s1': ['d3-sa6-sg2-s1', 'd1-sa4-sg3-s1'],
-  // Listening without justification requires discomfort tolerance
-  'd7-sa3-sg3-s1': ['d1-sa4-sg3-s1', 'd3-sa5-sg2-s2'],
   // Integrating correction requires update + self-monitoring
   'd7-sa3-sg3-s2': ['d3-sa5-sg2-s2', 'd4-sa5-sg1-s1'],
-  // Returning to baseline self-concept requires calming + tolerance + perspective
-  'd7-sa3-sg4-s1': ['d1-sa3-sg3-s3', 'd1-sa4-sg3-s1', 'd6-sa5-sg3-s1'],
 
   // ─── D7: Resilience After Mistakes requires D1 + D3 + D7 ───
   // Regulating affect after error requires calming down
   'd7-sa4-sg1-s1': ['d1-sa3-sg3-s1', 'd1-sa3-sg3-s3'],
   // Preventing rumination requires flexibility + discomfort tolerance
   'd7-sa4-sg1-s2': ['d3-sa3-sg1-s1', 'd1-sa4-sg3-s1'],
-  // Resuming task requires re-initiation + error recovery
-  'd7-sa4-sg2-s1': ['d3-sa1-sg3-s1', 'd3-sa6-sg1-s1'],
-  // Avoiding avoidance patterns requires trigger awareness + initiation
-  'd7-sa4-sg2-s2': ['d2-sa2-sg3-s1', 'd3-sa1-sg2-s2'],
   // Extracting lessons without globalizing requires identity separation
-  'd7-sa4-sg3-s1': ['d7-sa1-sg2-s1', 'd7-sa3-sg2-s1'],
+  'd7-sa4-sg3-s1': ['d7-sa1-sg2-s1'],
 
   // ─── D7: Belonging requires D5 + D6 + D7 ───
   // Recognizing rejection vs misalignment requires perspective-taking
@@ -842,15 +802,15 @@ export const SKILL_PREREQUISITES = {
   // Expressing needs honestly requires advocating skills
   'd7-sa5-sg2-s1': ['d5-sa5-sg2-s1'],
   // Resisting masking requires identity stability + shame tolerance
-  'd7-sa5-sg2-s2': ['d7-sa3-sg2-s1', 'd7-sa1-sg2-s1'],
+  'd7-sa5-sg2-s2': ['d7-sa1-sg2-s1'],
   // Seeking fitting environments requires self-knowledge + advocacy
   'd7-sa5-sg3-s1': ['d2-sa4-sg3-s1', 'd5-sa5-sg1-s1'],
   // Requesting accommodation without shame requires shame tolerance + advocacy
-  'd7-sa5-sg3-s2': ['d7-sa3-sg2-s1', 'd5-sa5-sg2-s1'],
+  'd7-sa5-sg3-s2': ['d5-sa5-sg2-s1'],
   // Remaining engaged despite disagreement requires conflict tolerance
   'd7-sa5-sg4-s1': ['d6-sa6-sg2-s1', 'd1-sa4-sg3-s1'],
   // Repairing without withdrawal requires social repair + resilience
-  'd7-sa5-sg4-s2': ['d6-sa5-sg3-s1', 'd7-sa4-sg2-s1'],
+  'd7-sa5-sg4-s2': ['d6-sa5-sg3-s1'],
 
   // ─── D6-sa0: Shared Attention requires D1 interoception + calming ───
   // Responding to bid requires noticing external + tolerating proximity
@@ -873,32 +833,22 @@ export const SKILL_PREREQUISITES = {
   'd8-sa1-sg3-s1': ['d3-sa4-sg2-s1'],
   // Prioritizing safety over task requires flexibility
   'd8-sa1-sg3-s2': ['d3-sa3-sg1-s1'],
-  // Delaying preference requires discomfort tolerance
-  'd8-sa2-sg1-s1': ['d1-sa4-sg2-s1'],
   // Following steps without negotiation requires persistence + sequencing
   'd8-sa2-sg2-s1': ['d3-sa2-sg1-s1', 'd3-sa4-sg1-s1'],
   // Maintaining compliance under arousal requires calming down
-  'd8-sa2-sg2-s2': ['d1-sa3-sg3-s1', 'd1-sa4-sg2-s2'],
-  // Differentiating discomfort from danger requires interoceptive discrimination
-  'd8-sa3-sg2-s1': ['d1-sa1-sg4-s1', 'd2-sa2-sg2-s1'],
+  'd8-sa2-sg2-s2': ['d1-sa3-sg3-s1'],
   // Adjusting behavior as conditions change requires self-monitoring
   'd8-sa3-sg3-s1': ['d3-sa5-sg2-s1'],
   // Delaying movement/action requires discomfort tolerance + impulse delay
-  'd8-sa4-sg1-s1': ['d1-sa4-sg2-s1', 'd1-sa4-sg2-s2'],
+  'd8-sa4-sg1-s1': ['d1-sa4-sg2-s1'],
   // Resisting fight/flight requires calming down skills
   'd8-sa4-sg1-s2': ['d1-sa3-sg3-s1', 'd1-sa3-sg3-s3'],
   // Resuming independence after safety clears requires re-initiation
   'd8-sa4-sg3-s1': ['d3-sa1-sg3-s1', 'd3-sa3-sg3-s2'],
 
   // ─── D9: Support Utilization requires D1 + D2 + D5 ───
-  // Accepting proximity during distress requires tolerating adult proximity while dysregulated
-  'd9-sa1-sg1-s1': ['d1-sa3-sg2-s1'],
   // Allowing calming strategies requires staying with adult during calming
   'd9-sa1-sg1-s2': ['d1-sa3-sg2-s3'],
-  // Signaling need for support requires basic help-requesting
-  'd9-sa1-sg1-s3': ['d5-sa1-sg4-s1'],
-  // Tolerating redirection requires discomfort tolerance
-  'd9-sa1-sg2-s1': ['d1-sa4-sg2-s1'],
   // Differentiating support levels requires recognizing own limits
   'd9-sa1-sg2-s2': ['d2-sa4-sg1-s1', 'd2-sa4-sg2-s1'],
   // Attending to gestural prompts requires basic attention orientation

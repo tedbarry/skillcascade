@@ -218,11 +218,6 @@ export const descriptions_d1d3 = {
     looks_like: 'Client stays seated or in the area for a short, defined period despite reporting that they feel uncomfortable.',
     absence: 'Client immediately leaves, hides, or physically removes themselves from any situation that produces discomfort.',
   },
-  'd1-sa4-sg2-s2': {
-    description: 'The ability to delay escape behaviors, avoidance, or discharge actions (e.g., hitting, screaming, throwing) when discomfort arises, creating space for a more adaptive response.',
-    looks_like: 'Client pauses before acting on the urge to escape or discharge, even if only for a few seconds, allowing for redirection.',
-    absence: 'Client immediately engages in escape or discharge behavior at the first sign of discomfort with no observable delay.',
-  },
 
   // SG3: Hold discomfort without escalation
   'd1-sa4-sg3-s1': {
@@ -438,11 +433,6 @@ export const descriptions_d1d3 = {
     description: 'The ability to distinguish between "I can\'t do this right now" (temporary, state-dependent limit) and "I can\'t do this at all" (absolute limit), allowing for more accurate self-assessment.',
     looks_like: 'Client says "I can\'t do this right now, maybe after a break" rather than "I\'ll never be able to do this."',
     absence: 'Client treats all current difficulty as permanent inability, saying "I can\'t" globally rather than recognizing temporary states.',
-  },
-  'd2-sa4-sg2-s2': {
-    description: 'The ability to avoid making sweeping negative self-judgments based on current difficulty, keeping self-assessment specific rather than global.',
-    looks_like: 'Client says "this math problem is hard" rather than "I\'m stupid" or "I\'m bad at everything."',
-    absence: 'Client makes global negative statements about themselves based on specific instances of difficulty ("I\'m the worst," "I can\'t do anything").',
   },
 
   // SG3: Accept limits without shame
@@ -696,10 +686,5 @@ export const descriptions_d1d3 = {
     description: 'The ability to separate an error in performance from one\'s overall worth or identity, keeping mistakes in proportion.',
     looks_like: 'Client says "I got that wrong" rather than "I\'m stupid" and treats the error as a task event, not a self-defining moment.',
     absence: 'Client equates errors with personal failure, making statements like "I\'m so dumb" or "I can\'t do anything right" after mistakes.',
-  },
-  'd3-sa6-sg2-s2': {
-    description: 'The ability to stay engaged with the current task even after errors have occurred, maintaining focus and effort through imperfect performance.',
-    looks_like: 'Client continues working at the same level of engagement after making mistakes, treating them as part of the learning process.',
-    absence: 'Client\'s engagement visibly deteriorates after errors, with decreasing effort, increasing off-task behavior, or growing frustration that undermines remaining work.',
   },
 }

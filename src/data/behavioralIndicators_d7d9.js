@@ -17,12 +17,6 @@ export const indicators_d7d9 = {
     2: 'Usually forms self-referential statements in familiar settings; may not generate them spontaneously in novel or stressful contexts.',
     3: 'Reliably and spontaneously forms self-referential statements across contexts, linking actions and feelings to the self naturally.',
   },
-  'd7-sa1-sg1-s2': {
-    0: 'Shows no evidence of running internal commentary; moves through activities without any observable self-directed speech or verbal self-monitoring.',
-    1: 'Occasionally uses self-directed speech during simple, familiar tasks when modeled, but does not maintain it across activities.',
-    2: 'Usually maintains internal commentary during familiar tasks; may lose self-guidance during complex, fast-paced, or stressful activities.',
-    3: 'Reliably maintains running internal commentary across contexts, using self-directed speech to guide behavior and process experience.',
-  },
 
   // SG2: Differentiate event from identity
   'd7-sa1-sg2-s1': {
@@ -53,12 +47,6 @@ export const indicators_d7d9 = {
   },
 
   // SG4: Protect self-narrative
-  'd7-sa1-sg4-s1': {
-    0: 'Self-narrative distorts severely during failure or conflict; experiences complete identity collapse or extreme self-attack.',
-    1: 'Occasionally maintains stable self-narrative during minor failures with significant adult co-regulation and reframing.',
-    2: 'Usually prevents distortion during familiar challenges; may experience significant self-narrative disruption during major failures or conflicts.',
-    3: 'Reliably prevents self-narrative distortion during failure or conflict across contexts, maintaining a stable core self-view.',
-  },
   'd7-sa1-sg4-s2': {
     0: 'Consistently catastrophizes or uses all-or-nothing self-statements; "This is the worst thing ever" or "I always fail" is the default.',
     1: 'Occasionally avoids catastrophizing in low-stakes situations with active adult coaching, but defaults to extremes under stress.',
@@ -141,12 +129,6 @@ export const indicators_d7d9 = {
   },
 
   // SG2: Tolerate correction
-  'd7-sa3-sg2-s1': {
-    0: 'Cannot accept correction without identity threat; any correction, no matter how gentle, triggers a defensive crisis.',
-    1: 'Occasionally accepts gentle correction from trusted adults in private, low-stakes settings without major identity disruption.',
-    2: 'Usually accepts correction in familiar, supportive settings; may still experience identity threat with public, direct, or unexpected correction.',
-    3: 'Reliably accepts correction without identity threat across contexts and sources, treating corrections as information about behavior, not self.',
-  },
   'd7-sa3-sg2-s2': {
     0: 'Cannot tolerate being wrong without self-attack; any error triggers punitive self-talk, shutdown, or behavioral crisis.',
     1: 'Occasionally tolerates being wrong in low-stakes, private situations with significant adult reframing and co-regulation.',
@@ -155,12 +137,6 @@ export const indicators_d7d9 = {
   },
 
   // SG3: Process feedback constructively
-  'd7-sa3-sg3-s1': {
-    0: 'Cannot listen to feedback without immediate justification; launches into excuse-making or blame-shifting before feedback is completed.',
-    1: 'Occasionally listens to brief feedback without justification in safe, private settings with a trusted adult.',
-    2: 'Usually listens to feedback without immediate justification in familiar settings; may still defend in high-stakes or public situations.',
-    3: 'Reliably listens to feedback without immediate justification across contexts, allowing full information before responding.',
-  },
   'd7-sa3-sg3-s2': {
     0: 'Cannot integrate correction into future action; feedback is rejected, forgotten, or overridden by habitual patterns.',
     1: 'Occasionally integrates correction into the immediate next attempt with adult guidance, but changes do not persist across sessions.',
@@ -168,19 +144,6 @@ export const indicators_d7d9 = {
     3: 'Reliably integrates correction into future action across contexts and over time, demonstrating lasting behavioral change from feedback.',
   },
 
-  // SG4: Return to baseline self-concept
-  'd7-sa3-sg4-s1': {
-    0: 'Cannot return to baseline self-concept after errors; identity remains disrupted for extended periods following mistakes.',
-    1: 'Returns to baseline self-concept after minor errors with significant adult support, but major errors cause prolonged disruption.',
-    2: 'Usually returns to baseline self-concept after errors in familiar settings; may take longer after public, significant, or repeated errors.',
-    3: 'Reliably returns to baseline self-concept after errors across contexts and severity, recovering stable identity within a reasonable timeframe.',
-  },
-  'd7-sa3-sg4-s2': {
-    0: 'Errors cause lingering identity damage; a single mistake can affect self-concept for days or weeks, contaminating other domains.',
-    1: 'Lingering identity damage is reduced to hours with adult support, but significant errors still affect self-concept across domains.',
-    2: 'Usually prevents lingering identity damage from errors in familiar settings; may still carry impact from major or repeated errors.',
-    3: 'Reliably prevents lingering identity damage across contexts, maintaining domain-specific impact without cross-contamination to core self.',
-  },
 
   // ── D7-SA4: Recovery from Failure ─────────────────────────────────
 
@@ -196,20 +159,6 @@ export const indicators_d7d9 = {
     1: 'Rumination is reduced with active adult redirection, but returns when the individual is unoccupied or encounters similar situations.',
     2: 'Usually prevents prolonged rumination in familiar settings; may still ruminate after significant failures or when environmental cues trigger recall.',
     3: 'Reliably prevents prolonged rumination across contexts, processing errors efficiently and moving forward without obsessive replay.',
-  },
-
-  // SG2: Resume engagement
-  'd7-sa4-sg2-s1': {
-    0: 'Cannot resume task or interaction after failure; withdrawal is complete and persistent, extending beyond the immediate activity.',
-    1: 'Occasionally resumes preferred tasks or interactions after minor failures with significant encouragement and modified expectations.',
-    2: 'Usually resumes tasks and interactions after failure in familiar settings; may need additional support for non-preferred or public activities.',
-    3: 'Reliably resumes tasks and interactions after failure across contexts, re-engaging without requiring extensive recovery or persuasion.',
-  },
-  'd7-sa4-sg2-s2': {
-    0: 'Develops avoidance patterns after failures; begins avoiding entire categories of activities based on single negative experiences.',
-    1: 'Avoidance patterns develop but can be partially reversed with structured re-exposure and adult support over time.',
-    2: 'Usually avoids developing avoidance patterns in familiar domains; may still develop them for novel or high-visibility activities after failure.',
-    3: 'Reliably avoids developing avoidance patterns across contexts, maintaining willingness to re-engage despite past negative experiences.',
   },
 
   // SG3: Learn from failure
@@ -290,20 +239,6 @@ export const indicators_d7d9 = {
 
   // ── D8-SA1: Emergency Response ────────────────────────────────────
 
-  // SG1: Identify emergency signals
-  'd8-sa1-sg1-s1': {
-    0: 'Does not identify alarms, warnings, or urgent directives; does not orient or respond to emergency signals in any context.',
-    1: 'Occasionally identifies very loud or familiar alarms (e.g., school fire alarm) but does not recognize less familiar warning signals.',
-    2: 'Usually identifies common emergency signals in familiar settings; may not recognize warnings in novel environments or unfamiliar formats.',
-    3: 'Reliably identifies alarms, warnings, and urgent directives across settings and formats, orienting appropriately to emergency signals.',
-  },
-  'd8-sa1-sg1-s2': {
-    0: 'Cannot distinguish emergency from inconvenience; treats minor disruptions as emergencies or ignores genuine emergencies entirely.',
-    1: 'Occasionally distinguishes extreme emergencies from daily inconveniences when coached, but miscalibrates for moderate situations.',
-    2: 'Usually distinguishes emergency from inconvenience in familiar contexts; may miscalibrate in novel or ambiguous situations.',
-    3: 'Reliably distinguishes emergencies from inconveniences across contexts, responding with appropriate urgency to each.',
-  },
-
   // SG2: Interrupt current activity
   'd8-sa1-sg2-s1': {
     0: 'Cannot stop preferred or ongoing behavior for an emergency; continues current activity regardless of safety demands.',
@@ -335,12 +270,6 @@ export const indicators_d7d9 = {
   // ── D8-SA2: Compliance Under Threat ───────────────────────────────
 
   // SG1: Defer autonomy
-  'd8-sa2-sg1-s1': {
-    0: 'Cannot delay personal preference or choice during safety situations; insists on autonomy even when it creates immediate danger.',
-    1: 'Occasionally defers preference during minor safety situations with immediate adult enforcement, but resists during serious events.',
-    2: 'Usually delays personal preference during recognized safety situations; may resist deferring for ambiguous or prolonged safety demands.',
-    3: 'Reliably delays personal preference and choice during safety situations across contexts, accepting the temporary override without resistance.',
-  },
   'd8-sa2-sg1-s2': {
     0: 'Cannot accept external control temporarily; any restriction of autonomy triggers escalation regardless of safety context.',
     1: 'Occasionally accepts brief external control during minor safety situations with familiar adults; escalates during serious events.',
@@ -392,19 +321,6 @@ export const indicators_d7d9 = {
     3: 'Reliably recognizes escalating social and physical risk across contexts, detecting increases before they reach dangerous levels.',
   },
 
-  // SG2: Calibrate threat response
-  'd8-sa3-sg2-s1': {
-    0: 'Triggers false alarms driven by anxiety; interprets non-dangerous situations as threatening, creating unnecessary safety responses.',
-    1: 'Frequent false alarms that can be reduced with adult reassurance in the moment, but anxiety-driven threat detection persists.',
-    2: 'Usually avoids false alarms in familiar settings; may still over-detect threats in novel, sensory-rich, or anxiety-provoking contexts.',
-    3: 'Reliably avoids false alarms across contexts, accurately distinguishing anxiety from genuine threat signals.',
-  },
-  'd8-sa3-sg2-s2': {
-    0: 'Cannot respond proportionally to real threats; either under-reacts (ignores danger) or over-reacts (panic for minor risk).',
-    1: 'Occasionally responds proportionally to obvious threats with adult modeling; miscalibrates for moderate or ambiguous risks.',
-    2: 'Usually responds proportionally in familiar settings; may over- or under-react to novel or ambiguous threat situations.',
-    3: 'Reliably responds proportionally to real threats across contexts, calibrating response intensity to actual danger level.',
-  },
 
   // SG3: Adapt to changing conditions
   'd8-sa3-sg3-s1': {
@@ -436,19 +352,6 @@ export const indicators_d7d9 = {
     3: 'Reliably resists fight/flight impulses across safety contexts and intensity levels, maintaining controlled behavior despite activation.',
   },
 
-  // SG2: Accept direction
-  'd8-sa4-sg2-s1': {
-    0: 'Cannot accept adult or system direction during safety situations; resists all external guidance regardless of danger level.',
-    1: 'Occasionally accepts direction from familiar adults during minor safety situations; resists during serious events or from less-known adults.',
-    2: 'Usually accepts direction in recognized safety situations; may resist unexpected, forceful, or unfamiliar authority direction.',
-    3: 'Reliably accepts adult or system direction across safety contexts and authority sources, following guidance promptly.',
-  },
-  'd8-sa4-sg2-s2': {
-    0: 'Cannot trust external judgment temporarily; insists on making own assessment even when lacking relevant information in a crisis.',
-    1: 'Occasionally trusts familiar adults\' judgment during minor situations, but insists on own assessment during serious events.',
-    2: 'Usually trusts external judgment in recognized safety situations; may struggle to defer in ambiguous or prolonged situations.',
-    3: 'Reliably trusts external judgment temporarily across safety contexts, accepting that others may have better information in a crisis.',
-  },
 
   // SG3: Return to independence
   'd8-sa4-sg3-s1': {
@@ -471,32 +374,14 @@ export const indicators_d7d9 = {
   // ── D9-SA1: Accepting Co-Regulation ───────────────────────────────
 
   // SG1: Accept proximity and support
-  'd9-sa1-sg1-s1': {
-    0: 'Does not accept physical proximity of a supporter during distress; approaches are rejected, evaded, or trigger escalation.',
-    1: 'Occasionally tolerates proximity of a familiar supporter during mild distress, but rejects closeness during moderate-to-high distress.',
-    2: 'Usually accepts supporter proximity during distress in familiar settings; may still reject proximity during intense or novel episodes.',
-    3: 'Reliably accepts physical proximity of supporters during distress across settings and supporters, using presence as a co-regulation anchor.',
-  },
   'd9-sa1-sg1-s2': {
     0: 'Does not allow supporters to use calming strategies; any attempt at co-regulation (verbal, physical, sensory) is rejected or escalates distress.',
     1: 'Allows very familiar supporters to use limited calming strategies (e.g., quiet voice) during mild distress, but rejects most strategies.',
     2: 'Usually allows calming strategies in familiar settings from known supporters; may reject strategies during intense episodes or from less-familiar adults.',
     3: 'Reliably allows supporters to use a range of calming strategies across contexts and providers, accepting co-regulation flexibly.',
   },
-  'd9-sa1-sg1-s3': {
-    0: 'Does not signal need for support in any modality; distress escalates without any communicative bid for help or co-regulation.',
-    1: 'Occasionally signals need for support through basic means (reaching, moving toward supporter) during mild distress with familiar adults.',
-    2: 'Usually signals need for support in familiar settings through established modalities; may not signal in novel contexts or with unfamiliar supporters.',
-    3: 'Reliably signals need for support across contexts and supporters, using effective communication to initiate co-regulation.',
-  },
 
   // SG2: Accept different support levels
-  'd9-sa1-sg2-s1': {
-    0: 'Does not tolerate any redirection from a supporter; all attempts to guide behavior are met with resistance or escalation.',
-    1: 'Tolerates minimal redirection from familiar supporters during low-arousal moments, but resists during moderate-to-high distress.',
-    2: 'Usually tolerates redirection in familiar settings; may resist during high-arousal states or from less-familiar supporters.',
-    3: 'Reliably tolerates redirection from supporters across contexts and arousal levels, accepting guidance as helpful rather than controlling.',
-  },
   'd9-sa1-sg2-s2': {
     0: 'Cannot differentiate how much support is needed; either demands maximum support for minor issues or rejects all support during crises.',
     1: 'Occasionally matches support request to need with adult coaching ("Do you need a little help or a lot?"), but not independently.',

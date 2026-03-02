@@ -165,12 +165,6 @@ export const indicators_d4d6 = {
   },
 
   // SG2: Choose signaling over escape
-  'd5-sa1-sg2-s1': {
-    0: 'Defaults to escape or disengagement when blocked; does not attempt to communicate before withdrawing or escalating.',
-    1: 'Occasionally inhibits escape long enough to attempt a signal with immediate adult prompting, but defaults to escape behavior.',
-    2: 'Usually inhibits escape in favor of signaling in familiar settings; may still default to escape under high stress or in novel contexts.',
-    3: 'Reliably inhibits escape and refusal across contexts, choosing communication over disengagement when blocked.',
-  },
   'd5-sa1-sg2-s2': {
     0: 'Does not choose signaling over disengaging; communication about difficulty is absent, replaced entirely by behavioral responses.',
     1: 'Occasionally chooses to signal instead of disengage in low-stress situations with explicit adult reminders to "use your words."',
@@ -326,13 +320,6 @@ export const indicators_d4d6 = {
     3: 'Reliably notices differences in preferences or goals across contexts, recognizing when negotiation is needed before conflict arises.',
   },
 
-  // SG2: Generate solutions
-  'd5-sa4-sg2-s1': {
-    0: 'Cannot identify more than one possible solution to a disagreement; either insists on their way or gives in completely.',
-    1: 'Occasionally generates an alternative solution with adult scaffolding ("What if you each...?"), but not independently.',
-    2: 'Usually identifies multiple solutions for familiar disagreements; may get stuck on one option in novel or emotional conflicts.',
-    3: 'Reliably identifies multiple possible solutions across contexts, generating creative options that consider both parties\' needs.',
-  },
 
   // SG3: Accept compromise
   'd5-sa4-sg3-s1': {

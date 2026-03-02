@@ -19,7 +19,7 @@ describe('getBehavioralIndicator', () => {
   })
 
   it('returns indicator for a known D9 skill', () => {
-    const text = getBehavioralIndicator('d9-sa1-sg1-s1', 2)
+    const text = getBehavioralIndicator('d9-sa1-sg1-s2', 2)
     expect(text).toBeTruthy()
     expect(typeof text).toBe('string')
   })

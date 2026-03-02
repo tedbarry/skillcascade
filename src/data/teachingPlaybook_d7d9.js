@@ -18,15 +18,6 @@ export const playbook_d7d9 = {
     measurement: 'Frequency of spontaneous self-referential statements per session. Track variety of contexts referenced (actions, feelings, thoughts, preferences).',
     generalization: 'Across activity types, emotional contexts, and communication partners.',
     prerequisiteNote: 'Requires d2-sa1-sg3-s1 (emotion vocabulary). Must have words for internal states to reference them in self-narrative.',
-    progressionNote: 'Enables d7-sa1-sg1-s2 (internal commentary) and all self-concept development. Without self-narration, identity remains implicit.',
-  },
-  'd7-sa1-sg1-s2': {
-    context: 'Teach after external self-referential statements are established. Focus on building internal self-talk — the running commentary that organizes experience and guides behavior.',
-    strategies: ['Think-aloud modeling: narrate your own internal commentary', 'Self-talk practice during tasks: "What am I thinking right now?"', 'Private speech exercises: whisper self-narration during activities', 'Self-monitoring prompts: "What is your brain saying about this?"'],
-    barriers: 'Internal self-talk may be absent, negative, or chaotic. Start by establishing ANY self-talk before targeting quality. Some learners find attention to internal speech disorienting.',
-    measurement: 'Evidence of self-directed internal commentary during tasks (think-aloud samples). Track whether self-talk is functional (guiding, organizing, evaluating).',
-    generalization: 'Across task types, emotional states, and complexity levels.',
-    prerequisiteNote: 'Tier 4 — requires basic self-referential statements and metacognitive awareness from D2-D3.',
     progressionNote: 'Supports all D7 skills by providing the internal narrative infrastructure. Enables d7-sa1-sg2 (protecting self from distortion).',
   },
 
@@ -71,15 +62,6 @@ export const playbook_d7d9 = {
   },
 
   // SG4: Maintain self-concept under stress
-  'd7-sa1-sg4-s1': {
-    context: 'Teach after the learner has a developing self-narrative that can be protected and updated. Focus on maintaining this narrative during failure, conflict, or high-stress situations.',
-    strategies: ['Pre-stress self-anchoring: "No matter what happens, I know I am [positive identity statements]"', 'Post-stress identity recovery: guided return to baseline self-concept', 'Cognitive defusion: observe negative self-talk without believing it', 'Stress-resilience practice: exposure to manageable stressors with identity processing'],
-    barriers: 'Stress directly degrades cognitive capacity, making self-concept maintenance harder precisely when it\'s most needed. Over-learn the strategies during calm states.',
-    measurement: 'Self-concept stability during and after stress episodes. Track self-talk quality and identity-referencing under pressure.',
-    generalization: 'Across stressor types (failure, conflict, loss, criticism), intensity levels, and social contexts.',
-    prerequisiteNote: 'Requires d1-sa3-sg3-s3 (self-directed calming) and d1-sa4-sg3-s1 (return to baseline). Must regulate physiologically before protecting identity cognitively.',
-    progressionNote: 'Tier 5 advanced skill. Supports d7-sa1-sg4-s2 and all D7-SA3/SA4 resilience skills.',
-  },
   'd7-sa1-sg4-s2': {
     context: 'Teach alongside stress-based identity maintenance. Focus on preventing the specific distortion of catastrophizing or all-or-nothing thinking about self during difficulty.',
     strategies: ['Thought-catching practice: identify catastrophic self-statements in real time', '"Is this true, or is this my stress talking?" self-check', 'Challenge all-or-nothing patterns: "Is it really NEVER? Is it really ALWAYS?"', 'Grounding techniques that reconnect with factual self-knowledge during distortion'],
@@ -195,15 +177,6 @@ export const playbook_d7d9 = {
   },
 
   // SG2: Tolerate correction
-  'd7-sa3-sg2-s1': {
-    context: 'Teach after shame detection is developing. Focus on receiving corrective feedback without it triggering a full shame response — "I did something wrong" stays as behavior, doesn\'t become identity.',
-    strategies: ['Graduated correction exposure: start with gentle, private feedback and increase', 'Pre-teach: "Correction is about what you DID, not who you ARE"', 'Processing protocol: hear correction → breathe → separate behavior from identity → respond', 'Safe practice: corrections in low-stakes, supportive contexts'],
-    barriers: 'History of harsh criticism may make all correction feel threatening. Build the skill slowly with trusted partners in safe settings before generalizing.',
-    measurement: 'Emotional regulation quality during and after corrections. Track whether correction triggers shame spiral or stays behavioral.',
-    generalization: 'Across correction sources (adults, peers), severity levels, and public vs. private contexts.',
-    prerequisiteNote: 'Requires d3-sa6-sg2-s1 (processing corrective information) and d1-sa4-sg3-s1 (return to baseline). Must be able to process AND regulate.',
-    progressionNote: 'Enables d7-sa3-sg2-s2 (tolerating being wrong) and supports all feedback-based learning.',
-  },
   'd7-sa3-sg2-s2': {
     context: 'Teach after basic correction tolerance is developing. Focus on the deeper capacity to be wrong without it attacking one\'s sense of self — the core of shame resilience.',
     strategies: ['Error normalization: "Being wrong is how we learn, not a character flaw"', '"I was wrong, and I\'m still okay" practice after real errors', 'Model own wrongness: adults sharing times they were wrong and how they handled it', 'Post-error identity check: "Am I still me? Yes. Am I still good? Yes."'],
@@ -215,15 +188,6 @@ export const playbook_d7d9 = {
   },
 
   // SG3: Receive feedback without defensiveness
-  'd7-sa3-sg3-s1': {
-    context: 'Teach after correction tolerance is developing. Focus on the social behavior of LISTENING to feedback without immediately justifying, explaining, or counter-attacking.',
-    strategies: ['"Listen first, respond second" protocol', 'Pause-and-process: wait 3 seconds before responding to feedback', 'Feedback reception practice: hear it, repeat it back, THEN react', 'Model receptive feedback behavior with explicit narration'],
-    barriers: 'Defensiveness is an automatic shame protection. The learner must feel safe enough that the protection isn\'t needed. Build safety in the environment AND internal resources.',
-    measurement: 'Quality of initial response to feedback: receptive vs. defensive. Track listening time before first response.',
-    generalization: 'Across feedback types, sources, and emotional intensity.',
-    prerequisiteNote: 'Requires d1-sa4-sg3-s1 (frustration tolerance) and d3-sa5-sg2-s2 (updating beliefs with new info). Must tolerate AND process feedback.',
-    progressionNote: 'Enables d7-sa3-sg3-s2 (integrating correction into future action) and supports all relationship-based learning.',
-  },
   'd7-sa3-sg3-s2': {
     context: 'Teach after the learner can receive feedback without defensiveness. Focus on actually using feedback to change future behavior — the integration step.',
     strategies: ['Feedback action plan: "Based on what they said, I will try..."', 'Follow-up check: "Did I apply the feedback? What happened?"', 'Track feedback → action → outcome cycles explicitly', 'Celebrate successful integration: "You heard the feedback and used it — excellent"'],
@@ -234,25 +198,6 @@ export const playbook_d7d9 = {
     progressionNote: 'Tier 5 advanced skill. Supports d7-sa3-sg4 (identity recovery) and lifelong learning.',
   },
 
-  // SG4: Recover identity after error
-  'd7-sa3-sg4-s1': {
-    context: 'Teach as a culmination of shame resilience work. Focus on returning to a stable, positive self-concept after significant errors or failures — the full recovery cycle.',
-    strategies: ['Identity recovery protocol: acknowledge error → separate from identity → recall strengths → re-engage', '"After the storm" processing: structured debrief following significant errors', 'Self-compassion exercises specifically for post-error periods', 'Repair sequence: fix the external damage AND the internal damage'],
-    barriers: 'Severe or public errors may challenge even well-developed resilience. The goal is not to prevent pain but to ensure recovery. Allow genuine processing time.',
-    measurement: 'Time to return to baseline self-concept after errors. Track self-concept ratings during recovery period.',
-    generalization: 'Across error types, severity levels, and public vs. private contexts.',
-    prerequisiteNote: 'Requires d1-sa3-sg3-s3 (self-directed calming), d1-sa4-sg3-s1 (return to baseline), and d6-sa5-sg3-s1 (apologizing/adjusting). Full regulation + repair toolkit needed.',
-    progressionNote: 'Tier 5 terminal skill for D7-SA3 shame resilience. Represents robust shame resilience capacity.',
-  },
-  'd7-sa3-sg4-s2': {
-    context: 'Teach alongside identity recovery. Focus on preventing errors from causing lasting identity damage — the lingering effects that persist after the event has passed.',
-    strategies: ['Time-limited processing: "I\'ll think about this for 10 minutes, then move on"', 'Rumination interruption techniques: redirect when dwelling becomes circular', '"What will I think about this in a week/month/year?" perspective-taking', 'Evidence-based self-reassurance: return to identity portfolio after errors'],
-    barriers: 'Rumination is self-reinforcing — it feels like problem-solving but doesn\'t resolve anything. Help the learner distinguish productive processing from circular rumination.',
-    measurement: 'Duration of post-error identity disturbance. Track whether errors produce lasting changes in self-concept or resolve within expected timeframes.',
-    generalization: 'Across error types, severity levels, and time scales.',
-    prerequisiteNote: 'Tier 5 — requires robust self-concept, cognitive flexibility, and emotional regulation.',
-    progressionNote: 'Terminal skill for D7-SA3. Together with d7-sa3-sg4-s1, represents complete shame resilience capacity.',
-  },
 
   // ── D7-SA4: Error Recovery ──────────────────────────────────────
 
@@ -274,26 +219,6 @@ export const playbook_d7d9 = {
     generalization: 'Across error types, rumination triggers, and support contexts.',
     prerequisiteNote: 'Requires d3-sa3-sg1-s1 (response inhibition) and d1-sa4-sg3-s1 (return to baseline). Must inhibit the rumination response AND return to emotional baseline.',
     progressionNote: 'Supports d7-sa4-sg3 (extracting lessons) and all long-term error recovery.',
-  },
-
-  // SG2: Resume functioning
-  'd7-sa4-sg2-s1': {
-    context: 'Teach after emotional regulation of error is developing. Focus on the behavioral component — getting back to the task or interaction after an error.',
-    strategies: ['"Get back on the horse" protocol: structured return to task after error', 'Break if needed, but with a return plan: "I\'ll take 2 minutes, then come back"', 'Re-engagement cues: visual or verbal reminders to return', 'Practice task resumption after intentional errors in low-stakes contexts'],
-    barriers: 'Avoidance of the error context is common and self-reinforcing. Build return as a habit, not a decision made each time.',
-    measurement: 'Time to task resumption after errors. Track avoidance frequency and return success rate.',
-    generalization: 'Across task types, error severity levels, and social observation conditions.',
-    prerequisiteNote: 'Requires d3-sa1-sg3-s1 (task re-engagement after interruption) and d3-sa6-sg1-s1 (accepting good enough). Must be able to re-engage AND tolerate imperfect re-engagement.',
-    progressionNote: 'Enables d7-sa4-sg2-s2 (avoiding avoidance patterns) and supports all productivity recovery.',
-  },
-  'd7-sa4-sg2-s2': {
-    context: 'Teach alongside task resumption. Focus on recognizing and interrupting avoidance patterns that develop after errors — avoiding the task, the setting, the person, or anything associated with the error.',
-    strategies: ['Avoidance awareness: "Am I avoiding this because of the mistake?"', 'Graduated re-exposure to avoided contexts', 'Separate the error from the context: "The task is fine — the mistake was one moment"', 'Track avoidance patterns and create deliberate return plans'],
-    barriers: 'Avoidance provides immediate relief, making it highly reinforcing. Build distress tolerance (D1) to compete with avoidance reinforcement.',
-    measurement: 'Frequency and breadth of avoidance behaviors following errors. Track whether avoidance patterns are developing or resolving.',
-    generalization: 'Across avoidance types (task, setting, person, topic), error severities, and time scales.',
-    prerequisiteNote: 'Requires d2-sa2-sg3-s1 (recognizing own patterns) and d3-sa1-sg2-s2 (initiating non-preferred tasks). Must recognize avoidance AND overcome it.',
-    progressionNote: 'Supports d7-sa4-sg3 (learning from errors) and all long-term resilience.',
   },
 
   // SG3: Learn from errors
@@ -405,26 +330,6 @@ export const playbook_d7d9 = {
 
   // ── D8-SA1: Emergency Recognition ───────────────────────────────
 
-  // SG1: Recognize urgent signals
-  'd8-sa1-sg1-s1': {
-    context: 'Teach from the earliest stages using concrete, multi-sensory examples. Focus on recognizing alarms, warnings, and urgent directives across settings.',
-    strategies: ['Audio training with real alarm sounds (fire alarm, car horn, smoke detector)', 'Visual recognition of warning signs and symbols', '"When you hear/see THIS, stop and listen" protocol', 'Repeated practice in multiple settings with different alarm types'],
-    barriers: 'Sensory sensitivities may make alarms overwhelming rather than informative. Pre-teach alarm sounds at low volume; build tolerance alongside recognition.',
-    measurement: 'Correct identification of alarm/warning sounds and signals across novel settings. Track response time from alarm to attention.',
-    generalization: 'Across alarm types (auditory, visual, verbal), settings, and sensory conditions.',
-    prerequisiteNote: 'Tier 1 foundational skill — no strict prerequisites. Can be taught from very early stages.',
-    progressionNote: 'Enables d8-sa1-sg1-s2 (emergency vs. inconvenience) and all emergency response skills.',
-  },
-  'd8-sa1-sg1-s2': {
-    context: 'Teach after basic alarm recognition. Focus on distinguishing genuine emergencies from non-emergency inconveniences — essential for proportional response.',
-    strategies: ['Emergency vs. inconvenience sorting cards with real scenarios', '"Is anyone in danger?" decision rule', 'Video examples of emergencies vs. non-emergencies', 'Practice with fire drills and distinguish from regular interruptions'],
-    barriers: 'Anxiety may cause over-classification (everything is an emergency). Build from clear contrasts and gradually introduce ambiguous scenarios.',
-    measurement: 'Accuracy of emergency classification across novel scenarios. Track false alarm rate.',
-    generalization: 'Across settings, emergency types, and arousal levels.',
-    prerequisiteNote: 'Tier 2 — requires basic alarm recognition and some cognitive discrimination capacity.',
-    progressionNote: 'Supports d8-sa1-sg2 (emergency compliance) and d8-sa3 (risk calibration). Prevents both under- and over-reaction.',
-  },
-
   // SG2: Comply during emergencies
   'd8-sa1-sg2-s1': {
     context: 'Teach as a critical safety skill. Focus on the ability to immediately stop current behavior when a safety demand occurs — even preferred or engaging activities.',
@@ -468,15 +373,6 @@ export const playbook_d7d9 = {
   // ── D8-SA2: Following Safety Directions ─────────────────────────
 
   // SG1: Accept temporary external control
-  'd8-sa2-sg1-s1': {
-    context: 'Teach as a survival skill. Focus on tolerating having someone else make decisions during safety situations — temporary surrender of autonomy.',
-    strategies: ['Practice following external direction during structured activities', 'Explain the logic: "During emergencies, one person directs and others follow"', 'Graduated practice: low-stakes direction-following → high-stakes emergency drills', 'Process afterward: "I followed directions, and now I\'m safe"'],
-    barriers: 'Autonomy-seeking learners may resist external control. Frame it as temporary and purposeful — "not forever, just for now."',
-    measurement: 'Compliance with external direction during safety scenarios. Track resistance frequency and recovery time.',
-    generalization: 'Across direction-givers (adults, authorities, peers), settings, and urgency levels.',
-    prerequisiteNote: 'Requires d1-sa4-sg2-s1 (physical impulse control). Must be able to override impulse to act independently during emergencies.',
-    progressionNote: 'Enables d8-sa2-sg1-s2 (accepting control calmly) and all safety compliance.',
-  },
   'd8-sa2-sg1-s2': {
     context: 'Teach alongside direction compliance. Focus on the emotional acceptance, not just behavioral compliance — reducing anxiety and resistance during external control.',
     strategies: ['Self-talk for safety situations: "They\'re keeping me safe. I can follow."', 'Practice calm compliance: regulated body + following directions simultaneously', 'Debrief emotional experience after safety drills', 'Build trust in safety authorities through positive pre-crisis interactions'],
@@ -549,25 +445,8 @@ export const playbook_d7d9 = {
     progressionNote: 'Supports d8-sa3-sg2 (anxiety vs. real risk calibration) and proactive safety behavior.',
   },
 
-  // SG2: Calibrate anxiety vs. real risk
-  'd8-sa3-sg2-s1': {
-    context: 'Teach after the learner can identify real dangers. Focus on distinguishing anxiety-driven false alarms from genuine safety concerns.',
-    strategies: ['Evidence-based risk assessment: "What are the actual facts about danger here?"', 'Anxiety thermometer vs. danger thermometer — compare ratings', 'Graduated exposure to anxiety-provoking-but-safe situations with processing', '"Is this my anxiety or real danger?" self-check protocol'],
-    barriers: 'Anxiety makes perceived risk feel real. Never dismiss anxiety — validate the feeling while teaching risk evaluation.',
-    measurement: 'Accuracy of danger vs. anxiety discrimination. Track false alarm rate in anxiety-provoking situations.',
-    generalization: 'Across anxiety triggers, risk types, and settings.',
-    prerequisiteNote: 'Requires d1-sa1-sg4-s1 (labeling arousal sources) and d2-sa2-sg2-s1 (identifying behavioral patterns). Must recognize anxiety as a state, not a fact.',
-    progressionNote: 'Enables d8-sa3-sg2-s2 (proportional response to real threat) and all calibrated safety behavior.',
-  },
-  'd8-sa3-sg2-s2': {
-    context: 'Teach alongside anxiety-risk calibration. Focus on matching response intensity to actual risk level — not over-responding or under-responding.',
-    strategies: ['Response matching exercises: small risk → small response, big risk → big response', 'Risk-response calibration practice with varied scenarios', 'Process over-reactions and under-reactions after events: "Was my reaction the right size?"', 'Graduated practice with increasingly ambiguous risk levels'],
-    barriers: 'Both over-responding (anxiety-driven) and under-responding (habituated) create safety problems. Calibrate in both directions.',
-    measurement: 'Proportionality of safety responses to actual risk levels across scenarios.',
-    generalization: 'Across risk types, levels, and contexts.',
-    prerequisiteNote: 'Tier 3 — requires both risk identification and emotional regulation.',
-    progressionNote: 'Supports d8-sa3-sg3 (adaptive risk behavior) and all nuanced safety responding.',
-  },
+
+
 
   // SG3: Adaptive safety behavior
   'd8-sa3-sg3-s1': {
@@ -611,25 +490,6 @@ export const playbook_d7d9 = {
     progressionNote: 'Supports d8-sa4-sg2 (accepting external direction during crisis) and all emergency management.',
   },
 
-  // SG2: Accept crisis direction
-  'd8-sa4-sg2-s1': {
-    context: 'Teach as the social-compliance component of crisis management. Focus on following adult or authority direction during crisis states without question or delay.',
-    strategies: ['Practice compliance during simulated crisis scenarios', 'Build trust with safety authorities through positive interactions', '"During a crisis, follow the adult — questions come later"', 'Reinforce crisis compliance specifically and heavily'],
-    barriers: 'Trust issues, authority problems, or autonomy needs may interfere. Build the safety relationship outside of crisis contexts.',
-    measurement: 'Compliance rate and latency during simulated crisis scenarios.',
-    generalization: 'Across crisis types, authority figures, and settings.',
-    prerequisiteNote: 'Tier 2 — requires basic compliance capacity and some emotional regulation.',
-    progressionNote: 'Enables d8-sa4-sg2-s2 (trusting external judgment temporarily) and reliable crisis behavior.',
-  },
-  'd8-sa4-sg2-s2': {
-    context: 'Teach alongside behavioral compliance. Focus on the cognitive-emotional component — actually trusting that the directing adult is making good decisions during the crisis.',
-    strategies: ['Build pre-crisis trust through reliable, competent adult behavior', 'Process post-crisis: "I trusted you, and we were safe"', 'Distinguish trusted authorities from strangers in crisis situations', 'Practice transferring trust to novel appropriate authorities (firefighters, police)'],
-    barriers: 'Trust must be earned through consistent, reliable adult behavior. The skill cannot be taught if the environment doesn\'t model trustworthy authority.',
-    measurement: 'Quality of trust-based compliance: willing vs. resentful or terrified. Track trust indicators during and after crisis scenarios.',
-    generalization: 'Across authority figures, crisis types, and settings.',
-    prerequisiteNote: 'Tier 3 — requires experience with reliable authority figures and basic social trust.',
-    progressionNote: 'Supports d8-sa4-sg3 (post-crisis recovery) and all authority-based safety behavior.',
-  },
 
   // SG3: Post-crisis recovery
   'd8-sa4-sg3-s1': {
@@ -659,15 +519,6 @@ export const playbook_d7d9 = {
   // ── D9-SA1: Accepting Support ───────────────────────────────────
 
   // SG1: Basic support acceptance
-  'd9-sa1-sg1-s1': {
-    context: 'Teach from the earliest developmental stages. Focus on tolerating and accepting physical closeness from a support person during distress — the most basic form of support reception.',
-    strategies: ['Co-regulation: supporter provides calming presence alongside the learner', 'Gradual proximity building with preferred supporters', 'Pair supporter presence with preferred sensory inputs', 'Responsive co-regulation: match the learner\'s needs rather than imposing support'],
-    barriers: 'Sensory aversion, trust issues, or trauma may make physical proximity aversive. Build from the learner\'s current tolerance level, not from an assumed baseline.',
-    measurement: 'Duration of tolerated supporter proximity during distress. Track across distress levels and supporters.',
-    generalization: 'Across supporters, distress types, and settings.',
-    prerequisiteNote: 'Requires d1-sa3-sg2-s1 (accepting co-regulation). Must allow external support for calming.',
-    progressionNote: 'Enables d9-sa1-sg1-s2 (accepting calming strategies) and all support utilization. Foundation skill.',
-  },
   'd9-sa1-sg1-s2': {
     context: 'Teach after physical proximity tolerance is established. Focus on accepting specific calming interventions from supporters — deep pressure, rhythmic rocking, verbal calming, etc.',
     strategies: ['Supporter calming menu: identify which strategies the learner accepts', 'Gradual introduction of calming strategies during low distress', 'Let the learner choose preferred calming approaches', 'Build from accepted strategies to new ones gradually'],
@@ -677,26 +528,8 @@ export const playbook_d7d9 = {
     prerequisiteNote: 'Requires d1-sa3-sg2-s3 (engagement with external calming supports). Must be receptive to external support strategies.',
     progressionNote: 'Enables d9-sa1-sg1-s3 (signaling for support) and independent help-seeking.',
   },
-  'd9-sa1-sg1-s3': {
-    context: 'Teach after the learner can accept support. Focus on the active step of REQUESTING support — signaling that help is needed using any available modality.',
-    strategies: ['Support signal options: card, gesture, word, AAC symbol', 'Practice signaling during gradually increasing distress', 'Immediate response to signals — build reliability of the support system', 'Reinforce signaling heavily; fade prompts over time'],
-    barriers: 'Signaling requires both self-awareness (knowing you need help) and communication capacity. Build both D1/D2 self-awareness and D5 communication foundations.',
-    measurement: 'Frequency and timing of spontaneous support signals. Track across distress levels and settings.',
-    generalization: 'Across distress types, communication modalities, and support providers.',
-    prerequisiteNote: 'Requires d5-sa1-sg4-s1 (using available communication modality). Must have a way to signal.',
-    progressionNote: 'Enables d9-sa1-sg2 (tolerating redirection) and independent support-seeking across all contexts.',
-  },
 
   // SG2: Accept redirection
-  'd9-sa1-sg2-s1': {
-    context: 'Teach after basic support acceptance is established. Focus on tolerating being redirected by a supporter — being guided away from a behavior or toward an alternative.',
-    strategies: ['Gentle redirection practice in low-stakes contexts', 'Pair redirection with preferred alternatives', 'Pre-teach: "When someone redirects you, they\'re helping, not punishing"', 'Gradual increase in redirection frequency and demand level'],
-    barriers: 'Redirection may feel controlling or invalidating. Validate the learner\'s experience while teaching acceptance of appropriate guidance.',
-    measurement: 'Compliance with redirection without escalation. Track across redirection types and supporters.',
-    generalization: 'Across redirection types, supporters, and demand levels.',
-    prerequisiteNote: 'Requires d1-sa4-sg2-s1 (physical impulse control). Must be able to override current behavior when redirected.',
-    progressionNote: 'Enables d9-sa1-sg2-s2 (differentiating support levels needed) and all guided learning.',
-  },
   'd9-sa1-sg2-s2': {
     context: 'Teach after basic redirection tolerance is established. Focus on the learner\'s ability to communicate WHAT LEVEL of support they need — not just "help" but "this much help."',
     strategies: ['Support level menu: "I need encouragement / I need hints / I need hands-on help"', 'Practice requesting different support levels across tasks', 'Self-monitoring: "How much help do I actually need right now?"', 'Supporter responsiveness: match support level to what\'s requested'],

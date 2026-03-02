@@ -339,15 +339,6 @@ export const playbook_d1d3 = {
     measurement: 'Maximum tolerated delay duration during mild discomfort. Track in seconds/minutes across sessions.',
     generalization: 'Across discomfort types and settings.',
     prerequisiteNote: 'Requires discomfort categorization (d1-sa4-sg1). Tier 2.',
-    progressionNote: 'Leads to delaying escape behaviors (d1-sa4-sg2-s2) — the active version of staying put.',
-  },
-  'd1-sa4-sg2-s2': {
-    context: 'Practice during situations where the learner would normally escape — teach delay before exit rather than preventing exit.',
-    strategies: ['Delay-then-escape protocol: "Wait 10 seconds, then you can leave"', 'Replacement requests: "Say \'I need a break\' first, then you can go"', 'Graduated delay: 5 seconds → 15 → 30 → 1 minute before escape allowed', 'Reinforcement for delay itself, not just for staying'],
-    barriers: 'Never fully block escape for safety reasons. The goal is building tolerance for delay, not preventing all escape.',
-    measurement: 'Average delay between trigger and escape/discharge behavior. Track trend over weeks.',
-    generalization: 'Across escape triggers and settings.',
-    prerequisiteNote: 'Requires d1-sa4-sg2-s1 (staying in place). Tier 3.',
     progressionNote: 'Feeds into sustained discomfort tolerance (d1-sa4-sg3) and signals requesting help (d1-sa4-sg4).',
   },
   'd1-sa4-sg3-s1': {
@@ -674,15 +665,6 @@ export const playbook_d1d3 = {
     measurement: 'Accuracy of categorizing own limitations as temporary vs. persistent across 10+ scenarios.',
     generalization: 'Across task demands and emotional states.',
     prerequisiteNote: 'Requires d2-sa4-sg1-s2 (recognizing declining quality). Tier 3.',
-    progressionNote: 'Feeds into avoiding global self-judgments (d2-sa4-sg2-s2) and self-worth maintenance (d2-sa4-sg3).',
-  },
-  'd2-sa4-sg2-s2': {
-    context: 'Teach cognitive flexibility around self-assessment. Help the learner avoid "I\'m bad at everything" conclusions.',
-    strategies: ['Evidence review: list things you CAN do alongside things that are hard', 'Specificity training: "I\'m struggling with THIS, not with EVERYTHING"', 'Growth mindset framing: "Not yet" instead of "I can\'t"', 'Counter-examples: when the learner says "I always fail," find recent successes'],
-    barriers: 'Global negative self-judgments may be deeply entrenched and reinforced by environment. This is therapeutic work that requires time and consistency.',
-    measurement: 'Frequency of global negative self-statements per session. Track decrease over weeks.',
-    generalization: 'Across failure experiences and social contexts.',
-    prerequisiteNote: 'Requires d2-sa4-sg2-s1. Tier 4.',
     progressionNote: 'Critical for identity development (D7). Without this, repeated challenges lead to learned helplessness.',
   },
   'd2-sa4-sg3-s1': {
@@ -1061,14 +1043,5 @@ export const playbook_d1d3 = {
     generalization: 'Across error types and social contexts.',
     prerequisiteNote: 'Requires d2-sa4-sg2-s1 (not now vs. can\'t) and d2-sa4-sg2-s2 (avoiding global judgments). Tier 4.',
     progressionNote: 'Critical for long-term resilience and identity (D7). Without this, repeated errors erode self-concept.',
-  },
-  'd3-sa6-sg2-s2': {
-    context: 'Practice maintaining engagement during the recovery period after a mistake. The goal is continued participation, not perfection.',
-    strategies: ['Reduce demand after mistakes while maintaining engagement', 'Success injection: ensure the learner succeeds at something soon after the error', 'Team response protocol: supportive, not punitive, after mistakes', 'Recovery metrics: track engagement level post-error, not just error rate'],
-    barriers: 'The recovery period after mistakes is emotionally vulnerable. Protect the therapeutic relationship during these moments.',
-    measurement: 'Engagement level during 5 minutes following a mistake. Track using time-on-task sampling.',
-    generalization: 'Across mistake types and task contexts.',
-    prerequisiteNote: 'Requires d3-sa6-sg1 (continuing after correction). Tier 3.',
-    progressionNote: 'When both SG2 skills are solid, the learner has full mistake resilience — they can err, recover, and continue without identity damage.',
   },
 }

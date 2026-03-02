@@ -198,14 +198,6 @@ export const descriptions_d4d6 = {
   },
 
   // SG2: Select help-seeking over avoidance
-  'd5-sa1-sg2-s1': {
-    description:
-      'The ability to suppress the urge to escape or refuse a task and instead remain engaged enough to seek assistance.',
-    looks_like:
-      'When frustrated, the individual stays at the task and raises a hand or asks for help rather than pushing materials away or leaving the area.',
-    absence:
-      'The individual\'s primary response to difficulty is escape, refusal, or avoidance behavior rather than any form of help-seeking.',
-  },
   'd5-sa1-sg2-s2': {
     description:
       'The ability to choose communication as the response to difficulty rather than disengaging from the task or environment.',
@@ -398,16 +390,6 @@ export const descriptions_d4d6 = {
       'The individual acknowledges "You want to play tag, but I want to play soccer" rather than assuming everyone shares their preference.',
     absence:
       'The individual either does not notice that others have different preferences or treats any difference as a personal affront.',
-  },
-
-  // SG2: Generate alternatives
-  'd5-sa4-sg2-s1': {
-    description:
-      'The ability to propose more than one possible solution during a disagreement or shared decision.',
-    looks_like:
-      'The individual offers options such as "We could take turns, or we could play something we both like" rather than insisting on a single outcome.',
-    absence:
-      'The individual can only present their preferred outcome as the solution and cannot generate any alternative options.',
   },
 
   // SG3: Evaluate tradeoffs

@@ -253,12 +253,6 @@ export const indicators_d1d3 = {
     2: 'Usually stays in place briefly while uncomfortable in familiar settings; may need adult reminders in longer or more intense discomfort.',
     3: 'Reliably stays in place during reasonable discomfort across settings, maintaining position until the situation is appropriately resolved.',
   },
-  'd1-sa4-sg2-s2': {
-    0: 'Cannot delay escape or discharge behaviors; acts on avoidance impulses immediately with no observable attempt to inhibit.',
-    1: 'Occasionally delays escape for a few seconds in low-intensity discomfort with adult prompting, but cannot sustain the delay.',
-    2: 'Usually delays escape behaviors in familiar situations for a functional period; may break through during intense or prolonged discomfort.',
-    3: 'Reliably delays escape and discharge behaviors across settings, maintaining composure long enough to use appropriate coping or communication.',
-  },
 
   // SG3: Tolerate without immediate relief
   'd1-sa4-sg3-s1': {
@@ -508,12 +502,6 @@ export const indicators_d1d3 = {
     1: 'Occasionally recognizes the difference between "not now" and "can\'t" when coached through specific examples, but not spontaneously.',
     2: 'Usually distinguishes temporary from permanent limits in familiar contexts; may still confuse them under stress or fatigue.',
     3: 'Reliably distinguishes "not now" from "can\'t" across contexts, accurately calibrating whether a limit is temporary or enduring.',
-  },
-  'd2-sa4-sg2-s2': {
-    0: 'Makes global self-judgments based on momentary performance; "I failed at this" becomes "I\'m stupid" or "I can\'t do anything."',
-    1: 'Occasionally avoids global self-judgments with significant adult reframing, but defaults to all-or-nothing self-assessment.',
-    2: 'Usually avoids global self-judgments in familiar, low-stakes contexts; may still over-generalize during high-stress or failure moments.',
-    3: 'Reliably avoids global self-judgments across contexts, maintaining specific and accurate self-assessment even after failure.',
   },
 
   // SG3: Maintain self-worth during difficulty
@@ -806,11 +794,5 @@ export const indicators_d1d3 = {
     1: 'Occasionally separates error from self-worth with intensive adult reframing in low-stakes situations.',
     2: 'Usually separates error from self-worth in familiar, supportive contexts; may still merge them during high-stakes or repeated errors.',
     3: 'Reliably separates errors from self-worth across contexts, maintaining perspective that mistakes are about the task, not the person.',
-  },
-  'd3-sa6-sg2-s2': {
-    0: 'Cannot maintain task engagement after errors; disengages through shutdown, distraction-seeking, or active avoidance.',
-    1: 'Occasionally maintains engagement after errors in preferred activities with significant adult support and encouragement.',
-    2: 'Usually maintains task engagement after errors in familiar settings; may disengage after errors in challenging or non-preferred tasks.',
-    3: 'Reliably maintains task engagement after errors across contexts, sustaining productive focus through the correction process.',
   },
 }
