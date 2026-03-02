@@ -669,6 +669,8 @@ export default function AssessmentPanel({ assessments, onAssess, initialSubAreaI
                 onAssess={onAssess}
                 showAllDescs={showAllDescs}
                 showAllTeaching={showAllTeaching}
+                onNavigateToSkill={navigateToSkill}
+                highlightedSkillId={highlightedSkillId}
               />
             ))}
           </div>
