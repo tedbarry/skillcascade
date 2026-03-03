@@ -2,7 +2,7 @@
 
 ## Project
 - React 19 + Vite 6 + Tailwind CSS 4 + D3 + Recharts + Framer Motion
-- ABA therapy skill assessment tool — 9 domains, 47 sub-areas, 300+ skills
+- ABA therapy skill assessment tool — 9 domains, 49 sub-areas, 260+ skills
 - Git repo on GitHub: tedbarry/skillcascade, branch: master
 
 ## Overhaul Session (2026-02-26/27)

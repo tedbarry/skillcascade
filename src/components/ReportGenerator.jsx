@@ -1,4 +1,4 @@
-import { useState, useMemo } from 'react'
+import { useState, useMemo, useEffect, useCallback } from 'react'
 import { framework, ASSESSMENT_LEVELS, ASSESSMENT_LABELS, getDomainScores, DOMAIN_DEPENDENCIES, isAssessed } from '../data/framework.js'
 import { downloadFile } from '../data/exportUtils.js'
 import { computeDomainHealth, computeImpactRanking, detectCascadeRisks } from '../data/cascadeModel.js'
@@ -7,6 +7,7 @@ import { generateClinicalSummary } from '../lib/narratives.js'
 import { generateDomainBarChart, generateRadarChart, generateMasteryGrid, generateScoreSummaryProfile } from '../lib/reportCharts.js'
 import { getBehavioralIndicator } from '../data/behavioralIndicators.js'
 import { escapeHTML } from '../lib/escapeHTML.js'
+import { saveReport, getReports, deleteReport } from '../data/storage.js'
 import useContextualHint from '../hooks/useContextualHint.js'
 import ContextualHint from './ContextualHint.jsx'
 import KBLink from './kb/KBLink.jsx'
@@ -803,7 +804,7 @@ function generateInsuranceReport(clientName, date, analysis, assessments, clinic
 /**
  * ReportGenerator component — full-page view for generating audience-specific reports
  */
-export default function ReportGenerator({ assessments, clientName, snapshots, onNavigateToAssess, branding }) {
+export default function ReportGenerator({ assessments, clientName, clientId, user, snapshots, onNavigateToAssess, branding }) {
   const hint = useContextualHint('hint-reports')
   const [selectedType, setSelectedType] = useState(null)
   const [compareSnapshotId, setCompareSnapshotId] = useState('')
@@ -814,6 +815,70 @@ export default function ReportGenerator({ assessments, clientName, snapshots, on
     clientDOB: '', diagnosis: '', referralSource: '',
     showDomainBarChart: true, showRadarChart: true, showMasteryGrid: true,
   })
+
+  // Saved reports state
+  const [savedReports, setSavedReports] = useState([])
+  const [loadingReports, setLoadingReports] = useState(false)
+  const [saving, setSaving] = useState(false)
+  const [savedFlash, setSavedFlash] = useState(false)
+  const [viewingReport, setViewingReport] = useState(null)
+
+  // Load saved reports when client changes
+  useEffect(() => {
+    if (!clientId) { setSavedReports([]); return }
+    setLoadingReports(true)
+    getReports(clientId)
+      .then(setSavedReports)
+      .catch(() => {})
+      .finally(() => setLoadingReports(false))
+  }, [clientId])
+
+  const handleSaveReport = useCallback(async () => {
+    if (!clientId || !user || !selectedType || !previewHTML || saving) return
+    setSaving(true)
+    try {
+      const typeLabel = REPORT_META[selectedType]?.label || 'Report'
+      const title = `${typeLabel} — ${new Date().toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}`
+      const reports = await saveReport(clientId, {
+        reportType: selectedType,
+        title,
+        assessments,
+        config: { clinicalFields, compareSnapshotId, branding },
+      }, user.id)
+      setSavedReports(reports)
+      setSavedFlash(true)
+      setTimeout(() => setSavedFlash(false), 2000)
+    } catch (e) {
+      console.error('Failed to save report:', e)
+    } finally {
+      setSaving(false)
+    }
+  }, [clientId, user, selectedType, previewHTML, saving, assessments, clinicalFields, compareSnapshotId, branding])
+
+  const handleDeleteReport = useCallback(async (reportId) => {
+    if (!clientId) return
+    try {
+      const reports = await deleteReport(clientId, reportId)
+      setSavedReports(reports)
+      if (viewingReport?.id === reportId) {
+        setViewingReport(null)
+        setPreviewHTML(null)
+      }
+    } catch (e) {
+      console.error('Failed to delete report:', e)
+    }
+  }, [clientId, viewingReport])
+
+  const handleViewReport = useCallback((report) => {
+    const reportAnalysis = analyzeForReport(report.assessments)
+    const cfg = report.config || {}
+    const html = generateReportHTML(
+      report.reportType, clientName, report.assessments, reportAnalysis,
+      null, cfg.branding || branding, cfg.clinicalFields || {}
+    )
+    setViewingReport(report)
+    setPreviewHTML(html)
+  }, [clientName, branding])
 
   const analysis = useMemo(() => analyzeForReport(assessments), [assessments])
 
@@ -864,6 +929,45 @@ export default function ReportGenerator({ assessments, clientName, snapshots, on
           Generate audience-specific reports from {clientName}'s assessment data.
         </p>
       </div>
+
+      {/* Saved Reports list */}
+      {savedReports.length > 0 && !previewHTML && (
+        <div className="mb-6 bg-white rounded-xl border border-warm-200 overflow-hidden">
+          <div className="px-4 py-3 border-b border-warm-100 bg-warm-50">
+            <h3 className="text-sm font-semibold text-warm-700">Saved Reports ({savedReports.length})</h3>
+          </div>
+          <ul className="divide-y divide-warm-100">
+            {savedReports.map((report) => {
+              const meta = REPORT_META[report.reportType]
+              return (
+                <li key={report.id} className="flex items-center gap-3 px-4 py-3 hover:bg-warm-50 transition-colors">
+                  <div className="text-warm-400 shrink-0">{meta?.icon || null}</div>
+                  <div className="flex-1 min-w-0">
+                    <div className="text-sm font-medium text-warm-800 truncate">{report.title}</div>
+                    <div className="text-xs text-warm-400">
+                      {meta?.label} · {new Date(report.createdAt).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
+                    </div>
+                  </div>
+                  <div className="flex items-center gap-2 shrink-0">
+                    <button
+                      onClick={() => handleViewReport(report)}
+                      className="px-3 py-1.5 text-xs font-medium text-sage-600 bg-sage-50 rounded-lg hover:bg-sage-100 transition-colors min-h-[44px]"
+                    >
+                      View
+                    </button>
+                    <button
+                      onClick={() => handleDeleteReport(report.id)}
+                      className="px-3 py-1.5 text-xs font-medium text-warm-400 hover:text-red-500 rounded-lg hover:bg-red-50 transition-colors min-h-[44px]"
+                    >
+                      Delete
+                    </button>
+                  </div>
+                </li>
+              )
+            })}
+          </ul>
+        </div>
+      )}
 
       {!hasData && (
         <div className="bg-warm-100 rounded-xl p-6 text-center">
@@ -1035,9 +1139,44 @@ export default function ReportGenerator({ assessments, clientName, snapshots, on
               </svg>
               Print
             </button>
+            {/* Save button — only when generating new (not viewing saved) */}
+            {!viewingReport && clientId && user && (
+              <button
+                onClick={handleSaveReport}
+                disabled={saving || savedFlash}
+                className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-colors min-h-[44px] ${
+                  savedFlash
+                    ? 'bg-green-100 text-green-700 border border-green-200'
+                    : 'bg-white border border-warm-200 text-warm-700 hover:bg-warm-50'
+                }`}
+              >
+                {savedFlash ? (
+                  <>
+                    <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                      <path strokeLinecap="round" strokeLinejoin="round" d="M4.5 12.75l6 6 9-13.5" />
+                    </svg>
+                    Saved!
+                  </>
+                ) : saving ? (
+                  'Saving...'
+                ) : (
+                  <>
+                    <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                      <path strokeLinecap="round" strokeLinejoin="round" d="M17.593 3.322c1.1.128 1.907 1.077 1.907 2.185V21L12 17.25 4.5 21V5.507c0-1.108.806-2.057 1.907-2.185a48.507 48.507 0 0 1 11.186 0Z" />
+                    </svg>
+                    Save
+                  </>
+                )}
+              </button>
+            )}
             <button
-              onClick={() => { setPreviewHTML(null); setSelectedType(null); setCompareSnapshotId('') }}
-              className="px-4 py-2 text-warm-500 hover:text-warm-700 text-sm"
+              onClick={() => {
+                setPreviewHTML(null)
+                setViewingReport(null)
+                setSelectedType(null)
+                setCompareSnapshotId('')
+              }}
+              className="px-4 py-2 text-warm-500 hover:text-warm-700 text-sm min-h-[44px]"
             >
               Back
             </button>

@@ -1026,6 +1026,8 @@ export default function Dashboard() {
                 <ReportGenerator
                   assessments={assessments}
                   clientName={clientName}
+                  clientId={clientId}
+                  user={user}
                   snapshots={snapshots}
                   onNavigateToAssess={handleNavigateToAssess}
                   branding={branding}

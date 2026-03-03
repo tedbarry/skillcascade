@@ -197,6 +197,51 @@ export async function deleteSnapshot(clientId, snapshotId) {
 }
 
 /**
+ * Saved reports — frozen assessment snapshots with report metadata
+ */
+export async function saveReport(clientId, report, userId) {
+  const { error } = await supabase
+    .from('reports')
+    .insert({
+      client_id: clientId,
+      report_type: report.reportType,
+      title: report.title,
+      assessments: report.assessments,
+      config: report.config,
+      created_by: userId,
+    })
+  if (error) throw error
+  return getReports(clientId)
+}
+
+export async function getReports(clientId) {
+  const { data, error } = await supabase
+    .from('reports')
+    .select('*')
+    .eq('client_id', clientId)
+    .order('created_at', { ascending: false })
+  if (error) throw error
+  return (data || []).map((r) => ({
+    id: r.id,
+    reportType: r.report_type,
+    title: r.title,
+    assessments: r.assessments,
+    config: r.config || {},
+    createdAt: new Date(r.created_at).getTime(),
+  }))
+}
+
+export async function deleteReport(clientId, reportId) {
+  const { error } = await supabase
+    .from('reports')
+    .delete()
+    .eq('id', reportId)
+    .eq('client_id', clientId)
+  if (error) throw error
+  return getReports(clientId)
+}
+
+/**
  * AI Chats — org-scoped, cross-client, cross-user
  */
 
@@ -291,6 +336,9 @@ export async function clearAllData(orgId) {
 
   const { error: snapErr } = await supabase.from('snapshots').delete().in('client_id', clientIds)
   if (snapErr) throw snapErr
+
+  const { error: repErr } = await supabase.from('reports').delete().in('client_id', clientIds)
+  if (repErr) throw repErr
 
   const { error: msgErr } = await supabase.from('messages').delete().in('client_id', clientIds)
   if (msgErr) throw msgErr
