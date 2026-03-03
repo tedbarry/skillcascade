@@ -1,4 +1,4 @@
-import { useState, useMemo } from 'react'
+import { useState, useEffect, useMemo } from 'react'
 import { Link, useNavigate, useSearchParams } from 'react-router-dom'
 import { useAuth } from '../contexts/AuthContext.jsx'
 import { supabase } from '../lib/supabase.js'
@@ -11,6 +11,52 @@ export default function Signup() {
     const p = searchParams.get('plan')?.toLowerCase()
     return VALID_PLANS.includes(p) ? p : null
   }, [searchParams])
+
+  // Invite token support
+  const inviteToken = searchParams.get('invite')
+  const [invite, setInvite] = useState(null) // { token, org_id, role, email, orgName }
+  const [inviteLoading, setInviteLoading] = useState(!!inviteToken)
+  const [inviteError, setInviteError] = useState(null)
+
+  useEffect(() => {
+    if (!inviteToken) return
+    async function validateInvite() {
+      setInviteLoading(true)
+      try {
+        const { data, error: err } = await supabase
+          .from('invite_tokens')
+          .select('token, org_id, role, email, expires_at, used_at, organizations(name)')
+          .eq('token', inviteToken)
+          .single()
+        if (err || !data) {
+          setInviteError('Invalid invite link.')
+          return
+        }
+        if (data.used_at) {
+          setInviteError('This invite has already been used.')
+          return
+        }
+        if (new Date(data.expires_at) < new Date()) {
+          setInviteError('This invite has expired.')
+          return
+        }
+        setInvite({
+          token: data.token,
+          org_id: data.org_id,
+          role: data.role,
+          email: data.email || '',
+          orgName: data.organizations?.name || '',
+        })
+        if (data.email) setEmail(data.email)
+        setRole(data.role)
+      } catch {
+        setInviteError('Failed to validate invite.')
+      } finally {
+        setInviteLoading(false)
+      }
+    }
+    validateInvite()
+  }, [inviteToken])
 
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
@@ -33,11 +79,27 @@ export default function Signup() {
         throw new Error('Password must be at least 8 characters')
       }
 
-      await signUp(email, password, {
+      const metadata = {
         display_name: displayName.trim(),
-        role,
-        org_name: role !== 'parent' ? orgName.trim() : '',
-      })
+        role: invite ? invite.role : role,
+      }
+
+      if (invite) {
+        // Joining existing org via invite
+        metadata.org_id = invite.org_id
+      } else if (role !== 'parent') {
+        metadata.org_name = orgName.trim()
+      }
+
+      await signUp(email, password, metadata)
+
+      // Mark invite token as used
+      if (invite) {
+        await supabase
+          .from('invite_tokens')
+          .update({ used_at: new Date().toISOString() })
+          .eq('token', invite.token)
+      }
 
       // Persist selected plan so it survives the email-confirm→login flow
       if (selectedPlan) {
@@ -88,12 +150,29 @@ export default function Signup() {
             Skill<span className="text-sage-500">Cascade</span>
           </Link>
           <p className="text-sm text-warm-500 mt-1">Create your account</p>
-          {selectedPlan && (
+          {invite && (
+            <div className="mt-2 inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-sage-50 border border-sage-200 text-xs font-medium text-sage-700">
+              Joining {invite.orgName || 'organization'} as {invite.role}
+            </div>
+          )}
+          {selectedPlan && !invite && (
             <p className="text-xs text-sage-600 mt-1 font-medium capitalize">
               Selected plan: {selectedPlan}
             </p>
           )}
         </div>
+
+        {/* Invite loading / error */}
+        {inviteLoading && (
+          <div className="mb-4 px-4 py-3 rounded-lg bg-warm-50 border border-warm-200 text-sm text-warm-600 text-center">
+            Validating invite...
+          </div>
+        )}
+        {inviteError && (
+          <div className="mb-4 px-4 py-3 rounded-lg bg-red-50 border border-red-200 text-sm text-red-700">
+            {inviteError}
+          </div>
+        )}
 
         {/* Error */}
         {error && (
@@ -152,39 +231,41 @@ export default function Signup() {
             />
           </div>
 
-          {/* Role selector */}
-          <div>
-            <label className="block text-xs font-medium text-warm-600 mb-2">
-              I am a...
-            </label>
-            <div className="grid grid-cols-2 gap-2">
-              <button
-                type="button"
-                onClick={() => setRole('bcba')}
-                className={`px-3 py-2.5 rounded-lg border-2 text-sm font-medium transition-all ${
-                  role === 'bcba'
-                    ? 'border-sage-400 bg-sage-50 text-sage-700'
-                    : 'border-warm-200 text-warm-500 hover:border-warm-300'
-                }`}
-              >
-                BCBA / Clinician
-              </button>
-              <button
-                type="button"
-                onClick={() => setRole('parent')}
-                className={`px-3 py-2.5 rounded-lg border-2 text-sm font-medium transition-all ${
-                  role === 'parent'
-                    ? 'border-sage-400 bg-sage-50 text-sage-700'
-                    : 'border-warm-200 text-warm-500 hover:border-warm-300'
-                }`}
-              >
-                Parent / Caregiver
-              </button>
+          {/* Role selector — hidden when joining via invite */}
+          {!invite && (
+            <div>
+              <label className="block text-xs font-medium text-warm-600 mb-2">
+                I am a...
+              </label>
+              <div className="grid grid-cols-2 gap-2">
+                <button
+                  type="button"
+                  onClick={() => setRole('bcba')}
+                  className={`px-3 py-2.5 rounded-lg border-2 text-sm font-medium transition-all ${
+                    role === 'bcba'
+                      ? 'border-sage-400 bg-sage-50 text-sage-700'
+                      : 'border-warm-200 text-warm-500 hover:border-warm-300'
+                  }`}
+                >
+                  BCBA / Clinician
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setRole('parent')}
+                  className={`px-3 py-2.5 rounded-lg border-2 text-sm font-medium transition-all ${
+                    role === 'parent'
+                      ? 'border-sage-400 bg-sage-50 text-sage-700'
+                      : 'border-warm-200 text-warm-500 hover:border-warm-300'
+                  }`}
+                >
+                  Parent / Caregiver
+                </button>
+              </div>
             </div>
-          </div>
+          )}
 
-          {/* Org name — only for BCBAs */}
-          {role !== 'parent' && (
+          {/* Org name — only for BCBAs, hidden when joining via invite */}
+          {!invite && role !== 'parent' && (
             <div>
               <label htmlFor="orgName" className="block text-xs font-medium text-warm-600 mb-1">
                 Organization Name
@@ -205,10 +286,10 @@ export default function Signup() {
 
           <button
             type="submit"
-            disabled={loading}
-            className="w-full py-2.5 rounded-lg bg-sage-500 text-white text-sm font-semibold hover:bg-sage-600 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+            disabled={loading || inviteLoading || !!inviteError}
+            className="w-full py-2.5 min-h-[44px] rounded-lg bg-sage-500 text-white text-sm font-semibold hover:bg-sage-600 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
           >
-            {loading ? 'Creating account...' : 'Create Account'}
+            {loading ? 'Creating account...' : invite ? `Join ${invite.orgName || 'Organization'}` : 'Create Account'}
           </button>
         </form>
 

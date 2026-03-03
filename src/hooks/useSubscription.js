@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react'
+import { useState, useEffect, useCallback, useMemo } from 'react'
 import { supabase } from '../lib/supabase.js'
 import { useAuth } from '../contexts/AuthContext.jsx'
 
@@ -9,8 +9,44 @@ const PLAN_LIMITS = {
   enterprise: { clients: Infinity, ai: true, reports: true, advancedViz: true },
 }
 
+// Feature → minimum plan required
+const FEATURE_ACCESS = {
+  ai:           'starter',
+  reports:      'starter',
+  goals:        'starter',
+  advancedViz:  'professional',
+  orgAnalytics: 'professional',
+  caseload:     'professional',
+  branding:     'enterprise',
+  marketplace:  'enterprise',
+  teamAdmin:    'enterprise',
+}
+
+const PLAN_RANK = { free: 0, starter: 1, professional: 2, enterprise: 3 }
+
+// Human-readable plan labels
+export const PLAN_LABELS = {
+  free: 'Free',
+  starter: 'Starter',
+  professional: 'Professional',
+  enterprise: 'Enterprise',
+}
+
+// Feature descriptions for upgrade prompts
+export const FEATURE_META = {
+  ai:           { label: 'AI Assistant', description: 'Get AI-powered clinical insights, suggestions, and natural language Q&A about your assessment data.' },
+  reports:      { label: 'Reports & Certificates', description: 'Generate insurance-ready clinical reports, school summaries, progress reports, and achievement certificates.' },
+  goals:        { label: 'Goal Engine', description: 'Auto-generate treatment goals with operational definitions, data collection methods, and Central Reach-compatible export.' },
+  advancedViz:  { label: 'Advanced Analytics', description: 'Unlock Clinical Intelligence, Dependency Explorer, cascade analysis, and predictive projections.' },
+  orgAnalytics: { label: 'Organization Analytics', description: 'View practice-level metrics across your entire caseload with aggregated domain health and trends.' },
+  caseload:     { label: 'Caseload Dashboard', description: 'Manage multiple clients with sortable, filterable views and at-a-glance status indicators.' },
+  branding:     { label: 'Organization Branding', description: 'Customize reports and certificates with your practice logo, colors, and identity.' },
+  marketplace:  { label: 'Marketplace', description: 'Browse and install community add-ons, templates, and clinical tools.' },
+  teamAdmin:    { label: 'Team Management', description: 'Invite team members, manage roles, and control client assignments across your organization.' },
+}
+
 export default function useSubscription() {
-  const { user } = useAuth()
+  const { user, isSuperAdmin } = useAuth()
   const [subscription, setSubscription] = useState(null)
   const [loading, setLoading] = useState(true)
 
@@ -40,13 +76,27 @@ export default function useSubscription() {
     loadSubscription()
   }, [user])
 
-  const plan = subscription?.plan || 'free'
+  // Super-admin always gets enterprise access
+  const rawPlan = subscription?.plan || 'free'
+  const plan = isSuperAdmin ? 'enterprise' : rawPlan
   const limits = PLAN_LIMITS[plan] || PLAN_LIMITS.free
   const isActive = subscription?.status === 'active' || subscription?.status === 'trialing'
   const isTrial = subscription?.status === 'trialing'
 
+  const hasFeature = useCallback((featureKey) => {
+    if (isSuperAdmin) return true
+    const minPlan = FEATURE_ACCESS[featureKey]
+    if (!minPlan) return true // Unknown features are unrestricted
+    return (PLAN_RANK[plan] || 0) >= (PLAN_RANK[minPlan] || 0)
+  }, [plan, isSuperAdmin])
+
+  // Get the minimum plan needed for a feature
+  const getRequiredPlan = useCallback((featureKey) => {
+    return FEATURE_ACCESS[featureKey] || 'free'
+  }, [])
+
   const canAddClient = useCallback(async () => {
-    if (limits.clients === Infinity) return true
+    if (isSuperAdmin || limits.clients === Infinity) return true
     if (!user) return false
 
     const { data: profile } = await supabase
@@ -64,7 +114,7 @@ export default function useSubscription() {
       .is('deleted_at', null)
 
     return (count || 0) < limits.clients
-  }, [user, limits.clients])
+  }, [user, limits.clients, isSuperAdmin])
 
   const startCheckout = useCallback(async (planName, annual = false) => {
     if (!user) return null
@@ -122,7 +172,10 @@ export default function useSubscription() {
     limits,
     isActive,
     isTrial,
+    isSuperAdmin,
     loading,
+    hasFeature,
+    getRequiredPlan,
     canAddClient,
     startCheckout,
     openBillingPortal,

@@ -26,6 +26,8 @@ import useContextualHint from '../hooks/useContextualHint.js'
 import ContextualHint from '../components/ContextualHint.jsx'
 import KBLink from '../components/kb/KBLink.jsx'
 import KBHelpIcon from '../components/kb/KBHelpIcon.jsx'
+import FeatureGate from '../components/FeatureGate.jsx'
+import useSubscription from '../hooks/useSubscription.js'
 
 // Lazy-loaded view components — each gets its own chunk, loaded on-demand
 const HomeDashboard = lazy(() => import('../components/HomeDashboard.jsx'))
@@ -167,6 +169,7 @@ export const VIEWS = {
 export default function Dashboard() {
   const { user } = useAuth()
   const { showToast } = useToast()
+  const { hasFeature } = useSubscription()
   const { isPhone, isTablet, isDesktop } = useResponsive()
   const sunburstHint = useContextualHint('hint-sunburst')
   const [assessments, setAssessments, { undo, redo, canUndo, canRedo, resetState: resetAssessments }] = useUndoRedo({})
@@ -920,6 +923,7 @@ export default function Dashboard() {
 
           {/* Clinical Intelligence — replaces old Cascade view */}
           {activeView === VIEWS.CASCADE && (
+            <FeatureGate feature="advancedViz">
             <Suspense fallback={<ViewLoader view={activeView} />}>
               <div data-tour="cascade-view" className="w-full h-full flex flex-col">
                 <ClinicalIntelligence
@@ -935,6 +939,7 @@ export default function Dashboard() {
                 />
               </div>
             </Suspense>
+            </FeatureGate>
           )}
 
           {/* Timeline view */}
@@ -993,6 +998,7 @@ export default function Dashboard() {
 
           {/* Goals view */}
           {activeView === VIEWS.GOALS && (
+            <FeatureGate feature="goals">
             <div data-tour="goals-view" className="w-full h-full overflow-y-auto">
               <Suspense fallback={<ViewLoader view={activeView} />}>
                 <GoalEngine
@@ -1004,6 +1010,7 @@ export default function Dashboard() {
                 />
               </Suspense>
             </div>
+            </FeatureGate>
           )}
 
           {/* Alerts view */}
@@ -1021,6 +1028,7 @@ export default function Dashboard() {
 
           {/* Reports view */}
           {activeView === VIEWS.REPORTS && (
+            <FeatureGate feature="reports">
             <div data-tour="reports-view" className="w-full h-full overflow-y-auto">
               <Suspense fallback={<ViewLoader view={activeView} />}>
                 <ReportGenerator
@@ -1034,6 +1042,7 @@ export default function Dashboard() {
                 />
               </Suspense>
             </div>
+            </FeatureGate>
           )}
 
           {/* Parent view */}
@@ -1052,6 +1061,7 @@ export default function Dashboard() {
 
           {/* Caseload view */}
           {activeView === VIEWS.CASELOAD && (
+            <FeatureGate feature="caseload">
             <div data-tour="caseload-view" className="w-full h-full overflow-y-auto">
               <Suspense fallback={<ViewLoader view={activeView} />}>
                 <CaseloadDashboard
@@ -1063,6 +1073,7 @@ export default function Dashboard() {
                 />
               </Suspense>
             </div>
+            </FeatureGate>
           )}
 
           {/* Milestones view */}
@@ -1092,6 +1103,7 @@ export default function Dashboard() {
 
           {/* Predictions view */}
           {activeView === VIEWS.PREDICTIONS && (
+            <FeatureGate feature="advancedViz">
             <div className="w-full h-full overflow-y-auto">
               <Suspense fallback={<ViewLoader view={activeView} />}>
                 <ProgressPrediction
@@ -1101,15 +1113,18 @@ export default function Dashboard() {
                 />
               </Suspense>
             </div>
+            </FeatureGate>
           )}
 
           {/* Org Analytics view */}
           {activeView === VIEWS.ORG_ANALYTICS && (
+            <FeatureGate feature="orgAnalytics">
             <div className="w-full h-full overflow-y-auto">
               <Suspense fallback={<ViewLoader view={activeView} />}>
                 <OrgAnalytics />
               </Suspense>
             </div>
+            </FeatureGate>
           )}
 
           {/* Messages view */}
@@ -1126,11 +1141,13 @@ export default function Dashboard() {
 
           {/* Branding view */}
           {activeView === VIEWS.BRANDING && (
+            <FeatureGate feature="branding">
             <div className="w-full h-full overflow-y-auto">
               <Suspense fallback={<ViewLoader view={activeView} />}>
                 <BrandingSettings onBrandingChange={setBranding} />
               </Suspense>
             </div>
+            </FeatureGate>
           )}
 
           {/* Data view */}
@@ -1173,6 +1190,7 @@ export default function Dashboard() {
 
           {/* Certifications view */}
           {activeView === VIEWS.CERTIFICATIONS && (
+            <FeatureGate feature="reports">
             <div className="w-full h-full overflow-y-auto">
               <Suspense fallback={<ViewLoader view={activeView} />}>
                 <OutcomeCertification
@@ -1182,15 +1200,18 @@ export default function Dashboard() {
                 />
               </Suspense>
             </div>
+            </FeatureGate>
           )}
 
           {/* Marketplace view */}
           {activeView === VIEWS.MARKETPLACE && (
+            <FeatureGate feature="marketplace">
             <div className="w-full h-full overflow-y-auto">
               <Suspense fallback={<ViewLoader view={activeView} />}>
                 <Marketplace />
               </Suspense>
             </div>
+            </FeatureGate>
           )}
 
           {/* Pricing view */}
@@ -1202,6 +1223,7 @@ export default function Dashboard() {
             </div>
           )}
           {activeView === VIEWS.EXPLORER && (
+            <FeatureGate feature="advancedViz">
             <div data-tour="explorer-view" className="w-full h-full flex flex-col">
               <Suspense fallback={<ViewLoader view={activeView} />}>
                 <DependencyExplorer
@@ -1214,6 +1236,7 @@ export default function Dashboard() {
                 />
               </Suspense>
             </div>
+            </FeatureGate>
           )}
 
           </>)}
@@ -1248,14 +1271,16 @@ export default function Dashboard() {
         )}
       </div>
     </div>
-    <Suspense fallback={null}>
-      <AIAssistantPanel
-        isOpen={aiPanelOpen}
-        onClose={() => setAiPanelOpen(false)}
-        clientName={clientName}
-        assessments={assessments}
-      />
-    </Suspense>
+    {hasFeature('ai') && (
+      <Suspense fallback={null}>
+        <AIAssistantPanel
+          isOpen={aiPanelOpen}
+          onClose={() => setAiPanelOpen(false)}
+          clientName={clientName}
+          assessments={assessments}
+        />
+      </Suspense>
+    )}
     <Suspense fallback={null}>
       <SearchOverlay
         isOpen={searchOpen}

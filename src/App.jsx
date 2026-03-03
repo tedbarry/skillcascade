@@ -17,6 +17,7 @@ const Profile = lazy(() => import('./pages/Profile.jsx'))
 const Legal = lazy(() => import('./pages/Legal.jsx'))
 const Contact = lazy(() => import('./pages/Contact.jsx'))
 const KnowledgeBase = lazy(() => import('./pages/KnowledgeBase.jsx'))
+const Admin = lazy(() => import('./pages/Admin.jsx'))
 
 function NotFound() {
   return (
@@ -65,6 +66,7 @@ const PAGE_TITLES = {
   '/dashboard': 'Dashboard — SkillCascade',
   '/profile': 'Profile — SkillCascade',
   '/contact': 'Contact Us — SkillCascade',
+  '/admin': 'Admin — SkillCascade',
 }
 
 export default function App() {
@@ -105,6 +107,16 @@ export default function App() {
                   <ProtectedRoute>
                     <Dashboard />
                   </ProtectedRoute>
+                </motion.div>
+              }
+            />
+            <Route
+              path="/admin"
+              element={
+                <motion.div {...pageFade}>
+                  <Suspense fallback={<LoadingSpinner />}>
+                    <Admin />
+                  </Suspense>
                 </motion.div>
               }
             />

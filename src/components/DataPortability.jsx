@@ -172,7 +172,7 @@ function FileDropZone({ accept, onFile, label, disabled }) {
    ───────────────────────────────────────────── */
 
 export default function DataPortability({ onImportComplete }) {
-  const { profile } = useAuth()
+  const { profile, isAdmin } = useAuth()
   const orgId = profile?.org_id
   const [clients, setClients] = useState([])
   const [selectedClientId, setSelectedClientId] = useState('')
@@ -916,57 +916,61 @@ export default function DataPortability({ onImportComplete }) {
             ))}
           </div>
 
-          {/* Clear All Data */}
-          {!showClearConfirm ? (
-            <button
-              onClick={() => setShowClearConfirm(true)}
-              className="flex items-center gap-2 px-3 py-2 text-xs font-medium rounded-lg border border-red-200 text-red-500 hover:bg-red-50 hover:text-red-600 transition-colors"
-            >
-              <IconTrash className="w-3.5 h-3.5" />
-              Clear All Data
-            </button>
-          ) : (
-            <div className="border border-red-200 rounded-lg p-4 bg-red-50/50 space-y-3">
-              <div className="flex items-start gap-2">
-                <IconWarning className="w-4 h-4 text-red-500 mt-0.5 flex-shrink-0" />
+          {/* Clear All Data — admin only */}
+          {isAdmin ? (
+            !showClearConfirm ? (
+              <button
+                onClick={() => setShowClearConfirm(true)}
+                className="flex items-center gap-2 px-3 py-2 min-h-[44px] text-xs font-medium rounded-lg border border-red-200 text-red-500 hover:bg-red-50 hover:text-red-600 transition-colors"
+              >
+                <IconTrash className="w-3.5 h-3.5" />
+                Clear All Data
+              </button>
+            ) : (
+              <div className="border border-red-200 rounded-lg p-4 bg-red-50/50 space-y-3">
+                <div className="flex items-start gap-2">
+                  <IconWarning className="w-4 h-4 text-red-500 mt-0.5 flex-shrink-0" />
+                  <div>
+                    <p className="text-sm font-medium text-red-700">This will permanently delete all data</p>
+                    <p className="text-xs text-red-500 mt-0.5">
+                      All clients, assessments, snapshots, and settings will be removed. This cannot be undone.
+                    </p>
+                  </div>
+                </div>
                 <div>
-                  <p className="text-sm font-medium text-red-700">This will permanently delete all data</p>
-                  <p className="text-xs text-red-500 mt-0.5">
-                    All clients, assessments, snapshots, and settings will be removed. This cannot be undone.
-                  </p>
+                  <label className="block text-xs text-red-600 font-medium mb-1.5">
+                    Type DELETE to confirm
+                  </label>
+                  <input
+                    type="text"
+                    value={clearConfirmText}
+                    onChange={(e) => setClearConfirmText(e.target.value)}
+                    placeholder="DELETE"
+                    className="w-48 text-sm px-3 py-1.5 min-h-[44px] rounded-md border border-red-300 text-red-700 placeholder-red-300 focus:outline-none focus:border-red-400 focus:ring-1 focus:ring-red-400 bg-white"
+                    autoComplete="off"
+                    spellCheck="false"
+                  />
+                </div>
+                <div className="flex gap-2">
+                  <button
+                    onClick={handleClearAll}
+                    disabled={clearConfirmText !== 'DELETE'}
+                    className="flex items-center gap-1.5 px-4 py-2 min-h-[44px] text-xs font-semibold rounded-lg bg-red-500 text-white hover:bg-red-600 transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
+                  >
+                    <IconTrash className="w-3.5 h-3.5" />
+                    Permanently Delete All Data
+                  </button>
+                  <button
+                    onClick={() => { setShowClearConfirm(false); setClearConfirmText('') }}
+                    className="px-4 py-2 min-h-[44px] text-xs font-medium rounded-lg border border-warm-200 text-warm-600 hover:bg-warm-50 transition-colors"
+                  >
+                    Cancel
+                  </button>
                 </div>
               </div>
-              <div>
-                <label className="block text-xs text-red-600 font-medium mb-1.5">
-                  Type DELETE to confirm
-                </label>
-                <input
-                  type="text"
-                  value={clearConfirmText}
-                  onChange={(e) => setClearConfirmText(e.target.value)}
-                  placeholder="DELETE"
-                  className="w-48 text-sm px-3 py-1.5 rounded-md border border-red-300 text-red-700 placeholder-red-300 focus:outline-none focus:border-red-400 focus:ring-1 focus:ring-red-400 bg-white"
-                  autoComplete="off"
-                  spellCheck="false"
-                />
-              </div>
-              <div className="flex gap-2">
-                <button
-                  onClick={handleClearAll}
-                  disabled={clearConfirmText !== 'DELETE'}
-                  className="flex items-center gap-1.5 px-4 py-2 text-xs font-semibold rounded-lg bg-red-500 text-white hover:bg-red-600 transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
-                >
-                  <IconTrash className="w-3.5 h-3.5" />
-                  Permanently Delete All Data
-                </button>
-                <button
-                  onClick={() => { setShowClearConfirm(false); setClearConfirmText('') }}
-                  className="px-4 py-2 text-xs font-medium rounded-lg border border-warm-200 text-warm-600 hover:bg-warm-50 transition-colors"
-                >
-                  Cancel
-                </button>
-              </div>
-            </div>
+            )
+          ) : (
+            <p className="text-xs text-warm-400">Only admins can delete organization data. Contact your admin or visit the <a href="/admin" className="text-sage-600 hover:underline">Admin panel</a>.</p>
           )}
         </div>
       </section>

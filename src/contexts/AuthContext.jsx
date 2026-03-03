@@ -141,10 +141,15 @@ export function AuthProvider({ children }) {
     if (error) throw error
   }, [user])
 
+  const isSuperAdmin = profile?.is_super_admin === true
+  const isAdmin = isSuperAdmin || profile?.role === 'admin'
+
   const value = {
     user,
     profile,
     loading,
+    isSuperAdmin,
+    isAdmin,
     signIn,
     signUp,
     signOut,
