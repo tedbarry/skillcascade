@@ -10,7 +10,7 @@ import { resetAllHints, getTipsDisabled, setTipsDisabled } from '../hooks/useCon
  * Dark mode stays in localStorage for instant load before auth completes.
  */
 export default function SettingsDropdown() {
-  const { user, signOut } = useAuth()
+  const { user, signOut, isSuperAdmin, isAdmin } = useAuth()
   const [open, setOpen] = useState(false)
   const [darkMode, setDarkMode] = useState(() => {
     return safeGetItem('skillcascade_dark_mode') === 'true'
@@ -82,6 +82,9 @@ export default function SettingsDropdown() {
           <path strokeLinecap="round" strokeLinejoin="round" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.066 2.573c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.573 1.066c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.066-2.573c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
           <path strokeLinecap="round" strokeLinejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
         </svg>
+        {isSuperAdmin && (
+          <span className="absolute top-1.5 right-1.5 w-2 h-2 rounded-full bg-amber-400 ring-2 ring-white" />
+        )}
       </button>
 
       {open && (
@@ -141,7 +144,27 @@ export default function SettingsDropdown() {
           {user && (
             <>
               <div className="border-t border-warm-100 my-1" />
-              <div className="px-3 py-1.5 text-xs text-warm-400 truncate">{user.email}</div>
+              <div className="px-3 py-1.5 flex items-center gap-2">
+                <span className="text-xs text-warm-400 truncate flex-1">{user.email}</span>
+                {isSuperAdmin && (
+                  <span className="text-[9px] font-bold text-amber-600 bg-amber-50 px-1.5 py-0.5 rounded shrink-0">OWNER</span>
+                )}
+                {!isSuperAdmin && isAdmin && (
+                  <span className="text-[9px] font-bold text-sage-600 bg-sage-50 px-1.5 py-0.5 rounded shrink-0">ADMIN</span>
+                )}
+              </div>
+              {isAdmin && (
+                <a
+                  href="/admin"
+                  onClick={() => setOpen(false)}
+                  className="w-full flex items-center gap-2 px-3 py-2 text-sm text-warm-600 hover:bg-warm-50 transition-colors"
+                >
+                  <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M9 12.75L11.25 15 15 9.75m-3-7.036A11.959 11.959 0 013.598 6 11.99 11.99 0 003 9.749c0 5.592 3.824 10.29 9 11.623 5.176-1.332 9-6.03 9-11.622 0-1.31-.21-2.571-.598-3.751h-.152c-3.196 0-6.1-1.248-8.25-3.285z" />
+                  </svg>
+                  <span>Admin Panel</span>
+                </a>
+              )}
               <button
                 onClick={async () => {
                   setOpen(false)
