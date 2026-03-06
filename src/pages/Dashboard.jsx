@@ -173,7 +173,7 @@ export default function Dashboard() {
   const { isPhone, isTablet, isDesktop } = useResponsive()
   const sunburstHint = useContextualHint('hint-sunburst')
   const [assessments, setAssessments, { undo, redo, canUndo, canRedo, resetState: resetAssessments }] = useUndoRedo({})
-  const [assessmentsLoading, setAssessmentsLoading] = useState(() => !!safeGetItem('skillcascade_selected_client'))
+  const [assessmentsLoading, setAssessmentsLoading] = useState(() => !isStaleUser && !!safeGetItem('skillcascade_selected_client'))
   const [selectedNode, setSelectedNode] = useState(null)
   const [sidebarOpen, setSidebarOpen] = useState(true)
   // URL-driven view navigation with browser back/forward support
@@ -202,9 +202,11 @@ export default function Dashboard() {
   const setActiveView = useCallback((view) => {
     navigateTo(view)
   }, [navigateTo])
-  const [clientId, setClientId] = useState(() => safeGetItem('skillcascade_selected_client'))
+  // Scope client selection to current user — prevents cross-account data leak
+  const isStaleUser = user && safeGetItem('skillcascade_last_user') !== user.id
+  const [clientId, setClientId] = useState(() => isStaleUser ? null : safeGetItem('skillcascade_selected_client'))
   const [snapshots, setSnapshots] = useState([])
-  const [clientName, setClientName] = useState(() => safeGetItem('skillcascade_selected_client_name', 'Sample Client'))
+  const [clientName, setClientName] = useState(() => isStaleUser ? 'Sample Client' : safeGetItem('skillcascade_selected_client_name', 'Sample Client'))
   const [assessTarget, setAssessTarget] = useState({ subAreaId: null, ts: 0 })
   const [compareSnapshotId, setCompareSnapshotId] = useState(null)
   const [searchOpen, setSearchOpen] = useState(false)
