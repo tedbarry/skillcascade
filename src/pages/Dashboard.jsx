@@ -173,7 +173,7 @@ export default function Dashboard() {
   const { isPhone, isTablet, isDesktop } = useResponsive()
   const sunburstHint = useContextualHint('hint-sunburst')
   const [assessments, setAssessments, { undo, redo, canUndo, canRedo, resetState: resetAssessments }] = useUndoRedo({})
-  const [assessmentsLoading, setAssessmentsLoading] = useState(() => !isStaleUser && !!safeGetItem('skillcascade_selected_client'))
+  const [assessmentsLoading, setAssessmentsLoading] = useState(() => clientKey ? !!safeGetItem(clientKey) : false)
   const [selectedNode, setSelectedNode] = useState(null)
   const [sidebarOpen, setSidebarOpen] = useState(true)
   // URL-driven view navigation with browser back/forward support
@@ -202,11 +202,12 @@ export default function Dashboard() {
   const setActiveView = useCallback((view) => {
     navigateTo(view)
   }, [navigateTo])
-  // Scope client selection to current user — prevents cross-account data leak
-  const isStaleUser = user && safeGetItem('skillcascade_last_user') !== user.id
-  const [clientId, setClientId] = useState(() => isStaleUser ? null : safeGetItem('skillcascade_selected_client'))
+  // Client selection is scoped per-user to prevent cross-account data leak
+  const clientKey = user ? `skillcascade_client_${user.id}` : null
+  const clientNameKey = user ? `skillcascade_clientname_${user.id}` : null
+  const [clientId, setClientId] = useState(() => clientKey ? safeGetItem(clientKey) : null)
   const [snapshots, setSnapshots] = useState([])
-  const [clientName, setClientName] = useState(() => isStaleUser ? 'Sample Client' : safeGetItem('skillcascade_selected_client_name', 'Sample Client'))
+  const [clientName, setClientName] = useState(() => clientNameKey ? safeGetItem(clientNameKey, 'Sample Client') : 'Sample Client')
   const [assessTarget, setAssessTarget] = useState({ subAreaId: null, ts: 0 })
   const [compareSnapshotId, setCompareSnapshotId] = useState(null)
   const [searchOpen, setSearchOpen] = useState(false)
@@ -490,12 +491,14 @@ export default function Dashboard() {
   function handleSelectClient(id, name, savedAssessments) {
     setClientId(id)
     setClientName(name || 'Sample Client')
-    if (id) {
-      safeSetItem('skillcascade_selected_client', id)
-      safeSetItem('skillcascade_selected_client_name', name || 'Sample Client')
-    } else {
-      safeRemoveItem('skillcascade_selected_client')
-      safeRemoveItem('skillcascade_selected_client_name')
+    if (clientKey) {
+      if (id) {
+        safeSetItem(clientKey, id)
+        safeSetItem(clientNameKey, name || 'Sample Client')
+      } else {
+        safeRemoveItem(clientKey)
+        safeRemoveItem(clientNameKey)
+      }
     }
     setAssessmentsLoading(false)
     const newData = savedAssessments === null
@@ -504,22 +507,6 @@ export default function Dashboard() {
     resetAssessments(newData)
     lastSavedRef.current = newData
   }
-
-  // Clear client selection when a different user logs in (prevents cross-account data leak)
-  useEffect(() => {
-    if (!user) return
-    const lastUser = safeGetItem('skillcascade_last_user')
-    if (lastUser !== user.id) {
-      // Different user (or first run after update) — clear stale client selection
-      safeRemoveItem('skillcascade_selected_client')
-      safeRemoveItem('skillcascade_selected_client_name')
-      setClientId(null)
-      setClientName('Sample Client')
-      resetAssessments(generateSampleAssessments())
-      lastSavedRef.current = {}
-    }
-    safeSetItem('skillcascade_last_user', user.id)
-  }, [user?.id]) // eslint-disable-line react-hooks/exhaustive-deps
 
   // Load assessments for restored client on mount
   useEffect(() => {
