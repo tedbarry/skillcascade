@@ -507,8 +507,8 @@ export default function Dashboard() {
   useEffect(() => {
     if (!user) return
     const lastUser = safeGetItem('skillcascade_last_user')
-    if (lastUser && lastUser !== user.id) {
-      // Different user — clear stale client selection
+    if (lastUser !== user.id) {
+      // Different user (or first run after update) — clear stale client selection
       safeRemoveItem('skillcascade_selected_client')
       safeRemoveItem('skillcascade_selected_client_name')
       setClientId(null)
