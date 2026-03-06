@@ -503,6 +503,22 @@ export default function Dashboard() {
     lastSavedRef.current = newData
   }
 
+  // Clear client selection when a different user logs in (prevents cross-account data leak)
+  useEffect(() => {
+    if (!user) return
+    const lastUser = safeGetItem('skillcascade_last_user')
+    if (lastUser && lastUser !== user.id) {
+      // Different user — clear stale client selection
+      safeRemoveItem('skillcascade_selected_client')
+      safeRemoveItem('skillcascade_selected_client_name')
+      setClientId(null)
+      setClientName('Sample Client')
+      resetAssessments(generateSampleAssessments())
+      lastSavedRef.current = {}
+    }
+    safeSetItem('skillcascade_last_user', user.id)
+  }, [user?.id]) // eslint-disable-line react-hooks/exhaustive-deps
+
   // Load assessments for restored client on mount
   useEffect(() => {
     if (clientId) {
