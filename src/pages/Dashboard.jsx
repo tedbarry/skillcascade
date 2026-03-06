@@ -203,6 +203,13 @@ export default function Dashboard() {
     navigateTo(view)
   }, [navigateTo])
   // Client selection is scoped per-user to prevent cross-account data leak
+  // Clean up old unscoped keys (one-time migration)
+  if (typeof window !== 'undefined') {
+    try {
+      localStorage.removeItem('skillcascade_selected_client')
+      localStorage.removeItem('skillcascade_selected_client_name')
+    } catch {}
+  }
   const clientKey = user ? `skillcascade_client_${user.id}` : null
   const clientNameKey = user ? `skillcascade_clientname_${user.id}` : null
   const [clientId, setClientId] = useState(() => clientKey ? safeGetItem(clientKey) : null)
