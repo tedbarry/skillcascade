@@ -31,6 +31,8 @@ export default memo(function SubAreaWebView({
   const { isPhone } = useResponsive()
   const containerRef = useRef(null)
   const [hoveredNode, setHoveredNode] = useState(null)
+  const [tappedNode, setTappedNode] = useState(null) // touch: first tap = tooltip, second = drill
+  const touchedRef = useRef(false) // prevents onClick from firing after onTouchStart
   const [tooltip, setTooltip] = useState({ visible: false, x: 0, y: 0, content: null })
 
   const graphData = useMemo(
@@ -141,7 +143,26 @@ export default memo(function SubAreaWebView({
     setTooltip(t => ({ ...t, visible: false }))
   }, [])
 
+  const handleNodeTouch = useCallback((e, node) => {
+    e.preventDefault()
+    touchedRef.current = true
+    if (tappedNode === node.id) {
+      // Second tap on same node → drill
+      setTappedNode(null)
+      onDrillToSubArea(node.id)
+    } else {
+      // First tap → show tooltip
+      setTappedNode(node.id)
+      handleNodeHover(e.touches[0], node)
+    }
+  }, [tappedNode, handleNodeHover, onDrillToSubArea])
+
   const handleNodeClick = useCallback((node) => {
+    // On touch devices, onClick fires after onTouchStart — skip it
+    if (touchedRef.current) {
+      touchedRef.current = false
+      return
+    }
     onDrillToSubArea(node.id)
   }, [onDrillToSubArea])
 
@@ -326,7 +347,7 @@ export default memo(function SubAreaWebView({
                 className="cursor-pointer"
                 onMouseEnter={(e) => handleNodeHover(e, node)}
                 onMouseLeave={handleNodeLeave}
-                onTouchStart={(e) => { e.preventDefault(); handleNodeHover(e.touches[0], node) }}
+                onTouchStart={(e) => handleNodeTouch(e, node)}
                 onClick={() => handleNodeClick(node)}
               >
                 {/* Background */}

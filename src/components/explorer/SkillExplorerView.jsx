@@ -80,6 +80,8 @@ export default memo(function SkillExplorerView({
   const { isPhone } = useResponsive()
   const containerRef = useRef(null)
   const [selectedSkillId, setSelectedSkillId] = useState(focusSkillId || null)
+  const [tappedNodeId, setTappedNodeId] = useState(null) // touch: first tap = tooltip, second = action
+  const touchedRef = useRef(false) // prevents onClick from firing after onTouchStart
   const [tooltip, setTooltip] = useState({ visible: false, x: 0, y: 0, content: null })
 
   // Get the full skill graph for this sub-area
@@ -200,7 +202,30 @@ export default memo(function SkillExplorerView({
     setTooltip(t => ({ ...t, visible: false }))
   }, [])
 
+  const handleNodeTouch = useCallback((e, node) => {
+    e.preventDefault()
+    touchedRef.current = true
+    if (tappedNodeId === node.id) {
+      // Second tap → perform action
+      setTappedNodeId(null)
+      if (node.isCrossDomain && onCrossNavigate) {
+        onCrossNavigate(node)
+      } else {
+        setSelectedSkillId(prev => prev === node.id ? null : node.id)
+      }
+    } else {
+      // First tap → show tooltip
+      setTappedNodeId(node.id)
+      handleNodeHover(e.touches[0], node)
+    }
+  }, [tappedNodeId, handleNodeHover, onCrossNavigate])
+
   const handleNodeClick = useCallback((node) => {
+    // On touch devices, onClick fires after onTouchStart — skip it
+    if (touchedRef.current) {
+      touchedRef.current = false
+      return
+    }
     if (node.isCrossDomain && onCrossNavigate) {
       onCrossNavigate(node)
     } else {
@@ -538,7 +563,7 @@ export default memo(function SkillExplorerView({
               className="cursor-pointer"
               onMouseEnter={(e) => handleNodeHover(e, node)}
               onMouseLeave={handleNodeLeave}
-              onTouchStart={(e) => { e.preventDefault(); handleNodeHover(e.touches[0], node) }}
+              onTouchStart={(e) => handleNodeTouch(e, node)}
               onClick={() => handleNodeClick(node)}
             >
               {/* Cascade tint overlay */}
@@ -639,7 +664,7 @@ export default memo(function SkillExplorerView({
               className="cursor-pointer"
               onMouseEnter={(e) => handleNodeHover(e, sat)}
               onMouseLeave={handleNodeLeave}
-              onTouchStart={(e) => { e.preventDefault(); handleNodeHover(e.touches[0], sat) }}
+              onTouchStart={(e) => handleNodeTouch(e, sat)}
               onClick={() => handleNodeClick(sat)}
             >
               <rect
@@ -676,7 +701,7 @@ export default memo(function SkillExplorerView({
               className="cursor-pointer"
               onMouseEnter={(e) => handleNodeHover(e, sat)}
               onMouseLeave={handleNodeLeave}
-              onTouchStart={(e) => { e.preventDefault(); handleNodeHover(e.touches[0], sat) }}
+              onTouchStart={(e) => handleNodeTouch(e, sat)}
               onClick={() => handleNodeClick(sat)}
             >
               <rect

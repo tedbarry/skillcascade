@@ -28,6 +28,8 @@ export default memo(function DomainChordView({
   const { isPhone } = useResponsive()
   const containerRef = useRef(null)
   const [hoveredDomain, setHoveredDomain] = useState(null)
+  const [tappedDomain, setTappedDomain] = useState(null) // touch: first tap = tooltip, second = drill
+  const touchedRef = useRef(false) // prevents onClick from firing after onTouchStart
   const [tooltip, setTooltip] = useState({ visible: false, x: 0, y: 0, content: null })
 
   const { matrix, domainIds } = chordData
@@ -88,10 +90,24 @@ export default memo(function DomainChordView({
 
   const handleArcTouch = useCallback((e, i) => {
     e.preventDefault()
-    handleArcHover(e.touches[0], i)
-  }, [handleArcHover])
+    touchedRef.current = true
+    if (tappedDomain === i) {
+      // Second tap on same domain → drill
+      setTappedDomain(null)
+      onDrillToDomain(domainIds[i])
+    } else {
+      // First tap → show tooltip
+      setTappedDomain(i)
+      handleArcHover(e.touches[0], i)
+    }
+  }, [handleArcHover, tappedDomain, domainIds, onDrillToDomain])
 
   const handleArcClick = useCallback((i) => {
+    // On touch devices, onClick fires after onTouchStart — skip it
+    if (touchedRef.current) {
+      touchedRef.current = false
+      return
+    }
     onDrillToDomain(domainIds[i])
   }, [domainIds, onDrillToDomain])
 
