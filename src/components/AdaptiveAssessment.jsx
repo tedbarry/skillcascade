@@ -7,6 +7,7 @@ import useContextualHint from '../hooks/useContextualHint.js'
 import ContextualHint from './ContextualHint.jsx'
 import KBLink from './kb/KBLink.jsx'
 import KBHelpIcon from './kb/KBHelpIcon.jsx'
+import { safeGetItem, safeSetItem, safeRemoveItem } from '../lib/safeStorage.js'
 
 /**
  * AdaptiveAssessment — "Start Here" cascade-aware initial assessment
@@ -48,14 +49,14 @@ export default function AdaptiveAssessment({ assessments, onAssess, onComplete, 
   // Restore draft state
   useEffect(() => {
     try {
-      const raw = localStorage.getItem(draftKey)
+      const raw = safeGetItem(draftKey)
       if (raw) {
         const draft = JSON.parse(raw)
         if (draft.version === DRAFT_VERSION) {
           setStarted(true)
           setBatchIndex(draft.batchIndex || 0)
         } else {
-          localStorage.removeItem(draftKey)
+          safeRemoveItem(draftKey)
         }
       }
     } catch { /* ignore */ }
@@ -65,7 +66,7 @@ export default function AdaptiveAssessment({ assessments, onAssess, onComplete, 
   useEffect(() => {
     if (!started) return
     try {
-      localStorage.setItem(draftKey, JSON.stringify({
+      safeSetItem(draftKey, JSON.stringify({
         version: DRAFT_VERSION,
         batchIndex,
         savedAt: Date.now(),
@@ -163,7 +164,7 @@ export default function AdaptiveAssessment({ assessments, onAssess, onComplete, 
   }, [])
 
   const handleDone = useCallback(() => {
-    try { localStorage.removeItem(draftKey) } catch {}
+    safeRemoveItem(draftKey)
     if (onComplete) onComplete()
   }, [onComplete, draftKey])
 

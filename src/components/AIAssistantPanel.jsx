@@ -4,6 +4,7 @@ import { getBehavioralIndicator } from '../data/behavioralIndicators.js'
 import { useAuth } from '../contexts/AuthContext.jsx'
 import { getAiChats, saveAiChat, deleteAiChat } from '../data/storage.js'
 import { supabase, mergeUserSettings } from '../lib/supabase.js'
+import { safeGetItem, safeSetItem, safeRemoveItem } from '../lib/safeStorage.js'
 import useFocusTrap from '../hooks/useFocusTrap.js'
 import {
   findSimilarMessage,
@@ -955,19 +956,21 @@ export default function AIAssistantPanel({ isOpen, onClose, clientName, assessme
   useEffect(() => {
     if (!orgId || !userId) return
     const migrationKey = 'skillcascade_ai_chats_migrated'
-    if (localStorage.getItem(migrationKey)) return // already migrated
+    if (safeGetItem(migrationKey)) return // already migrated
 
     async function migrate() {
-      const lsKeys = Object.keys(localStorage).filter((k) => k.startsWith('skillcascade_ai_chats_'))
+      let allKeys
+      try { allKeys = Object.keys(localStorage) } catch { allKeys = [] }
+      const lsKeys = allKeys.filter((k) => k.startsWith('skillcascade_ai_chats_'))
       if (lsKeys.length === 0) {
-        localStorage.setItem(migrationKey, '1')
+        safeSetItem(migrationKey, '1')
         return
       }
 
       let migrated = 0
       for (const key of lsKeys) {
         try {
-          const chats = JSON.parse(localStorage.getItem(key))
+          const chats = JSON.parse(safeGetItem(key))
           if (!Array.isArray(chats) || chats.length === 0) continue
 
           // Parse key: skillcascade_ai_chats_${clientName}_${toolId}
@@ -993,14 +996,16 @@ export default function AIAssistantPanel({ isOpen, onClose, clientName, assessme
       }
 
       // Mark as migrated and clean up localStorage
-      localStorage.setItem(migrationKey, '1')
+      safeSetItem(migrationKey, '1')
       for (const key of lsKeys) {
-        localStorage.removeItem(key)
+        safeRemoveItem(key)
       }
       // Also clean up old search index keys
-      Object.keys(localStorage)
-        .filter((k) => k.startsWith('skillcascade_ai_index_'))
-        .forEach((k) => localStorage.removeItem(k))
+      try {
+        Object.keys(localStorage)
+          .filter((k) => k.startsWith('skillcascade_ai_index_'))
+          .forEach((k) => safeRemoveItem(k))
+      } catch { /* localStorage unavailable */ }
 
       if (migrated > 0) {
         // Reload current tool's chats

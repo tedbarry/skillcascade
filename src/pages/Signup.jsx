@@ -2,6 +2,7 @@ import { useState, useEffect, useMemo } from 'react'
 import { Link, useNavigate, useSearchParams } from 'react-router-dom'
 import { useAuth } from '../contexts/AuthContext.jsx'
 import { supabase } from '../lib/supabase.js'
+import { safeSetItem } from '../lib/safeStorage.js'
 
 const VALID_PLANS = ['starter', 'professional', 'enterprise']
 
@@ -103,7 +104,7 @@ export default function Signup() {
 
       // Persist selected plan so it survives the email-confirm→login flow
       if (selectedPlan) {
-        try { localStorage.setItem('skillcascade_pending_plan', selectedPlan) } catch {}
+        safeSetItem('skillcascade_pending_plan', selectedPlan)
       }
 
       setSuccess(true)

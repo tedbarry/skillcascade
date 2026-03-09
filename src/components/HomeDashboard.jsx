@@ -8,6 +8,7 @@ import GettingStartedChecklist from './GettingStartedChecklist.jsx'
 import { framework, ASSESSMENT_LEVELS, isAssessed } from '../data/framework.js'
 import { computeDomainHealth, detectCascadeRisks, computeImpactRanking } from '../data/cascadeModel.js'
 import { DOMAIN_COLORS } from '../constants/colors.js'
+import { safeGetItem, safeSetItem } from '../lib/safeStorage.js'
 
 /** Animated counter — counts from 0 to target over duration ms */
 function AnimatedNumber({ value, duration = 800 }) {
@@ -228,20 +229,16 @@ export default function HomeDashboard({ assessments = {}, snapshots = [], client
 
   // Keyboard shortcut hint — auto-dismisses after 3 views
   const [showKbdHint, setShowKbdHint] = useState(() => {
-    try {
-      const count = parseInt(localStorage.getItem(STORAGE_KEY) || '0', 10)
-      return count < 3
-    } catch { return true }
+    const count = parseInt(safeGetItem(STORAGE_KEY, '0'), 10)
+    return count < 3
   })
 
   useEffect(() => {
-    try {
-      const count = parseInt(localStorage.getItem(STORAGE_KEY) || '0', 10)
-      if (count < 3) {
-        localStorage.setItem(STORAGE_KEY, String(count + 1))
-        if (count + 1 >= 3) setShowKbdHint(false)
-      }
-    } catch { /* localStorage unavailable */ }
+    const count = parseInt(safeGetItem(STORAGE_KEY, '0'), 10)
+    if (count < 3) {
+      safeSetItem(STORAGE_KEY, String(count + 1))
+      if (count + 1 >= 3) setShowKbdHint(false)
+    }
   }, [])
 
   const domainHealth = useMemo(() => computeDomainHealth(assessments), [assessments])
@@ -578,7 +575,7 @@ export default function HomeDashboard({ assessments = {}, snapshots = [], client
             <button
               onClick={() => {
                 setShowKbdHint(false)
-                try { localStorage.setItem(STORAGE_KEY, '3') } catch {}
+                safeSetItem(STORAGE_KEY, '3')
               }}
               className="p-1 rounded hover:bg-warm-100 transition-colors text-warm-300 hover:text-warm-500"
               aria-label="Dismiss keyboard shortcuts hint"

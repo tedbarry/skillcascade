@@ -5,6 +5,7 @@ import { useAuth } from '../contexts/AuthContext.jsx'
 import useResponsive from '../hooks/useResponsive.js'
 import useSubscription from '../hooks/useSubscription.js'
 import { supabase } from '../lib/supabase.js'
+import { safeSetItem } from '../lib/safeStorage.js'
 
 const ORG_TYPES = [
   { value: '', label: 'Select type...' },
@@ -468,7 +469,7 @@ export default function Profile() {
             ) : (
               <button
                 onClick={() => {
-                  try { localStorage.setItem('skillcascade_active_view', 'pricing') } catch {}
+                  safeSetItem('skillcascade_active_view', 'pricing')
                   navigate('/dashboard')
                 }}
                 className="px-4 py-2 rounded-lg bg-sage-500 text-white text-sm font-medium hover:bg-sage-600 transition-colors min-h-[44px] inline-flex items-center"

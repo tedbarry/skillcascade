@@ -208,8 +208,8 @@ export default function Dashboard() {
   // Clean up old unscoped keys (one-time migration)
   if (typeof window !== 'undefined') {
     try {
-      localStorage.removeItem('skillcascade_selected_client')
-      localStorage.removeItem('skillcascade_selected_client_name')
+      safeRemoveItem('skillcascade_selected_client')
+      safeRemoveItem('skillcascade_selected_client_name')
     } catch {}
   }
   const [clientId, setClientId] = useState(() => clientKey ? safeGetItem(clientKey) : null)
@@ -239,7 +239,7 @@ export default function Dashboard() {
   }, [])
   const [branding, setBranding] = useState(() => {
     try {
-      const raw = localStorage.getItem('skillcascade_branding')
+      const raw = safeGetItem('skillcascade_branding')
       return raw ? JSON.parse(raw) : null
     } catch { return null }
   })
@@ -265,7 +265,7 @@ export default function Dashboard() {
     mainRef.current?.scrollTo({ top: 0, behavior: 'smooth' })
   }, [])
   const handleRestartTour = useCallback(() => {
-    try { localStorage.removeItem('skillcascade_onboarding_complete') } catch {}
+    safeRemoveItem('skillcascade_onboarding_complete')
     setActiveView('home')
     setTourKey(k => k + 1)
   }, [])
@@ -286,12 +286,10 @@ export default function Dashboard() {
     // 2s — localStorage fallback (crash recovery only, never shown to user)
     clearTimeout(draftTimerRef.current)
     draftTimerRef.current = setTimeout(() => {
-      try {
-        localStorage.setItem(DRAFT_PREFIX + clientId, JSON.stringify({
-          assessments,
-          savedAt: Date.now(),
-        }))
-      } catch { /* quota exceeded — ignore */ }
+      safeSetItem(DRAFT_PREFIX + clientId, JSON.stringify({
+        assessments,
+        savedAt: Date.now(),
+      }))
     }, 2000)
 
     // 10s — Supabase autosave (the real save)
@@ -305,7 +303,7 @@ export default function Dashboard() {
         .then(() => {
           lastSavedRef.current = assessments
           // Clear localStorage draft after successful DB save
-          try { localStorage.removeItem(DRAFT_PREFIX + clientId) } catch {}
+          safeRemoveItem(DRAFT_PREFIX + clientId)
           setAutoSaveStatus('saved')
           statusTimerRef.current = setTimeout(() => setAutoSaveStatus(null), 3000)
         })
@@ -372,7 +370,7 @@ export default function Dashboard() {
     try {
       await saveAssessment(clientId, assessments, user.id)
       lastSavedRef.current = assessments
-      try { localStorage.removeItem(DRAFT_PREFIX + clientId) } catch {}
+      safeRemoveItem(DRAFT_PREFIX + clientId)
       showToast('Assessment saved', 'success')
       setUnsavedDialogOpen(false)
       if (pendingView) setActiveView(pendingView)
@@ -527,7 +525,7 @@ export default function Dashboard() {
           // Silent draft recovery: if localStorage has newer data, use it
           let useData = dbData
           try {
-            const raw = localStorage.getItem(DRAFT_PREFIX + clientId)
+            const raw = safeGetItem(DRAFT_PREFIX + clientId)
             if (raw) {
               const draft = JSON.parse(raw)
               const ageMs = Date.now() - (draft.savedAt || 0)
@@ -539,7 +537,7 @@ export default function Dashboard() {
                   useData = migrateAssessments(draft.assessments)
                 }
               }
-              localStorage.removeItem(DRAFT_PREFIX + clientId)
+              safeRemoveItem(DRAFT_PREFIX + clientId)
             }
           } catch { /* ignore */ }
           resetAssessments(useData)
@@ -548,7 +546,7 @@ export default function Dashboard() {
         .catch((err) => {
           // Supabase failed — try localStorage draft as fallback
           try {
-            const raw = localStorage.getItem(DRAFT_PREFIX + clientId)
+            const raw = safeGetItem(DRAFT_PREFIX + clientId)
             if (raw) {
               const draft = JSON.parse(raw)
               if (draft.assessments) {
@@ -615,7 +613,7 @@ export default function Dashboard() {
             currentClientId={clientId}
             onSelectClient={handleSelectClient}
             assessments={assessments}
-            onSaveSuccess={() => { lastSavedRef.current = assessments; try { localStorage.removeItem(DRAFT_PREFIX + clientId) } catch {}; showToast('Assessment saved', 'success') }}
+            onSaveSuccess={() => { lastSavedRef.current = assessments; safeRemoveItem(DRAFT_PREFIX + clientId); showToast('Assessment saved', 'success') }}
           /></span>
           <span className="hidden sm:inline">
             <AssessmentCompletionBadge assessments={assessments} onClick={() => guardedSetActiveView(VIEWS.ASSESS)} />

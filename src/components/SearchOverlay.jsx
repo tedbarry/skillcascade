@@ -6,6 +6,7 @@ import { buildKBSearchIndex, searchKB } from '../data/knowledgeBase/kbSearch.js'
 import { getAllEntries } from '../data/knowledgeBase/kbIndex.js'
 import { KB_CATEGORIES } from '../data/knowledgeBase/kbSchema.js'
 import useFocusTrap from '../hooks/useFocusTrap.js'
+import { safeGetItem, safeSetItem } from '../lib/safeStorage.js'
 
 /**
  * Result type constants for grouping search results
@@ -210,7 +211,7 @@ const MAX_RECENT = 6
 
 function getRecentSearches() {
   try {
-    const raw = localStorage.getItem(RECENT_SEARCHES_KEY)
+    const raw = safeGetItem(RECENT_SEARCHES_KEY)
     return raw ? JSON.parse(raw) : []
   } catch { return [] }
 }
@@ -219,7 +220,7 @@ function addRecentSearch(entry) {
   try {
     const recent = getRecentSearches().filter(r => r.id !== entry.id)
     recent.unshift({ id: entry.id, name: entry.name, type: entry.type, subAreaId: entry.subAreaId, skillId: entry.skillId, breadcrumb: entry.breadcrumb, commandIcon: entry.commandIcon, commandAction: entry.commandAction, commandValue: entry.commandValue })
-    localStorage.setItem(RECENT_SEARCHES_KEY, JSON.stringify(recent.slice(0, MAX_RECENT)))
+    safeSetItem(RECENT_SEARCHES_KEY, JSON.stringify(recent.slice(0, MAX_RECENT)))
   } catch {}
 }
 

@@ -431,8 +431,8 @@ export function interpolateAssessments(assessmentA = {}, assessmentB = {}, t) {
   const result = {}
 
   allKeys.forEach((key) => {
-    const a = assessmentA[key] ?? 0
-    const b = assessmentB[key] ?? 0
+    const a = Number(assessmentA[key]) || 0
+    const b = Number(assessmentB[key]) || 0
     result[key] = a + (b - a) * t
   })
 

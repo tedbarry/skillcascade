@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback } from 'react'
 import { mergeUserSettings } from '../lib/supabase.js'
 import { useAuth } from '../contexts/AuthContext.jsx'
+import { safeGetItem, safeSetItem } from '../lib/safeStorage.js'
 
 /* ─────────────────────────────────────────────
    Constants
@@ -51,26 +52,18 @@ export default function OnboardingTour({ onComplete, onNavigate }) {
 
   // Show role selector only for first-time users
   useEffect(() => {
-    try {
-      const completed = localStorage.getItem(STORAGE_KEY)
-      if (!completed) {
-        const timer = setTimeout(() => setVisible(true), 600)
-        return () => clearTimeout(timer)
-      }
-    } catch {
-      // localStorage unavailable
+    const completed = safeGetItem(STORAGE_KEY)
+    if (!completed) {
+      const timer = setTimeout(() => setVisible(true), 600)
+      return () => clearTimeout(timer)
     }
   }, [])
 
   const handleRoleSelect = useCallback((selectedRole) => {
     setVisible(false)
     if (onNavigate) onNavigate('home')
-    try {
-      localStorage.setItem(STORAGE_KEY, 'true')
-      localStorage.setItem(ROLE_KEY, selectedRole)
-    } catch {
-      // localStorage unavailable
-    }
+    safeSetItem(STORAGE_KEY, 'true')
+    safeSetItem(ROLE_KEY, selectedRole)
     if (user) {
       mergeUserSettings(user.id, { onboarding_complete: true, user_role: selectedRole })
     }

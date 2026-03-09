@@ -183,6 +183,8 @@ export default function Messaging({
       }
 
       setMessages(loaded)
+    }).catch((err) => {
+      console.error('Failed to load messages:', err)
     }).finally(() => setLoading(false))
   }, [clientId, user?.id])
 

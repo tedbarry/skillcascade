@@ -2,14 +2,21 @@ import { defineConfig } from 'vite'
 import react from '@vitejs/plugin-react'
 import tailwindcss from '@tailwindcss/vite'
 import { resolve } from 'path'
-import { copyFileSync } from 'fs'
+import { copyFileSync, existsSync } from 'fs'
 
 // Cloudflare Pages SPA routing: serve index.html as 404.html
 function cloudflareSPA() {
   return {
     name: 'cloudflare-spa',
     closeBundle() {
-      copyFileSync(resolve('dist/index.html'), resolve('dist/404.html'))
+      const src = resolve('dist/index.html')
+      const dest = resolve('dist/404.html')
+      // Retry up to 3 times — Dropbox can briefly lock files
+      for (let i = 0; i < 3; i++) {
+        try {
+          if (existsSync(src)) { copyFileSync(src, dest); return }
+        } catch { /* retry */ }
+      }
     },
   }
 }

@@ -85,7 +85,7 @@ export default function BrandingSettings({ onBrandingChange }) {
   // Load from Supabase org branding on mount
   useEffect(() => {
     if (profile?.organizations?.branding) {
-      setBranding((prev) => ({ ...prev, ...profile.organizations.branding }))
+      setBranding((prev) => ({ ...prev, ...profile?.organizations?.branding }))
     }
   }, [profile])
 
