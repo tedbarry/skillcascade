@@ -322,7 +322,7 @@ function generateSchoolReport(clientName, date, analysis, assessments) {
           const indicator = getBehavioralIndicator(skill.id, level)
           if (!indicator) continue
           const cls = level === 0 ? 'indicator-np' : 'indicator-nw'
-          html += `<div class="indicator ${cls}"><strong>${skill.name}</strong> (${ASSESSMENT_LABELS[level]}): ${indicator}</div>`
+          html += `<div class="indicator ${cls}"><strong>${escapeHTML(skill.name)}</strong> (${ASSESSMENT_LABELS[level]}): ${escapeHTML(indicator)}</div>`
         }
       }
     }
@@ -400,7 +400,7 @@ function generateMedicalReport(clientName, date, analysis, assessments) {
           const indicator = getBehavioralIndicator(skill.id, level)
           if (!indicator) continue
           const cls = level === 0 ? 'indicator-np' : 'indicator-nw'
-          html += `<div class="indicator ${cls}"><strong>${skill.name}</strong> (${ASSESSMENT_LABELS[level]}): ${indicator}</div>`
+          html += `<div class="indicator ${cls}"><strong>${escapeHTML(skill.name)}</strong> (${ASSESSMENT_LABELS[level]}): ${escapeHTML(indicator)}</div>`
         }
       }
     }
@@ -476,7 +476,7 @@ function generateProgressReport(clientName, date, analysis, snapshotComparison, 
       const prev = prevScores[i]
       const diff = curr.score - prev.score
       const arrow = diff > 0.1 ? '<span style="color:#4f8460;font-weight:600">+' + diff.toFixed(2) + '</span>' : diff < -0.1 ? '<span style="color:#d44d3f;font-weight:600">' + diff.toFixed(2) + '</span>' : '<span style="color:#7d5235">—</span>'
-      html += `<tr><td>${curr.domain}</td><td style="text-align:center">${prev.assessed > 0 ? prev.score.toFixed(2) : '—'}</td><td style="text-align:center">${curr.assessed > 0 ? curr.score.toFixed(2) : '—'}</td><td style="text-align:center">${arrow}</td></tr>`
+      html += `<tr><td>${escapeHTML(curr.domain)}</td><td style="text-align:center">${prev.assessed > 0 ? prev.score.toFixed(2) : '—'}</td><td style="text-align:center">${curr.assessed > 0 ? curr.score.toFixed(2) : '—'}</td><td style="text-align:center">${arrow}</td></tr>`
     }
     html += `</table>`
   }
@@ -486,7 +486,7 @@ function generateProgressReport(clientName, date, analysis, snapshotComparison, 
     html += `<h2>Key Strengths</h2>`
     html += `<div class="callout callout-good"><ul>`
     for (const sa of strongSubAreas.slice(0, 6)) {
-      html += `<li><strong>${sa.name}</strong> — ${sa.avg.toFixed(1)}/3</li>`
+      html += `<li><strong>${escapeHTML(sa.name)}</strong> — ${sa.avg.toFixed(1)}/3</li>`
     }
     html += `</ul></div>`
   }
@@ -494,7 +494,7 @@ function generateProgressReport(clientName, date, analysis, snapshotComparison, 
   if (weakSubAreas.length > 0) {
     html += `<h2>Priority Focus Areas</h2>`
     for (const sa of weakSubAreas.slice(0, 6)) {
-      html += `<p><strong>${sa.name}</strong> (${sa.domain.name}) — ${sa.avg.toFixed(1)}/3</p>`
+      html += `<p><strong>${escapeHTML(sa.name)}</strong> (${escapeHTML(sa.domain.name)}) — ${sa.avg.toFixed(1)}/3</p>`
       for (const sg of sa.skillGroups) {
         for (const skill of sg.skills) {
           const level = assessments[skill.id]
@@ -502,7 +502,7 @@ function generateProgressReport(clientName, date, analysis, snapshotComparison, 
           const indicator = getBehavioralIndicator(skill.id, level)
           if (!indicator) continue
           const cls = level === 0 ? 'indicator-np' : 'indicator-nw'
-          html += `<div class="indicator ${cls}"><strong>${skill.name}</strong> (${ASSESSMENT_LABELS[level]}): ${indicator}</div>`
+          html += `<div class="indicator ${cls}"><strong>${escapeHTML(skill.name)}</strong> (${ASSESSMENT_LABELS[level]}): ${escapeHTML(indicator)}</div>`
         }
       }
     }
