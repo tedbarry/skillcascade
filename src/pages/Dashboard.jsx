@@ -172,6 +172,8 @@ export default function Dashboard() {
   const { hasFeature } = useSubscription()
   const { isPhone, isTablet, isDesktop } = useResponsive()
   const sunburstHint = useContextualHint('hint-sunburst')
+  const clientKey = user ? `skillcascade_client_${user.id}` : null
+  const clientNameKey = user ? `skillcascade_clientname_${user.id}` : null
   const [assessments, setAssessments, { undo, redo, canUndo, canRedo, resetState: resetAssessments }] = useUndoRedo({})
   const [assessmentsLoading, setAssessmentsLoading] = useState(() => clientKey ? !!safeGetItem(clientKey) : false)
   const [selectedNode, setSelectedNode] = useState(null)
@@ -210,8 +212,6 @@ export default function Dashboard() {
       localStorage.removeItem('skillcascade_selected_client_name')
     } catch {}
   }
-  const clientKey = user ? `skillcascade_client_${user.id}` : null
-  const clientNameKey = user ? `skillcascade_clientname_${user.id}` : null
   const [clientId, setClientId] = useState(() => clientKey ? safeGetItem(clientKey) : null)
   const [snapshots, setSnapshots] = useState([])
   const [clientName, setClientName] = useState(() => clientNameKey ? safeGetItem(clientNameKey, 'Sample Client') : 'Sample Client')
