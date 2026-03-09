@@ -25,7 +25,8 @@ Deno.serve(async (req) => {
   try {
     event = stripe.webhooks.constructEvent(body, signature, webhookSecret)
   } catch (err) {
-    return new Response(`Webhook signature verification failed: ${err.message}`, { status: 400 })
+    console.error('Webhook signature verification failed:', err.message)
+    return new Response('Webhook signature verification failed', { status: 400 })
   }
 
   // Use service role key for admin operations

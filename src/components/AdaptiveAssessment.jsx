@@ -25,7 +25,7 @@ import KBHelpIcon from './kb/KBHelpIcon.jsx'
  */
 
 const BATCH_SIZE = 5
-const DRAFT_KEY = 'skillcascade_adaptive_draft'
+const DRAFT_KEY_PREFIX = 'skillcascade_adaptive_draft'
 const DRAFT_VERSION = 2
 
 const LEVEL_OPTIONS = [
@@ -35,7 +35,7 @@ const LEVEL_OPTIONS = [
   { level: ASSESSMENT_LEVELS.SOLID, label: 'Solid', short: 'Sol' },
 ]
 
-export default function AdaptiveAssessment({ assessments, onAssess, onComplete }) {
+export default function AdaptiveAssessment({ assessments, onAssess, onComplete, clientId }) {
   const [started, setStarted] = useState(false)
   const [batchIndex, setBatchIndex] = useState(0)
   const { isPhone, isTablet } = useResponsive()
@@ -43,18 +43,19 @@ export default function AdaptiveAssessment({ assessments, onAssess, onComplete }
   const contentRef = useRef(null)
   const [expandedSkill, setExpandedSkill] = useState(null)
   const [expandAll, setExpandAll] = useState(false)
+  const draftKey = clientId ? `${DRAFT_KEY_PREFIX}_${clientId}` : DRAFT_KEY_PREFIX
 
   // Restore draft state
   useEffect(() => {
     try {
-      const raw = localStorage.getItem(DRAFT_KEY)
+      const raw = localStorage.getItem(draftKey)
       if (raw) {
         const draft = JSON.parse(raw)
         if (draft.version === DRAFT_VERSION) {
           setStarted(true)
           setBatchIndex(draft.batchIndex || 0)
         } else {
-          localStorage.removeItem(DRAFT_KEY)
+          localStorage.removeItem(draftKey)
         }
       }
     } catch { /* ignore */ }
@@ -64,7 +65,7 @@ export default function AdaptiveAssessment({ assessments, onAssess, onComplete }
   useEffect(() => {
     if (!started) return
     try {
-      localStorage.setItem(DRAFT_KEY, JSON.stringify({
+      localStorage.setItem(draftKey, JSON.stringify({
         version: DRAFT_VERSION,
         batchIndex,
         savedAt: Date.now(),
@@ -162,9 +163,9 @@ export default function AdaptiveAssessment({ assessments, onAssess, onComplete }
   }, [])
 
   const handleDone = useCallback(() => {
-    localStorage.removeItem(DRAFT_KEY)
+    try { localStorage.removeItem(draftKey) } catch {}
     if (onComplete) onComplete()
-  }, [onComplete])
+  }, [onComplete, draftKey])
 
   // ─── Welcome Screen ───
   if (!started) {

@@ -566,6 +566,12 @@ function SkillCard({ rec, onNavigateToAssess, isExpanded, onToggle, assessments 
           onMouseLeave={(e) => {
             e.currentTarget.style.backgroundColor = config.color + '15'
           }}
+          onTouchStart={(e) => {
+            e.currentTarget.style.backgroundColor = config.color + '28'
+          }}
+          onTouchEnd={(e) => {
+            e.currentTarget.style.backgroundColor = config.color + '15'
+          }}
         >
           Jump to Assess {'\u2192'}
         </button>

@@ -14,9 +14,3 @@ export function getCorsHeaders(req: Request) {
     'Vary': 'Origin',
   }
 }
-
-// Keep backward compat export for existing code
-export const corsHeaders = {
-  'Access-Control-Allow-Origin': '*',
-  'Access-Control-Allow-Headers': 'authorization, x-client-info, content-type',
-}

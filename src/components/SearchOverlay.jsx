@@ -713,6 +713,7 @@ export default function SearchOverlay({ isOpen, onClose, onNavigate, assessments
                         else if (item.subAreaId) { onNavigate(item.subAreaId); onClose() }
                       }}
                       onMouseEnter={() => setActiveIndex(i)}
+                      onTouchStart={() => setActiveIndex(i)}
                       className={`w-full text-left px-3 py-2.5 rounded-lg flex items-center gap-3 transition-colors cursor-pointer ${
                         i === activeIndex ? 'bg-sage-50 text-sage-800' : 'text-warm-700 hover:bg-warm-50'
                       }`}
@@ -792,6 +793,7 @@ export default function SearchOverlay({ isOpen, onClose, onNavigate, assessments
                       data-index={item.flatIndex}
                       onClick={() => handleSelect(item)}
                       onMouseEnter={() => setActiveIndex(item.flatIndex)}
+                      onTouchStart={() => setActiveIndex(item.flatIndex)}
                       className={`w-full text-left px-3 py-2.5 rounded-lg flex items-center gap-3 transition-colors cursor-pointer ${
                         isActive
                           ? 'bg-sage-50 text-sage-800'

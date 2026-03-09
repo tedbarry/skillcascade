@@ -62,7 +62,7 @@ function HeadlineBanner({ headline, narratives, onAssess, onGoal, isPhone }) {
     return (
       <div className={`${isPhone ? 'px-3 py-3' : 'px-5 py-4'} border-b border-[#333]/40`}>
         <div className="flex items-center justify-between mb-1">
-          <span className="text-[9px] font-mono tracking-widest text-gray-600 uppercase">Intelligence Overview</span>
+          <span className="text-[9px] font-mono tracking-widest text-gray-500 uppercase">Intelligence Overview</span>
           <KBHelpIcon term="view-intelligence" />
         </div>
         <p className="text-sm text-gray-500">{narratives.clinicalSummary}</p>
@@ -244,7 +244,7 @@ function LearningPath({ steps, isPhone }) {
       className="overflow-hidden"
     >
       <div className={`${isPhone ? 'px-3 py-2' : 'px-4 py-3'} mt-2 rounded-lg bg-[#12121a]`}>
-        <p className="text-[9px] font-mono tracking-widest text-gray-600 uppercase mb-2">Prerequisite Path</p>
+        <p className="text-[9px] font-mono tracking-widest text-gray-500 uppercase mb-2">Prerequisite Path</p>
         <div className="flex flex-wrap items-center gap-1">
           {steps.map((step, i) => {
             const color = DOMAIN_COLORS[step.domainId] || '#888'

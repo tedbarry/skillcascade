@@ -274,6 +274,8 @@ export default function Dashboard() {
   const DRAFT_PREFIX = 'skillcascade_draft_'
   const draftTimerRef = useRef(null)
   const autoSaveTimerRef = useRef(null)
+  const statusTimerRef = useRef(null)
+  const lastSavedRef = useRef(assessments)
   const [autoSaveStatus, setAutoSaveStatus] = useState(null) // null | 'saving' | 'saved' | 'error'
 
   useEffect(() => {
@@ -305,22 +307,22 @@ export default function Dashboard() {
           // Clear localStorage draft after successful DB save
           try { localStorage.removeItem(DRAFT_PREFIX + clientId) } catch {}
           setAutoSaveStatus('saved')
-          setTimeout(() => setAutoSaveStatus(null), 3000)
+          statusTimerRef.current = setTimeout(() => setAutoSaveStatus(null), 3000)
         })
         .catch(() => {
           setAutoSaveStatus('error')
-          setTimeout(() => setAutoSaveStatus(null), 5000)
+          statusTimerRef.current = setTimeout(() => setAutoSaveStatus(null), 5000)
         })
     }, 10000) // 10s debounce for Supabase
 
     return () => {
       clearTimeout(draftTimerRef.current)
       clearTimeout(autoSaveTimerRef.current)
+      clearTimeout(statusTimerRef.current)
     }
   }, [assessments, clientId, user])
 
   // Warn on tab close when unsaved changes exist
-  const lastSavedRef = useRef(assessments)
   useEffect(() => {
     if (!clientId) return
     if (shallowEqual(assessments, lastSavedRef.current)) return
@@ -999,6 +1001,7 @@ export default function Dashboard() {
                 <AdaptiveAssessment
                   assessments={assessments}
                   onAssess={setAssessments}
+                  clientId={clientId}
                   onComplete={() => {
                     showToast('Quick assessment applied', 'success')
                     guardedSetActiveView(VIEWS.RADAR)

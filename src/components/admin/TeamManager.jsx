@@ -55,7 +55,9 @@ export default function TeamManager() {
         .select('token')
         .single()
       if (err) throw err
-      const link = `${window.location.origin}/signup?invite=${data.token}`
+      const url = new URL('/signup', window.location.origin)
+      url.searchParams.set('invite', data.token)
+      const link = url.toString()
       setInviteLink(link)
       setInviteEmail('')
     } catch (e) {

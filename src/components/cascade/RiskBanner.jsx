@@ -29,7 +29,7 @@ export default memo(function RiskBanner({
 
   return (
     <motion.button
-      role="alert"
+      aria-label={`${risk.type} risk: ${risk.title || risk.label || ''}`}
       onClick={onClick}
       initial={{ opacity: 0, y: -10 }}
       animate={{ opacity: 1, y: 0 }}

@@ -203,5 +203,3 @@ export default memo(function DomainNode({
     </g>
   )
 })
-
-export { DOMAIN_COLORS, STATE_CONFIG }
