@@ -69,6 +69,11 @@ Deno.serve(async (req) => {
       })
     }
 
+    // Enforce minimum seats per plan
+    const MIN_SEATS: Record<string, number> = { solo: 1, practice: 3, enterprise: 10 }
+    const minSeats = MIN_SEATS[plan] || 1
+    const seats = Math.max(quantity || 1, minSeats)
+
     const stripeKey = Deno.env.get('STRIPE_SECRET_KEY')!
     const stripe = new Stripe(stripeKey, { apiVersion: '2023-10-16' })
     const appUrl = Deno.env.get('APP_URL') || 'https://skillcascade.com'
@@ -83,14 +88,14 @@ Deno.serve(async (req) => {
     const sessionParams: Stripe.Checkout.SessionCreateParams = {
       mode: 'subscription',
       payment_method_types: ['card'],
-      line_items: [{ price: priceId, quantity: quantity || 1 }],
+      line_items: [{ price: priceId, quantity: seats }],
       success_url: `${appUrl}/dashboard?checkout=success`,
       cancel_url: `${appUrl}/dashboard?checkout=cancelled`,
       client_reference_id: user.id,
       customer_email: existingSub?.stripe_customer_id ? undefined : user.email,
       subscription_data: {
         trial_period_days: 14,
-        metadata: { user_id: user.id, plan, seats: quantity || 1 },
+        metadata: { user_id: user.id, plan, seats: String(seats) },
       },
       metadata: { user_id: user.id, plan },
     }

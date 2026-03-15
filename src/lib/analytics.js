@@ -109,14 +109,11 @@ async function flush() {
   try {
     await supabase.from('usage_events').insert(batch)
 
-    // Update session stats
+    // Update session duration (event_count derived from usage_events table)
     const elapsed = Math.round((Date.now() - (sessionStartTime || Date.now())) / 1000)
     await supabase
       .from('usage_sessions')
-      .update({
-        duration_seconds: elapsed,
-        event_count: batch.length, // Will be cumulative via the next query
-      })
+      .update({ duration_seconds: elapsed })
       .eq('id', sessionId)
   } catch {
     // Put events back on failure so they retry next flush

@@ -43,6 +43,9 @@ Deno.serve(async (req) => {
     const currentPeriodEnd = new Date(subscription.current_period_end * 1000).toISOString()
     const cancelAtPeriodEnd = subscription.cancel_at_period_end
     const seats = subscription.items?.data?.[0]?.quantity || 1
+    const trialEndsAt = subscription.trial_end
+      ? new Date(subscription.trial_end * 1000).toISOString()
+      : null
 
     const { error } = await supabase.from('subscriptions').upsert({
       user_id: userId,
@@ -53,6 +56,7 @@ Deno.serve(async (req) => {
       current_period_end: currentPeriodEnd,
       cancel_at_period_end: cancelAtPeriodEnd,
       seats,
+      trial_ends_at: trialEndsAt,
       updated_at: new Date().toISOString(),
     }, { onConflict: 'user_id' })
     if (error) console.error('Failed to upsert subscription:', error.message)

@@ -309,7 +309,7 @@ function PricingCard({ tier, isAnnual, onCheckout, checkoutLoading }) {
         {/* CTA */}
         {onCheckout ? (
           <button
-            onClick={() => onCheckout(tier.planKey, isAnnual)}
+            onClick={() => onCheckout(tier.planKey, isAnnual, tier.minSeats || 1)}
             disabled={checkoutLoading}
             className={`mt-6 w-full rounded-lg py-2.5 text-sm font-semibold transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 min-h-[44px] disabled:opacity-50 ${
               tier.popular
@@ -673,7 +673,7 @@ export default function PricingPage() {
   const [checkoutLoading, setCheckoutLoading] = useState(false)
   const { user } = useAuth()
 
-  const handleCheckout = useCallback(async (planName, annual) => {
+  const handleCheckout = useCallback(async (planName, annual, quantity = 1) => {
     if (!user) return // Should not happen since onCheckout is only passed when logged in
 
     setCheckoutLoading(true)
@@ -693,12 +693,11 @@ export default function PricingPage() {
           'Content-Type': 'application/json',
           'Authorization': `Bearer ${session.access_token}`,
         },
-        body: JSON.stringify({ plan: planName, annual }),
+        body: JSON.stringify({ plan: planName, annual, quantity }),
       })
 
       if (!res.ok) {
         const err = await res.json().catch(() => ({}))
-        console.error('Checkout error:', err.error)
         // Fallback to signup page
         window.location.href = `/signup?plan=${planName}`
         return
@@ -706,8 +705,7 @@ export default function PricingPage() {
 
       const { url } = await res.json()
       if (url) window.location.href = url
-    } catch (err) {
-      console.error('Checkout error:', err)
+    } catch {
       window.location.href = `/signup?plan=${planName}`
     } finally {
       setCheckoutLoading(false)

@@ -92,7 +92,7 @@ export default function useSubscription() {
 
   // Active = paid and current, OR in trial period
   const isActive = subscription?.status === 'active' || subscription?.status === 'trialing'
-  const isTrial = subscription?.status === 'trialing' && (rawPlan === 'free' || !subscription?.stripe_subscription_id)
+  const isTrial = subscription?.status === 'trialing'
   const isExpired = subscription?.status === 'expired' || subscription?.status === 'canceled'
   const isPastDue = subscription?.status === 'past_due'
 
