@@ -171,7 +171,7 @@ export const VIEWS = {
 export default function Dashboard() {
   const { user } = useAuth()
   const { showToast } = useToast()
-  const { hasFeature, plan, loading: subLoading, needsSubscription, startCheckout, openBillingPortal } = useSubscription()
+  const { hasFeature, plan, loading: subLoading, needsSubscription, startCheckout, openBillingPortal, refreshSubscription } = useSubscription()
   const { isPhone, isTablet, isDesktop } = useResponsive()
   const sunburstHint = useContextualHint('hint-sunburst')
   const clientKey = user ? `skillcascade_client_${user.id}` : null
@@ -399,20 +399,73 @@ export default function Dashboard() {
     return () => window.removeEventListener('keydown', handleKeyDown)
   }, [])
 
+  // Track checkout=success polling state
+  const [checkoutPending, setCheckoutPending] = useState(() => {
+    const params = new URLSearchParams(window.location.search)
+    return params.get('checkout') === 'success'
+  })
+  const checkoutPollRef = useRef(null)
+
   // Handle checkout success/cancelled from Stripe redirect
   useEffect(() => {
     const params = new URLSearchParams(window.location.search)
     const checkoutStatus = params.get('checkout')
+
     if (checkoutStatus === 'success') {
-      showToast('Subscription activated! Welcome to SkillCascade.', 'success')
+      // Clean URL immediately
       const url = new URL(window.location)
       url.searchParams.delete('checkout')
       window.history.replaceState({}, '', url)
+
+      // If subscription already exists (webhook was fast), skip polling
+      if (!needsSubscription && !subLoading) {
+        setCheckoutPending(false)
+        showToast('Subscription activated! Welcome to SkillCascade.', 'success')
+        return
+      }
+
+      // Poll for the webhook to create the subscription
+      setCheckoutPending(true)
+      let attempts = 0
+      const maxAttempts = 20 // ~40 seconds max
+
+      checkoutPollRef.current = setInterval(async () => {
+        attempts++
+        try {
+          const sub = await refreshSubscription()
+          if (sub && sub.status !== 'no_subscription') {
+            clearInterval(checkoutPollRef.current)
+            checkoutPollRef.current = null
+            setCheckoutPending(false)
+            showToast('Subscription activated! Welcome to SkillCascade.', 'success')
+          } else if (attempts >= maxAttempts) {
+            clearInterval(checkoutPollRef.current)
+            checkoutPollRef.current = null
+            setCheckoutPending(false)
+            showToast('Your subscription is being set up. It may take a moment to appear.', 'info')
+          }
+        } catch {
+          // Keep polling on error
+          if (attempts >= maxAttempts) {
+            clearInterval(checkoutPollRef.current)
+            checkoutPollRef.current = null
+            setCheckoutPending(false)
+            showToast('Your subscription is being set up. Please refresh the page in a moment.', 'info')
+          }
+        }
+      }, 2000)
     } else if (checkoutStatus === 'cancelled') {
       showToast('Checkout cancelled. You can upgrade anytime from the pricing page.', 'info')
       const url = new URL(window.location)
       url.searchParams.delete('checkout')
       window.history.replaceState({}, '', url)
+    }
+
+    return () => {
+      if (checkoutPollRef.current) {
+        clearInterval(checkoutPollRef.current)
+        checkoutPollRef.current = null
+      }
     }
   }, []) // eslint-disable-line react-hooks/exhaustive-deps
 
@@ -638,6 +691,25 @@ export default function Dashboard() {
   // Hard gate: must have a subscription to access the dashboard
   const [checkoutError, setCheckoutError] = useState(null)
   const [checkoutLoading, setCheckoutLoading] = useState(false)
+
+  // Show loading screen while waiting for Stripe webhook after checkout
+  if (checkoutPending) {
+    return (
+      <div className="min-h-screen bg-warm-50 flex items-center justify-center px-4">
+        <div className="w-full max-w-sm text-center">
+          <div className="bg-white rounded-xl border border-warm-200 shadow-sm p-8">
+            <div className="w-12 h-12 mx-auto mb-4 border-2 border-sage-200 border-t-sage-500 rounded-full animate-spin" />
+            <h2 className="text-lg font-bold text-warm-800 font-display mb-2">
+              Setting up your account...
+            </h2>
+            <p className="text-sm text-warm-500">
+              We're activating your subscription. This usually takes just a few seconds.
+            </p>
+          </div>
+        </div>
+      </div>
+    )
+  }
 
   if (!subLoading && needsSubscription) {
     return (

@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo } from 'react'
+import { useState, useEffect, useMemo, useRef } from 'react'
 import { Link, useNavigate, useSearchParams } from 'react-router-dom'
 import { useAuth } from '../contexts/AuthContext.jsx'
 import { supabase } from '../lib/supabase.js'
@@ -77,10 +77,31 @@ export default function Signup() {
   const { signUp } = useAuth()
   const navigate = useNavigate()
 
+  // Track signup-in-progress so AuthContext's onAuthStateChange
+  // doesn't trigger a redirect before the success screen renders.
+  // When Supabase auto-confirms (email confirmation disabled), signUp
+  // fires SIGNED_IN synchronously, which sets user in context and can
+  // cause the component to re-render or unmount before setSuccess(true).
+  const signupInProgressRef = useRef(false)
+
+  // Sign out immediately if signUp auto-logged us in, so the user
+  // stays on the success screen and confirms via email as intended.
+  useEffect(() => {
+    // Only run this cleanup when we've completed signup successfully
+    // and the auth state has set a user (auto-confirm scenario)
+    if (success && signupInProgressRef.current) {
+      signupInProgressRef.current = false
+      // Sign out silently so the user isn't auto-redirected to dashboard.
+      // They need to confirm their email first.
+      supabase.auth.signOut().catch(() => {})
+    }
+  }, [success])
+
   async function handleSubmit(e) {
     e.preventDefault()
     setError('')
     setLoading(true)
+    signupInProgressRef.current = true
 
     try {
       if (password.length < 8) {
@@ -103,6 +124,7 @@ export default function Signup() {
 
       // Supabase returns success but empty identities when rate-limited or email exists
       if (data?.user?.identities?.length === 0) {
+        signupInProgressRef.current = false
         throw new Error('Unable to create account. This email may already be registered, or you may need to wait a moment before trying again.')
       }
 
@@ -117,8 +139,11 @@ export default function Signup() {
       // Always persist selected plan — user must go through Stripe checkout after email confirm
       safeSetItem('skillcascade_pending_plan', selectedPlan)
 
+      // Set success BEFORE any auth state change can cause re-render issues.
+      // The useEffect above will sign out if auto-confirm happened.
       setSuccess(true)
     } catch (err) {
+      signupInProgressRef.current = false
       setError(err.message)
     } finally {
       setLoading(false)

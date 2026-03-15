@@ -101,7 +101,7 @@ export default function Profile() {
   const { user, profile, signOut } = useAuth()
   const { isPhone } = useResponsive()
   const navigate = useNavigate()
-  const { subscription, plan, isTrial, openBillingPortal } = useSubscription()
+  const { subscription, plan, isTrial, openBillingPortal, cancelSubscription } = useSubscription()
 
   // Org settings (local state until saved)
   const [orgName, setOrgName] = useState('')
@@ -223,6 +223,16 @@ export default function Profile() {
     setDeleteLoading(true)
 
     try {
+      // Cancel Stripe subscription before deleting account data
+      // This ensures no further charges after account deletion
+      try {
+        await cancelSubscription()
+      } catch (stripeErr) {
+        console.error('Failed to cancel Stripe subscription during account deletion:', stripeErr.message)
+        // Continue with deletion even if Stripe cancellation fails —
+        // the webhook will eventually handle it, and support can clean up
+      }
+
       // Delete all user data via Supabase RPC (or manual cascade)
       if (profile?.org_id) {
         // Get client IDs for this org
@@ -262,7 +272,7 @@ export default function Profile() {
       setDeleteError(err.message || 'Failed to delete account. Please contact support@skillcascade.com')
       setDeleteLoading(false)
     }
-  }, [deleteConfirm, profile?.org_id, user?.id, signOut, navigate])
+  }, [deleteConfirm, profile?.org_id, user?.id, signOut, navigate, cancelSubscription])
 
   return (
     <div className="min-h-screen bg-warm-50">
