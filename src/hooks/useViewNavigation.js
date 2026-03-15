@@ -1,5 +1,6 @@
 import { useSearchParams } from 'react-router-dom'
 import { useCallback, useMemo } from 'react'
+import { track } from '../lib/analytics.js'
 
 const VIEW_PARAM = 'v'
 
@@ -34,6 +35,7 @@ export default function useViewNavigation(defaultView, validViews) {
 
   // Navigate to a new view — pushState creates browser history entry
   const navigateTo = useCallback((view, params = {}) => {
+    track('view_open', view, { from_view: searchParams.get(VIEW_PARAM) || defaultView })
     setSearchParams(() => {
       const next = new URLSearchParams()
       next.set(VIEW_PARAM, view)

@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, lazy, Suspense } from 'react'
 import { Navigate, Link } from 'react-router-dom'
 import { useAuth } from '../contexts/AuthContext.jsx'
 import useResponsive from '../hooks/useResponsive.js'
@@ -6,14 +6,22 @@ import TeamManager from '../components/admin/TeamManager.jsx'
 import AuditLogViewer from '../components/admin/AuditLogViewer.jsx'
 import OrgSettings from '../components/admin/OrgSettings.jsx'
 
-const TABS = [
-  { id: 'team', label: 'Team', icon: TeamIcon },
-  { id: 'audit', label: 'Audit Log', icon: AuditIcon },
-  { id: 'settings', label: 'Settings', icon: SettingsIcon },
-]
+const UsageAnalytics = lazy(() => import('../components/admin/UsageAnalytics.jsx'))
+
+function buildTabs(isSuperAdmin) {
+  const tabs = [
+    { id: 'team', label: 'Team', icon: TeamIcon },
+    { id: 'audit', label: 'Audit Log', icon: AuditIcon },
+  ]
+  if (isSuperAdmin) {
+    tabs.push({ id: 'analytics', label: 'Analytics', icon: AnalyticsIcon })
+  }
+  tabs.push({ id: 'settings', label: 'Settings', icon: SettingsIcon })
+  return tabs
+}
 
 export default function Admin() {
-  const { user, loading, isAdmin, profile } = useAuth()
+  const { user, loading, isAdmin, isSuperAdmin, profile } = useAuth()
   const { isPhone } = useResponsive()
   const [activeTab, setActiveTab] = useState('team')
 
@@ -27,6 +35,8 @@ export default function Admin() {
 
   if (!user) return <Navigate to="/login" replace />
   if (!isAdmin) return <Navigate to="/dashboard" replace />
+
+  const TABS = buildTabs(isSuperAdmin)
 
   return (
     <div className="min-h-screen bg-warm-50">
@@ -51,7 +61,7 @@ export default function Admin() {
         {isPhone ? (
           /* Phone: horizontal tab bar */
           <div className="space-y-4">
-            <div className="flex gap-1 bg-white rounded-xl border border-warm-200 p-1">
+            <div className="flex gap-1 bg-white rounded-xl border border-warm-200 p-1 overflow-x-auto">
               {TABS.map((tab) => {
                 const Icon = tab.icon
                 const isActive = activeTab === tab.id
@@ -59,7 +69,7 @@ export default function Admin() {
                   <button
                     key={tab.id}
                     onClick={() => setActiveTab(tab.id)}
-                    className={`flex-1 flex items-center justify-center gap-1.5 px-3 py-2.5 min-h-[44px] text-xs font-medium rounded-lg transition-colors ${
+                    className={`flex-1 flex items-center justify-center gap-1.5 px-3 py-2.5 min-h-[44px] text-xs font-medium rounded-lg transition-colors whitespace-nowrap ${
                       isActive
                         ? 'bg-sage-500 text-white'
                         : 'text-warm-500 hover:text-warm-700 hover:bg-warm-50'
@@ -112,6 +122,7 @@ function TabContent({ tab }) {
   switch (tab) {
     case 'team': return <TeamManager />
     case 'audit': return <AuditLogViewer />
+    case 'analytics': return <Suspense fallback={<div className="flex justify-center py-16"><div className="w-6 h-6 border-2 border-sage-200 border-t-sage-500 rounded-full animate-spin" /></div>}><UsageAnalytics /></Suspense>
     case 'settings': return <OrgSettings />
     default: return null
   }
@@ -131,6 +142,14 @@ function AuditIcon({ className }) {
   return (
     <svg className={className} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
       <path strokeLinecap="round" strokeLinejoin="round" d="M9 12h3.75M9 15h3.75M9 18h3.75m3 .75H18a2.25 2.25 0 0 0 2.25-2.25V6.108c0-1.135-.845-2.098-1.976-2.192a48.424 48.424 0 0 0-1.123-.08m-5.801 0c-.065.21-.1.433-.1.664 0 .414.336.75.75.75h4.5a.75.75 0 0 0 .75-.75 2.25 2.25 0 0 0-.1-.664m-5.8 0A2.251 2.251 0 0 1 13.5 2.25H15a2.25 2.25 0 0 1 2.15 1.586m-5.8 0c-.376.023-.75.05-1.124.08C9.095 4.01 8.25 4.973 8.25 6.108V8.25m0 0H4.875c-.621 0-1.125.504-1.125 1.125v11.25c0 .621.504 1.125 1.125 1.125h9.75c.621 0 1.125-.504 1.125-1.125V9.375c0-.621-.504-1.125-1.125-1.125H8.25ZM6.75 12h.008v.008H6.75V12Zm0 3h.008v.008H6.75V15Zm0 3h.008v.008H6.75V18Z" />
+    </svg>
+  )
+}
+
+function AnalyticsIcon({ className }) {
+  return (
+    <svg className={className} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
+      <path strokeLinecap="round" strokeLinejoin="round" d="M3 13.125C3 12.504 3.504 12 4.125 12h2.25c.621 0 1.125.504 1.125 1.125v6.75C7.5 20.496 6.996 21 6.375 21h-2.25A1.125 1.125 0 0 1 3 19.875v-6.75ZM9.75 8.625c0-.621.504-1.125 1.125-1.125h2.25c.621 0 1.125.504 1.125 1.125v11.25c0 .621-.504 1.125-1.125 1.125h-2.25a1.125 1.125 0 0 1-1.125-1.125V8.625ZM16.5 4.125c0-.621.504-1.125 1.125-1.125h2.25C20.496 3 21 3.504 21 4.125v15.75c0 .621-.504 1.125-1.125 1.125h-2.25a1.125 1.125 0 0 1-1.125-1.125V4.125Z" />
     </svg>
   )
 }

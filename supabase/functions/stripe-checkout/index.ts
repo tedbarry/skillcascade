@@ -13,10 +13,16 @@ import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
 import Stripe from 'https://esm.sh/stripe@14?target=deno'
 import { getCorsHeaders } from '../_shared/cors.ts'
 
-const PLAN_PRICE_MAP: Record<string, string> = {
+const PLAN_PRICE_MAP_MONTHLY: Record<string, string> = {
   starter: Deno.env.get('STRIPE_STARTER_PRICE_ID') || '',
   professional: Deno.env.get('STRIPE_PROFESSIONAL_PRICE_ID') || '',
   enterprise: Deno.env.get('STRIPE_ENTERPRISE_PRICE_ID') || '',
+}
+
+const PLAN_PRICE_MAP_ANNUAL: Record<string, string> = {
+  starter: Deno.env.get('STRIPE_STARTER_ANNUAL_PRICE_ID') || '',
+  professional: Deno.env.get('STRIPE_PROFESSIONAL_ANNUAL_PRICE_ID') || '',
+  enterprise: Deno.env.get('STRIPE_ENTERPRISE_ANNUAL_PRICE_ID') || '',
 }
 
 Deno.serve(async (req) => {
@@ -50,7 +56,8 @@ Deno.serve(async (req) => {
     }
 
     const { plan, annual } = await req.json()
-    const priceId = PLAN_PRICE_MAP[plan]
+    const priceMap = annual ? PLAN_PRICE_MAP_ANNUAL : PLAN_PRICE_MAP_MONTHLY
+    const priceId = priceMap[plan]
 
     if (!priceId) {
       return new Response(JSON.stringify({ error: `Invalid plan: ${plan}` }), {

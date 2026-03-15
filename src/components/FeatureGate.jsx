@@ -1,3 +1,4 @@
+import { useSearchParams } from 'react-router-dom'
 import useSubscription, { PLAN_LABELS, FEATURE_META } from '../hooks/useSubscription.js'
 
 /**
@@ -17,6 +18,8 @@ export default function FeatureGate({ feature, children }) {
 }
 
 function UpgradePrompt({ featureLabel, description, requiredPlan }) {
+  const [, setSearchParams] = useSearchParams()
+
   return (
     <div className="flex items-center justify-center min-h-[400px] px-4">
       <div className="max-w-md w-full text-center">
@@ -44,13 +47,7 @@ function UpgradePrompt({ featureLabel, description, requiredPlan }) {
 
           <div>
             <button
-              onClick={() => {
-                // Navigate to pricing view via URL params
-                const url = new URL(window.location)
-                url.searchParams.set('view', 'pricing')
-                window.history.pushState({}, '', url)
-                window.dispatchEvent(new PopStateEvent('popstate'))
-              }}
+              onClick={() => setSearchParams({ v: 'pricing' }, { replace: false })}
               className="inline-flex items-center gap-2 px-6 py-2.5 bg-sage-500 text-white rounded-lg text-sm font-semibold hover:bg-sage-600 transition-colors min-h-[44px]"
             >
               View Plans

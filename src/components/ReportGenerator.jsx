@@ -7,6 +7,7 @@ import { generateClinicalSummary } from '../lib/narratives.js'
 import { generateDomainBarChart, generateRadarChart, generateMasteryGrid, generateScoreSummaryProfile } from '../lib/reportCharts.js'
 import { getBehavioralIndicator } from '../data/behavioralIndicators.js'
 import { escapeHTML } from '../lib/escapeHTML.js'
+import { track } from '../lib/analytics.js'
 import { saveReport, getReports, deleteReport } from '../data/storage.js'
 import useContextualHint from '../hooks/useContextualHint.js'
 import ContextualHint from './ContextualHint.jsx'
@@ -887,6 +888,7 @@ export default function ReportGenerator({ assessments, clientName, clientId, use
 
   function handleGenerate() {
     if (!selectedType || !hasData) return
+    track('feature_use', 'report_generate', { type: selectedType })
     setGenerating(true)
 
     const snapshotComparison = compareSnapshotId

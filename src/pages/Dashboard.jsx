@@ -28,6 +28,8 @@ import KBLink from '../components/kb/KBLink.jsx'
 import KBHelpIcon from '../components/kb/KBHelpIcon.jsx'
 import FeatureGate from '../components/FeatureGate.jsx'
 import useSubscription from '../hooks/useSubscription.js'
+import SubscriptionBanner from '../components/SubscriptionBanner.jsx'
+import { track } from '../lib/analytics.js'
 
 // Lazy-loaded view components — each gets its own chunk, loaded on-demand
 const HomeDashboard = lazy(() => import('../components/HomeDashboard.jsx'))
@@ -169,7 +171,7 @@ export const VIEWS = {
 export default function Dashboard() {
   const { user } = useAuth()
   const { showToast } = useToast()
-  const { hasFeature } = useSubscription()
+  const { hasFeature, plan, loading: subLoading, startCheckout, openBillingPortal } = useSubscription()
   const { isPhone, isTablet, isDesktop } = useResponsive()
   const sunburstHint = useContextualHint('hint-sunburst')
   const clientKey = user ? `skillcascade_client_${user.id}` : null
@@ -389,12 +391,44 @@ export default function Dashboard() {
     function handleKeyDown(e) {
       if ((e.metaKey || e.ctrlKey) && e.key === 'k') {
         e.preventDefault()
+        track('feature_use', 'search_open', { trigger: 'keyboard' })
         setSearchOpen(true)
       }
     }
     window.addEventListener('keydown', handleKeyDown)
     return () => window.removeEventListener('keydown', handleKeyDown)
   }, [])
+
+  // Handle checkout success/cancelled from Stripe redirect
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search)
+    const checkoutStatus = params.get('checkout')
+    if (checkoutStatus === 'success') {
+      showToast('Subscription activated! Welcome to SkillCascade.', 'success')
+      const url = new URL(window.location)
+      url.searchParams.delete('checkout')
+      window.history.replaceState({}, '', url)
+    } else if (checkoutStatus === 'cancelled') {
+      showToast('Checkout cancelled. You can upgrade anytime from the pricing page.', 'info')
+      const url = new URL(window.location)
+      url.searchParams.delete('checkout')
+      window.history.replaceState({}, '', url)
+    }
+  }, []) // eslint-disable-line react-hooks/exhaustive-deps
+
+  // Auto-checkout for pending plan (user selected plan during signup, confirmed email, logged in)
+  useEffect(() => {
+    if (subLoading) return
+    const pendingPlan = safeGetItem('skillcascade_pending_plan')
+    safeRemoveItem('skillcascade_pending_plan')
+    if (pendingPlan && plan === 'free') {
+      startCheckout(pendingPlan).then((url) => {
+        if (url) window.location.href = url
+      }).catch(() => {
+        showToast('Could not start checkout. Try upgrading from the pricing page.', 'error')
+      })
+    }
+  }, [subLoading]) // eslint-disable-line react-hooks/exhaustive-deps
 
   // Global keyboard shortcuts (number keys for views, ? for help, p for print, / for search)
   useEffect(() => {
@@ -578,6 +612,7 @@ export default function Dashboard() {
     if (!clientId) return
     try {
       const updated = await saveSnapshot(clientId, label, assessments, user?.id)
+      track('feature_use', 'snapshot_save')
       setSnapshots(updated)
       showToast('Snapshot saved', 'success')
     } catch (err) {
@@ -589,6 +624,7 @@ export default function Dashboard() {
     if (!clientId) return
     try {
       const updated = await deleteSnapshot(clientId, snapshotId)
+      track('feature_use', 'snapshot_delete')
       setSnapshots(updated)
     } catch (err) {
       showToast(userErrorMessage(err, 'delete snapshot'), 'error')
@@ -763,6 +799,12 @@ export default function Dashboard() {
       <div className="header-accent" />
 
       {/* Autosave status indicator */}
+
+      {/* Subscription status banner */}
+      <SubscriptionBanner
+        onNavigateToPricing={() => navigateTo('pricing')}
+        onOpenBilling={openBillingPortal}
+      />
 
       {/* Breadcrumb */}
       <ViewBreadcrumb activeView={activeView} onNavigateHome={() => guardedSetActiveView(VIEWS.HOME)} />

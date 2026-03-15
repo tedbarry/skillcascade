@@ -2,6 +2,7 @@ import { useState, useEffect, useCallback } from 'react'
 import { mergeUserSettings } from '../lib/supabase.js'
 import { useAuth } from '../contexts/AuthContext.jsx'
 import { safeGetItem, safeSetItem } from '../lib/safeStorage.js'
+import { track } from '../lib/analytics.js'
 
 /* ─────────────────────────────────────────────
    Constants
@@ -60,6 +61,7 @@ export default function OnboardingTour({ onComplete, onNavigate }) {
   }, [])
 
   const handleRoleSelect = useCallback((selectedRole) => {
+    track('onboarding', 'tour_complete', { role: selectedRole })
     setVisible(false)
     if (onNavigate) onNavigate('home')
     safeSetItem(STORAGE_KEY, 'true')
@@ -71,6 +73,7 @@ export default function OnboardingTour({ onComplete, onNavigate }) {
   }, [onComplete, onNavigate, user])
 
   const handleSkip = useCallback(() => {
+    track('onboarding', 'tour_skip')
     handleRoleSelect('bcba') // default to BCBA on skip
   }, [handleRoleSelect])
 

@@ -3,7 +3,7 @@ import { supabase } from '../lib/supabase.js'
 import { useAuth } from '../contexts/AuthContext.jsx'
 
 const PLAN_LIMITS = {
-  free: { clients: 3, ai: false, reports: false, advancedViz: false },
+  free: { clients: 1, ai: false, reports: false, advancedViz: false },
   starter: { clients: 15, ai: true, reports: true, advancedViz: false },
   professional: { clients: 75, ai: true, reports: true, advancedViz: true },
   enterprise: { clients: Infinity, ai: true, reports: true, advancedViz: true },

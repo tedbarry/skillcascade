@@ -5,6 +5,7 @@ import { useAuth } from '../contexts/AuthContext.jsx'
 import { getAiChats, saveAiChat, deleteAiChat } from '../data/storage.js'
 import { supabase, mergeUserSettings } from '../lib/supabase.js'
 import { safeGetItem, safeSetItem, safeRemoveItem } from '../lib/safeStorage.js'
+import { track } from '../lib/analytics.js'
 import useFocusTrap from '../hooks/useFocusTrap.js'
 import {
   findSimilarMessage,
@@ -1316,6 +1317,7 @@ export default function AIAssistantPanel({ isOpen, onClose, clientName, assessme
   const handleSendMessage = useCallback(async () => {
     const text = inputValue.trim()
     if (!text || isLoading || pendingMatch) return
+    track('feature_use', 'ai_chat_message')
 
     const userMsg = {
       id: `user-${Date.now()}`,

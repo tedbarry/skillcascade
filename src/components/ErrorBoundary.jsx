@@ -1,4 +1,5 @@
 import { Component } from 'react'
+import { track } from '../lib/analytics.js'
 
 export default class ErrorBoundary extends Component {
   constructor(props) {
@@ -12,6 +13,7 @@ export default class ErrorBoundary extends Component {
 
   componentDidCatch(error, info) {
     console.error('ErrorBoundary caught:', error, info.componentStack)
+    track('error', 'render_error', { message: error.message })
   }
 
   handleReset = () => {

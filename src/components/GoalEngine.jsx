@@ -11,6 +11,7 @@ import { getSkillDescription } from '../data/skillDescriptions.js'
 import { getBehavioralIndicator } from '../data/behavioralIndicators.js'
 import { getTeachingPlaybook } from '../data/teachingPlaybook.js'
 import { downloadFile, csvEscape } from '../data/exportUtils.js'
+import { track } from '../lib/analytics.js'
 import { getSkillCeiling, computeSkillInfluence } from '../data/skillInfluence.js'
 import { getSubAreaFromId, getSkillTier } from '../data/skillDependencies.js'
 import { TIER_LABELS, TIER_COLORS } from '../constants/tiers.js'
@@ -738,6 +739,7 @@ export default function GoalEngine({ assessments = {}, onNavigateToAssess, focus
   )
 
   const handleExportGoals = useCallback(() => {
+    track('feature_use', 'goals_export')
     const rows = [['Client', 'Domain', 'Sub-Area', 'Skill', 'Current Level', 'Current Score',
       'Target Level', 'Target Score', 'Current Behavioral Indicator', 'Target Behavioral Indicator',
       'Operational Definition', 'Observable When Present',

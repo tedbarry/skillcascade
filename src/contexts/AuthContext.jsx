@@ -1,5 +1,6 @@
 import { createContext, useContext, useState, useEffect, useCallback, useRef } from 'react'
 import { supabase } from '../lib/supabase.js'
+import { initAnalytics, identify as identifyUser, endSession } from '../lib/analytics.js'
 
 const AuthContext = createContext(null)
 
@@ -67,10 +68,16 @@ export function AuthProvider({ children }) {
     }
   }, [user, resetInactivityTimer])
 
+  // Initialize analytics on mount
+  useEffect(() => { initAnalytics() }, [])
+
   // Fetch profile on mount if we have a user (background, non-blocking)
   useEffect(() => {
     if (user) {
-      fetchProfile(user.id).then(setProfile).catch(() => setProfile(null))
+      fetchProfile(user.id).then((p) => {
+        setProfile(p)
+        if (p) identifyUser(user, { role: p.role, org_id: p.org_id, plan: p.is_super_admin ? 'enterprise' : 'free' })
+      }).catch(() => setProfile(null))
     }
   }, []) // eslint-disable-line react-hooks/exhaustive-deps
 
@@ -80,13 +87,19 @@ export function AuthProvider({ children }) {
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       (event, session) => {
         if (event === 'SIGNED_OUT') {
+          endSession()
           setUser(null)
           setProfile(null)
         } else if (session?.user) {
           setUser(session.user)
           // Fetch profile in background on sign-in or token refresh
           if (event === 'SIGNED_IN' || event === 'TOKEN_REFRESHED') {
-            fetchProfile(session.user.id).then(setProfile).catch(() => setProfile(null))
+            fetchProfile(session.user.id).then((p) => {
+              setProfile(p)
+              if (p && event === 'SIGNED_IN') {
+                identifyUser(session.user, { role: p.role, org_id: p.org_id, plan: p.is_super_admin ? 'enterprise' : 'free' })
+              }
+            }).catch(() => setProfile(null))
           }
         }
         // Always ensure loading is resolved
@@ -130,6 +143,7 @@ export function AuthProvider({ children }) {
   }, [])
 
   const signOut = useCallback(async () => {
+    await endSession()
     if (user) {
       await supabase.from('audit_log').insert({
         user_id: user.id,

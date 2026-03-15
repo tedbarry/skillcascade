@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react'
 import { generateCSV, generateJSON, downloadFile } from '../data/exportUtils.js'
+import { track } from '../lib/analytics.js'
 
 export default function ExportMenu({ assessments, snapshots, clientName }) {
   const [isOpen, setIsOpen] = useState(false)
@@ -17,17 +18,20 @@ export default function ExportMenu({ assessments, snapshots, clientName }) {
   }, [printQueued])
 
   function handlePrint() {
+    track('feature_use', 'export_print')
     setIsOpen(false)
     setPrintQueued(true)
   }
 
   function handleCSV() {
+    track('feature_use', 'export_csv')
     const csv = generateCSV(assessments, clientName)
     downloadFile(csv, `skillcascade-${safeName}.csv`, 'text/csv;charset=utf-8;')
     setIsOpen(false)
   }
 
   function handleJSON() {
+    track('feature_use', 'export_json')
     const json = generateJSON(assessments, snapshots, clientName, includeSnapshots)
     downloadFile(json, `skillcascade-${safeName}.json`, 'application/json')
     setIsOpen(false)

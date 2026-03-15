@@ -3,6 +3,7 @@ import { getClients, saveClient, deleteClient, getAssessments, saveAssessment, g
 import { useAuth } from '../contexts/AuthContext.jsx'
 import { useToast } from './Toast.jsx'
 import { userErrorMessage } from '../lib/errorUtils.js'
+import { track } from '../lib/analytics.js'
 
 export default function ClientManager({ currentClientId, onSelectClient, assessments, onSaveSuccess }) {
   const [isOpen, setIsOpen] = useState(false)
@@ -51,6 +52,7 @@ export default function ClientManager({ currentClientId, onSelectClient, assessm
     if (!newName.trim() || !orgId) return
     try {
       const client = await saveClient({ name: newName.trim() }, orgId)
+      track('feature_use', 'client_create')
       setNewName('')
       await refreshClients()
       onSelectClient(client.id, client.name, {})
@@ -77,6 +79,7 @@ export default function ClientManager({ currentClientId, onSelectClient, assessm
     if (!currentClientId || !user) return
     try {
       await saveAssessment(currentClientId, assessments, user.id)
+      track('feature_use', 'assessment_save')
       await refreshClients()
       onSaveSuccess?.()
     } catch (err) {
@@ -88,6 +91,7 @@ export default function ClientManager({ currentClientId, onSelectClient, assessm
   async function handleDelete(clientId) {
     try {
       await deleteClient(clientId)
+      track('feature_use', 'client_delete')
       setConfirmDelete(null)
       await refreshClients()
       if (clientId === currentClientId) {
