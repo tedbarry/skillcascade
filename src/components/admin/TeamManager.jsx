@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback } from 'react'
 import { supabase } from '../../lib/supabase.js'
 import { useAuth } from '../../contexts/AuthContext.jsx'
+import useSubscription from '../../hooks/useSubscription.js'
 
 const ROLE_OPTIONS = [
   { value: 'bcba', label: 'BCBA' },
@@ -10,6 +11,7 @@ const ROLE_OPTIONS = [
 
 export default function TeamManager() {
   const { user, profile } = useAuth()
+  const { seats, plan, canInviteUser } = useSubscription()
   const [members, setMembers] = useState([])
   const [loading, setLoading] = useState(true)
   const [inviteEmail, setInviteEmail] = useState('')
@@ -44,6 +46,14 @@ export default function TeamManager() {
     setError(null)
     setInviteLink(null)
     try {
+      // Check seat limit before creating invite
+      const canInvite = await canInviteUser()
+      if (!canInvite) {
+        setError(`Your ${plan} plan allows ${seats} user${seats === 1 ? '' : 's'}. Upgrade to add more team members.`)
+        setInviting(false)
+        return
+      }
+
       const { data, error: err } = await supabase
         .from('invite_tokens')
         .insert({
@@ -156,8 +166,15 @@ export default function TeamManager() {
 
       {/* Members list */}
       <div className="bg-white rounded-xl border border-warm-200 overflow-hidden">
-        <div className="px-5 py-3 border-b border-warm-100 bg-warm-50">
+        <div className="px-5 py-3 border-b border-warm-100 bg-warm-50 flex items-center justify-between">
           <h3 className="text-sm font-semibold text-warm-700">Team Members ({members.length})</h3>
+          {seats > 1 && (
+            <span className={`text-xs font-medium px-2 py-1 rounded-full ${
+              members.length >= seats ? 'bg-red-50 text-red-600' : 'bg-sage-50 text-sage-600'
+            }`}>
+              {members.length} / {seats} seats
+            </span>
+          )}
         </div>
 
         {loading ? (

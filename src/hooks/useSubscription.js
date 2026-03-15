@@ -45,7 +45,7 @@ const TRIAL_DURATION_DAYS = 14
 const DATA_GRACE_PERIOD_DAYS = 90
 
 export default function useSubscription() {
-  const { user, isSuperAdmin } = useAuth()
+  const { user, profile, isSuperAdmin } = useAuth()
   const [subscription, setSubscription] = useState(null)
   const [loading, setLoading] = useState(true)
 
@@ -57,33 +57,62 @@ export default function useSubscription() {
     }
 
     async function loadSubscription() {
-      const { data, error } = await supabase
+      // First try: load user's own subscription
+      const { data: ownSub } = await supabase
         .from('subscriptions')
         .select('*')
         .eq('user_id', user.id)
         .single()
 
-      if (error || !data) {
-        // No subscription = free trial
-        // Check if user account is older than trial period
-        const createdAt = new Date(user.created_at)
-        const trialEnd = new Date(createdAt.getTime() + TRIAL_DURATION_DAYS * 86_400_000)
-        const isTrialExpired = Date.now() > trialEnd.getTime()
-
-        setSubscription({
-          plan: 'free',
-          status: isTrialExpired ? 'expired' : 'trialing',
-          trial_ends_at: trialEnd.toISOString(),
-          seats: 1,
-        })
-      } else {
-        setSubscription(data)
+      if (ownSub) {
+        setSubscription(ownSub)
+        setLoading(false)
+        return
       }
+
+      // Second try: load org owner's subscription (for team members)
+      const orgId = profile?.org_id
+      if (orgId) {
+        const { data: orgMembers } = await supabase
+          .from('profiles')
+          .select('id')
+          .eq('org_id', orgId)
+
+        if (orgMembers?.length) {
+          // Check each org member for a subscription (the owner will have one)
+          const { data: orgSub } = await supabase
+            .from('subscriptions')
+            .select('*')
+            .in('user_id', orgMembers.map(m => m.id))
+            .neq('plan', 'free')
+            .order('created_at', { ascending: false })
+            .limit(1)
+            .single()
+
+          if (orgSub) {
+            setSubscription(orgSub)
+            setLoading(false)
+            return
+          }
+        }
+      }
+
+      // No subscription found = free trial
+      const createdAt = new Date(user.created_at)
+      const trialEnd = new Date(createdAt.getTime() + TRIAL_DURATION_DAYS * 86_400_000)
+      const isTrialExpired = Date.now() > trialEnd.getTime()
+
+      setSubscription({
+        plan: 'free',
+        status: isTrialExpired ? 'expired' : 'trialing',
+        trial_ends_at: trialEnd.toISOString(),
+        seats: 1,
+      })
       setLoading(false)
     }
 
     loadSubscription()
-  }, [user])
+  }, [user, profile])
 
   const rawPlan = subscription?.plan || 'free'
   const plan = isSuperAdmin ? 'enterprise' : rawPlan
@@ -122,6 +151,20 @@ export default function useSubscription() {
   const getRequiredPlan = useCallback((featureKey) => {
     return FEATURE_ACCESS[featureKey] || 'solo'
   }, [])
+
+  // Check if org has room for more users (seat limit)
+  const canInviteUser = useCallback(async () => {
+    if (isSuperAdmin || seats === Infinity) return true
+    const orgId = profile?.org_id
+    if (!orgId) return false
+
+    const { count } = await supabase
+      .from('profiles')
+      .select('*', { count: 'exact', head: true })
+      .eq('org_id', orgId)
+
+    return (count || 0) < seats
+  }, [profile, seats, isSuperAdmin])
 
   const canAddClient = useCallback(async () => {
     if (isSuperAdmin || limits.clients === Infinity) return true
@@ -212,6 +255,7 @@ export default function useSubscription() {
     hasFeature,
     getRequiredPlan,
     canAddClient,
+    canInviteUser,
     startCheckout,
     openBillingPortal,
   }

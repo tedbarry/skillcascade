@@ -4,6 +4,7 @@ import { useAuth } from '../contexts/AuthContext.jsx'
 import { useToast } from './Toast.jsx'
 import { userErrorMessage } from '../lib/errorUtils.js'
 import { track } from '../lib/analytics.js'
+import useSubscription from '../hooks/useSubscription.js'
 
 export default function ClientManager({ currentClientId, onSelectClient, assessments, onSaveSuccess }) {
   const [isOpen, setIsOpen] = useState(false)
@@ -16,6 +17,7 @@ export default function ClientManager({ currentClientId, onSelectClient, assessm
   const [lastAssessed, setLastAssessed] = useState({})
   const { profile, user } = useAuth()
   const { showToast } = useToast()
+  const { canAddClient } = useSubscription()
   const triggerRef = useRef(null)
   const [dropdownPos, setDropdownPos] = useState({ top: 0, left: 0 })
 
@@ -51,6 +53,11 @@ export default function ClientManager({ currentClientId, onSelectClient, assessm
   async function handleCreate() {
     if (!newName.trim() || !orgId) return
     try {
+      const allowed = await canAddClient()
+      if (!allowed) {
+        showToast('Client limit reached for your plan. Upgrade to add more clients.', 'error')
+        return
+      }
       const client = await saveClient({ name: newName.trim() }, orgId)
       track('feature_use', 'client_create')
       setNewName('')
