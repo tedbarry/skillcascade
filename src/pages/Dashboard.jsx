@@ -849,7 +849,15 @@ export default function Dashboard() {
       {/* Subscription status banner */}
       <SubscriptionBanner
         onNavigateToPricing={() => navigateTo('pricing')}
-        onOpenBilling={openBillingPortal}
+        onOpenBilling={async () => {
+          try {
+            const url = await openBillingPortal()
+            if (url) return url
+            showToast('Billing portal unavailable. Try again or contact support.', 'error')
+          } catch {
+            showToast('Could not open billing portal.', 'error')
+          }
+        }}
       />
 
       {/* Breadcrumb */}
