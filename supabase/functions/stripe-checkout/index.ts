@@ -75,7 +75,7 @@ Deno.serve(async (req) => {
     const seats = Math.max(quantity || 1, minSeats)
 
     const stripeKey = Deno.env.get('STRIPE_SECRET_KEY')!
-    const stripe = new Stripe(stripeKey, { apiVersion: '2023-10-16' })
+    const stripe = new Stripe(stripeKey, { apiVersion: '2023-10-16', httpClient: Stripe.createFetchHttpClient() })
     const appUrl = Deno.env.get('APP_URL') || 'https://skillcascade.com'
 
     // Check if customer already exists

@@ -55,7 +55,7 @@ Deno.serve(async (req) => {
     }
 
     const stripeKey = Deno.env.get('STRIPE_SECRET_KEY')!
-    const stripe = new Stripe(stripeKey, { apiVersion: '2023-10-16' })
+    const stripe = new Stripe(stripeKey, { apiVersion: '2023-10-16', httpClient: Stripe.createFetchHttpClient() })
     const appUrl = Deno.env.get('APP_URL') || 'https://skillcascade.com'
 
     const session = await stripe.billingPortal.sessions.create({
