@@ -199,7 +199,7 @@ export default function useSubscription() {
 
     if (!res.ok) {
       const err = await res.json().catch(() => ({}))
-      throw new Error(err.error || 'Failed to create checkout session')
+      throw new Error(err.error || err.message || `Checkout failed (${res.status})`)
     }
 
     const { url } = await res.json()
