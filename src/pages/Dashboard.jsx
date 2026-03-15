@@ -853,10 +853,8 @@ export default function Dashboard() {
           try {
             const url = await openBillingPortal()
             if (url) return url
-            showToast('Billing portal unavailable. Try again or contact support.', 'error')
-          } catch {
-            showToast('Could not open billing portal.', 'error')
-          }
+          } catch { /* fall through */ }
+          showToast('Could not open billing portal. You can manage your subscription at billing.stripe.com.', 'info')
         }}
       />
 
