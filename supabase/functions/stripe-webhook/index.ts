@@ -7,7 +7,7 @@
 //   STRIPE_WEBHOOK_SECRET — your webhook signing secret
 
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
-import Stripe from 'https://esm.sh/stripe@14?target=deno'
+import Stripe from 'https://esm.sh/stripe@13.10.0?target=deno'
 
 Deno.serve(async (req) => {
   const stripeKey = Deno.env.get('STRIPE_SECRET_KEY')!
@@ -26,8 +26,12 @@ Deno.serve(async (req) => {
     event = stripe.webhooks.constructEvent(body, signature, webhookSecret)
   } catch (err) {
     console.error('Webhook signature verification failed:', err.message)
-    return new Response('Webhook signature verification failed', { status: 400 })
+    console.error('Secret starts with:', webhookSecret?.substring(0, 10) || 'MISSING')
+    console.error('Signature starts with:', signature?.substring(0, 20))
+    return new Response(JSON.stringify({ error: 'Webhook signature verification failed', detail: err.message }), { status: 400, headers: { 'Content-Type': 'application/json' } })
   }
+
+  console.log('Webhook event received:', event.type)
 
   // Use service role key for admin operations
   const supabaseUrl = Deno.env.get('SUPABASE_URL')!
@@ -59,7 +63,11 @@ Deno.serve(async (req) => {
       trial_ends_at: trialEndsAt,
       updated_at: new Date().toISOString(),
     }, { onConflict: 'user_id' })
-    if (error) console.error('Failed to upsert subscription:', error.message)
+    if (error) {
+      console.error('Failed to upsert subscription:', error.message, error.details, error.hint)
+    } else {
+      console.log('Subscription upserted for user:', userId, 'plan:', plan, 'status:', status)
+    }
   }
 
   switch (event.type) {
