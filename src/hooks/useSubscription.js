@@ -110,10 +110,15 @@ export default function useSubscription() {
   const limits = PLAN_LIMITS[plan] || PLAN_LIMITS.solo
   const seats = subscription?.seats || 1
 
-  // Active = paid and current, OR in Stripe-managed trial period
-  const isActive = subscription?.status === 'active' || subscription?.status === 'trialing'
-  const isTrial = subscription?.status === 'trialing'
-  const isExpired = subscription?.status === 'expired' || subscription?.status === 'canceled'
+  // Check if subscription period has passed (client-side safeguard)
+  const periodEnded = subscription?.current_period_end
+    ? new Date(subscription.current_period_end) < new Date()
+    : false
+
+  // Active = paid and current, OR in Stripe-managed trial period — but not if period has ended
+  const isActive = !periodEnded && (subscription?.status === 'active' || subscription?.status === 'trialing')
+  const isTrial = !periodEnded && subscription?.status === 'trialing'
+  const isExpired = periodEnded || subscription?.status === 'expired' || subscription?.status === 'canceled'
   const isPastDue = subscription?.status === 'past_due'
   const needsSubscription = subscription?.status === 'no_subscription'
 
