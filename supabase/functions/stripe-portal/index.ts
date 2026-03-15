@@ -7,7 +7,7 @@
 //   APP_URL
 
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
-import Stripe from 'https://esm.sh/stripe@13.10.0?target=deno'
+import Stripe from 'https://esm.sh/stripe@11.1.0?target=deno'
 import { getCorsHeaders } from '../_shared/cors.ts'
 
 Deno.serve(async (req) => {

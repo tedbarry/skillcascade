@@ -7,12 +7,13 @@
 //   STRIPE_WEBHOOK_SECRET — your webhook signing secret
 
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
-import Stripe from 'https://esm.sh/stripe@13.10.0?target=deno'
+import Stripe from 'https://esm.sh/stripe@11.1.0?target=deno'
 
 Deno.serve(async (req) => {
   const stripeKey = Deno.env.get('STRIPE_SECRET_KEY')!
   const webhookSecret = Deno.env.get('STRIPE_WEBHOOK_SECRET')!
-  const stripe = new Stripe(stripeKey, { apiVersion: '2023-10-16' })
+  const cryptoProvider = Stripe.createSubtleCryptoProvider()
+  const stripe = new Stripe(stripeKey, { apiVersion: '2023-10-16', httpClient: Stripe.createFetchHttpClient() })
 
   const signature = req.headers.get('stripe-signature')
   if (!signature) {
@@ -23,7 +24,7 @@ Deno.serve(async (req) => {
   let event: Stripe.Event
 
   try {
-    event = await stripe.webhooks.constructEventAsync(body, signature, webhookSecret)
+    event = await stripe.webhooks.constructEventAsync(body, signature, webhookSecret, undefined, cryptoProvider)
   } catch (err) {
     console.error('Webhook signature verification failed:', err.message)
     console.error('Secret starts with:', webhookSecret?.substring(0, 10) || 'MISSING')
