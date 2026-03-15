@@ -1,43 +1,45 @@
 import useSubscription from '../hooks/useSubscription.js'
 
-/**
- * Shows contextual banners for subscription issues:
- * - Trial expiring (≤3 days left)
- * - Payment failed (past_due)
- * - Subscription ended (canceled)
- */
 export default function SubscriptionBanner({ onNavigateToPricing, onOpenBilling }) {
-  const { subscription, isActive, isTrial } = useSubscription()
+  const { subscription, isActive, isTrial, isExpired, isPastDue, trialDaysLeft, plan } = useSubscription()
 
   if (!subscription) return null
 
-  // Trial expiring warning (≤3 days left)
-  if (isTrial && subscription.current_period_end) {
-    const daysLeft = Math.ceil((new Date(subscription.current_period_end) - Date.now()) / 86_400_000)
-    if (daysLeft <= 3 && daysLeft > 0) {
-      return (
-        <Banner
-          color="amber"
-          message={`Your trial ends in ${daysLeft} day${daysLeft === 1 ? '' : 's'}. Add a payment method to keep your account active.`}
-          actionLabel="Manage Billing"
-          onAction={onOpenBilling}
-        />
-      )
-    }
-    if (daysLeft <= 0) {
+  // Free trial countdown (show when ≤7 days left)
+  if (isTrial && plan === 'free' && trialDaysLeft !== null && trialDaysLeft <= 7) {
+    if (trialDaysLeft <= 0) {
       return (
         <Banner
           color="red"
-          message="Your trial has expired. Upgrade to continue using SkillCascade."
+          message="Your free trial has ended. Subscribe to continue using SkillCascade. Your data is saved for 90 days."
           actionLabel="View Plans"
           onAction={onNavigateToPricing}
         />
       )
     }
+    return (
+      <Banner
+        color="amber"
+        message={`Your free trial ends in ${trialDaysLeft} day${trialDaysLeft === 1 ? '' : 's'}. Subscribe to keep your data and access.`}
+        actionLabel="View Plans"
+        onAction={onNavigateToPricing}
+      />
+    )
   }
 
-  // Payment failed
-  if (subscription.status === 'past_due') {
+  // Paid trial countdown (Stripe 14-day trial on paid plan)
+  if (isTrial && plan !== 'free' && trialDaysLeft !== null && trialDaysLeft <= 3) {
+    return (
+      <Banner
+        color="amber"
+        message={`Your trial ends in ${trialDaysLeft} day${trialDaysLeft === 1 ? '' : 's'}. Add a payment method to keep your account active.`}
+        actionLabel="Manage Billing"
+        onAction={onOpenBilling}
+      />
+    )
+  }
+
+  if (isPastDue) {
     return (
       <Banner
         color="amber"
@@ -48,12 +50,11 @@ export default function SubscriptionBanner({ onNavigateToPricing, onOpenBilling 
     )
   }
 
-  // Subscription canceled
-  if (subscription.status === 'canceled') {
+  if (isExpired) {
     return (
       <Banner
         color="red"
-        message="Your subscription has ended. Upgrade to regain access to premium features."
+        message="Your subscription has ended. Subscribe to regain access. Your data is saved for 90 days."
         actionLabel="View Plans"
         onAction={onNavigateToPricing}
       />
@@ -68,7 +69,6 @@ function Banner({ color, message, actionLabel, onAction }) {
     amber: 'bg-amber-50 border-amber-200 text-amber-800',
     red: 'bg-red-50 border-red-200 text-red-800',
   }
-
   const btnColors = {
     amber: 'bg-amber-600 hover:bg-amber-700 text-white',
     red: 'bg-red-600 hover:bg-red-700 text-white',
@@ -77,7 +77,6 @@ function Banner({ color, message, actionLabel, onAction }) {
   async function handleClick() {
     if (!onAction) return
     const result = await onAction()
-    // If the action returns a URL (billing portal), redirect
     if (typeof result === 'string' && result.startsWith('http')) {
       window.location.href = result
     }

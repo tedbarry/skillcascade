@@ -38,10 +38,11 @@ Deno.serve(async (req) => {
     const userId = subscription.metadata.user_id
     if (!userId) return
 
-    const plan = subscription.metadata.plan || 'starter'
+    const plan = subscription.metadata.plan || 'solo'
     const status = subscription.status
     const currentPeriodEnd = new Date(subscription.current_period_end * 1000).toISOString()
     const cancelAtPeriodEnd = subscription.cancel_at_period_end
+    const seats = subscription.items?.data?.[0]?.quantity || 1
 
     const { error } = await supabase.from('subscriptions').upsert({
       user_id: userId,
@@ -51,6 +52,7 @@ Deno.serve(async (req) => {
       status,
       current_period_end: currentPeriodEnd,
       cancel_at_period_end: cancelAtPeriodEnd,
+      seats,
       updated_at: new Date().toISOString(),
     }, { onConflict: 'user_id' })
     if (error) console.error('Failed to upsert subscription:', error.message)
@@ -64,10 +66,10 @@ Deno.serve(async (req) => {
         // Copy user_id from session metadata to subscription metadata
         if (session.client_reference_id && !subscription.metadata.user_id) {
           await stripe.subscriptions.update(subscription.id, {
-            metadata: { ...subscription.metadata, user_id: session.client_reference_id, plan: session.metadata?.plan || 'starter' },
+            metadata: { ...subscription.metadata, user_id: session.client_reference_id, plan: session.metadata?.plan || 'solo' },
           })
           subscription.metadata.user_id = session.client_reference_id
-          subscription.metadata.plan = session.metadata?.plan || 'starter'
+          subscription.metadata.plan = session.metadata?.plan || 'solo'
         }
         await upsertSubscription(subscription)
       }

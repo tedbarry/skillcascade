@@ -4,7 +4,7 @@ import { useAuth } from '../contexts/AuthContext.jsx'
 import { supabase } from '../lib/supabase.js'
 import { safeSetItem } from '../lib/safeStorage.js'
 
-const VALID_PLANS = ['starter', 'professional', 'enterprise']
+const VALID_PLANS = ['solo', 'practice', 'enterprise']
 
 export default function Signup() {
   const [searchParams] = useSearchParams()

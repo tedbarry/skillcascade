@@ -4,9 +4,12 @@
 //
 // Environment variables needed:
 //   STRIPE_SECRET_KEY — your Stripe secret key
-//   STRIPE_STARTER_PRICE_ID — Stripe price ID for Starter plan
-//   STRIPE_PROFESSIONAL_PRICE_ID — Stripe price ID for Professional plan
+//   STRIPE_SOLO_PRICE_ID — Stripe price ID for Solo plan
+//   STRIPE_PRACTICE_PRICE_ID — Stripe price ID for Practice plan
 //   STRIPE_ENTERPRISE_PRICE_ID — Stripe price ID for Enterprise plan
+//   STRIPE_SOLO_ANNUAL_PRICE_ID — Stripe annual price ID for Solo plan
+//   STRIPE_PRACTICE_ANNUAL_PRICE_ID — Stripe annual price ID for Practice plan
+//   STRIPE_ENTERPRISE_ANNUAL_PRICE_ID — Stripe annual price ID for Enterprise plan
 //   APP_URL — your app URL (e.g., https://skillcascade.com)
 
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
@@ -14,14 +17,14 @@ import Stripe from 'https://esm.sh/stripe@14?target=deno'
 import { getCorsHeaders } from '../_shared/cors.ts'
 
 const PLAN_PRICE_MAP_MONTHLY: Record<string, string> = {
-  starter: Deno.env.get('STRIPE_STARTER_PRICE_ID') || '',
-  professional: Deno.env.get('STRIPE_PROFESSIONAL_PRICE_ID') || '',
+  solo: Deno.env.get('STRIPE_SOLO_PRICE_ID') || '',
+  practice: Deno.env.get('STRIPE_PRACTICE_PRICE_ID') || '',
   enterprise: Deno.env.get('STRIPE_ENTERPRISE_PRICE_ID') || '',
 }
 
 const PLAN_PRICE_MAP_ANNUAL: Record<string, string> = {
-  starter: Deno.env.get('STRIPE_STARTER_ANNUAL_PRICE_ID') || '',
-  professional: Deno.env.get('STRIPE_PROFESSIONAL_ANNUAL_PRICE_ID') || '',
+  solo: Deno.env.get('STRIPE_SOLO_ANNUAL_PRICE_ID') || '',
+  practice: Deno.env.get('STRIPE_PRACTICE_ANNUAL_PRICE_ID') || '',
   enterprise: Deno.env.get('STRIPE_ENTERPRISE_ANNUAL_PRICE_ID') || '',
 }
 
@@ -55,7 +58,7 @@ Deno.serve(async (req) => {
       })
     }
 
-    const { plan, annual } = await req.json()
+    const { plan, annual, quantity } = await req.json()
     const priceMap = annual ? PLAN_PRICE_MAP_ANNUAL : PLAN_PRICE_MAP_MONTHLY
     const priceId = priceMap[plan]
 
@@ -80,14 +83,14 @@ Deno.serve(async (req) => {
     const sessionParams: Stripe.Checkout.SessionCreateParams = {
       mode: 'subscription',
       payment_method_types: ['card'],
-      line_items: [{ price: priceId, quantity: 1 }],
+      line_items: [{ price: priceId, quantity: quantity || 1 }],
       success_url: `${appUrl}/dashboard?checkout=success`,
       cancel_url: `${appUrl}/dashboard?checkout=cancelled`,
       client_reference_id: user.id,
       customer_email: existingSub?.stripe_customer_id ? undefined : user.email,
       subscription_data: {
         trial_period_days: 14,
-        metadata: { user_id: user.id, plan },
+        metadata: { user_id: user.id, plan, seats: quantity || 1 },
       },
       metadata: { user_id: user.id, plan },
     }

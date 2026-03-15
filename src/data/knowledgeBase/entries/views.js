@@ -582,7 +582,7 @@ Milestones are derived from assessment ratings and snapshot comparisons. No manu
     category: 'views',
     tags: ['organization', 'analytics', 'aggregate', 'caseload', 'trends', 'team', 'professional'],
     summary: 'Aggregate analytics across all clients in your organization — caseload trends, domain distributions, and team performance.',
-    body: `Organization Analytics provides a bird's-eye view of developmental data across your entire caseload. It is available on the Professional plan and above.
+    body: `Organization Analytics provides a bird's-eye view of developmental data across your entire caseload. It is available on the Practice plan and above.
 
 ## Caseload overview
 
@@ -936,20 +936,20 @@ Practitioners can submit their own templates and tools for review. Approved cont
     id: 'view-pricing',
     title: 'Pricing & Plans',
     category: 'views',
-    tags: ['pricing', 'plans', 'subscription', 'billing', 'free', 'starter', 'professional', 'enterprise', 'stripe'],
-    summary: 'Compare subscription tiers and choose the plan that fits your practice — from a free tier for solo clinicians to enterprise plans for large organizations.',
-    body: `The Pricing page shows available subscription tiers and helps you choose the right plan for your practice. All plans include HIPAA-compliant data handling and core assessment features.
+    tags: ['pricing', 'plans', 'subscription', 'billing', 'free', 'solo', 'practice', 'enterprise', 'stripe'],
+    summary: 'Compare subscription tiers and choose the plan that fits your practice — from a free trial to enterprise plans for large clinics.',
+    body: `The Pricing page shows available subscription tiers and helps you choose the right plan for your practice. All paid plans include ALL features — tiers differ by number of users and clients.
 
 ## Plans overview
 
-- **Free**: For solo clinicians getting started. Includes core assessment tools, limited client slots, and basic reporting. No credit card required.
-- **Starter**: For individual practitioners with a growing caseload. Adds more client slots, snapshot history, and CSV export.
-- **Professional**: For established practices. Includes unlimited clients, AI-powered insights, advanced reporting, and priority support.
-- **Enterprise**: For organizations and multi-site practices. Adds team management, organization branding, analytics dashboards, and a dedicated account manager.
+- **Free Trial**: 14 days of full access with up to 5 clients. No credit card required. Data saved for 90 days after trial ends.
+- **Solo** ($29/mo): For individual BCBAs. 1 user, 15 clients, all features unlocked.
+- **Practice** ($19/user/mo, min 3 users): For small-to-mid practices. 3-9 users, 30 clients per user, plus org analytics and team management.
+- **Enterprise** ($14/user/mo, min 10 users): For large clinics. 10-49 users, unlimited clients, plus branding, marketplace, and dedicated support.
 
 ## Feature comparison
 
-The pricing page includes a detailed feature comparison table so you can see exactly what each tier includes. Key differentiators include client limits, AI features, export options, and team collaboration tools.
+The pricing page includes a detailed feature comparison table. All paid plans include every clinical feature (AI, reports, goals, all visualizations). The main differentiators are user seats, client limits, and organization-level features like team management and branding.
 
 ## Billing
 

@@ -90,65 +90,71 @@ function HandshakeIcon({ className = '' }) {
 
 const TIERS = [
   {
-    name: 'Starter',
-    monthlyPrice: 49,
-    description: 'For individual BCBAs or small practices',
-    clients: 'Up to 25 clients',
-    seats: '1 BCBA seat',
+    name: 'Solo',
+    planKey: 'solo',
+    monthlyPrice: 29,
+    description: 'For individual BCBAs',
+    clients: '15 clients',
+    seats: '1 user',
+    popular: false,
     cta: 'Start Free Trial',
     features: [
-      'All assessment tools (full framework, Start Here guided assessment)',
+      'All assessment tools (full framework, guided assessment)',
       'All visualizations (sunburst, radar, skill tree, cascade, timeline)',
-      'Goal engine',
-      'Pattern alerts',
-      'Report generator (all 3 types)',
+      'AI Assistant',
+      'Goal engine & pattern alerts',
+      'Report generator (all types)',
       'Progress prediction',
+      'Clinical intelligence & dependency explorer',
       'Data export (CSV, JSON, HTML reports)',
-      'Dark mode & accessibility',
       'HIPAA-compliant data storage',
       'Email support',
     ],
   },
   {
-    name: 'Professional',
-    monthlyPrice: 149,
-    description: 'For growing practices',
-    clients: 'Up to 100 clients',
-    seats: '5 BCBA seats',
+    name: 'Practice',
+    planKey: 'practice',
+    monthlyPrice: 19,
+    description: 'For small-to-mid practices',
+    clients: '30 clients per user',
+    seats: '3–9 users',
+    perUser: true,
+    minSeats: 3,
     popular: true,
     cta: 'Start Free Trial',
     features: [
-      'Everything in Starter, plus:',
-      'AI Assistant (8 specialized tools)',
-      'Caseload dashboard',
-      'Org analytics',
+      'Everything in Solo, plus:',
+      'Multi-user access (3–9 BCBAs)',
+      'Shared client management',
+      'Organization analytics',
+      'Team management & invites',
       'Parent portal access',
       'Home practice module',
       'Messaging (BCBA-parent)',
       'Milestone celebrations',
-      'White-label branding (basic)',
       'Priority support',
-      'Data backup & restore',
     ],
   },
   {
     name: 'Enterprise',
-    monthlyPrice: 399,
-    description: 'For therapy companies & multi-location orgs',
+    planKey: 'enterprise',
+    monthlyPrice: 14,
+    description: 'For large clinics & multi-location orgs',
     clients: 'Unlimited clients',
-    seats: 'Unlimited BCBA seats',
-    cta: 'Contact Sales',
+    seats: '10–49 users',
+    perUser: true,
+    minSeats: 10,
+    cta: 'Start Free Trial',
     features: [
-      'Everything in Professional, plus:',
-      'Multi-location support',
-      'Full white-label branding (custom domain)',
-      'Custom assessments & skill libraries',
+      'Everything in Practice, plus:',
+      'Multi-user access (10–49 BCBAs)',
+      'White-label branding (reports & certificates)',
       'Marketplace access',
+      'Custom assessments & skill libraries',
       'API access for integrations',
       'Central Reach / Raven / Passage integration',
       'Outcome certification',
       'Dedicated account manager',
-      'Custom onboarding',
       'SLA guarantee',
     ],
   },
@@ -240,8 +246,10 @@ function BillingToggle({ isAnnual, onChange }) {
 }
 
 function PricingCard({ tier, isAnnual, onCheckout, checkoutLoading }) {
-  const annualMonthly = Math.round(tier.monthlyPrice * 0.8)
-  const displayPrice = isAnnual ? annualMonthly : tier.monthlyPrice
+  const annualPrice = Math.round(tier.monthlyPrice * 0.8)
+  const displayPrice = isAnnual ? annualPrice : tier.monthlyPrice
+  const isPerUser = tier.perUser
+  const minTotal = isPerUser ? displayPrice * tier.minSeats : displayPrice
 
   return (
     <div
@@ -279,11 +287,16 @@ function PricingCard({ tier, isAnnual, onCheckout, checkoutLoading }) {
           <span className="font-display text-4xl font-extrabold text-warm-900">
             ${displayPrice}
           </span>
-          <span className="text-sm text-warm-500">/month</span>
+          <span className="text-sm text-warm-500">{isPerUser ? '/user/mo' : '/month'}</span>
         </div>
+        {isPerUser && (
+          <p className="mt-1 text-xs text-warm-600">
+            Starting at ${minTotal}/mo ({tier.minSeats} users)
+          </p>
+        )}
         {isAnnual && (
           <p className="mt-1 text-xs text-sage-600">
-            Billed annually (${displayPrice * 12}/year)
+            Billed annually (${displayPrice * 12}{isPerUser ? '/user' : ''}/year)
           </p>
         )}
 
@@ -296,7 +309,7 @@ function PricingCard({ tier, isAnnual, onCheckout, checkoutLoading }) {
         {/* CTA */}
         {onCheckout ? (
           <button
-            onClick={() => onCheckout(tier.name.toLowerCase(), isAnnual)}
+            onClick={() => onCheckout(tier.planKey, isAnnual)}
             disabled={checkoutLoading}
             className={`mt-6 w-full rounded-lg py-2.5 text-sm font-semibold transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 min-h-[44px] disabled:opacity-50 ${
               tier.popular
@@ -310,7 +323,7 @@ function PricingCard({ tier, isAnnual, onCheckout, checkoutLoading }) {
           </button>
         ) : (
           <Link
-            to={`/signup?plan=${tier.name.toLowerCase()}`}
+            to={`/signup?plan=${tier.planKey}`}
             className={`mt-6 w-full rounded-lg py-2.5 text-sm font-semibold transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 block text-center min-h-[44px] ${
               tier.popular
                 ? 'bg-sage-500 text-white hover:bg-sage-600 focus-visible:ring-sage-500'
@@ -358,41 +371,40 @@ function PricingCard({ tier, isAnnual, onCheckout, checkoutLoading }) {
 
 const COMPARISON_FEATURES = [
   { category: 'Capacity' },
-  { feature: 'Client limit', starter: 'Up to 25', professional: 'Up to 100', enterprise: 'Unlimited' },
-  { feature: 'BCBA seats', starter: '1', professional: '5', enterprise: 'Unlimited' },
-  { feature: 'Multi-location support', starter: false, professional: false, enterprise: true },
+  { feature: 'Client limit', solo: '15', practice: '30 per user', enterprise: 'Unlimited' },
+  { feature: 'Users (seats)', solo: '1', practice: '3–9', enterprise: '10–49' },
+  { feature: '50+ users', solo: false, practice: false, enterprise: 'Contact us' },
   { category: 'Assessment & Visualization' },
-  { feature: 'Full assessment framework', starter: true, professional: true, enterprise: true },
-  { feature: 'Start Here guided assessment', starter: true, professional: true, enterprise: true },
-  { feature: 'All visualizations', starter: true, professional: true, enterprise: true },
-  { feature: 'Custom assessments & skill libraries', starter: false, professional: false, enterprise: true },
+  { feature: 'Full assessment framework', solo: true, practice: true, enterprise: true },
+  { feature: 'Guided assessment (Start Here)', solo: true, practice: true, enterprise: true },
+  { feature: 'All visualizations', solo: true, practice: true, enterprise: true },
+  { feature: 'Clinical intelligence', solo: true, practice: true, enterprise: true },
+  { feature: 'Custom assessments & skill libraries', solo: false, practice: false, enterprise: true },
   { category: 'Clinical Tools' },
-  { feature: 'Goal engine', starter: true, professional: true, enterprise: true },
-  { feature: 'Pattern alerts', starter: true, professional: true, enterprise: true },
-  { feature: 'Progress prediction', starter: true, professional: true, enterprise: true },
-  { feature: 'AI Assistant (8 tools)', starter: false, professional: true, enterprise: true },
-  { feature: 'Caseload dashboard', starter: false, professional: true, enterprise: true },
-  { feature: 'Org analytics', starter: false, professional: true, enterprise: true },
+  { feature: 'AI Assistant', solo: true, practice: true, enterprise: true },
+  { feature: 'Goal engine', solo: true, practice: true, enterprise: true },
+  { feature: 'Pattern alerts', solo: true, practice: true, enterprise: true },
+  { feature: 'Progress prediction', solo: true, practice: true, enterprise: true },
+  { feature: 'Caseload dashboard', solo: true, practice: true, enterprise: true },
   { category: 'Reports & Export' },
-  { feature: 'Report generator (3 types)', starter: true, professional: true, enterprise: true },
-  { feature: 'Data export (CSV, JSON, HTML)', starter: true, professional: true, enterprise: true },
-  { feature: 'API access for integrations', starter: false, professional: false, enterprise: true },
-  { feature: 'Central Reach / Raven / Passage', starter: false, professional: false, enterprise: true },
-  { category: 'Collaboration & Branding' },
-  { feature: 'Parent portal access', starter: false, professional: true, enterprise: true },
-  { feature: 'Home practice module', starter: false, professional: true, enterprise: true },
-  { feature: 'Messaging (BCBA-parent)', starter: false, professional: true, enterprise: true },
-  { feature: 'White-label branding', starter: false, professional: 'Basic', enterprise: 'Full (custom domain)' },
-  { feature: 'Marketplace access', starter: false, professional: false, enterprise: true },
+  { feature: 'Report generator (all types)', solo: true, practice: true, enterprise: true },
+  { feature: 'Data export (CSV, JSON, HTML)', solo: true, practice: true, enterprise: true },
+  { feature: 'Outcome certification', solo: false, practice: false, enterprise: true },
+  { feature: 'API access for integrations', solo: false, practice: false, enterprise: true },
+  { feature: 'Central Reach / Raven / Passage', solo: false, practice: false, enterprise: true },
+  { category: 'Collaboration' },
+  { feature: 'Organization analytics', solo: false, practice: true, enterprise: true },
+  { feature: 'Team management & invites', solo: false, practice: true, enterprise: true },
+  { feature: 'Parent portal access', solo: false, practice: true, enterprise: true },
+  { feature: 'Messaging (BCBA-parent)', solo: false, practice: true, enterprise: true },
+  { feature: 'White-label branding', solo: false, practice: false, enterprise: true },
+  { feature: 'Marketplace access', solo: false, practice: false, enterprise: true },
   { category: 'Security & Support' },
-  { feature: 'HIPAA-compliant storage', starter: true, professional: true, enterprise: true },
-  { feature: 'Encryption at rest & in transit', starter: true, professional: true, enterprise: true },
-  { feature: 'SSO / SAML', starter: false, professional: false, enterprise: true },
-  { feature: 'Data backup & restore', starter: false, professional: true, enterprise: true },
-  { feature: 'Outcome certification', starter: false, professional: false, enterprise: true },
-  { feature: 'Support level', starter: 'Email', professional: 'Priority', enterprise: 'Dedicated account manager' },
-  { feature: 'SLA guarantee', starter: false, professional: false, enterprise: true },
-  { feature: 'Custom onboarding', starter: false, professional: false, enterprise: true },
+  { feature: 'HIPAA-compliant storage', solo: true, practice: true, enterprise: true },
+  { feature: 'Encryption at rest & in transit', solo: true, practice: true, enterprise: true },
+  { feature: 'Data backup & restore', solo: true, practice: true, enterprise: true },
+  { feature: 'Support level', solo: 'Email', practice: 'Priority', enterprise: 'Dedicated account manager' },
+  { feature: 'SLA guarantee', solo: false, practice: false, enterprise: true },
 ]
 
 function ComparisonCell({ value }) {
@@ -475,7 +487,7 @@ function FeatureComparisonTable({ isAnnual }) {
                       >
                         <div>{tier.name}</div>
                         <div className="mt-0.5 text-xs font-medium text-warm-400">
-                          ${price}/mo
+                          ${price}{tier.perUser ? '/user' : ''}/mo
                         </div>
                       </th>
                     )
@@ -507,10 +519,10 @@ function FeatureComparisonTable({ isAnnual }) {
                         {row.feature}
                       </td>
                       <td className="py-3 px-3 text-center">
-                        <ComparisonCell value={row.starter} />
+                        <ComparisonCell value={row.solo} />
                       </td>
                       <td className={`py-3 px-3 text-center ${TIERS[1].popular ? 'bg-sage-50/40' : ''}`}>
-                        <ComparisonCell value={row.professional} />
+                        <ComparisonCell value={row.practice} />
                       </td>
                       <td className="py-3 px-3 text-center">
                         <ComparisonCell value={row.enterprise} />
