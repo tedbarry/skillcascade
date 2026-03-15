@@ -772,7 +772,7 @@ export default function Landing() {
           {/* CTAs */}
           <div className="flex flex-col sm:flex-row gap-4 justify-center mb-12">
             <Link
-              to="/dashboard"
+              to="/signup"
               className="bg-sage-500 text-white px-8 py-4 rounded-xl hover:bg-sage-600 transition-colors text-lg font-semibold shadow-lg shadow-sage-500/20"
             >
               Start Free Trial
@@ -1068,7 +1068,7 @@ export default function Landing() {
                   </ul>
                   <div>
                     <Link
-                      to="/dashboard"
+                      to="/signup"
                       className="inline-flex items-center gap-2 bg-sage-500 text-white px-6 py-3 rounded-xl hover:bg-sage-600 transition-colors font-semibold text-sm shadow-lg shadow-sage-500/20"
                     >
                       Try It Free
