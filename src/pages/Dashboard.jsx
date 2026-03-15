@@ -171,7 +171,7 @@ export const VIEWS = {
 export default function Dashboard() {
   const { user } = useAuth()
   const { showToast } = useToast()
-  const { hasFeature, plan, loading: subLoading, needsSubscription, startCheckout, openBillingPortal, refreshSubscription } = useSubscription()
+  const { hasFeature, plan, loading: subLoading, needsSubscription, isExpired, startCheckout, openBillingPortal, refreshSubscription } = useSubscription()
   const { isPhone, isTablet, isDesktop } = useResponsive()
   const sunburstHint = useContextualHint('hint-sunburst')
   const clientKey = user ? `skillcascade_client_${user.id}` : null
@@ -764,6 +764,66 @@ export default function Dashboard() {
               ))}
             </div>
             <p className="text-xs text-warm-400">Cancel anytime during your trial. No commitment.</p>
+          </div>
+        </div>
+      </div>
+    )
+  }
+
+  // Hard block for expired/canceled subscriptions
+  if (!subLoading && isExpired) {
+    return (
+      <div className="min-h-screen bg-warm-50 flex items-center justify-center px-4">
+        <div className="w-full max-w-md text-center">
+          <div className="bg-white rounded-xl border border-red-200 shadow-sm p-8">
+            <h1 className="text-2xl font-bold text-warm-800 font-display mb-2">
+              Skill<span className="text-sage-500">Cascade</span>
+            </h1>
+            <h2 className="text-lg font-semibold text-red-700 mb-3">Your subscription has ended</h2>
+            <p className="text-sm text-warm-500 mb-6">
+              Your data is saved for 90 days. Resubscribe to regain full access.
+            </p>
+            {checkoutError && (
+              <div className="mb-4 px-4 py-3 rounded-lg bg-red-50 border border-red-200 text-sm text-red-700">
+                {checkoutError}
+              </div>
+            )}
+            <div className="space-y-2 mb-6">
+              {[
+                { key: 'solo', name: 'Solo', price: '$29/mo', desc: '1 user, 15 clients' },
+                { key: 'practice', name: 'Practice', price: '$19/user/mo', desc: '3–9 users' },
+                { key: 'enterprise', name: 'Enterprise', price: '$14/user/mo', desc: '10–49 users' },
+              ].map((p) => (
+                <button
+                  key={p.key}
+                  disabled={checkoutLoading}
+                  onClick={async () => {
+                    setCheckoutError(null)
+                    setCheckoutLoading(true)
+                    try {
+                      const url = await startCheckout(p.key)
+                      if (url) {
+                        window.location.href = url
+                      } else {
+                        setCheckoutError('No checkout URL returned. Please try again.')
+                      }
+                    } catch (err) {
+                      setCheckoutError(err.message || 'Could not start checkout. Please try again.')
+                    } finally {
+                      setCheckoutLoading(false)
+                    }
+                  }}
+                  className="w-full flex items-center justify-between px-4 py-3 rounded-lg border-2 border-warm-200 hover:border-sage-400 hover:bg-sage-50 transition-all text-sm min-h-[44px] disabled:opacity-50"
+                >
+                  <div className="text-left">
+                    <span className="font-semibold text-warm-800">{p.name}</span>
+                    <span className="text-warm-400 ml-2 text-xs">{p.desc}</span>
+                  </div>
+                  <span className="text-xs font-semibold text-sage-600">{p.price}</span>
+                </button>
+              ))}
+            </div>
+            <p className="text-xs text-warm-400">Questions? Contact support@skillcascade.com</p>
           </div>
         </div>
       </div>
