@@ -52,6 +52,22 @@ export async function getClient(id) {
   return data
 }
 
+export async function assignClientToUser(clientId, userId, role = 'bcba') {
+  const { error } = await supabase
+    .from('client_assignments')
+    .upsert({ client_id: clientId, user_id: userId, role }, { onConflict: 'client_id,user_id' })
+  if (error) throw error
+}
+
+export async function unassignClientFromUser(clientId, userId) {
+  const { error } = await supabase
+    .from('client_assignments')
+    .delete()
+    .eq('client_id', clientId)
+    .eq('user_id', userId)
+  if (error) throw error
+}
+
 export async function deleteClient(id) {
   // Soft delete for HIPAA compliance
   const { error } = await supabase
