@@ -93,6 +93,7 @@ Deno.serve(async (req) => {
       cancel_url: `${appUrl}/dashboard?checkout=cancelled`,
       client_reference_id: user.id,
       customer_email: existingSub?.stripe_customer_id ? undefined : user.email,
+      allow_promotion_codes: true,
       subscription_data: {
         trial_period_days: 14,
         metadata: { user_id: user.id, plan, seats: String(seats) },
