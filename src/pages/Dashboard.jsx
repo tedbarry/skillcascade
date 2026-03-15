@@ -636,6 +636,9 @@ export default function Dashboard() {
   const showSidePanels = !fullWidthViews.includes(activeView)
 
   // Hard gate: must have a subscription to access the dashboard
+  const [checkoutError, setCheckoutError] = useState(null)
+  const [checkoutLoading, setCheckoutLoading] = useState(false)
+
   if (!subLoading && needsSubscription) {
     return (
       <div className="min-h-screen bg-warm-50 flex items-center justify-center px-4">
@@ -648,6 +651,11 @@ export default function Dashboard() {
             <p className="text-sm text-warm-500 mb-6">
               Every plan includes a 14-day free trial. You won't be charged until the trial ends.
             </p>
+            {checkoutError && (
+              <div className="mb-4 px-4 py-3 rounded-lg bg-red-50 border border-red-200 text-sm text-red-700">
+                {checkoutError}
+              </div>
+            )}
             <div className="space-y-2 mb-6">
               {[
                 { key: 'solo', name: 'Solo', price: '$29/mo', desc: '1 user, 15 clients' },
@@ -656,15 +664,24 @@ export default function Dashboard() {
               ].map((p) => (
                 <button
                   key={p.key}
+                  disabled={checkoutLoading}
                   onClick={async () => {
+                    setCheckoutError(null)
+                    setCheckoutLoading(true)
                     try {
                       const url = await startCheckout(p.key)
-                      if (url) window.location.href = url
-                    } catch {
-                      showToast('Could not start checkout. Please try again.', 'error')
+                      if (url) {
+                        window.location.href = url
+                      } else {
+                        setCheckoutError('No checkout URL returned. Please try again.')
+                      }
+                    } catch (err) {
+                      setCheckoutError(err.message || 'Could not start checkout. Please try again.')
+                    } finally {
+                      setCheckoutLoading(false)
                     }
                   }}
-                  className="w-full flex items-center justify-between px-4 py-3 rounded-lg border-2 border-warm-200 hover:border-sage-400 hover:bg-sage-50 transition-all text-sm min-h-[44px]"
+                  className="w-full flex items-center justify-between px-4 py-3 rounded-lg border-2 border-warm-200 hover:border-sage-400 hover:bg-sage-50 transition-all text-sm min-h-[44px] disabled:opacity-50"
                 >
                   <div className="text-left">
                     <span className="font-semibold text-warm-800">{p.name}</span>
