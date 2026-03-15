@@ -2,10 +2,9 @@ import { useState, useEffect, useCallback, useMemo } from 'react'
 import { supabase } from '../lib/supabase.js'
 import { useAuth } from '../contexts/AuthContext.jsx'
 
-// New plan model: Solo / Practice / Enterprise
-// All paid plans get ALL features. Tiers differ by seats + clients.
+// Plan model: Solo / Practice / Enterprise
+// All plans get ALL features during trial and paid. Tiers differ by seats + clients.
 const PLAN_LIMITS = {
-  free: { clients: 1, seats: 1, allFeatures: false },
   solo: { clients: 15, seats: 1, allFeatures: true },
   practice: { clients: 30, seats: 9, allFeatures: true }, // 30 clients PER USER, 3-9 seats
   enterprise: { clients: Infinity, seats: 49, allFeatures: true }, // 10-49 seats
@@ -19,10 +18,9 @@ const FEATURE_ACCESS = {
   marketplace: 'enterprise',
 }
 
-const PLAN_RANK = { free: 0, solo: 1, practice: 2, enterprise: 3 }
+const PLAN_RANK = { solo: 1, practice: 2, enterprise: 3 }
 
 export const PLAN_LABELS = {
-  free: 'Free Trial',
   solo: 'Solo',
   practice: 'Practice',
   enterprise: 'Enterprise',
@@ -41,7 +39,6 @@ export const FEATURE_META = {
   marketplace: { label: 'Marketplace', description: 'Browse and install community add-ons, templates, and clinical tools.' },
 }
 
-const TRIAL_DURATION_DAYS = 14
 const DATA_GRACE_PERIOD_DAYS = 90
 
 export default function useSubscription() {
@@ -84,7 +81,6 @@ export default function useSubscription() {
             .from('subscriptions')
             .select('*')
             .in('user_id', orgMembers.map(m => m.id))
-            .neq('plan', 'free')
             .order('created_at', { ascending: false })
             .limit(1)
             .single()
@@ -97,16 +93,11 @@ export default function useSubscription() {
         }
       }
 
-      // No subscription found = free trial
-      const createdAt = new Date(user.created_at)
-      const trialEnd = new Date(createdAt.getTime() + TRIAL_DURATION_DAYS * 86_400_000)
-      const isTrialExpired = Date.now() > trialEnd.getTime()
-
+      // No subscription found = needs to pick a plan and subscribe
       setSubscription({
-        plan: 'free',
-        status: isTrialExpired ? 'expired' : 'trialing',
-        trial_ends_at: trialEnd.toISOString(),
-        seats: 1,
+        plan: null,
+        status: 'no_subscription',
+        seats: 0,
       })
       setLoading(false)
     }
@@ -114,16 +105,17 @@ export default function useSubscription() {
     loadSubscription()
   }, [user, profile])
 
-  const rawPlan = subscription?.plan || 'free'
+  const rawPlan = subscription?.plan || null
   const plan = isSuperAdmin ? 'enterprise' : rawPlan
-  const limits = PLAN_LIMITS[plan] || PLAN_LIMITS.free
+  const limits = PLAN_LIMITS[plan] || PLAN_LIMITS.solo
   const seats = subscription?.seats || 1
 
-  // Active = paid and current, OR in trial period
+  // Active = paid and current, OR in Stripe-managed trial period
   const isActive = subscription?.status === 'active' || subscription?.status === 'trialing'
   const isTrial = subscription?.status === 'trialing'
   const isExpired = subscription?.status === 'expired' || subscription?.status === 'canceled'
   const isPastDue = subscription?.status === 'past_due'
+  const needsSubscription = subscription?.status === 'no_subscription'
 
   // Trial days remaining
   const trialDaysLeft = useMemo(() => {
@@ -142,11 +134,11 @@ export default function useSubscription() {
 
   const hasFeature = useCallback((featureKey) => {
     if (isSuperAdmin) return true
-    // All paid plans get all features except org-level ones
+    if (!plan || needsSubscription) return false
     const minPlan = FEATURE_ACCESS[featureKey]
-    if (!minPlan) return plan !== 'free' // Non-gated features available on any paid plan
+    if (!minPlan) return true // Non-gated features available on any paid plan (including trial)
     return (PLAN_RANK[plan] || 0) >= (PLAN_RANK[minPlan] || 0)
-  }, [plan, isSuperAdmin])
+  }, [plan, isSuperAdmin, needsSubscription])
 
   const getRequiredPlan = useCallback((featureKey) => {
     return FEATURE_ACCESS[featureKey] || 'solo'
@@ -249,6 +241,7 @@ export default function useSubscription() {
     isExpired,
     isPastDue,
     isSuperAdmin,
+    needsSubscription,
     trialDaysLeft,
     graceExpiry,
     loading,

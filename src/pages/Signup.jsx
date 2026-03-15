@@ -6,12 +6,19 @@ import { safeSetItem } from '../lib/safeStorage.js'
 
 const VALID_PLANS = ['solo', 'practice', 'enterprise']
 
+const PLAN_INFO = {
+  solo: { name: 'Solo', price: '$29/mo', desc: '1 user, 15 clients' },
+  practice: { name: 'Practice', price: '$19/user/mo', desc: '3-9 users, 30 clients/user' },
+  enterprise: { name: 'Enterprise', price: '$14/user/mo', desc: '10-49 users, unlimited clients' },
+}
+
 export default function Signup() {
   const [searchParams] = useSearchParams()
-  const selectedPlan = useMemo(() => {
+  const preselectedPlan = useMemo(() => {
     const p = searchParams.get('plan')?.toLowerCase()
     return VALID_PLANS.includes(p) ? p : null
   }, [searchParams])
+  const [selectedPlan, setSelectedPlan] = useState(preselectedPlan || 'solo')
 
   // Invite token support
   const inviteToken = searchParams.get('invite')
@@ -92,7 +99,12 @@ export default function Signup() {
         metadata.org_name = orgName.trim()
       }
 
-      await signUp(email, password, metadata)
+      const data = await signUp(email, password, metadata)
+
+      // Supabase returns success but empty identities when rate-limited or email exists
+      if (data?.user?.identities?.length === 0) {
+        throw new Error('Unable to create account. This email may already be registered, or you may need to wait a moment before trying again.')
+      }
 
       // Mark invite token as used
       if (invite) {
@@ -102,10 +114,8 @@ export default function Signup() {
           .eq('token', invite.token)
       }
 
-      // Persist selected plan so it survives the email-confirm→login flow
-      if (selectedPlan) {
-        safeSetItem('skillcascade_pending_plan', selectedPlan)
-      }
+      // Always persist selected plan — user must go through Stripe checkout after email confirm
+      safeSetItem('skillcascade_pending_plan', selectedPlan)
 
       setSuccess(true)
     } catch (err) {
@@ -126,9 +136,12 @@ export default function Signup() {
               </svg>
             </div>
             <h2 className="text-lg font-bold text-warm-800 font-display mb-2">Check your email</h2>
-            <p className="text-sm text-warm-500 mb-6">
+            <p className="text-sm text-warm-500 mb-4">
               We sent a confirmation link to <strong className="text-warm-700">{email}</strong>.
               Click it to activate your account.
+            </p>
+            <p className="text-xs text-warm-400 mb-6">
+              After confirming, you'll set up your {PLAN_INFO[selectedPlan]?.name || 'Solo'} plan with a 14-day free trial. No charge until the trial ends.
             </p>
             <Link
               to="/login"
@@ -155,11 +168,6 @@ export default function Signup() {
             <div className="mt-2 inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-sage-50 border border-sage-200 text-xs font-medium text-sage-700">
               Joining {invite.orgName || 'organization'} as {invite.role}
             </div>
-          )}
-          {selectedPlan && !invite && (
-            <p className="text-xs text-sage-600 mt-1 font-medium capitalize">
-              Selected plan: {selectedPlan}
-            </p>
           )}
         </div>
 
@@ -285,12 +293,48 @@ export default function Signup() {
             </div>
           )}
 
+          {/* Plan selector — hidden when joining via invite (inherits org plan) */}
+          {!invite && (
+            <div>
+              <label className="block text-xs font-medium text-warm-600 mb-2">
+                Choose your plan
+              </label>
+              <div className="space-y-2">
+                {VALID_PLANS.map((p) => (
+                  <button
+                    key={p}
+                    type="button"
+                    onClick={() => setSelectedPlan(p)}
+                    className={`w-full flex items-center justify-between px-3 py-2.5 rounded-lg border-2 text-sm transition-all ${
+                      selectedPlan === p
+                        ? 'border-sage-400 bg-sage-50'
+                        : 'border-warm-200 hover:border-warm-300'
+                    }`}
+                  >
+                    <div className="text-left">
+                      <span className={`font-medium ${selectedPlan === p ? 'text-sage-700' : 'text-warm-700'}`}>
+                        {PLAN_INFO[p].name}
+                      </span>
+                      <span className="text-warm-400 ml-2 text-xs">{PLAN_INFO[p].desc}</span>
+                    </div>
+                    <span className={`text-xs font-semibold ${selectedPlan === p ? 'text-sage-600' : 'text-warm-500'}`}>
+                      {PLAN_INFO[p].price}
+                    </span>
+                  </button>
+                ))}
+              </div>
+              <p className="text-[11px] text-warm-400 mt-1.5">
+                14-day free trial on all plans. You won't be charged until the trial ends.
+              </p>
+            </div>
+          )}
+
           <button
             type="submit"
             disabled={loading || inviteLoading || !!inviteError}
             className="w-full py-2.5 min-h-[44px] rounded-lg bg-sage-500 text-white text-sm font-semibold hover:bg-sage-600 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
           >
-            {loading ? 'Creating account...' : invite ? `Join ${invite.orgName || 'Organization'}` : 'Create Account'}
+            {loading ? 'Creating account...' : invite ? `Join ${invite.orgName || 'Organization'}` : `Start Free Trial — ${PLAN_INFO[selectedPlan]?.name || 'Solo'}`}
           </button>
         </form>
 

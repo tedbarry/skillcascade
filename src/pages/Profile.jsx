@@ -442,21 +442,21 @@ export default function Profile() {
           <div className="flex items-center justify-between">
             <div>
               <div className="text-sm text-warm-800 font-medium capitalize">
-                {plan === 'free' ? 'Free Plan' : `${plan} Plan`}
+                {plan ? `${plan.charAt(0).toUpperCase() + plan.slice(1)} Plan` : 'No Plan'}
                 {isTrial && (
                   <span className="ml-2 inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-semibold bg-sage-50 text-sage-700 border border-sage-200">
                     Trial
                   </span>
                 )}
               </div>
-              {subscription?.current_period_end && plan !== 'free' && (
+              {subscription?.current_period_end && plan && (
                 <div className="text-xs text-warm-500 mt-0.5">
                   {subscription.cancel_at_period_end ? 'Cancels' : 'Renews'} on{' '}
                   {new Date(subscription.current_period_end).toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })}
                 </div>
               )}
             </div>
-            {plan !== 'free' ? (
+            {plan ? (
               <button
                 onClick={async () => {
                   const url = await openBillingPortal()
@@ -474,7 +474,7 @@ export default function Profile() {
                 }}
                 className="px-4 py-2 rounded-lg bg-sage-500 text-white text-sm font-medium hover:bg-sage-600 transition-colors min-h-[44px] inline-flex items-center"
               >
-                Upgrade
+                Choose Plan
               </button>
             )}
           </div>

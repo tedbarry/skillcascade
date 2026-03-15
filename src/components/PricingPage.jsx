@@ -183,7 +183,7 @@ const FAQ_ITEMS = [
   {
     question: 'What happens after the free trial?',
     answer:
-      "You'll be prompted to choose a plan and enter payment details. If you don't choose a plan, your account will be paused (not deleted) and your data will be retained for 90 days so you can pick up where you left off.",
+      "Your card on file will be charged automatically when the trial ends. If you cancel before the trial ends, you won't be charged. After cancellation, your data is retained for 90 days so you can pick up where you left off.",
   },
   {
     question: 'Do you offer discounts for nonprofits?',
@@ -337,7 +337,7 @@ function PricingCard({ tier, isAnnual, onCheckout, checkoutLoading }) {
         )}
         {tier.cta !== 'Contact Sales' && (
           <p className="mt-2 text-center text-xs text-warm-400">
-            14-day free trial. No credit card required.
+            14-day free trial. Cancel anytime.
           </p>
         )}
       </div>
@@ -645,8 +645,8 @@ function CTABanner() {
         Ready to transform your assessment workflow?
       </h2>
       <p className="mx-auto mt-3 max-w-md text-sage-100 text-sm">
-        Start your free trial today. No credit card required. Full access for 14
-        days.
+        Start your 14-day free trial today. Full access to every feature.
+        Cancel anytime before the trial ends.
       </p>
       <div className="mt-8 flex flex-col items-center gap-3 sm:flex-row sm:justify-center">
         <Link

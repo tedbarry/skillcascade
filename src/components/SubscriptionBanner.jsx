@@ -1,19 +1,31 @@
 import useSubscription from '../hooks/useSubscription.js'
 
 export default function SubscriptionBanner({ onNavigateToPricing, onOpenBilling }) {
-  const { subscription, isActive, isTrial, isExpired, isPastDue, trialDaysLeft, plan } = useSubscription()
+  const { subscription, isActive, isTrial, isExpired, isPastDue, needsSubscription, trialDaysLeft, plan } = useSubscription()
 
   if (!subscription) return null
 
-  // Free trial — always show for trial users
-  if (isTrial && plan === 'free' && trialDaysLeft !== null) {
+  // No subscription yet — prompt to pick a plan
+  if (needsSubscription) {
+    return (
+      <Banner
+        color="amber"
+        message="Choose a plan to get started. Every plan includes a 14-day free trial."
+        actionLabel="View Plans"
+        onAction={onNavigateToPricing}
+      />
+    )
+  }
+
+  // Stripe-managed trial — show countdown from day 1
+  if (isTrial && trialDaysLeft !== null) {
     if (trialDaysLeft <= 0) {
       return (
         <Banner
           color="red"
-          message="Your free trial has ended. Subscribe to continue using SkillCascade. Your data is saved for 90 days."
-          actionLabel="View Plans"
-          onAction={onNavigateToPricing}
+          message="Your trial has ended and your card will be charged. Manage your subscription in billing."
+          actionLabel="Manage Billing"
+          onAction={onOpenBilling}
         />
       )
     }
@@ -21,9 +33,9 @@ export default function SubscriptionBanner({ onNavigateToPricing, onOpenBilling 
       return (
         <Banner
           color="amber"
-          message={`Your free trial ends in ${trialDaysLeft} day${trialDaysLeft === 1 ? '' : 's'}. Subscribe to keep your data and access.`}
-          actionLabel="View Plans"
-          onAction={onNavigateToPricing}
+          message={`Your trial ends in ${trialDaysLeft} day${trialDaysLeft === 1 ? '' : 's'}. You'll be charged automatically unless you cancel.`}
+          actionLabel="Manage Billing"
+          onAction={onOpenBilling}
         />
       )
     }
@@ -31,19 +43,7 @@ export default function SubscriptionBanner({ onNavigateToPricing, onOpenBilling 
     return (
       <Banner
         color="info"
-        message={`Free trial — ${trialDaysLeft} day${trialDaysLeft === 1 ? '' : 's'} remaining`}
-        actionLabel="View Plans"
-        onAction={onNavigateToPricing}
-      />
-    )
-  }
-
-  // Paid trial countdown (Stripe 14-day trial on paid plan)
-  if (isTrial && plan !== 'free' && trialDaysLeft !== null && trialDaysLeft <= 3) {
-    return (
-      <Banner
-        color="amber"
-        message={`Your trial ends in ${trialDaysLeft} day${trialDaysLeft === 1 ? '' : 's'}. Add a payment method to keep your account active.`}
+        message={`${plan ? plan.charAt(0).toUpperCase() + plan.slice(1) : ''} plan trial — ${trialDaysLeft} day${trialDaysLeft === 1 ? '' : 's'} remaining. No charge until trial ends.`}
         actionLabel="Manage Billing"
         onAction={onOpenBilling}
       />

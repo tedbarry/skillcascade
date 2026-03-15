@@ -171,7 +171,7 @@ export const VIEWS = {
 export default function Dashboard() {
   const { user } = useAuth()
   const { showToast } = useToast()
-  const { hasFeature, plan, loading: subLoading, startCheckout, openBillingPortal } = useSubscription()
+  const { hasFeature, plan, loading: subLoading, needsSubscription, startCheckout, openBillingPortal } = useSubscription()
   const { isPhone, isTablet, isDesktop } = useResponsive()
   const sunburstHint = useContextualHint('hint-sunburst')
   const clientKey = user ? `skillcascade_client_${user.id}` : null
@@ -421,7 +421,7 @@ export default function Dashboard() {
     if (subLoading) return
     const pendingPlan = safeGetItem('skillcascade_pending_plan')
     safeRemoveItem('skillcascade_pending_plan')
-    if (pendingPlan && plan === 'free') {
+    if (pendingPlan && needsSubscription) {
       startCheckout(pendingPlan).then((url) => {
         if (url) window.location.href = url
       }).catch(() => {
@@ -634,6 +634,52 @@ export default function Dashboard() {
   // Assessment, tree, cascade, and timeline views are full-width — no side panels
   const fullWidthViews = [VIEWS.HOME, VIEWS.ASSESS, VIEWS.TREE, VIEWS.CASCADE, VIEWS.EXPLORER, VIEWS.TIMELINE, VIEWS.QUICK_ASSESS, VIEWS.GOALS, VIEWS.ALERTS, VIEWS.REPORTS, VIEWS.PARENT, VIEWS.CASELOAD, VIEWS.MILESTONES, VIEWS.PRACTICE, VIEWS.ORG_ANALYTICS, VIEWS.PREDICTIONS, VIEWS.BRANDING, VIEWS.MESSAGES, VIEWS.DATA, VIEWS.ACCESSIBILITY, VIEWS.PRICING, VIEWS.MARKETPLACE, VIEWS.CERTIFICATIONS, VIEWS.COMPARE]
   const showSidePanels = !fullWidthViews.includes(activeView)
+
+  // Hard gate: must have a subscription to access the dashboard
+  if (!subLoading && needsSubscription) {
+    return (
+      <div className="min-h-screen bg-warm-50 flex items-center justify-center px-4">
+        <div className="w-full max-w-md text-center">
+          <div className="bg-white rounded-xl border border-warm-200 shadow-sm p-8">
+            <h1 className="text-2xl font-bold text-warm-800 font-display mb-2">
+              Skill<span className="text-sage-500">Cascade</span>
+            </h1>
+            <h2 className="text-lg font-semibold text-warm-700 mb-3">Choose a plan to get started</h2>
+            <p className="text-sm text-warm-500 mb-6">
+              Every plan includes a 14-day free trial. You won't be charged until the trial ends.
+            </p>
+            <div className="space-y-2 mb-6">
+              {[
+                { key: 'solo', name: 'Solo', price: '$29/mo', desc: '1 user, 15 clients' },
+                { key: 'practice', name: 'Practice', price: '$19/user/mo', desc: '3–9 users' },
+                { key: 'enterprise', name: 'Enterprise', price: '$14/user/mo', desc: '10–49 users' },
+              ].map((p) => (
+                <button
+                  key={p.key}
+                  onClick={async () => {
+                    try {
+                      const url = await startCheckout(p.key)
+                      if (url) window.location.href = url
+                    } catch {
+                      showToast('Could not start checkout. Please try again.', 'error')
+                    }
+                  }}
+                  className="w-full flex items-center justify-between px-4 py-3 rounded-lg border-2 border-warm-200 hover:border-sage-400 hover:bg-sage-50 transition-all text-sm min-h-[44px]"
+                >
+                  <div className="text-left">
+                    <span className="font-semibold text-warm-800">{p.name}</span>
+                    <span className="text-warm-400 ml-2 text-xs">{p.desc}</span>
+                  </div>
+                  <span className="text-xs font-semibold text-sage-600">{p.price}</span>
+                </button>
+              ))}
+            </div>
+            <p className="text-xs text-warm-400">Cancel anytime during your trial. No commitment.</p>
+          </div>
+        </div>
+      </div>
+    )
+  }
 
   return (
     <>
