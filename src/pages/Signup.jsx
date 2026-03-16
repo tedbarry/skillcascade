@@ -370,6 +370,12 @@ export default function Signup() {
             Sign In
           </Link>
         </p>
+        <p className="text-center text-xs text-warm-400 mt-2">
+          Need help?{' '}
+          <a href="mailto:support@skillcascade.com" className="text-sage-500 hover:text-sage-600">
+            support@skillcascade.com
+          </a>
+        </p>
       </div>
     </div>
   )

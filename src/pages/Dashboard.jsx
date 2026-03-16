@@ -764,6 +764,12 @@ export default function Dashboard() {
               ))}
             </div>
             <p className="text-xs text-warm-400">Cancel anytime during your trial. No commitment.</p>
+            <p className="text-xs text-warm-400 mt-1">
+              Need help?{' '}
+              <a href="mailto:support@skillcascade.com" className="text-sage-500 hover:text-sage-600">
+                support@skillcascade.com
+              </a>
+            </p>
           </div>
         </div>
       </div>
@@ -823,7 +829,11 @@ export default function Dashboard() {
                 </button>
               ))}
             </div>
-            <p className="text-xs text-warm-400">Questions? Contact support@skillcascade.com</p>
+            <p className="text-xs text-warm-400">Questions? Contact{' '}
+              <a href="mailto:support@skillcascade.com" className="text-sage-500 hover:text-sage-600">
+                support@skillcascade.com
+              </a>
+            </p>
           </div>
         </div>
       </div>
