@@ -1,6 +1,8 @@
 import { useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { useAuth } from '../contexts/AuthContext.jsx'
+import { track } from '../lib/analytics.js'
+import { supabase } from '../lib/supabase.js'
 
 export default function Login() {
   const [email, setEmail] = useState('')
@@ -17,11 +19,22 @@ export default function Login() {
 
     try {
       await signIn(email, password)
+
+      // Track successful login and check for email confirmation
+      track('auth', 'login_success')
+      try {
+        const { data: { user } } = await supabase.auth.getUser()
+        if (user?.email_confirmed_at) {
+          track('signup', 'email_confirmed', { email })
+        }
+      } catch { /* non-critical */ }
+
       navigate('/dashboard')
     } catch (err) {
       if (err.message.includes('Invalid login')) {
         setError('Invalid email or password')
       } else if (err.message.includes('Email not confirmed')) {
+        track('auth', 'login_unconfirmed')
         setError('Please confirm your email before signing in')
       } else {
         setError(err.message)

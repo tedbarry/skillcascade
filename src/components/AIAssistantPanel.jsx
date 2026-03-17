@@ -1318,6 +1318,10 @@ export default function AIAssistantPanel({ isOpen, onClose, clientName, assessme
     const text = inputValue.trim()
     if (!text || isLoading || pendingMatch) return
     track('feature_use', 'ai_chat_message')
+    if (!safeGetItem('skillcascade_milestone_first_ai_chat')) {
+      track('milestone', 'first_ai_chat')
+      safeSetItem('skillcascade_milestone_first_ai_chat', '1')
+    }
 
     const userMsg = {
       id: `user-${Date.now()}`,

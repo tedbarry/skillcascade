@@ -30,6 +30,7 @@ import FeatureGate from '../components/FeatureGate.jsx'
 import useSubscription from '../hooks/useSubscription.js'
 import SubscriptionBanner from '../components/SubscriptionBanner.jsx'
 import { track } from '../lib/analytics.js'
+import { trackError } from '../lib/errorTracker.js'
 
 // Lazy-loaded view components — each gets its own chunk, loaded on-demand
 const HomeDashboard = lazy(() => import('../components/HomeDashboard.jsx'))
@@ -309,7 +310,8 @@ export default function Dashboard() {
           setAutoSaveStatus('saved')
           statusTimerRef.current = setTimeout(() => setAutoSaveStatus(null), 3000)
         })
-        .catch(() => {
+        .catch((err) => {
+          trackError(err || 'auto_save_failed', { action: 'auto_save' })
           setAutoSaveStatus('error')
           statusTimerRef.current = setTimeout(() => setAutoSaveStatus(null), 5000)
         })
@@ -378,6 +380,7 @@ export default function Dashboard() {
       if (pendingView) setActiveView(pendingView)
       setPendingView(null)
     } catch (err) {
+      trackError(err, { action: 'save_assessment_dialog' })
       showToast(userErrorMessage(err, 'save assessment'), 'error')
       setUnsavedDialogOpen(false)
       setPendingView(null)
@@ -631,6 +634,7 @@ export default function Dashboard() {
           lastSavedRef.current = useData
         })
         .catch((err) => {
+          trackError(err, { action: 'load_assessments' })
           // Supabase failed — try localStorage draft as fallback
           try {
             const raw = safeGetItem(DRAFT_PREFIX + clientId)
@@ -666,6 +670,10 @@ export default function Dashboard() {
     try {
       const updated = await saveSnapshot(clientId, label, assessments, user?.id)
       track('feature_use', 'snapshot_save')
+      if (!safeGetItem('skillcascade_milestone_first_snapshot')) {
+        track('milestone', 'first_snapshot')
+        safeSetItem('skillcascade_milestone_first_snapshot', '1')
+      }
       setSnapshots(updated)
       showToast('Snapshot saved', 'success')
     } catch (err) {

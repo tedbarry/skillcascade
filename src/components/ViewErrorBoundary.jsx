@@ -1,5 +1,6 @@
 import { Component } from 'react'
 import { track } from '../lib/analytics.js'
+import { trackError } from '../lib/errorTracker.js'
 
 /**
  * Enhanced error boundary for individual Dashboard views.
@@ -19,6 +20,7 @@ export default class ViewErrorBoundary extends Component {
   componentDidCatch(error, info) {
     console.error(`[ViewErrorBoundary] Error in ${this.props.viewName}:`, error, info.componentStack)
     track('error', 'view_error', { view: this.props.viewName, message: error.message })
+    trackError(error, { component: 'ViewErrorBoundary', view: this.props.viewName })
   }
 
   resetErrorBoundary = () => {

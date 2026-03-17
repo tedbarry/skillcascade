@@ -4,6 +4,7 @@ import { useAuth } from '../contexts/AuthContext.jsx'
 import { useToast } from './Toast.jsx'
 import { userErrorMessage } from '../lib/errorUtils.js'
 import { track } from '../lib/analytics.js'
+import { safeGetItem, safeSetItem } from '../lib/safeStorage.js'
 import useSubscription from '../hooks/useSubscription.js'
 
 export default function ClientManager({ currentClientId, onSelectClient, assessments, onSaveSuccess }) {
@@ -60,6 +61,10 @@ export default function ClientManager({ currentClientId, onSelectClient, assessm
       }
       const client = await saveClient({ name: newName.trim() }, orgId)
       track('feature_use', 'client_create')
+      // Track first client milestone (clients list was empty before this create)
+      if (clients.length === 0) {
+        track('milestone', 'first_client')
+      }
       setNewName('')
       await refreshClients()
       onSelectClient(client.id, client.name, {})
@@ -87,6 +92,10 @@ export default function ClientManager({ currentClientId, onSelectClient, assessm
     try {
       await saveAssessment(currentClientId, assessments, user.id)
       track('feature_use', 'assessment_save')
+      if (!safeGetItem('skillcascade_milestone_first_assessment')) {
+        track('milestone', 'first_assessment')
+        safeSetItem('skillcascade_milestone_first_assessment', '1')
+      }
       await refreshClients()
       onSaveSuccess?.()
     } catch (err) {

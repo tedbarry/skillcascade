@@ -3,6 +3,8 @@ import { Link, useNavigate, useSearchParams } from 'react-router-dom'
 import { useAuth } from '../contexts/AuthContext.jsx'
 import { supabase } from '../lib/supabase.js'
 import { safeSetItem } from '../lib/safeStorage.js'
+import { captureUtmParams, getStoredUtmParams } from '../lib/utmCapture.js'
+import { track } from '../lib/analytics.js'
 
 const VALID_PLANS = ['solo', 'practice', 'enterprise']
 
@@ -19,6 +21,9 @@ export default function Signup() {
     return VALID_PLANS.includes(p) ? p : null
   }, [searchParams])
   const [selectedPlan, setSelectedPlan] = useState(preselectedPlan || 'solo')
+
+  // Capture UTM params on page load
+  useEffect(() => { captureUtmParams() }, [])
 
   // Invite token support
   const inviteToken = searchParams.get('invite')
@@ -108,9 +113,11 @@ export default function Signup() {
         throw new Error('Password must be at least 8 characters')
       }
 
+      const utmParams = getStoredUtmParams()
       const metadata = {
         display_name: displayName.trim(),
         role: invite ? invite.role : role,
+        ...utmParams,
       }
 
       if (invite) {
@@ -138,6 +145,9 @@ export default function Signup() {
 
       // Always persist selected plan — user must go through Stripe checkout after email confirm
       safeSetItem('skillcascade_pending_plan', selectedPlan)
+
+      // Track confirmation email sent
+      track('signup', 'confirmation_email_sent', { email })
 
       // Set success BEFORE any auth state change can cause re-render issues.
       // The useEffect above will sign out if auto-confirm happened.

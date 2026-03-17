@@ -8,6 +8,7 @@ import { generateDomainBarChart, generateRadarChart, generateMasteryGrid, genera
 import { getBehavioralIndicator } from '../data/behavioralIndicators.js'
 import { escapeHTML } from '../lib/escapeHTML.js'
 import { track } from '../lib/analytics.js'
+import { safeGetItem, safeSetItem } from '../lib/safeStorage.js'
 import { saveReport, getReports, deleteReport } from '../data/storage.js'
 import useContextualHint from '../hooks/useContextualHint.js'
 import ContextualHint from './ContextualHint.jsx'
@@ -889,6 +890,10 @@ export default function ReportGenerator({ assessments, clientName, clientId, use
   function handleGenerate() {
     if (!selectedType || !hasData) return
     track('feature_use', 'report_generate', { type: selectedType })
+    if (!safeGetItem('skillcascade_milestone_first_report')) {
+      track('milestone', 'first_report')
+      safeSetItem('skillcascade_milestone_first_report', '1')
+    }
     setGenerating(true)
 
     const snapshotComparison = compareSnapshotId

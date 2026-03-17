@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef, lazy, Suspense } from 'react'
 import { Link } from 'react-router-dom'
+import { captureUtmParams } from '../lib/utmCapture.js'
 
 const PricingPage = lazy(() => import('../components/PricingPage.jsx'))
 
@@ -635,6 +636,9 @@ export default function Landing() {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
   const [activeDemo, setActiveDemo] = useState('dashboard')
   const heroRef = useRef(null)
+
+  // Capture UTM params on landing page visit
+  useEffect(() => { captureUtmParams() }, [])
 
   useEffect(() => {
     const handleScroll = () => {

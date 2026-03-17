@@ -3,6 +3,7 @@ import { createRoot } from 'react-dom/client'
 import { BrowserRouter } from 'react-router-dom'
 import App from './App.jsx'
 import { initAnalytics } from './lib/analytics.js'
+import { initPerfTracking } from './lib/perfTracker.js'
 import './index.css'
 
 // Initialize analytics (no-op if VITE_POSTHOG_KEY not set)
@@ -15,3 +16,6 @@ createRoot(document.getElementById('root')).render(
     </BrowserRouter>
   </StrictMode>,
 )
+
+// Collect Web Vitals after React mounts
+initPerfTracking()
