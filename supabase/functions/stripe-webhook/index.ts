@@ -39,11 +39,26 @@ Deno.serve(async (req) => {
   const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!
   const supabase = createClient(supabaseUrl, supabaseServiceKey)
 
+  // Reverse lookup: price ID → plan name
+  function planFromPriceId(priceId: string): string {
+    const priceMap: Record<string, string> = {
+      [Deno.env.get('STRIPE_SOLO_PRICE_ID') || '']: 'solo',
+      [Deno.env.get('STRIPE_SOLO_ANNUAL_PRICE_ID') || '']: 'solo',
+      [Deno.env.get('STRIPE_PRACTICE_PRICE_ID') || '']: 'practice',
+      [Deno.env.get('STRIPE_PRACTICE_ANNUAL_PRICE_ID') || '']: 'practice',
+      [Deno.env.get('STRIPE_ENTERPRISE_PRICE_ID') || '']: 'enterprise',
+      [Deno.env.get('STRIPE_ENTERPRISE_ANNUAL_PRICE_ID') || '']: 'enterprise',
+    }
+    return priceMap[priceId] || ''
+  }
+
   async function upsertSubscription(subscription: Stripe.Subscription) {
     const userId = subscription.metadata.user_id
     if (!userId) return
 
-    const plan = subscription.metadata.plan || 'solo'
+    // Determine plan from price ID first (handles upgrades), fall back to metadata
+    const currentPriceId = subscription.items?.data?.[0]?.price?.id || ''
+    const plan = planFromPriceId(currentPriceId) || subscription.metadata.plan || 'solo'
     const status = subscription.status
     const currentPeriodEnd = new Date(subscription.current_period_end * 1000).toISOString()
     const cancelAtPeriodEnd = subscription.cancel_at_period_end
