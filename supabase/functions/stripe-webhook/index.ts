@@ -52,6 +52,9 @@ Deno.serve(async (req) => {
     return priceMap[priceId] || ''
   }
 
+  // Minimum seats per plan — must match stripe-checkout
+  const MIN_SEATS: Record<string, number> = { solo: 1, practice: 3, enterprise: 10 }
+
   async function upsertSubscription(subscription: Stripe.Subscription) {
     const userId = subscription.metadata.user_id
     if (!userId) return
@@ -67,6 +70,38 @@ Deno.serve(async (req) => {
       ? new Date(subscription.trial_end * 1000).toISOString()
       : null
 
+    // Enforce minimum seats per plan
+    // If user upgraded via portal with fewer seats than required, auto-correct
+    const minSeats = MIN_SEATS[plan] || 1
+    if (seats < minSeats && subscription.items?.data?.[0]?.id) {
+      console.log(`Enforcing minimum seats: ${plan} requires ${minSeats}, has ${seats}. Correcting...`)
+      try {
+        await stripe.subscriptions.update(subscription.id, {
+          items: [{
+            id: subscription.items.data[0].id,
+            quantity: minSeats,
+          }],
+          proration_behavior: 'create_prorations',
+        })
+        // Don't upsert yet — the update triggers a new webhook with correct quantity
+        // That webhook call will upsert with the right seats
+        console.log(`Corrected seats to ${minSeats} for subscription ${subscription.id}`)
+        return
+      } catch (err) {
+        console.error('Failed to enforce minimum seats:', err.message)
+        // Fall through and upsert with current (wrong) seats rather than losing the update
+      }
+    }
+
+    // Also update subscription metadata with current plan (for future reference)
+    if (subscription.metadata.plan !== plan) {
+      try {
+        await stripe.subscriptions.update(subscription.id, {
+          metadata: { ...subscription.metadata, plan },
+        })
+      } catch { /* non-critical, don't block upsert */ }
+    }
+
     const { error } = await supabase.from('subscriptions').upsert({
       user_id: userId,
       stripe_customer_id: subscription.customer as string,
@@ -75,14 +110,14 @@ Deno.serve(async (req) => {
       status,
       current_period_end: currentPeriodEnd,
       cancel_at_period_end: cancelAtPeriodEnd,
-      seats,
+      seats: Math.max(seats, minSeats),
       trial_ends_at: trialEndsAt,
       updated_at: new Date().toISOString(),
     }, { onConflict: 'user_id' })
     if (error) {
       console.error('Failed to upsert subscription:', error.message, error.details, error.hint)
     } else {
-      console.log('Subscription upserted for user:', userId, 'plan:', plan, 'status:', status)
+      console.log('Subscription upserted for user:', userId, 'plan:', plan, 'status:', status, 'seats:', Math.max(seats, minSeats))
     }
   }
 
