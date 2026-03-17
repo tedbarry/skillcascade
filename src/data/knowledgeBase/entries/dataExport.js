@@ -72,9 +72,9 @@ Go to Data & Export in the Settings group. Choose your format and click Export. 
     id: 'guide-data-privacy',
     title: 'Data Privacy & Security',
     category: 'data',
-    tags: ['privacy', 'security', 'hipaa', 'encryption', 'data protection', 'safe'],
-    summary: 'How SkillCascade protects your data and maintains HIPAA compliance.',
-    body: `SkillCascade is designed with HIPAA compliance in mind across all pricing tiers.
+    tags: ['privacy', 'security', 'encryption', 'data protection', 'safe'],
+    summary: 'How SkillCascade protects your data with enterprise-grade security.',
+    body: `SkillCascade is designed with strong security practices across all pricing tiers.
 
 ## Data protection
 

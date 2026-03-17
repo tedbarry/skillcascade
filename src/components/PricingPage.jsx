@@ -107,7 +107,7 @@ const TIERS = [
       'Progress prediction',
       'Clinical intelligence & dependency explorer',
       'Data export (CSV, JSON, HTML reports)',
-      'HIPAA-compliant data storage',
+      'Secure, encrypted data storage',
       'Email support',
     ],
   },
@@ -161,7 +161,7 @@ const TIERS = [
 ]
 
 const ALL_PLANS_FEATURES = [
-  { icon: ShieldIcon, label: 'HIPAA-compliant storage' },
+  { icon: ShieldIcon, label: 'Secure, encrypted storage' },
   { icon: LockIcon, label: 'Encryption at rest & in transit' },
   { icon: ClipboardIcon, label: 'Audit logging' },
   { icon: ExportIcon, label: 'Data portability' },
@@ -171,9 +171,9 @@ const ALL_PLANS_FEATURES = [
 
 const FAQ_ITEMS = [
   {
-    question: 'Is my data HIPAA-compliant on all plans?',
+    question: 'Is my data secure on all plans?',
     answer:
-      'Yes. Every plan includes HIPAA-compliant data storage, encryption at rest and in transit, and audit logging. HIPAA compliance is not an add-on or enterprise-only feature \u2014 it is built into the foundation of SkillCascade from day one. We sign BAAs with all customers regardless of plan tier.',
+      'Yes. Every plan includes encrypted data storage, encryption at rest and in transit, audit logging, and session timeout controls. Security is not an add-on or enterprise-only feature \u2014 it is built into the foundation of SkillCascade from day one. We are actively working toward full HIPAA compliance. Contact us for details on our security roadmap.',
   },
   {
     question: 'Can I switch plans?',
@@ -400,7 +400,7 @@ const COMPARISON_FEATURES = [
   { feature: 'White-label branding', solo: false, practice: false, enterprise: true },
   { feature: 'Marketplace access', solo: false, practice: false, enterprise: true },
   { category: 'Security & Support' },
-  { feature: 'HIPAA-compliant storage', solo: true, practice: true, enterprise: true },
+  { feature: 'Encrypted data storage', solo: true, practice: true, enterprise: true },
   { feature: 'Encryption at rest & in transit', solo: true, practice: true, enterprise: true },
   { feature: 'Data backup & restore', solo: true, practice: true, enterprise: true },
   { feature: 'Support level', solo: 'Email', practice: 'Priority', enterprise: 'Dedicated account manager' },
@@ -553,8 +553,8 @@ function AllPlansSection() {
         All plans include
       </h2>
       <p className="mx-auto mt-2 max-w-lg text-warm-500 text-sm">
-        Security and compliance are not premium features. Every SkillCascade plan
-        is built on the same HIPAA-compliant infrastructure.
+        Security is not a premium feature. Every SkillCascade plan
+        is built on the same enterprise-grade secure infrastructure.
       </p>
 
       <div className="mt-10 grid gap-6 sm:grid-cols-2 lg:grid-cols-3 max-w-4xl mx-auto">
@@ -719,7 +719,7 @@ export default function PricingPage() {
         <section className="text-center" aria-labelledby="pricing-heading">
           <div className="inline-flex items-center gap-1.5 rounded-full bg-sage-50 px-3.5 py-1 text-xs font-semibold text-sage-700 uppercase tracking-wider mb-5">
             <ShieldIcon className="w-3.5 h-3.5 text-sage-500" />
-            HIPAA-compliant on every plan
+            Secure on every plan
           </div>
           <h1
             id="pricing-heading"
@@ -728,7 +728,7 @@ export default function PricingPage() {
             Simple, transparent pricing <KBHelpIcon term="view-pricing" />
           </h1>
           <p className="mx-auto mt-4 max-w-xl text-warm-500 text-base sm:text-lg">
-            Every plan includes HIPAA-compliant data storage. No hidden fees.
+            Every plan includes enterprise-grade security and encrypted data storage. No hidden fees.
           </p>
           <BillingToggle isAnnual={isAnnual} onChange={setIsAnnual} />
         </section>

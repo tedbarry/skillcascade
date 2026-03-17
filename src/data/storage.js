@@ -69,7 +69,7 @@ export async function unassignClientFromUser(clientId, userId) {
 }
 
 export async function deleteClient(id) {
-  // Soft delete for HIPAA compliance
+  // Soft delete for data retention best practices
   const { error } = await supabase
     .from('clients')
     .update({ deleted_at: new Date().toISOString() })

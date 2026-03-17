@@ -138,7 +138,7 @@ export default function Contact() {
               <option value="Product Demo">Product Demo</option>
               <option value="Technical Support">Technical Support</option>
               <option value="Billing">Billing</option>
-              <option value="HIPAA / Compliance">HIPAA / Compliance</option>
+              <option value="Security / Compliance">Security / Compliance</option>
               <option value="Partnership">Partnership</option>
               <option value="Feature Request">Feature Request</option>
               <option value="Bug Report">Bug Report</option>

@@ -7,7 +7,7 @@ const LEGAL_PAGES = {
     sections: [
       {
         heading: 'Overview',
-        content: 'SkillCascade ("we", "us", "our") is committed to protecting the privacy and security of your personal information and the protected health information (PHI) of your clients. This Privacy Policy describes how we collect, use, disclose, and safeguard information when you use our web application and services.',
+        content: 'SkillCascade ("we", "us", "our") is committed to protecting the privacy and security of your personal information and the sensitive clinical data of your clients. This Privacy Policy describes how we collect, use, disclose, and safeguard information when you use our web application and services.',
       },
       {
         heading: 'Information We Collect',
@@ -18,20 +18,20 @@ const LEGAL_PAGES = {
         content: 'We use your information to: provide and maintain our assessment and clinical intelligence services, authenticate your identity, save and sync your assessment data, generate clinical reports and AI-assisted content, improve our services through anonymized and aggregated analytics, and communicate service updates. We never sell your data to third parties.',
       },
       {
-        heading: 'Protected Health Information (PHI)',
-        content: 'Client assessment data constitutes PHI under HIPAA. All PHI is encrypted in transit (TLS 1.2+) and at rest (AES-256). PHI is stored in Supabase infrastructure with SOC 2 Type II certification. Access to PHI is restricted to authenticated users within the same organization. We maintain audit logs of all PHI access. AI-generated content is processed through secure, HIPAA-compliant channels and is not used to train AI models.',
+        heading: 'Client Assessment Data',
+        content: 'Client assessment data is treated as sensitive health information. All such data is encrypted in transit (TLS 1.2+) and at rest (AES-256). Data is stored in Supabase infrastructure with SOC 2 Type II certification. Access is restricted to authenticated users within the same organization. We maintain audit logs of data access. AI-generated content is processed through secure channels and is not used to train AI models.',
       },
       {
         heading: 'Data Retention',
-        content: 'We retain your account data and assessment records for as long as your account is active. Upon account deletion, we permanently remove all personal data and PHI within 30 days. Anonymized, aggregated analytics data may be retained indefinitely. Audit logs are retained for a minimum of 6 years per HIPAA requirements.',
+        content: 'We retain your account data and assessment records for as long as your account is active. Upon account deletion, we permanently remove all personal data within 30 days. Anonymized, aggregated analytics data may be retained indefinitely. Audit logs are retained in accordance with our data retention policies.',
       },
       {
         heading: 'Third-Party Services',
-        content: 'We use the following third-party services: Supabase (database and authentication), Stripe (payment processing — Stripe never receives PHI), and AI language model providers (for AI assistant features — governed by separate BAA). These providers are bound by their own privacy policies and, where applicable, Business Associate Agreements.',
+        content: 'We use the following third-party services: Supabase (database and authentication), Stripe (payment processing — Stripe never receives client health data), and AI language model providers (for AI assistant features). These providers are bound by their own privacy policies and contractual data protection obligations.',
       },
       {
         heading: 'Your Rights',
-        content: 'You have the right to: access your personal data and PHI, request correction of inaccurate data, request deletion of your account and all associated data, receive a copy of your data in a portable format (CSV/JSON export), and opt out of non-essential communications. To exercise these rights, contact us at privacy@skillcascade.com.',
+        content: 'You have the right to: access your personal data, request correction of inaccurate data, request deletion of your account and all associated data, receive a copy of your data in a portable format (CSV/JSON export), and opt out of non-essential communications. To exercise these rights, contact us at privacy@skillcascade.com.',
       },
       {
         heading: 'Children\'s Privacy',
@@ -43,7 +43,7 @@ const LEGAL_PAGES = {
       },
       {
         heading: 'Contact',
-        content: 'For privacy-related inquiries: privacy@skillcascade.com. For HIPAA-related concerns: compliance@skillcascade.com.',
+        content: 'For privacy-related inquiries: privacy@skillcascade.com. For security-related concerns: security@skillcascade.com.',
       },
     ],
   },
@@ -102,74 +102,70 @@ const LEGAL_PAGES = {
     ],
   },
   hipaa: {
-    title: 'HIPAA Compliance',
-    lastUpdated: 'February 2026',
+    title: 'Security Practices',
+    lastUpdated: 'March 2026',
     sections: [
       {
         heading: 'Our Commitment',
-        content: 'SkillCascade is designed to comply with the Health Insurance Portability and Accountability Act (HIPAA) Privacy Rule, Security Rule, and Breach Notification Rule. We serve as a Business Associate to covered entities using our platform.',
+        content: 'SkillCascade is committed to protecting the security and confidentiality of your data and your clients\' information. We implement industry-standard security controls and are actively working toward full HIPAA compliance as part of our security roadmap.',
       },
       {
-        heading: 'Administrative Safeguards',
-        content: 'We maintain: a designated Privacy Officer and Security Officer, workforce training on HIPAA compliance, documented policies and procedures for PHI handling, regular risk assessments and gap analyses, incident response and breach notification procedures, and Business Associate Agreements with all subcontractors who access PHI.',
+        heading: 'What Is Currently Implemented',
+        content: 'The following security measures are in place today: encryption of all data in transit (TLS 1.2+) and at rest (AES-256), unique user identification and authentication, automatic session timeout after 30 minutes of inactivity, audit logging of data access and modifications, role-based access controls, Row-Level Security (RLS) for organization-scoped data isolation, and secure API authentication for all data endpoints.',
       },
       {
-        heading: 'Technical Safeguards',
-        content: 'Our technical controls include: encryption of PHI in transit (TLS 1.2+) and at rest (AES-256), unique user identification and authentication, automatic session timeout after 30 minutes of inactivity, audit logging of all PHI access and modifications, role-based access controls, and secure API authentication for all data endpoints.',
-      },
-      {
-        heading: 'Physical Safeguards',
+        heading: 'Infrastructure Security',
         content: 'Our infrastructure is hosted on cloud providers with SOC 2 Type II certification, physical access controls, environmental monitoring, and redundant data storage. We do not maintain on-premises servers.',
       },
       {
-        heading: 'Minimum Necessary Standard',
-        content: 'We collect and process only the minimum PHI necessary to provide our assessment and clinical intelligence services. Our AI features process assessment data in context but do not store conversation history beyond the active session.',
+        heading: 'Data Minimization',
+        content: 'We collect and process only the minimum data necessary to provide our assessment and clinical intelligence services. Our AI features process assessment data in context but do not store conversation history beyond the active session.',
       },
       {
-        heading: 'Breach Notification',
-        content: 'In the event of a breach involving unsecured PHI, we will: notify affected covered entities within 60 days of discovery, cooperate with breach investigation and mitigation, provide information necessary for covered entities to fulfill their notification obligations, and document all breach-related activities.',
+        heading: 'Incident Response',
+        content: 'In the event of a data breach, we will: notify affected users promptly, cooperate with investigation and mitigation, provide information necessary for affected parties to take protective action, and document all breach-related activities.',
       },
       {
-        heading: 'Patient Rights',
-        content: 'We support covered entities in fulfilling patient rights under HIPAA including: access to their PHI (via data export), amendment of inaccurate PHI, accounting of disclosures, and restrictions on certain uses.',
+        heading: 'Security Roadmap',
+        content: 'We are actively working toward full HIPAA compliance. Our roadmap includes: formal Business Associate Agreements (BAAs), designated Privacy and Security Officers, documented HIPAA policies and procedures, regular third-party security audits, and workforce HIPAA training. Contact us for details on our progress and timeline.',
+      },
+      {
+        heading: 'Your Data Rights',
+        content: 'You can: access all your data at any time, export your data in portable formats (CSV/JSON), request correction of inaccurate data, and request deletion of your account and all associated data.',
       },
       {
         heading: 'Contact',
-        content: 'HIPAA compliance inquiries: compliance@skillcascade.com.',
+        content: 'Security inquiries: security@skillcascade.com.',
       },
     ],
   },
   baa: {
-    title: 'Business Associate Agreement',
-    lastUpdated: 'February 2026',
+    title: 'Data Protection Agreement',
+    lastUpdated: 'March 2026',
     sections: [
       {
         heading: 'Overview',
-        content: 'This Business Associate Agreement ("BAA") is entered into between you ("Covered Entity") and SkillCascade ("Business Associate") pursuant to HIPAA regulations at 45 CFR Part 160 and Part 164. This BAA is automatically incorporated into your SkillCascade subscription agreement.',
+        content: 'This Data Protection Agreement describes how SkillCascade handles and protects the data you entrust to our platform, including client assessment data and personally identifiable information.',
       },
       {
-        heading: 'Definitions',
-        content: 'Terms used in this BAA have the same meaning as defined in 45 CFR 160.103. "Protected Health Information" (PHI) means individually identifiable health information received, created, maintained, or transmitted by Business Associate on behalf of Covered Entity through the SkillCascade platform.',
+        heading: 'Our Obligations',
+        content: 'SkillCascade agrees to: use your data only for the purpose of providing our assessment and clinical intelligence services, implement appropriate technical and organizational safeguards, report any security incident or data breach promptly, ensure that subcontractors maintain equivalent data protection standards, make your data available for export upon request, and delete all data upon account termination within 30 days.',
       },
       {
-        heading: 'Obligations of Business Associate',
-        content: 'Business Associate agrees to: use or disclose PHI only as permitted by this BAA or as required by law, implement appropriate administrative, physical, and technical safeguards, report any security incident or breach of unsecured PHI, ensure that subcontractors agree to the same restrictions, make PHI available to Covered Entity as required for patient rights, return or destroy all PHI upon termination (subject to legal retention requirements), and maintain documentation of compliance activities for 6 years.',
-      },
-      {
-        heading: 'Permitted Uses and Disclosures',
-        content: 'Business Associate may use PHI to: provide the SkillCascade assessment and clinical intelligence services, perform quality assurance and service improvement (using de-identified data only), and comply with legal requirements. Business Associate will not use PHI for marketing, fundraising, or sale.',
+        heading: 'Permitted Uses',
+        content: 'SkillCascade may use your data to: provide assessment and clinical intelligence services, perform quality assurance and service improvement (using de-identified data only), and comply with legal requirements. We will not use your data for marketing, advertising, or sale to third parties.',
       },
       {
         heading: 'Subcontractors',
-        content: 'Business Associate uses the following subcontractors who may access PHI: Supabase (database hosting and authentication) and AI model providers (for AI assistant features). Each subcontractor is bound by a BAA or equivalent contractual protections.',
+        content: 'SkillCascade uses the following subcontractors who may process your data: Supabase (database hosting and authentication) and AI model providers (for AI assistant features). Each subcontractor is bound by contractual data protection obligations.',
       },
       {
         heading: 'Term and Termination',
-        content: 'This BAA is effective upon account creation and remains in effect for the duration of the subscription. Either party may terminate for material breach with 30 days written notice and opportunity to cure. Upon termination, Business Associate will return or destroy all PHI within 30 days.',
+        content: 'This agreement is effective upon account creation and remains in effect for the duration of your subscription. Upon termination, SkillCascade will delete all your data within 30 days unless a longer retention period is required by law.',
       },
       {
-        heading: 'How to Execute',
-        content: 'By subscribing to SkillCascade, you accept this BAA. For organizations requiring a custom or countersigned BAA, contact legal@skillcascade.com.',
+        heading: 'HIPAA Business Associate Agreements',
+        content: 'Formal HIPAA Business Associate Agreements (BAAs) are part of our security roadmap and are not yet available. If your organization requires a signed BAA, please contact us at legal@skillcascade.com to discuss our timeline and current security capabilities.',
       },
     ],
   },
@@ -179,7 +175,7 @@ const LEGAL_PAGES = {
     sections: [
       {
         heading: 'Security Overview',
-        content: 'SkillCascade employs multiple layers of security to protect your data and your clients\' protected health information. Our security practices are designed to meet or exceed HIPAA Security Rule requirements.',
+        content: 'SkillCascade employs multiple layers of security to protect your data and your clients\' sensitive information. Our security practices are designed to meet industry standards for healthcare data protection.',
       },
       {
         heading: 'Data Encryption',
@@ -187,7 +183,7 @@ const LEGAL_PAGES = {
       },
       {
         heading: 'Authentication and Access',
-        content: 'We enforce: email-verified account creation, minimum 8-character passwords, automatic session timeout after 30 minutes of inactivity (HIPAA requirement), role-based access controls (clinician vs. parent roles), and organization-scoped data isolation (users can only access data within their organization).',
+        content: 'We enforce: email-verified account creation, minimum 8-character passwords, automatic session timeout after 30 minutes of inactivity, role-based access controls (clinician vs. parent roles), and organization-scoped data isolation (users can only access data within their organization).',
       },
       {
         heading: 'Infrastructure',
@@ -195,11 +191,11 @@ const LEGAL_PAGES = {
       },
       {
         heading: 'Audit Logging',
-        content: 'We maintain comprehensive audit logs including: user login and logout events, assessment data access and modifications, data export activities, and administrative actions. Audit logs are retained for a minimum of 6 years.',
+        content: 'We maintain audit logs including: user login and logout events, assessment data access and modifications, data export activities, and administrative actions. Audit logs are retained in accordance with our data retention policies.',
       },
       {
         heading: 'Incident Response',
-        content: 'We maintain a documented incident response plan that includes: immediate containment and investigation, notification to affected users within 60 days (per HIPAA), root cause analysis and remediation, and post-incident review and process improvement.',
+        content: 'We maintain a documented incident response plan that includes: immediate containment and investigation, prompt notification to affected users, root cause analysis and remediation, and post-incident review and process improvement.',
       },
       {
         heading: 'Vulnerability Management',

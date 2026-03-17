@@ -623,8 +623,7 @@ const FOOTER_LINKS = {
   Legal: [
     { label: 'Privacy Policy', href: '/legal/privacy' },
     { label: 'Terms of Service', href: '/legal/terms' },
-    { label: 'HIPAA Compliance', href: '/legal/hipaa' },
-    { label: 'BAA', href: '/legal/baa' },
+    { label: 'Security Practices', href: '/legal/hipaa' },
     { label: 'Security', href: '/legal/security' },
   ],
 }
@@ -753,7 +752,7 @@ export default function Landing() {
           {/* Badge */}
           <div className="inline-flex items-center gap-2 rounded-full bg-sage-50 border border-sage-200 px-4 py-1.5 text-xs font-semibold text-sage-700 uppercase tracking-wider mb-8">
             <ShieldIcon className="w-4 h-4 text-sage-500" />
-            HIPAA-Compliant Assessment Platform
+            Secure Assessment Platform
           </div>
 
           <h1 className="text-5xl sm:text-6xl lg:text-7xl font-extrabold text-warm-900 font-display leading-[1.1] mb-6 tracking-tight">
@@ -799,7 +798,7 @@ export default function Landing() {
           <div className="flex flex-wrap justify-center gap-6">
             <div className="flex items-center gap-2 text-warm-500 text-xs font-medium">
               <ShieldIcon className="w-4 h-4 text-sage-500" />
-              <span>HIPAA Compliant</span>
+              <span>Enterprise-Grade Security</span>
             </div>
             <div className="flex items-center gap-2 text-warm-500 text-xs font-medium">
               <CheckCircleIcon className="w-4 h-4 text-sage-500" />

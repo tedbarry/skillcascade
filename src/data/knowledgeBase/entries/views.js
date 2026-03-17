@@ -803,7 +803,7 @@ Certificates are a motivational tool. Share them during parent meetings, attach 
     category: 'views',
     tags: ['messages', 'messaging', 'chat', 'team', 'communication', 'notes', 'templates', 'collaboration'],
     summary: 'Send and receive messages within your clinical team — with quick templates, date grouping, and per-client conversation threads.',
-    body: `Team Messaging provides a simple, HIPAA-compliant communication channel for clinical teams. Messages are organized per client and synced via Supabase in real time.
+    body: `Team Messaging provides a simple, secure communication channel for clinical teams. Messages are organized per client and synced via Supabase in real time.
 
 ## Message threads
 

@@ -1,6 +1,6 @@
 /**
  * Usage analytics — tracks feature usage to Supabase.
- * All tracking is HIPAA-safe: no PII, no PHI in event properties.
+ * All tracking is privacy-safe: no PII, no client health data in event properties.
  * Events are buffered in memory and flushed in batches.
  */
 

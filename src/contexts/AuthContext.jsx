@@ -4,7 +4,7 @@ import { initAnalytics, identify as identifyUser, endSession } from '../lib/anal
 
 const AuthContext = createContext(null)
 
-const INACTIVITY_TIMEOUT = 30 * 60 * 1000 // 30 minutes — HIPAA session timeout
+const INACTIVITY_TIMEOUT = 30 * 60 * 1000 // 30 minutes — security session timeout
 
 /**
  * Read the Supabase session from localStorage synchronously.
