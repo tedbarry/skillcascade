@@ -789,7 +789,7 @@ export default function Landing() {
                 <circle cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="2" />
                 <path d="M10 8l6 4-6 4V8z" fill="currentColor" />
               </svg>
-              Watch Demo
+              See How It Works
             </button>
           </div>
 
