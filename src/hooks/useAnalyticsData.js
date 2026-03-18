@@ -20,8 +20,10 @@ export default function useAnalyticsData(range = '30d') {
   const [error, setError] = useState(null)
 
   const days = RANGES[range] || 30
-  const currentStart = daysAgo(days)
-  const previousStart = daysAgo(days * 2)
+
+  // Memoize date strings to prevent infinite re-render loops
+  const currentStart = useMemo(() => daysAgo(days), [days])
+  const previousStart = useMemo(() => daysAgo(days * 2), [days])
 
   const fetchData = useCallback(async () => {
     setLoading(true)
