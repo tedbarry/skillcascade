@@ -45,7 +45,7 @@ function TypingIndicator() {
    SupportChat Component
    ───────────────────────────────────────────── */
 
-export default function SupportChat({ activeView, clientName, assessments, plan, role }) {
+export default function SupportChat({ activeView, clientName, assessments, plan, role, snapshots }) {
   const [isOpen, setIsOpen] = useState(false)
   const [messages, setMessages] = useState([
     { role: 'assistant', content: 'Hi! I\'m the SkillCascade Guide. I can help you navigate the app, understand visualizations, or explain how the assessment works. What can I help with?' },
@@ -100,7 +100,7 @@ export default function SupportChat({ activeView, clientName, assessments, plan,
         throw new Error('Not authenticated')
       }
 
-      const context = buildChatContext({ activeView, clientName, assessments, plan, role })
+      const context = buildChatContext({ activeView, clientName, assessments, plan, role, snapshots })
 
       // Build message history (keep last 20 messages to stay within token limits)
       const history = [...messages, userMessage]
@@ -129,7 +129,7 @@ export default function SupportChat({ activeView, clientName, assessments, plan,
     } finally {
       setIsLoading(false)
     }
-  }, [input, isLoading, messages, activeView, clientName, assessments, plan, role])
+  }, [input, isLoading, messages, activeView, clientName, assessments, plan, role, snapshots])
 
   const handleKeyDown = useCallback((e) => {
     if (e.key === 'Enter' && !e.shiftKey) {

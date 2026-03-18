@@ -1639,6 +1639,7 @@ export default function Dashboard() {
           assessments={assessments}
           plan={plan}
           role={profile?.role}
+          snapshots={snapshots}
         />
       </Suspense>
     )}
