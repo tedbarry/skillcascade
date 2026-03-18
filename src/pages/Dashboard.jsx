@@ -64,6 +64,7 @@ const OutcomeCertification = lazy(() => import('../components/OutcomeCertificati
 const ComparisonView = lazy(() => import('../components/ComparisonView.jsx'))
 const KeyboardShortcuts = lazy(() => import('../components/KeyboardShortcuts.jsx'))
 const DependencyExplorer = lazy(() => import('../components/explorer/DependencyExplorer.jsx'))
+const SupportChat = lazy(() => import('../components/SupportChat.jsx'))
 import { framework, toHierarchy, ASSESSMENT_LABELS, ASSESSMENT_COLORS, ASSESSMENT_LEVELS, isAssessed } from '../data/framework.js'
 import { generateSampleAssessments, generateSampleSnapshots } from '../data/sampleAssessments.js'
 import { saveSnapshot, getSnapshots, deleteSnapshot, getAssessments, saveAssessment } from '../data/storage.js'
@@ -170,9 +171,9 @@ export const VIEWS = {
 }
 
 export default function Dashboard() {
-  const { user } = useAuth()
+  const { user, profile } = useAuth()
   const { showToast } = useToast()
-  const { hasFeature, plan, loading: subLoading, needsSubscription, isExpired, startCheckout, openBillingPortal, refreshSubscription } = useSubscription()
+  const { hasFeature, plan, isActive, loading: subLoading, needsSubscription, isExpired, startCheckout, openBillingPortal, refreshSubscription } = useSubscription()
   const { isPhone, isTablet, isDesktop } = useResponsive()
   const sunburstHint = useContextualHint('hint-sunburst')
   const clientKey = user ? `skillcascade_client_${user.id}` : null
@@ -1630,6 +1631,17 @@ export default function Dashboard() {
       onStay={handleUnsavedStay}
       saving={unsavedSaving}
     />
+    {isActive && (
+      <Suspense fallback={null}>
+        <SupportChat
+          activeView={activeView}
+          clientName={clientName}
+          assessments={assessments}
+          plan={plan}
+          role={profile?.role}
+        />
+      </Suspense>
+    )}
     </>
   )
 }
