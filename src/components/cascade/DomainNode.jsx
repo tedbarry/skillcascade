@@ -4,9 +4,9 @@ import { DOMAIN_COLORS } from '../../constants/colors.js'
 const STATE_CONFIG = {
   locked:       { fill: '#2a2a2a', stroke: '#444',    textColor: '#888',    label: 'Locked' },
   blocked:      { fill: '#3a2020', stroke: '#8b4444', textColor: '#ccc',    label: 'Blocked' },
-  'needs-work': { fill: '#3a2525', stroke: '#e8928a', textColor: '#f5c4c0', label: 'Needs Work' },
-  developing:   { fill: '#3a3520', stroke: '#e5b76a', textColor: '#f5e0b0', label: 'Developing' },
-  mastered:     { fill: '#1e3525', stroke: '#7fb589', textColor: '#b5e8bf', label: 'Mastered' },
+  'needs-work': { fill: '#3a2525', stroke: '#F59E0B', textColor: '#f5c4c0', label: 'Needs Work' },
+  developing:   { fill: '#3a3520', stroke: '#F59E0B', textColor: '#f5e0b0', label: 'Developing' },
+  mastered:     { fill: '#1e3525', stroke: '#10B981', textColor: '#b5e8bf', label: 'Mastered' },
 }
 
 /**
@@ -100,7 +100,7 @@ export default memo(function DomainNode({
         width={nodeW} height={nodeH}
         rx={isPhone ? 8 : 10}
         fill={style.fill}
-        stroke={highlight === 'bottleneck' ? '#ff8800' : style.stroke}
+        stroke={highlight === 'bottleneck' ? '#F97316' : style.stroke}
         strokeWidth={strokeWidth}
         strokeDasharray="none"
         opacity={1}

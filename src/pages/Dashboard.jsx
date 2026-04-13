@@ -27,10 +27,15 @@ import ContextualHint from '../components/ContextualHint.jsx'
 import KBLink from '../components/kb/KBLink.jsx'
 import KBHelpIcon from '../components/kb/KBHelpIcon.jsx'
 import FeatureGate from '../components/FeatureGate.jsx'
+import ClinicalGate from '../components/ClinicalGate.jsx'
+import { NoPermission } from '../components/PermissionGate.jsx'
 import useSubscription from '../hooks/useSubscription.js'
+import usePermissions from '../hooks/usePermissions.js'
 import SubscriptionBanner from '../components/SubscriptionBanner.jsx'
 import { track } from '../lib/analytics.js'
 import { trackError } from '../lib/errorTracker.js'
+import { buildAIAccessState } from '../lib/aiAccess.js'
+import { canAccessDashboardView } from '../lib/dashboardViewAccess.js'
 
 // Lazy-loaded view components — each gets its own chunk, loaded on-demand
 const HomeDashboard = lazy(() => import('../components/HomeDashboard.jsx'))
@@ -65,10 +70,30 @@ const ComparisonView = lazy(() => import('../components/ComparisonView.jsx'))
 const KeyboardShortcuts = lazy(() => import('../components/KeyboardShortcuts.jsx'))
 const DependencyExplorer = lazy(() => import('../components/explorer/DependencyExplorer.jsx'))
 const SupportChat = lazy(() => import('../components/SupportChat.jsx'))
+const GoalDraftPanel = lazy(() => import('../components/GoalDraftPanel.jsx'))
+const SkillGoalView = lazy(() => import('../components/SkillGoalView.jsx'))
+const AssessmentCompletionModal = lazy(() => import('../components/AssessmentCompletionModal.jsx'))
+const DeficitGoalForm = lazy(() => import('../components/DeficitGoalForm.jsx'))
+const GoalLibrary = lazy(() => import('../components/platform/GoalLibrary.jsx'))
+const LearningTree = lazy(() => import('../components/platform/LearningTree.jsx'))
+const GraphDashboard = lazy(() => import('../components/platform/GraphDashboard.jsx'))
+const SessionManager = lazy(() => import('../components/platform/SessionManager.jsx'))
+const MapGoalsButton = lazy(() => import('../components/platform/MapGoalsButton.jsx'))
+const SessionView = lazy(() => import('../components/platform/SessionView.jsx'))
+const ScheduleView = lazy(() => import('../components/platform/ScheduleView.jsx'))
+const DailyAgenda = lazy(() => import('../components/platform/DailyAgenda.jsx'))
+const LessonPlanGenerator = lazy(() => import('../components/LessonPlanGenerator.jsx'))
+const SessionNotesManager = lazy(() => import('../components/platform/SessionNotesManager.jsx'))
+const AuthorizationManager = lazy(() => import('../components/platform/AuthorizationManager.jsx'))
+const ClientFiles = lazy(() => import('../components/platform/ClientFiles.jsx'))
+const ClientContacts = lazy(() => import('../components/platform/ClientContacts.jsx'))
+const ClientAIAgent = lazy(() => import('../components/platform/ClientAIAgent.jsx'))
+const PracticeIntelligence = lazy(() => import('../components/platform/PracticeIntelligence.jsx'))
 import { framework, toHierarchy, ASSESSMENT_LABELS, ASSESSMENT_COLORS, ASSESSMENT_LEVELS, isAssessed } from '../data/framework.js'
 import { generateSampleAssessments, generateSampleSnapshots } from '../data/sampleAssessments.js'
 import { saveSnapshot, getSnapshots, deleteSnapshot, getAssessments, saveAssessment } from '../data/storage.js'
 import { useAuth } from '../contexts/AuthContext.jsx'
+import { api } from '../lib/api.js'
 
 /** Shallow equality for flat assessment objects (key→number|null). */
 function shallowEqual(a, b) {
@@ -112,6 +137,12 @@ const VIEW_SKELETON = {
   compare: 'chart',
   predictions: 'chart',
   'org-analytics': 'chart',
+  schedule: 'grid',
+  'daily-agenda': 'list',
+  notes: 'list',
+  authorizations: 'list',
+  'client-files': 'list',
+  'client-contacts': 'grid',
 }
 
 function ViewLoader({ view, variant }) {
@@ -139,6 +170,21 @@ const VIEW_LABELS = {
   data: 'Data & Export', accessibility: 'Accessibility', pricing: 'Pricing',
   marketplace: 'Marketplace', certifications: 'Certifications', compare: 'Compare',
   explorer: 'Explorer',
+  'goal-library': 'Goal Library',
+  'learning-tree': 'Learning Tree',
+  'graph-dashboard': 'Graph Dashboard',
+  'sessions': 'Sessions',
+  'goal-drafts': 'AI Goals',
+  'deficit-goals': 'Deficit Goals',
+  'lesson-plan': 'Lesson Plan',
+  'schedule': 'Schedule',
+  'daily-agenda': 'My Day',
+  'notes': 'Session Notes',
+  'authorizations': 'Authorizations',
+  'client-files': 'Files',
+  'client-contacts': 'Contacts',
+  'client-ai': 'AI Agent',
+  'practice-intelligence': 'Practice Intelligence',
 }
 
 export const VIEWS = {
@@ -168,12 +214,33 @@ export const VIEWS = {
   CERTIFICATIONS: 'certifications',
   COMPARE: 'compare',
   EXPLORER: 'explorer',
+  GOAL_LIBRARY: 'goal-library',
+  LEARNING_TREE: 'learning-tree',
+  GRAPH_DASHBOARD: 'graph-dashboard',
+  SESSIONS: 'sessions',
+  GOAL_DRAFTS: 'goal-drafts',
+  DEFICIT_GOALS: 'deficit-goals',
+  LESSON_PLAN: 'lesson-plan',
+  SCHEDULE: 'schedule',
+  DAILY_AGENDA: 'daily-agenda',
+  NOTES: 'notes',
+  AUTHORIZATIONS: 'authorizations',
+  CLIENT_FILES: 'client-files',
+  CLIENT_CONTACTS: 'client-contacts',
+  CLIENT_AI: 'client-ai',
+  PRACTICE_INTELLIGENCE: 'practice-intelligence',
 }
+
+// Clinical views — require clinical_access subscription add-on
+const CLINICAL_GATED_VIEWS = ['schedule', 'daily-agenda', 'sessions', 'notes', 'authorizations', 'client-files', 'client-contacts', 'practice-intelligence']
+// All clinical views (gated + ungated clinical that still need subscription check for nav redirect)
+const CLINICAL_VIEWS = ['reports', 'learning-tree', 'goal-library', 'graph-dashboard', 'sessions', 'schedule', 'daily-agenda', 'notes', 'authorizations', 'client-files', 'client-contacts', 'client-ai', 'practice-intelligence']
 
 export default function Dashboard() {
   const { user, profile } = useAuth()
   const { showToast } = useToast()
-  const { hasFeature, plan, isActive, loading: subLoading, needsSubscription, isExpired, startCheckout, openBillingPortal, refreshSubscription } = useSubscription()
+  const { hasFeature, hasClinical, plan, isActive, loading: subLoading, needsSubscription, isExpired, startCheckout, openBillingPortal, refreshSubscription } = useSubscription()
+  const { can, loading: permissionsLoading } = usePermissions()
   const { isPhone, isTablet, isDesktop } = useResponsive()
   const sunburstHint = useContextualHint('hint-sunburst')
   const clientKey = user ? `skillcascade_client_${user.id}` : null
@@ -182,6 +249,23 @@ export default function Dashboard() {
   const [assessmentsLoading, setAssessmentsLoading] = useState(() => clientKey ? !!safeGetItem(clientKey) : false)
   const [selectedNode, setSelectedNode] = useState(null)
   const [sidebarOpen, setSidebarOpen] = useState(true)
+  const aiAccess = useMemo(() => buildAIAccessState({
+    canUseAI: can('ai', 'use'),
+    canAccessClinical: can('clinical', 'access'),
+  }), [can])
+  const dashboardViewAccess = useMemo(() => ({
+    hasClinical,
+    canViewReports: can('reports', 'view'),
+    canViewBilling: can('billing', 'view'),
+    canViewClients: can('clients', 'view'),
+    canCreateClients: can('clients', 'create'),
+    canViewSettings: can('settings', 'view'),
+    canViewTeam: can('team', 'view'),
+  }), [can, hasClinical])
+  const canAccessView = useCallback(
+    (view) => canAccessDashboardView(view, dashboardViewAccess),
+    [dashboardViewAccess],
+  )
   // URL-driven view navigation with browser back/forward support
   const validViews = useMemo(() => Object.values(VIEWS), [])
   const { activeView, viewParams, navigateTo, updateParams, pushParams } = useViewNavigation(VIEWS.HOME, validViews)
@@ -204,10 +288,58 @@ export default function Dashboard() {
     }
   }, [activeView])
 
-  // setActiveView wrapper for compatibility — delegates to navigateTo
+  // setActiveView wrapper — gates clinical views to users with clinical subscription
   const setActiveView = useCallback((view) => {
+    if (!permissionsLoading && !canAccessView(view)) {
+      if (view !== VIEWS.HOME) {
+        showToast(`You don't have permission to open ${VIEW_LABELS[view] || 'that workspace'}.`, 'error')
+      }
+      navigateTo(VIEWS.HOME)
+      return
+    }
+    if (CLINICAL_VIEWS.includes(view) && !hasClinical) {
+      navigateTo('home')
+      return
+    }
+    if (view === VIEWS.CLIENT_AI && !aiAccess.canUseClientAIAgent) {
+      navigateTo('home')
+      return
+    }
+    // Clear openNoteId when navigating away from notes view
+    if (view !== 'notes') {
+      setOpenNoteId(null)
+      setActiveNoteContext(null)
+      setNotesLaunchContext(null)
+    }
+    if (view !== 'schedule') {
+      setScheduleLaunchContext(null)
+    }
+    if (view !== 'authorizations') {
+      setAuthorizationLaunchContext(null)
+    }
+    if (view !== 'reports') {
+      setReportLaunchContext(null)
+    }
+    if (view !== 'practice-intelligence') {
+      setPracticeIntelligenceLaunchContext(null)
+    }
+    if (view !== 'client-contacts') {
+      setContactsLaunchContext(null)
+    }
     navigateTo(view)
-  }, [navigateTo])
+  }, [navigateTo, hasClinical, aiAccess.canUseClientAIAgent, canAccessView, permissionsLoading, showToast])
+
+  useEffect(() => {
+    if (permissionsLoading || activeView === VIEWS.HOME) return
+    if (!canAccessView(activeView)) {
+      showToast(`You don't have permission to open ${VIEW_LABELS[activeView] || 'that workspace'}.`, 'error')
+      navigateTo(VIEWS.HOME)
+    }
+  }, [activeView, canAccessView, navigateTo, permissionsLoading, showToast])
+  const openAIAssistant = useCallback(() => {
+    if (!aiAccess.canUseAIAssistant) return
+    setAiPanelOpen(true)
+  }, [aiAccess.canUseAIAssistant])
   // Client selection is scoped per-user to prevent cross-account data leak
   // Clean up old unscoped keys (one-time migration)
   if (typeof window !== 'undefined') {
@@ -223,7 +355,24 @@ export default function Dashboard() {
   const [compareSnapshotId, setCompareSnapshotId] = useState(null)
   const [searchOpen, setSearchOpen] = useState(false)
   const [aiPanelOpen, setAiPanelOpen] = useState(false)
+  const [showCompletionModal, setShowCompletionModal] = useState(false)
+  const [skillGoalTarget, setSkillGoalTarget] = useState(null)
+  const [sessionActive, setSessionActive] = useState(false)
+  const [activeSessionId, setActiveSessionId] = useState(null)
+  const [activeRunId, setActiveRunId] = useState(null)
+  const [activeSessionContext, setActiveSessionContext] = useState(null)
   const [moreMenuOpen, setMoreMenuOpen] = useState(false)
+  const [scheduleLaunchContext, setScheduleLaunchContext] = useState(null)
+  const [openNoteId, setOpenNoteId] = useState(null)
+  const [activeNoteContext, setActiveNoteContext] = useState(null)
+  const [notesLaunchContext, setNotesLaunchContext] = useState(null)
+  const [authorizationLaunchContext, setAuthorizationLaunchContext] = useState(null)
+  const [reportLaunchContext, setReportLaunchContext] = useState(null)
+  const [practiceIntelligenceLaunchContext, setPracticeIntelligenceLaunchContext] = useState(null)
+  const [contactsLaunchContext, setContactsLaunchContext] = useState(null)
+  const [reportClientAssessments, setReportClientAssessments] = useState({})
+  const [reportClientSnapshots, setReportClientSnapshots] = useState([])
+  const [reportClientLoading, setReportClientLoading] = useState(false)
   const [detailPanelOpen, setDetailPanelOpen] = useState(false)
   const [shortcutsOpen, setShortcutsOpen] = useState(false)
   const [tourKey, setTourKey] = useState(0)
@@ -338,6 +487,7 @@ export default function Dashboard() {
   const [pendingView, setPendingView] = useState(null)
   const [unsavedDialogOpen, setUnsavedDialogOpen] = useState(false)
   const [unsavedSaving, setUnsavedSaving] = useState(false)
+  const [clientManagerOpen, setClientManagerOpen] = useState(false)
 
   const hasUnsavedChanges = useCallback(() => {
     if (!clientId) return false
@@ -346,6 +496,11 @@ export default function Dashboard() {
 
   // Guarded view switch — shows confirmation dialog when dirty
   const guardedSetActiveView = useCallback((view) => {
+    // 'clients' is a special action — open the ClientManager dropdown, not a view
+    if (view === 'clients') {
+      setClientManagerOpen(true)
+      return
+    }
     if (hasUnsavedChanges()) {
       setPendingView(view)
       setUnsavedDialogOpen(true)
@@ -554,6 +709,147 @@ export default function Dashboard() {
     guardedSetActiveView(VIEWS.GOALS)
   }, [guardedSetActiveView])
 
+  const launchSession = useCallback((sessionId = null, runId = null, sessionContext = null) => {
+    setActiveSessionId(sessionId)
+    setActiveRunId(runId)
+    setActiveSessionContext(sessionContext)
+    setSessionActive(true)
+  }, [])
+
+  const openSessionNote = useCallback((noteId, noteContext = null) => {
+    setOpenNoteId(noteId)
+    setActiveNoteContext(noteContext && typeof noteContext === 'object' ? noteContext : null)
+    setNotesLaunchContext(noteContext && typeof noteContext === 'object'
+      ? { ...noteContext, requestedAt: Date.now() }
+      : null)
+    guardedSetActiveView(VIEWS.NOTES)
+  }, [guardedSetActiveView])
+
+  const openNotesWorkspace = useCallback((launchContext = null) => {
+    setOpenNoteId(null)
+    setActiveNoteContext(null)
+    setNotesLaunchContext(
+      launchContext && typeof launchContext === 'object'
+        ? { ...launchContext, requestedAt: Date.now() }
+        : null
+    )
+    guardedSetActiveView(VIEWS.NOTES)
+  }, [guardedSetActiveView])
+
+  const openAuthorizations = useCallback((launchContext = null) => {
+    setAuthorizationLaunchContext(
+      launchContext && typeof launchContext === 'object'
+        ? { ...launchContext, requestedAt: Date.now() }
+        : null
+    )
+    guardedSetActiveView(VIEWS.AUTHORIZATIONS)
+  }, [guardedSetActiveView])
+
+  const openScheduleWorkspace = useCallback((launchContext = null) => {
+    setScheduleLaunchContext(
+      launchContext && typeof launchContext === 'object'
+        ? { ...launchContext, requestedAt: Date.now() }
+        : { requestedAt: Date.now() }
+    )
+    guardedSetActiveView(VIEWS.SCHEDULE)
+  }, [guardedSetActiveView])
+
+  const openClientContacts = useCallback((launchContext = null) => {
+    const nextClientId = launchContext?.clientId || clientId
+    const nextClientName = launchContext?.clientName || clientName
+
+    if (nextClientId) {
+      setClientId(nextClientId)
+      setClientName(nextClientName || 'Sample Client')
+      if (clientKey) safeSetItem(clientKey, nextClientId)
+      if (clientNameKey) safeSetItem(clientNameKey, nextClientName || 'Sample Client')
+    }
+
+    setContactsLaunchContext(
+      launchContext && typeof launchContext === 'object'
+        ? { ...launchContext, requestedAt: Date.now() }
+        : { requestedAt: Date.now() }
+    )
+    guardedSetActiveView(VIEWS.CLIENT_CONTACTS)
+  }, [clientId, clientKey, clientName, clientNameKey, guardedSetActiveView])
+
+  const openPracticeIntelligence = useCallback((launchContext = null) => {
+    setPracticeIntelligenceLaunchContext(
+      launchContext && typeof launchContext === 'object'
+        ? { ...launchContext, requestedAt: Date.now() }
+        : { requestedAt: Date.now() }
+    )
+    guardedSetActiveView(VIEWS.PRACTICE_INTELLIGENCE)
+  }, [guardedSetActiveView])
+
+  const returnFromClientContacts = useCallback((launchContext = null) => {
+    if (launchContext?.source === 'authorization_manager') {
+      openAuthorizations({
+        filter: 'renewal',
+        clientId: launchContext.clientId,
+        clientName: launchContext.clientName,
+      })
+      return
+    }
+
+    if (launchContext?.source === 'practice_intelligence') {
+      openPracticeIntelligence({
+        queue: launchContext.queue,
+        tab: launchContext.queue === 'billing_workbench' ? 'billing' : 'overview',
+        billingFilter: launchContext.billingFilter || (launchContext.queue === 'billing_workbench' ? 'contacts' : 'all'),
+        clientId: launchContext.clientId,
+        clientName: launchContext.clientName,
+      })
+    }
+  }, [openAuthorizations, openPracticeIntelligence])
+
+  const returnFromSessionNotes = useCallback((launchContext = null) => {
+    if (launchContext?.source === 'practice_intelligence') {
+      openPracticeIntelligence({
+        queue: launchContext.queue,
+        tab: launchContext.tab || (launchContext.queue === 'billing_workbench' ? 'billing' : 'overview'),
+        billingFilter: launchContext.billingFilter || (launchContext.queue === 'billing_workbench' ? 'all' : 'all'),
+        clientId: launchContext.clientId,
+        clientName: launchContext.clientName,
+      })
+    }
+  }, [openPracticeIntelligence])
+
+  const returnFromAuthorizationManager = useCallback((launchContext = null) => {
+    if (launchContext?.source === 'practice_intelligence') {
+      openPracticeIntelligence({
+        queue: launchContext.queue,
+        tab: launchContext.tab || (launchContext.queue === 'billing_workbench' ? 'billing' : 'overview'),
+        billingFilter: launchContext.billingFilter || 'all',
+        clientId: launchContext.clientId,
+        clientName: launchContext.clientName,
+      })
+    }
+  }, [openPracticeIntelligence])
+
+  const openReportBuilder = useCallback((launchContext = null) => {
+    setReportLaunchContext(
+      launchContext && typeof launchContext === 'object'
+        ? { ...launchContext, requestedAt: Date.now() }
+        : null
+    )
+    guardedSetActiveView(VIEWS.REPORTS)
+  }, [guardedSetActiveView])
+
+  // Goal generation handlers
+  const handleGenerateGoals = useCallback(() => {
+    setShowCompletionModal(false)
+    guardedSetActiveView(VIEWS.GOAL_DRAFTS)
+  }, [guardedSetActiveView])
+
+  const handleAssessmentComplete = useCallback(() => {
+    setShowCompletionModal(true)
+  }, [])
+
+  const handleSkillGoal = useCallback((skillId) => {
+    setSkillGoalTarget(skillId)
+  }, [])
+
   // Stable callbacks for view position sync (avoid re-render loops)
   const handleAssessPosition = useCallback((i) => updateParams({ i }), [updateParams])
   const handleIntelligenceTab = useCallback((tab) => updateParams({ tab }), [updateParams])
@@ -666,6 +962,48 @@ export default function Dashboard() {
     }
   }, [clientId]) // eslint-disable-line react-hooks/exhaustive-deps
 
+  useEffect(() => {
+    const reportClientId = reportLaunchContext?.clientId || null
+    if (!reportClientId || reportClientId === clientId) {
+      setReportClientAssessments({})
+      setReportClientSnapshots([])
+      setReportClientLoading(false)
+      return
+    }
+
+    let cancelled = false
+    setReportClientLoading(true)
+    setReportClientAssessments({})
+    setReportClientSnapshots([])
+
+    Promise.all([
+      getAssessments(reportClientId),
+      getSnapshots(reportClientId),
+    ]).then(([loadedAssessments, loadedSnapshots]) => {
+      if (cancelled) return
+      setReportClientAssessments(migrateAssessments(loadedAssessments || {}))
+      setReportClientSnapshots(loadedSnapshots || [])
+    }).catch((err) => {
+      if (cancelled) return
+      trackError(err, { action: 'load_report_client_data', reportClientId })
+      setReportClientAssessments({})
+      setReportClientSnapshots([])
+      showToast(userErrorMessage(err, 'load report data'), 'error')
+    }).finally(() => {
+      if (!cancelled) setReportClientLoading(false)
+    })
+
+    return () => {
+      cancelled = true
+    }
+  }, [clientId, reportLaunchContext?.clientId, reportLaunchContext?.requestedAt, showToast])
+
+  const reportViewClientId = reportLaunchContext?.clientId || clientId
+  const reportViewClientName = reportLaunchContext?.clientName || (reportViewClientId === clientId ? clientName : 'Sample Client')
+  const reportUsesOverrideClient = Boolean(reportLaunchContext?.clientId && reportLaunchContext.clientId !== clientId)
+  const reportViewAssessments = reportUsesOverrideClient ? reportClientAssessments : assessments
+  const reportViewSnapshots = reportUsesOverrideClient ? reportClientSnapshots : snapshots
+
   async function handleSaveSnapshot(label) {
     if (!clientId) return
     try {
@@ -694,7 +1032,7 @@ export default function Dashboard() {
   }
 
   // Assessment, tree, cascade, and timeline views are full-width — no side panels
-  const fullWidthViews = [VIEWS.HOME, VIEWS.ASSESS, VIEWS.TREE, VIEWS.CASCADE, VIEWS.EXPLORER, VIEWS.TIMELINE, VIEWS.QUICK_ASSESS, VIEWS.GOALS, VIEWS.ALERTS, VIEWS.REPORTS, VIEWS.PARENT, VIEWS.CASELOAD, VIEWS.MILESTONES, VIEWS.PRACTICE, VIEWS.ORG_ANALYTICS, VIEWS.PREDICTIONS, VIEWS.BRANDING, VIEWS.MESSAGES, VIEWS.DATA, VIEWS.ACCESSIBILITY, VIEWS.PRICING, VIEWS.MARKETPLACE, VIEWS.CERTIFICATIONS, VIEWS.COMPARE]
+  const fullWidthViews = [VIEWS.HOME, VIEWS.ASSESS, VIEWS.TREE, VIEWS.CASCADE, VIEWS.EXPLORER, VIEWS.TIMELINE, VIEWS.QUICK_ASSESS, VIEWS.GOALS, VIEWS.ALERTS, VIEWS.REPORTS, VIEWS.PARENT, VIEWS.CASELOAD, VIEWS.MILESTONES, VIEWS.PRACTICE, VIEWS.ORG_ANALYTICS, VIEWS.PREDICTIONS, VIEWS.BRANDING, VIEWS.MESSAGES, VIEWS.DATA, VIEWS.ACCESSIBILITY, VIEWS.PRICING, VIEWS.MARKETPLACE, VIEWS.CERTIFICATIONS, VIEWS.COMPARE, VIEWS.GOAL_DRAFTS, VIEWS.DEFICIT_GOALS, VIEWS.LESSON_PLAN, VIEWS.GOAL_LIBRARY, VIEWS.LEARNING_TREE, VIEWS.GRAPH_DASHBOARD, VIEWS.SESSIONS, VIEWS.NOTES, VIEWS.AUTHORIZATIONS, VIEWS.CLIENT_FILES, VIEWS.CLIENT_CONTACTS, VIEWS.CLIENT_AI, VIEWS.PRACTICE_INTELLIGENCE]
   const showSidePanels = !fullWidthViews.includes(activeView)
 
   // Hard gate: must have a subscription to access the dashboard
@@ -720,7 +1058,8 @@ export default function Dashboard() {
     )
   }
 
-  if (!subLoading && needsSubscription) {
+  // Don't show paywall until profile has loaded (prevents flash during race condition)
+  if (!subLoading && needsSubscription && profile && !profile.is_super_admin) {
     return (
       <div className="min-h-screen bg-warm-50 flex items-center justify-center px-4">
         <div className="w-full max-w-md text-center">
@@ -766,14 +1105,14 @@ export default function Dashboard() {
                 >
                   <div className="text-left">
                     <span className="font-semibold text-warm-800">{p.name}</span>
-                    <span className="text-warm-400 ml-2 text-xs">{p.desc}</span>
+                    <span className="text-warm-500 ml-2 text-xs">{p.desc}</span>
                   </div>
                   <span className="text-xs font-semibold text-sage-600">{p.price}</span>
                 </button>
               ))}
             </div>
-            <p className="text-xs text-warm-400">Cancel anytime during your trial. No commitment.</p>
-            <p className="text-xs text-warm-400 mt-1">
+            <p className="text-xs text-warm-500">Cancel anytime during your trial. No commitment.</p>
+            <p className="text-xs text-warm-500 mt-1">
               Need help?{' '}
               <a href="mailto:support@skillcascade.com" className="text-sage-500 hover:text-sage-600">
                 support@skillcascade.com
@@ -786,7 +1125,7 @@ export default function Dashboard() {
   }
 
   // Hard block for expired/canceled subscriptions
-  if (!subLoading && isExpired) {
+  if (!subLoading && isExpired && profile && !profile.is_super_admin) {
     return (
       <div className="min-h-screen bg-warm-50 flex items-center justify-center px-4">
         <div className="w-full max-w-md text-center">
@@ -832,13 +1171,13 @@ export default function Dashboard() {
                 >
                   <div className="text-left">
                     <span className="font-semibold text-warm-800">{p.name}</span>
-                    <span className="text-warm-400 ml-2 text-xs">{p.desc}</span>
+                    <span className="text-warm-500 ml-2 text-xs">{p.desc}</span>
                   </div>
                   <span className="text-xs font-semibold text-sage-600">{p.price}</span>
                 </button>
               ))}
             </div>
-            <p className="text-xs text-warm-400">Questions? Contact{' '}
+            <p className="text-xs text-warm-500">Questions? Contact{' '}
               <a href="mailto:support@skillcascade.com" className="text-sage-500 hover:text-sage-600">
                 support@skillcascade.com
               </a>
@@ -855,15 +1194,19 @@ export default function Dashboard() {
       {/* Top bar */}
       <header className={`bg-white border-b border-warm-200 px-3 sm:px-6 py-2 sm:py-3 flex items-center justify-between shrink-0 relative z-40 transition-shadow duration-200 ${scrolled ? 'shadow-sm' : ''}`}>
         <div className="flex items-center gap-2 sm:gap-4 min-w-0 flex-1">
-          <Link to="/" className="text-lg sm:text-xl font-bold text-warm-800 font-display whitespace-nowrap min-w-0 truncate">
+          <Link to="/" className="flex items-center gap-1.5 text-lg sm:text-xl font-bold text-warm-800 font-display whitespace-nowrap min-w-0 truncate">
+            <img src="/brand/icon-mark.jpg" alt="" className="w-6 h-6 sm:w-7 sm:h-7 rounded" aria-hidden="true" />
             Skill<span className="text-sage-500">Cascade</span>
           </Link>
           <span className="text-warm-200 hidden sm:inline">|</span>
           <span data-tour="client-manager"><ClientManager
             currentClientId={clientId}
+            currentClientName={clientName}
             onSelectClient={handleSelectClient}
             assessments={assessments}
             onSaveSuccess={() => { lastSavedRef.current = assessments; safeRemoveItem(DRAFT_PREFIX + clientId); showToast('Assessment saved', 'success') }}
+            externalOpen={clientManagerOpen}
+            onExternalOpenHandled={() => setClientManagerOpen(false)}
           /></span>
           <span className="hidden sm:inline">
             <AssessmentCompletionBadge assessments={assessments} onClick={() => guardedSetActiveView(VIEWS.ASSESS)} />
@@ -896,16 +1239,18 @@ export default function Dashboard() {
             </button>
           </div>
           {/* Desktop buttons — hidden on mobile */}
-          <button
-            data-tour="ai-tools"
-            onClick={() => setAiPanelOpen(true)}
-            className="hidden sm:flex items-center gap-2 text-sm text-warm-500 hover:text-warm-700 px-3 py-1.5 rounded-md hover:bg-warm-100 transition-colors border border-warm-200"
-          >
-            <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-              <path strokeLinecap="round" strokeLinejoin="round" d="M9.813 15.904L9 18.75l-.813-2.846a4.5 4.5 0 00-3.09-3.09L2.25 12l2.846-.813a4.5 4.5 0 003.09-3.09L9 5.25l.813 2.846a4.5 4.5 0 003.09 3.09L15.75 12l-2.846.813a4.5 4.5 0 00-3.09 3.09zM18.259 8.715L18 9.75l-.259-1.035a3.375 3.375 0 00-2.455-2.456L14.25 6l1.036-.259a3.375 3.375 0 002.455-2.456L18 2.25l.259 1.035a3.375 3.375 0 002.455 2.456L21.75 6l-1.036.259a3.375 3.375 0 00-2.455 2.456z" />
-            </svg>
-            <span>AI Tools</span>
-          </button>
+          {hasFeature('ai') && aiAccess.canUseAIAssistant && (
+            <button
+              data-tour="ai-tools"
+              onClick={openAIAssistant}
+              className="hidden sm:flex items-center gap-2 text-sm text-warm-500 hover:text-warm-700 px-3 py-1.5 rounded-md hover:bg-warm-100 transition-colors border border-warm-200"
+            >
+              <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                <path strokeLinecap="round" strokeLinejoin="round" d="M9.813 15.904L9 18.75l-.813-2.846a4.5 4.5 0 00-3.09-3.09L2.25 12l2.846-.813a4.5 4.5 0 003.09-3.09L9 5.25l.813 2.846a4.5 4.5 0 003.09 3.09L15.75 12l-2.846.813a4.5 4.5 0 00-3.09 3.09zM18.259 8.715L18 9.75l-.259-1.035a3.375 3.375 0 00-2.455-2.456L14.25 6l1.036-.259a3.375 3.375 0 002.455-2.456L18 2.25l.259 1.035a3.375 3.375 0 002.455 2.456L21.75 6l-1.036.259a3.375 3.375 0 00-2.455 2.456z" />
+              </svg>
+              <span>AI Tools</span>
+            </button>
+          )}
           <button
             data-tour="search"
             onClick={() => setSearchOpen(true)}
@@ -915,7 +1260,7 @@ export default function Dashboard() {
               <path strokeLinecap="round" strokeLinejoin="round" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
             </svg>
             <span>Search</span>
-            <kbd className="text-[10px] px-1.5 py-0.5 rounded bg-warm-100 text-warm-400 font-mono">Ctrl+K</kbd>
+            <kbd className="text-[10px] px-1.5 py-0.5 rounded bg-warm-100 text-warm-500 font-mono">Ctrl+K</kbd>
           </button>
           {showSidePanels && (
             <button
@@ -946,15 +1291,17 @@ export default function Dashboard() {
             </button>
             {moreMenuOpen && (
               <div className="absolute right-0 top-full mt-1 w-48 bg-white rounded-lg shadow-lg border border-warm-200 py-1 z-50">
-                <button
-                  onClick={() => { setAiPanelOpen(true); setMoreMenuOpen(false) }}
-                  className="w-full text-left px-4 py-2 text-sm text-warm-700 hover:bg-warm-50 flex items-center gap-2"
-                >
-                  <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                    <path strokeLinecap="round" strokeLinejoin="round" d="M9.813 15.904L9 18.75l-.813-2.846a4.5 4.5 0 00-3.09-3.09L2.25 12l2.846-.813a4.5 4.5 0 003.09-3.09L9 5.25l.813 2.846a4.5 4.5 0 003.09 3.09L15.75 12l-2.846.813a4.5 4.5 0 00-3.09 3.09z" />
-                  </svg>
-                  AI Tools
-                </button>
+                {hasFeature('ai') && aiAccess.canUseAIAssistant && (
+                  <button
+                    onClick={() => { openAIAssistant(); setMoreMenuOpen(false) }}
+                    className="w-full text-left px-4 py-2 text-sm text-warm-700 hover:bg-warm-50 flex items-center gap-2"
+                  >
+                    <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                      <path strokeLinecap="round" strokeLinejoin="round" d="M9.813 15.904L9 18.75l-.813-2.846a4.5 4.5 0 00-3.09-3.09L2.25 12l2.846-.813a4.5 4.5 0 003.09-3.09L9 5.25l.813 2.846a4.5 4.5 0 003.09 3.09L15.75 12l-2.846.813a4.5 4.5 0 00-3.09 3.09z" />
+                    </svg>
+                    AI Tools
+                  </button>
+                )}
                 <button
                   onClick={() => { setSearchOpen(true); setMoreMenuOpen(false) }}
                   className="w-full text-left px-4 py-2 text-sm text-warm-700 hover:bg-warm-50 flex items-center gap-2"
@@ -1041,6 +1388,8 @@ export default function Dashboard() {
             shortcutMap={SHORTCUT_MAP}
             onOpenShortcuts={() => setShortcutsOpen(true)}
             onRestartTour={handleRestartTour}
+            canUseClientAI={aiAccess.canUseClientAIAgent}
+            canAccessView={canAccessView}
           />
         )}
 
@@ -1049,7 +1398,7 @@ export default function Dashboard() {
           !isDesktop ? (
             <>
               <div className="fixed inset-0 bg-black/40 z-30" onClick={() => { setSidebarOpen(false); if (selectedNode) setDetailPanelOpen(true) }} />
-              <aside className="fixed left-0 top-0 bottom-0 z-40 w-[85vw] max-w-80 bg-white shadow-xl overflow-y-auto mt-[49px]">
+              <aside className="fixed left-0 top-0 bottom-0 z-40 w-[85vw] max-w-80 bg-white shadow-lg overflow-y-auto mt-[49px]">
                 <DomainNavigator
                   assessments={assessments}
                   selectedId={selectedNode?.id}
@@ -1101,6 +1450,8 @@ export default function Dashboard() {
                 viewsVisited={viewsVisited}
                 reportsVisited={reportsVisited}
                 snapshotCount={clientId ? snapshots.filter(s => !s.id?.startsWith('sample-')).length : 0}
+                canAccessView={canAccessView}
+                canCreateClients={dashboardViewAccess.canCreateClients}
               />
             </Suspense>
           )}
@@ -1122,7 +1473,7 @@ export default function Dashboard() {
                   Skills Profile — Sunburst View <KBHelpIcon term="view-sunburst" />
                 </h2>
                 <ContextualHint show={sunburstHint.show} onDismiss={sunburstHint.dismiss} className="mb-4">
-                  The center ring shows domains, middle ring shows sub-areas, and outer ring shows individual skills. Click any segment to drill down. <KBLink term="view-sunburst" className="text-[#7fb589]">Learn more</KBLink>
+                  The center ring shows domains, middle ring shows sub-areas, and outer ring shows individual skills. Click any segment to drill down. <KBLink term="view-sunburst" className="text-[#10B981]">Learn more</KBLink>
                 </ContextualHint>
                 <p className="text-sm text-warm-500 mb-4">Click any segment to zoom in. Click center to zoom out.</p>
                 <ResponsiveSVG aspectRatio={1} maxWidth={700}>
@@ -1207,7 +1558,8 @@ export default function Dashboard() {
                   onSelectNode={(node) => setSelectedNode({ id: node.id, name: node.name })}
                   onNavigateToAssess={handleNavigateToAssess}
                   onNavigateToGoals={handleNavigateToGoals}
-                  onOpenAI={() => setAiPanelOpen(true)}
+                  onGenerateGoals={handleGenerateGoals}
+                  onOpenAI={aiAccess.canUseAIAssistant ? openAIAssistant : null}
                   initialTab={viewParams.tab}
                   onTabChange={handleIntelligenceTab}
                 />
@@ -1249,6 +1601,8 @@ export default function Dashboard() {
                   initialIndex={viewParams.i ? Number(viewParams.i) : undefined}
                   onPositionChange={handleAssessPosition}
                   onDrillDown={handleAssessDrillDown}
+                  onAssessmentComplete={handleAssessmentComplete}
+                  onSkillGoal={handleSkillGoal}
                 />
               </div>
             </Suspense>
@@ -1282,6 +1636,10 @@ export default function Dashboard() {
                   focusDomain={goalFocusDomain}
                   onClearFocus={() => setGoalFocusDomain(null)}
                   clientName={clientName}
+                  onGenerateGoals={handleGenerateGoals}
+                  onDeficitGoals={() => guardedSetActiveView(VIEWS.DEFICIT_GOALS)}
+                  onLessonPlan={() => guardedSetActiveView(VIEWS.LESSON_PLAN)}
+                  onSkillGoal={handleSkillGoal}
                 />
               </Suspense>
             </div>
@@ -1303,21 +1661,26 @@ export default function Dashboard() {
 
           {/* Reports view */}
           {activeView === VIEWS.REPORTS && (
-            <FeatureGate feature="reports">
             <div data-tour="reports-view" className="w-full h-full overflow-y-auto">
-              <Suspense fallback={<ViewLoader view={activeView} />}>
-                <ReportGenerator
-                  assessments={assessments}
-                  clientName={clientName}
-                  clientId={clientId}
-                  user={user}
-                  snapshots={snapshots}
-                  onNavigateToAssess={handleNavigateToAssess}
-                  branding={branding}
-                />
-              </Suspense>
+              {reportClientLoading ? (
+                <ViewLoader view={activeView} />
+              ) : (
+                <Suspense fallback={<ViewLoader view={activeView} />}>
+                  <ReportGenerator
+                    assessments={reportViewAssessments}
+                    clientName={reportViewClientName}
+                    clientId={reportViewClientId}
+                    user={user}
+                    snapshots={reportViewSnapshots}
+                    onNavigateToAssess={handleNavigateToAssess}
+                    onOpenAuthorizations={openAuthorizations}
+                    branding={branding}
+                    initialType={reportLaunchContext?.initialType || null}
+                    launchContext={reportLaunchContext}
+                  />
+                </Suspense>
+              )}
             </div>
-            </FeatureGate>
           )}
 
           {/* Parent view */}
@@ -1514,6 +1877,270 @@ export default function Dashboard() {
             </FeatureGate>
           )}
 
+          {/* Learning Tree */}
+          {activeView === VIEWS.LEARNING_TREE && (
+            <div className="w-full h-full overflow-y-auto">
+              <Suspense fallback={<ViewLoader view={activeView} />}>
+                <LearningTree
+                  clientId={clientId}
+                  clientName={clientName}
+                  assessments={assessments}
+                  onStartSession={() => launchSession()}
+                />
+              </Suspense>
+            </div>
+          )}
+
+          {/* Graph Dashboard */}
+          {activeView === VIEWS.GRAPH_DASHBOARD && (
+            <div className="w-full h-full overflow-y-auto">
+              <Suspense fallback={<ViewLoader view={activeView} />}>
+                <GraphDashboard clientId={clientId} clientName={clientName} />
+              </Suspense>
+            </div>
+          )}
+
+          {/* Session Manager */}
+          {activeView === VIEWS.SESSIONS && (
+            <ClinicalGate>
+            <div className="w-full h-full overflow-y-auto">
+              <Suspense fallback={<ViewLoader view={activeView} />}>
+                <SessionManager clientId={clientId} clientName={clientName} onStartSession={(sessionId, runId) => launchSession(sessionId, runId)} />
+              </Suspense>
+            </div>
+            </ClinicalGate>
+          )}
+
+          {/* Goal Library */}
+          {activeView === VIEWS.GOAL_LIBRARY && (
+            <div className="w-full h-full overflow-y-auto px-4 py-6">
+              <Suspense fallback={<ViewLoader view={activeView} />}>
+                <GoalLibrary
+                  clientId={clientId}
+                  onSelectGoal={async (goal) => {
+                    if (!clientId) return
+                    const { data: newProgData, error } = await api
+                      .from('client_programs')
+                      .insert({
+                        client_id: clientId,
+                        stg_id: goal.stg_id || null,
+                        domain: goal.domain_name || 'Communication',
+                        ltg_name: goal.ltg_name || '',
+                        stg_name: goal.stg_name || '',
+                        name: goal.name,
+                        objective: goal.objective,
+                        criteria: goal.default_criteria || '80% accuracy across 5 consecutive sessions',
+                        measurement_type: goal.measurement_type || 'percentage',
+                        goal_type: goal.goal_type || 'increase',
+                        skill_mappings: goal.skill_mappings || [],
+                        status: 'acquisition',
+                        display_order: 0,
+                      })
+                    const newProg = Array.isArray(newProgData) ? newProgData[0] : newProgData
+                    if (error) {
+                      console.error('Failed to add goal:', error.message)
+                    } else {
+                      console.log('Added goal to Learning Tree:', newProg.name)
+                      // Brief visual feedback without closing
+                    }
+                  }}
+                  onClose={() => guardedSetActiveView(VIEWS.GOALS)}
+                />
+              </Suspense>
+            </div>
+          )}
+
+          {/* AI Goal Drafts */}
+          {activeView === VIEWS.GOAL_DRAFTS && (
+            <div className="w-full h-full overflow-y-auto">
+              <Suspense fallback={<ViewLoader view={activeView} />}>
+                <GoalDraftPanel
+                  assessments={assessments}
+                  clientName={clientName}
+                  onClose={() => guardedSetActiveView(VIEWS.GOALS)}
+                  onViewGoalEngine={() => guardedSetActiveView(VIEWS.GOALS)}
+                />
+              </Suspense>
+            </div>
+          )}
+
+          {/* Insurance Deficit → Goals */}
+          {activeView === VIEWS.DEFICIT_GOALS && (
+            <div className="w-full h-full overflow-y-auto">
+              <Suspense fallback={<ViewLoader view={activeView} />}>
+                <DeficitGoalForm
+                  assessments={assessments}
+                  clientName={clientName}
+                  onClose={() => guardedSetActiveView(VIEWS.GOALS)}
+                />
+              </Suspense>
+            </div>
+          )}
+
+          {/* Lesson Plan */}
+          {activeView === VIEWS.LESSON_PLAN && (
+            <div className="w-full h-full overflow-y-auto">
+              <Suspense fallback={<ViewLoader view={activeView} />}>
+                <LessonPlanGenerator
+                  assessments={assessments}
+                  clientName={clientName}
+                  onClose={() => guardedSetActiveView(VIEWS.GOALS)}
+                />
+              </Suspense>
+            </div>
+          )}
+
+          {/* Schedule — weekly calendar */}
+          {activeView === VIEWS.SCHEDULE && (
+            <ClinicalGate>
+            <div className="w-full h-full overflow-y-auto">
+              <Suspense fallback={<ViewLoader view={activeView} />}>
+                <ScheduleView
+                  launchContext={scheduleLaunchContext}
+                  onStartSession={(sessionId, runId, launchContext) => {
+                    const resolvedContext = launchContext && typeof launchContext === 'object'
+                      ? launchContext
+                      : null
+                    if (resolvedContext?.clientId || clientId || sessionId) {
+                      launchSession(sessionId, runId, resolvedContext)
+                    }
+                  }}
+                  onWriteNote={openSessionNote}
+                />
+              </Suspense>
+            </div>
+            </ClinicalGate>
+          )}
+
+          {/* Daily Agenda — therapist's daily view */}
+          {activeView === VIEWS.DAILY_AGENDA && (
+            <ClinicalGate>
+            <div className="w-full h-full overflow-y-auto">
+              <Suspense fallback={<ViewLoader view={activeView} />}>
+                <DailyAgenda
+                  onStartSession={(sessionId, runId, launchContext) => {
+                    const resolvedContext = launchContext && typeof launchContext === 'object'
+                      ? launchContext
+                      : null
+                    if (resolvedContext?.clientId || clientId || sessionId) {
+                      launchSession(sessionId, runId, resolvedContext)
+                    }
+                  }}
+                  onNavigateToSchedule={() => guardedSetActiveView(VIEWS.SCHEDULE)}
+                  onWriteNote={openSessionNote}
+                />
+              </Suspense>
+            </div>
+            </ClinicalGate>
+          )}
+
+          {/* Session Notes Manager */}
+          {activeView === VIEWS.NOTES && (
+            <ClinicalGate>
+            <div className="w-full h-full overflow-y-auto">
+              <Suspense fallback={<ViewLoader view={activeView} />}>
+                <SessionNotesManager
+                  clientId={activeNoteContext?.clientId || clientId}
+                  clientName={activeNoteContext?.clientName || clientName}
+                  openNoteId={openNoteId}
+                  launchContext={notesLaunchContext}
+                  onReturnToSource={returnFromSessionNotes}
+                />
+              </Suspense>
+            </div>
+            </ClinicalGate>
+          )}
+
+          {/* Authorization Manager */}
+          {activeView === VIEWS.AUTHORIZATIONS && (
+            <ClinicalGate>
+            <div className="w-full h-full overflow-y-auto px-4 py-6">
+              <Suspense fallback={<ViewLoader view={activeView} />}>
+                <AuthorizationManager
+                  focusClientId={authorizationLaunchContext?.clientId || null}
+                  launchFilter={authorizationLaunchContext?.filter || 'all'}
+                  launchAction={authorizationLaunchContext?.action || null}
+                  launchRequestId={authorizationLaunchContext?.requestedAt || 0}
+                  launchContext={authorizationLaunchContext}
+                  onOpenContacts={openClientContacts}
+                  onReturnToSource={returnFromAuthorizationManager}
+                  onOpenReports={(launchContext = null) => openReportBuilder({
+                    initialType: 'authorization',
+                    ...(launchContext && typeof launchContext === 'object' ? launchContext : {}),
+                  })}
+                />
+              </Suspense>
+            </div>
+            </ClinicalGate>
+          )}
+
+          {/* Client Files */}
+          {activeView === VIEWS.CLIENT_FILES && (
+            <ClinicalGate>
+            <div className="w-full h-full overflow-y-auto">
+              <Suspense fallback={<ViewLoader view={activeView} />}>
+                <ClientFiles clientId={clientId} clientName={clientName} />
+              </Suspense>
+            </div>
+            </ClinicalGate>
+          )}
+
+          {/* Client Contacts */}
+          {activeView === VIEWS.CLIENT_CONTACTS && (
+            <ClinicalGate>
+            <div className="w-full h-full overflow-y-auto">
+              <Suspense fallback={<ViewLoader view={activeView} />}>
+                <ClientContacts
+                  clientId={clientId}
+                  clientName={clientName}
+                  launchContext={contactsLaunchContext}
+                  onReturnToSource={returnFromClientContacts}
+                />
+              </Suspense>
+            </div>
+            </ClinicalGate>
+          )}
+
+          {/* Client AI Agent */}
+          {activeView === VIEWS.CLIENT_AI && (
+            <div className="w-full h-full overflow-y-auto px-4 py-6">
+              {aiAccess.canUseClientAIAgent ? (
+                <Suspense fallback={<ViewLoader view={activeView} />}>
+                  <ClientAIAgent
+                    clientId={clientId}
+                    clientName={clientName}
+                    assessments={assessments}
+                    snapshots={snapshots}
+                  />
+                </Suspense>
+              ) : (
+                <NoPermission message={aiAccess.clientAIAgentMessage} />
+              )}
+            </div>
+          )}
+
+          {/* Practice Intelligence */}
+          {activeView === VIEWS.PRACTICE_INTELLIGENCE && (
+            <ClinicalGate>
+            <div className="w-full h-full overflow-y-auto px-4 py-6">
+              <Suspense fallback={<ViewLoader view={activeView} />}>
+                <PracticeIntelligence
+                  launchContext={practiceIntelligenceLaunchContext}
+                  onOpenAuthorizations={openAuthorizations}
+                  onOpenSchedule={openScheduleWorkspace}
+                  onOpenReports={(launchContext = null) => openReportBuilder({
+                    initialType: 'authorization',
+                    ...(launchContext && typeof launchContext === 'object' ? launchContext : {}),
+                  })}
+                  onOpenNotes={openNotesWorkspace}
+                  onOpenNote={openSessionNote}
+                  onOpenContacts={openClientContacts}
+                />
+              </Suspense>
+            </div>
+            </ClinicalGate>
+          )}
+
           </>)}
           </motion.div>
           </AnimatePresence>
@@ -1525,10 +2152,10 @@ export default function Dashboard() {
           !isDesktop && detailPanelOpen && !sidebarOpen ? (
             <>
               <div className="fixed inset-0 bg-black/40 z-30" onClick={() => { setSelectedNode(null); setDetailPanelOpen(false) }} />
-              <aside className="fixed right-0 top-0 bottom-0 z-40 w-[85vw] max-w-80 bg-white shadow-xl overflow-y-auto p-5 mt-[49px]">
+              <aside className="fixed right-0 top-0 bottom-0 z-40 w-[85vw] max-w-80 bg-white shadow-lg overflow-y-auto p-5 mt-[49px]">
                 <button
                   onClick={() => { setSelectedNode(null); setDetailPanelOpen(false) }}
-                  className="absolute top-3 right-3 p-2 rounded-lg text-warm-400 hover:text-warm-600 hover:bg-warm-100 transition-colors"
+                  className="absolute top-3 right-3 p-2 rounded-lg text-warm-500 hover:text-warm-600 hover:bg-warm-100 transition-colors"
                   aria-label="Close detail panel"
                 >
                   <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
@@ -1546,13 +2173,59 @@ export default function Dashboard() {
         )}
       </div>
     </div>
-    {hasFeature('ai') && (
+    {hasFeature('ai') && aiAccess.canUseAIAssistant && (
       <Suspense fallback={null}>
         <AIAssistantPanel
           isOpen={aiPanelOpen}
           onClose={() => setAiPanelOpen(false)}
           clientName={clientName}
           assessments={assessments}
+        />
+      </Suspense>
+    )}
+    {sessionActive && (activeSessionContext?.clientId || clientId) && (
+      <Suspense fallback={null}>
+        <SessionView
+          clientId={activeSessionContext?.clientId || clientId}
+          clientName={activeSessionContext?.clientName || clientName}
+          sessionId={activeSessionId}
+          runId={activeRunId}
+          scheduleContext={activeSessionContext}
+          onEndSession={(sessionHandoff = null) => {
+            setSessionActive(false)
+            setActiveSessionId(null)
+            setActiveRunId(null)
+            setActiveSessionContext(null)
+
+            if (sessionHandoff?.noteId) {
+              openSessionNote(sessionHandoff.noteId, sessionHandoff.noteContext || null)
+              return
+            }
+
+            if (sessionHandoff?.noteContext) {
+              openNotesWorkspace({ ...sessionHandoff.noteContext })
+            }
+          }}
+        />
+      </Suspense>
+    )}
+    {skillGoalTarget && (
+      <Suspense fallback={null}>
+        <SkillGoalView
+          skillId={skillGoalTarget}
+          assessments={assessments}
+          clientName={clientName}
+          onClose={() => setSkillGoalTarget(null)}
+        />
+      </Suspense>
+    )}
+    {showCompletionModal && (
+      <Suspense fallback={null}>
+        <AssessmentCompletionModal
+          assessments={assessments}
+          onGenerateGoals={handleGenerateGoals}
+          onViewGoals={() => { setShowCompletionModal(false); guardedSetActiveView(VIEWS.GOALS) }}
+          onDismiss={() => setShowCompletionModal(false)}
         />
       </Suspense>
     )}
@@ -1569,14 +2242,16 @@ export default function Dashboard() {
         onChangeView={guardedSetActiveView}
         onPrint={() => window.print()}
         onSaveSnapshot={() => { if (clientId) handleSaveSnapshot('Quick snapshot') }}
-        onOpenAI={() => setAiPanelOpen(true)}
+        onOpenAI={aiAccess.canUseAIAssistant ? openAIAssistant : null}
+        canUseAI={aiAccess.canUseSearchAI}
+        canAccessView={canAccessView}
       />
     </Suspense>
     <PrintReport assessments={assessments} clientName={clientName} snapshots={snapshots} branding={branding} />
     {/* Toasts now handled globally by ToastProvider in App.jsx */}
     <Suspense fallback={null}>
       <OnboardingTour key={tourKey} onComplete={() => {}} onNavigate={(view) => {
-        if (view === 'open-ai') { setAiPanelOpen(true) }
+        if (view === 'open-ai') { openAIAssistant() }
         else { setActiveView(view) }
       }} />
     </Suspense>
@@ -1613,7 +2288,7 @@ export default function Dashboard() {
         onStartAssessment={() => guardedSetActiveView(VIEWS.ASSESS)}
         onSaveSnapshot={() => { if (clientId) handleSaveSnapshot('Quick snapshot') }}
         onSearch={() => setSearchOpen(true)}
-        onAITools={() => setAiPanelOpen(true)}
+        onAITools={hasFeature('ai') && aiAccess.canUseAIAssistant ? openAIAssistant : null}
         hasClient={!!clientId}
       />
     )}
@@ -1621,7 +2296,8 @@ export default function Dashboard() {
       <MobileTabBar
         activeView={activeView}
         onChangeView={guardedSetActiveView}
-        onOpenAI={() => setAiPanelOpen(true)}
+        onOpenAI={hasFeature('ai') && aiAccess.canUseAIAssistant ? openAIAssistant : null}
+        canAccessView={canAccessView}
       />
     )}
     <UnsavedChangesDialog
@@ -1657,7 +2333,7 @@ function DomainNavigator({ assessments, selectedId, onSelect }) {
 
   return (
     <div className="p-4">
-      <h3 className="text-xs uppercase tracking-wider text-warm-400 font-semibold mb-3">
+      <h3 className="text-xs uppercase tracking-wider text-warm-500 font-semibold mb-3">
         Domains
       </h3>
       <div className="space-y-0.5">
@@ -1687,7 +2363,7 @@ function DomainNavigator({ assessments, selectedId, onSelect }) {
                     : 'hover:bg-warm-100 text-warm-700'
                 }`}
               >
-                <span className="text-xs text-warm-400 w-4">{isExpanded ? '▾' : '▸'}</span>
+                <span className="text-xs text-warm-500 w-4">{isExpanded ? '▾' : '▸'}</span>
                 <span className="flex-1 font-medium">{domain.name}</span>
                 <ScoreBadge score={avg} count={assessed.length} total={domainSkills.length} />
               </button>
@@ -1725,7 +2401,7 @@ function ScoreBadge({ score, count, total }) {
         ? 'bg-yellow-100 text-yellow-700'
         : score > 0
           ? 'bg-coral-100 text-coral-700'
-          : 'bg-warm-100 text-warm-400'
+          : 'bg-warm-100 text-warm-500'
 
   return (
     <span className={`text-[10px] px-1.5 py-0.5 rounded-full font-medium ${color}`}>
@@ -1743,7 +2419,7 @@ function DetailPanel({ detail, assessments, onAssess, onNavigateToAssess }) {
   if (type === 'domain') {
     return (
       <div>
-        <div className="text-xs uppercase tracking-wider text-warm-400 font-semibold mb-2">
+        <div className="text-xs uppercase tracking-wider text-warm-500 font-semibold mb-2">
           Domain {data.domain}
         </div>
         <h3 className="text-lg font-bold text-warm-800 font-display mb-1">{data.name}</h3>
@@ -1753,14 +2429,14 @@ function DetailPanel({ detail, assessments, onAssess, onNavigateToAssess }) {
             <span className="font-semibold">Key insight:</span> {data.keyInsight}
           </div>
         )}
-        <div className="text-xs text-warm-400 mt-4">
+        <div className="text-xs text-warm-500 mt-4">
           {data.subAreas.length} sub-areas •{' '}
           {data.subAreas.reduce((sum, sa) => sum + sa.skillGroups.length, 0)} skill groups
         </div>
         {onNavigateToAssess && data.subAreas.length > 0 && (
           <button
             onClick={() => onNavigateToAssess(data.subAreas[0].id)}
-            className="mt-4 w-full text-xs px-3 py-2 rounded-lg bg-sage-500 text-white hover:bg-sage-600 transition-colors font-medium"
+            className="mt-4 w-full text-xs px-3 py-2 rounded-lg bg-sage-600 text-white hover:bg-sage-700 transition-colors font-medium"
           >
             Assess this Domain
           </button>
@@ -1772,7 +2448,7 @@ function DetailPanel({ detail, assessments, onAssess, onNavigateToAssess }) {
   if (type === 'subArea') {
     return (
       <div>
-        <div className="text-xs text-warm-400 mb-1">{domain.name}</div>
+        <div className="text-xs text-warm-500 mb-1">{domain.name}</div>
         <h3 className="text-lg font-bold text-warm-800 font-display mb-4">{data.name}</h3>
         <div className="space-y-4">
           {data.skillGroups.map((sg) => (
@@ -1787,7 +2463,7 @@ function DetailPanel({ detail, assessments, onAssess, onNavigateToAssess }) {
         {onNavigateToAssess && (
           <button
             onClick={() => onNavigateToAssess(data.id)}
-            className="mt-4 w-full text-xs px-3 py-2 rounded-lg bg-sage-500 text-white hover:bg-sage-600 transition-colors font-medium"
+            className="mt-4 w-full text-xs px-3 py-2 rounded-lg bg-sage-600 text-white hover:bg-sage-700 transition-colors font-medium"
           >
             Assess this Sub-area
           </button>
@@ -1799,7 +2475,7 @@ function DetailPanel({ detail, assessments, onAssess, onNavigateToAssess }) {
   if (type === 'skillGroup') {
     return (
       <div>
-        <div className="text-xs text-warm-400 mb-1">
+        <div className="text-xs text-warm-500 mb-1">
           {domain.name} {'→'} {subArea.name}
         </div>
         <h3 className="text-base font-bold text-warm-800 font-display mb-4">{data.name}</h3>
@@ -1807,7 +2483,7 @@ function DetailPanel({ detail, assessments, onAssess, onNavigateToAssess }) {
         {onNavigateToAssess && (
           <button
             onClick={() => onNavigateToAssess(subArea.id)}
-            className="mt-4 w-full text-xs px-3 py-2 rounded-lg bg-sage-500 text-white hover:bg-sage-600 transition-colors font-medium"
+            className="mt-4 w-full text-xs px-3 py-2 rounded-lg bg-sage-600 text-white hover:bg-sage-700 transition-colors font-medium"
           >
             Assess this area
           </button>
@@ -1830,7 +2506,7 @@ function SkillGroupAssessor({ skillGroup, assessments, onAssess }) {
             <div key={skill.id}>
               <div className="text-[11px] text-warm-600 mb-1.5 leading-tight">{skill.name}</div>
               <div className="flex gap-1 items-center">
-                {!isAssessed(level) && <span className="text-[9px] text-warm-400">{'\u2014'}</span>}
+                {!isAssessed(level) && <span className="text-[9px] text-warm-500">{'\u2014'}</span>}
                 {[0, 1, 2, 3].map((val) => {
                   const selected = level === val
                   return (

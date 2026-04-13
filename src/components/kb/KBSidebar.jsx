@@ -105,7 +105,7 @@ function CategoryEntries({ categoryKey, activeEntryId }) {
               className={`block pl-3 pr-2 py-1.5 text-[11px] leading-tight rounded-r-md transition-colors ${
                 isCurrent
                   ? 'text-sage-700 font-medium bg-sage-50 border-l-2 border-sage-500 -ml-px'
-                  : 'text-warm-400 hover:text-warm-600 hover:bg-warm-50'
+                  : 'text-warm-500 hover:text-warm-600 hover:bg-warm-50'
               }`}
             >
               {entry.title}

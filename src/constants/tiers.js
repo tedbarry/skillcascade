@@ -13,9 +13,9 @@ export const TIER_LABELS = {
 }
 
 export const TIER_COLORS = {
-  1: '#7fb589',
+  1: '#10B981',
   2: '#5da87a',
-  3: '#e5b76a',
+  3: '#F59E0B',
   4: '#d4956a',
   5: '#e07b6e',
 }

@@ -52,7 +52,7 @@ export default memo(function DomainEdge({
         opacity={opacity}
         strokeDasharray={dash}
         strokeLinecap="round"
-        markerEnd={`url(#arrow-${stroke === '#ff4444' ? 'red' : stroke === '#ffd700' ? 'gold' : stroke === '#ff8800' ? 'orange' : 'default'})`}
+        markerEnd={`url(#arrow-${stroke === '#EF4444' ? 'red' : stroke === '#FBBF24' ? 'gold' : stroke === '#F97316' ? 'orange' : 'default'})`}
       />
       {annotation && (
         <g>

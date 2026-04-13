@@ -1,10 +1,12 @@
 import { useState, useEffect, useCallback } from 'react'
-import { supabase } from '../../lib/supabase.js'
+import { api } from '../../lib/api.js'
 import { useAuth } from '../../contexts/AuthContext.jsx'
+import usePermissions from '../../hooks/usePermissions.js'
 import { clearAllData } from '../../data/storage.js'
 
 export default function OrgSettings() {
   const { profile } = useAuth()
+  const { can } = usePermissions()
   const [orgName, setOrgName] = useState('')
   const [savedName, setSavedName] = useState('')
   const [saving, setSaving] = useState(false)
@@ -15,12 +17,13 @@ export default function OrgSettings() {
   const [status, setStatus] = useState(null)
 
   const orgId = profile?.org_id
+  const canManageSettings = profile?.is_super_admin || can('settings', 'edit')
 
   const loadOrg = useCallback(async () => {
     if (!orgId) return
     setLoading(true)
     try {
-      const { data, error } = await supabase
+      const { data, error } = await api
         .from('organizations')
         .select('name')
         .eq('id', orgId)
@@ -38,11 +41,11 @@ export default function OrgSettings() {
   useEffect(() => { loadOrg() }, [loadOrg])
 
   const handleSave = async () => {
-    if (!orgId || saving || orgName.trim() === savedName) return
+    if (!orgId || !canManageSettings || saving || orgName.trim() === savedName) return
     setSaving(true)
     setStatus(null)
     try {
-      const { error } = await supabase
+      const { error } = await api
         .from('organizations')
         .update({ name: orgName.trim() })
         .eq('id', orgId)
@@ -57,7 +60,7 @@ export default function OrgSettings() {
   }
 
   const handleClearAll = async () => {
-    if (clearConfirmText !== 'DELETE' || !orgId || clearing) return
+    if (clearConfirmText !== 'DELETE' || !orgId || !canManageSettings || clearing) return
     setClearing(true)
     setStatus(null)
     try {
@@ -73,7 +76,7 @@ export default function OrgSettings() {
   }
 
   if (loading) {
-    return <div className="p-6 text-center text-warm-400 text-sm">Loading settings...</div>
+    return <div className="p-6 text-center text-warm-500 text-sm">Loading settings...</div>
   }
 
   return (
@@ -89,6 +92,12 @@ export default function OrgSettings() {
         </div>
       )}
 
+      {!canManageSettings && (
+        <div className="px-4 py-2.5 rounded-lg border border-amber-200 bg-amber-50 text-sm text-amber-800">
+          You can view organization settings here, but only admins or users with settings access can change them.
+        </div>
+      )}
+
       {/* Organization Name */}
       <div className="bg-white rounded-xl border border-warm-200 p-5">
         <h3 className="text-sm font-semibold text-warm-700 mb-3">Organization Name</h3>
@@ -98,12 +107,13 @@ export default function OrgSettings() {
             value={orgName}
             onChange={(e) => setOrgName(e.target.value)}
             placeholder="Your organization name"
+            disabled={!canManageSettings}
             className="flex-1 px-3 py-2 min-h-[44px] text-sm rounded-lg border border-warm-200 text-warm-700 focus:outline-none focus:border-sage-400"
           />
           <button
             onClick={handleSave}
-            disabled={saving || orgName.trim() === savedName}
-            className="px-5 py-2 min-h-[44px] text-sm font-semibold rounded-lg bg-sage-500 text-white hover:bg-sage-600 disabled:bg-warm-200 disabled:text-warm-400 transition-colors"
+            disabled={!canManageSettings || saving || orgName.trim() === savedName}
+            className="px-5 py-2 min-h-[44px] text-sm font-semibold rounded-lg bg-sage-600 text-white hover:bg-sage-700 disabled:bg-warm-200 disabled:text-warm-400 transition-colors"
           >
             {saving ? 'Saving...' : 'Save'}
           </button>
@@ -119,8 +129,9 @@ export default function OrgSettings() {
 
         {!showClearConfirm ? (
           <button
+            disabled={!canManageSettings}
             onClick={() => setShowClearConfirm(true)}
-            className="flex items-center gap-2 px-4 py-2 min-h-[44px] text-sm font-medium rounded-lg border border-red-200 text-red-500 hover:bg-red-50 hover:text-red-600 transition-colors"
+            className="flex items-center gap-2 px-4 py-2 min-h-[44px] text-sm font-medium rounded-lg border border-red-200 text-red-500 hover:bg-red-50 hover:text-red-600 transition-colors disabled:cursor-not-allowed disabled:border-red-100 disabled:text-red-300"
           >
             <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
               <path strokeLinecap="round" strokeLinejoin="round" d="m14.74 9-.346 9m-4.788 0L9.26 9m9.968-3.21c.342.052.682.107 1.022.166m-1.022-.165L18.16 19.673a2.25 2.25 0 0 1-2.244 2.077H8.084a2.25 2.25 0 0 1-2.244-2.077L4.772 5.79m14.456 0a48.108 48.108 0 0 0-3.478-.397m-12 .562c.34-.059.68-.114 1.022-.165m0 0a48.11 48.11 0 0 1 3.478-.397m7.5 0v-.916c0-1.18-.91-2.164-2.09-2.201a51.964 51.964 0 0 0-3.32 0c-1.18.037-2.09 1.022-2.09 2.201v.916m7.5 0a48.667 48.667 0 0 0-7.5 0" />
@@ -149,6 +160,7 @@ export default function OrgSettings() {
                 value={clearConfirmText}
                 onChange={(e) => setClearConfirmText(e.target.value)}
                 placeholder="DELETE"
+                disabled={!canManageSettings}
                 className="w-48 text-sm px-3 py-1.5 min-h-[44px] rounded-md border border-red-300 text-red-700 placeholder-red-300 focus:outline-none focus:border-red-400 bg-white"
                 autoComplete="off"
                 spellCheck="false"
@@ -157,7 +169,7 @@ export default function OrgSettings() {
             <div className="flex gap-2">
               <button
                 onClick={handleClearAll}
-                disabled={clearConfirmText !== 'DELETE' || clearing}
+                disabled={!canManageSettings || clearConfirmText !== 'DELETE' || clearing}
                 className="px-4 py-2 min-h-[44px] text-sm font-semibold rounded-lg bg-red-500 text-white hover:bg-red-600 transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
               >
                 {clearing ? 'Deleting...' : 'Delete Everything'}

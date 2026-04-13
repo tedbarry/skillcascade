@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback } from 'react'
-import { supabase, mergeUserSettings } from '../lib/supabase.js'
+import { mergeUserSettings } from '../lib/supabase.js'
+import { api } from '../lib/api.js'
 import { useAuth } from '../contexts/AuthContext.jsx'
 import { safeGetItem, safeSetItem } from '../lib/safeStorage.js'
 import KBHelpIcon from './kb/KBHelpIcon.jsx'
@@ -94,7 +95,7 @@ function ToggleSwitch({ enabled, onToggle, id }) {
       id={id}
       onClick={onToggle}
       className={`relative inline-flex h-6 w-11 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors ${
-        enabled ? 'bg-sage-500' : 'bg-warm-300'
+        enabled ? 'bg-sage-600' : 'bg-warm-300'
       }`}
     >
       <span
@@ -114,7 +115,7 @@ export default function AccessibilitySettings({ onSettingsChange }) {
   // Load from Supabase on mount (if logged in)
   useEffect(() => {
     if (!user) return
-    supabase
+    api
       .from('user_settings')
       .select('settings')
       .eq('user_id', user.id)
@@ -164,7 +165,7 @@ export default function AccessibilitySettings({ onSettingsChange }) {
       {/* ── Header ───────────────────────────────────────── */}
       <div>
         <h3 className="font-display text-lg font-semibold text-warm-800 flex items-center gap-2">
-          <svg className="w-5 h-5 text-sage-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+          <svg className="w-5 h-5 text-sage-600" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
             <path strokeLinecap="round" strokeLinejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
             <path strokeLinecap="round" strokeLinejoin="round" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
           </svg>
@@ -181,9 +182,9 @@ export default function AccessibilitySettings({ onSettingsChange }) {
             <button
               key={opt.value}
               onClick={() => update('fontSize', opt.value)}
-              className={`px-3 py-1.5 rounded-md text-sm font-medium transition-colors ${
+              className={`px-3 py-1.5 rounded-full text-sm font-medium transition-colors ${
                 settings.fontSize === opt.value
-                  ? 'bg-sage-500 text-white'
+                  ? 'bg-sage-600 text-white hover:bg-sage-700'
                   : 'bg-warm-100 text-warm-600 hover:bg-warm-200'
               }`}
             >
@@ -193,7 +194,7 @@ export default function AccessibilitySettings({ onSettingsChange }) {
         </div>
         {/* Live preview */}
         <div
-          className="mt-2 p-3 bg-warm-50 rounded-md border border-warm-200 text-warm-700"
+          className="mt-2 p-3 bg-warm-50 rounded-xl border border-warm-200 text-warm-700"
           style={{ fontSize: `${currentScale}rem` }}
         >
           The quick brown fox jumps over the lazy dog.
@@ -226,7 +227,7 @@ export default function AccessibilitySettings({ onSettingsChange }) {
           <p className="text-xs text-warm-500 mt-0.5">
             Disables animations and transitions
           </p>
-          <p className="text-xs text-warm-400 mt-0.5 italic">
+          <p className="text-xs text-warm-500 mt-0.5 italic">
             Respects your system's prefers-reduced-motion setting by default
           </p>
         </div>
@@ -278,7 +279,7 @@ export default function AccessibilitySettings({ onSettingsChange }) {
           {COLOR_BLIND_OPTIONS.map(opt => (
             <label
               key={opt.value}
-              className={`flex items-center gap-2.5 p-2 rounded-md cursor-pointer transition-colors ${
+              className={`flex items-center gap-2.5 p-2 rounded-lg cursor-pointer transition-colors ${
                 settings.colorBlindMode === opt.value
                   ? 'bg-sage-50 ring-1 ring-sage-300'
                   : 'hover:bg-warm-50'
@@ -304,19 +305,19 @@ export default function AccessibilitySettings({ onSettingsChange }) {
               </span>
               <span className="text-sm text-warm-700">{opt.label}</span>
               {opt.desc && (
-                <span className="text-xs text-warm-400">({opt.desc})</span>
+                <span className="text-xs text-warm-500">({opt.desc})</span>
               )}
             </label>
           ))}
         </div>
 
         {/* Color preview */}
-        <div className="mt-3 p-3 bg-warm-50 rounded-md border border-warm-200">
+        <div className="mt-3 p-3 bg-warm-50 rounded-xl border border-warm-200">
           <p className="text-xs text-warm-500 mb-2 font-medium">Assessment Color Preview</p>
           <div className="grid grid-cols-2 gap-2">
             {/* Normal colors */}
             <div>
-              <p className="text-[10px] text-warm-400 mb-1 uppercase tracking-wide">Normal</p>
+              <p className="text-[10px] text-warm-500 mb-1 uppercase tracking-wide">Normal</p>
               <div className="flex gap-1.5">
                 {Object.entries(ASSESSMENT_COLORS.none).map(([name, color]) => (
                   <div key={name} className="flex flex-col items-center gap-0.5">
@@ -332,7 +333,7 @@ export default function AccessibilitySettings({ onSettingsChange }) {
             </div>
             {/* Adjusted colors */}
             <div>
-              <p className="text-[10px] text-warm-400 mb-1 uppercase tracking-wide">Adjusted</p>
+              <p className="text-[10px] text-warm-500 mb-1 uppercase tracking-wide">Adjusted</p>
               <div className="flex gap-1.5">
                 {Object.entries(activeColorSet).map(([name, color]) => (
                   <div key={name} className="flex flex-col items-center gap-0.5">

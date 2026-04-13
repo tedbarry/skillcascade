@@ -1,5 +1,6 @@
-import { useState } from 'react'
+import { useMemo, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
+import useSubscription from '../hooks/useSubscription.js'
 
 // Tab group definitions — which views live under each tab
 // Primary tabs: Dashboard, Assess, Clients, Tools, More (max 5)
@@ -21,8 +22,8 @@ const TAB_GROUPS = {
   },
   tools: {
     label: 'Tools',
-    views: ['reports', 'goals', 'alerts', 'milestones'],
-    viewLabels: { reports: 'Reports', goals: 'Goals', alerts: 'Alerts', milestones: 'Milestones' },
+    views: ['goals', 'alerts', 'milestones'],
+    viewLabels: { goals: 'Goals', alerts: 'Alerts', milestones: 'Milestones' },
   },
   more: {
     label: 'More',
@@ -31,19 +32,19 @@ const TAB_GROUPS = {
       practice: 'Home Practice', predictions: 'Predictions', 'org-analytics': 'Org Analytics',
       messages: 'Messages', branding: 'Branding', data: 'Data', accessibility: 'Access.',
       certifications: 'Certs', marketplace: 'Marketplace', pricing: 'Pricing',
+      'learning-tree': 'Learning Tree', 'goal-library': 'Goal Library',
+      'graph-dashboard': 'Graphs', sessions: 'Sessions',
     },
   },
 }
 
-// Which tab group a view belongs to
-function getTabForView(view) {
-  for (const [tab, group] of Object.entries(TAB_GROUPS)) {
+function getTabForView(view, groups = TAB_GROUPS) {
+  for (const [tab, group] of Object.entries(groups)) {
     if (group.views.includes(view)) return tab
   }
   return 'more'
 }
 
-// SVG icons for each tab
 function TabIcon({ tab, active }) {
   const color = active ? 'currentColor' : 'currentColor'
   const props = { className: 'w-5 h-5', fill: 'none', viewBox: '0 0 24 24', stroke: color, strokeWidth: 2 }
@@ -84,43 +85,73 @@ function TabIcon({ tab, active }) {
   }
 }
 
-export default function MobileTabBar({ activeView, onChangeView, onOpenAI }) {
+const CLINICAL_MORE_VIEWS = ['daily-agenda', 'schedule', 'reports', 'authorizations', 'sessions', 'graph-dashboard', 'goal-library', 'learning-tree']
+const CLINICAL_MORE_LABELS = { reports: 'Auth Reports', authorizations: 'Auths', 'daily-agenda': 'My Day', schedule: 'Schedule' }
+
+export default function MobileTabBar({ activeView, onChangeView, onOpenAI, canAccessView = () => true }) {
   const navigate = useNavigate()
   const [moreOpen, setMoreOpen] = useState(false)
-  const activeTab = getTabForView(activeView)
+  const { hasClinical } = useSubscription()
+
+  const tabGroups = useMemo(() => {
+    const groups = Object.fromEntries(
+      Object.entries(TAB_GROUPS).map(([tab, group]) => [
+        tab,
+        {
+          ...group,
+          views: [...group.views],
+          viewLabels: { ...group.viewLabels },
+        },
+      ]),
+    )
+
+    if (hasClinical) {
+      groups.more.views = [
+        ...CLINICAL_MORE_VIEWS,
+        ...groups.more.views.filter((view) => !CLINICAL_MORE_VIEWS.includes(view)),
+      ]
+      groups.more.viewLabels = { ...groups.more.viewLabels, ...CLINICAL_MORE_LABELS }
+    }
+
+    Object.values(groups).forEach((group) => {
+      group.views = group.views.filter((view) => canAccessView(view))
+    })
+
+    return groups
+  }, [hasClinical, canAccessView])
+
+  const activeTab = getTabForView(activeView, tabGroups)
 
   function handleTabPress(tab) {
     if (tab === 'more') {
-      setMoreOpen(!moreOpen)
+      setMoreOpen((current) => !current)
       return
     }
+
     setMoreOpen(false)
-    // Navigate to first view in tab group (or stay if already in group)
-    const group = TAB_GROUPS[tab]
-    if (!group.views.includes(activeView)) {
+    const group = tabGroups[tab]
+    if (group?.views?.length && !group.views.includes(activeView)) {
       onChangeView(group.views[0])
     }
   }
 
-  // Secondary sub-view strip for multi-view tab groups
-  const activeGroup = TAB_GROUPS[activeTab]
+  const activeGroup = tabGroups[activeTab]
   const showSubStrip = activeGroup && activeGroup.views.length > 1 && !moreOpen
 
   return (
     <>
-      {/* Bottom sheet for "More" */}
       {moreOpen && (
         <>
           <div
             className="fixed inset-0 bg-black/40 z-40"
             onClick={() => setMoreOpen(false)}
           />
-          <div className="fixed bottom-0 left-0 right-0 z-50 bg-white rounded-t-2xl shadow-2xl max-h-[60vh] overflow-y-auto pb-safe">
+          <div className="fixed bottom-0 left-0 right-0 z-50 bg-white rounded-t-xl shadow-sm max-h-[60vh] overflow-y-auto pb-safe">
             <div className="flex items-center justify-between px-4 pt-4 pb-2 border-b border-warm-200">
               <span className="text-sm font-semibold text-warm-800">All Views</span>
               <button
                 onClick={() => setMoreOpen(false)}
-                className="text-warm-400 hover:text-warm-600 p-1 min-h-[44px] min-w-[44px] flex items-center justify-center"
+                className="text-warm-500 hover:text-warm-600 p-1 min-h-[44px] min-w-[44px] flex items-center justify-center"
                 aria-label="Close all views menu"
               >
                 <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
@@ -128,36 +159,37 @@ export default function MobileTabBar({ activeView, onChangeView, onOpenAI }) {
                 </svg>
               </button>
             </div>
-            {/* AI Assistant button */}
-            <div className="px-4 pt-3">
-              <button
-                onClick={() => {
-                  onOpenAI()
-                  setMoreOpen(false)
-                }}
-                className="w-full flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-medium bg-indigo-50 text-indigo-700 hover:bg-indigo-100 transition-colors min-h-[44px]"
-              >
-                <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                  <path strokeLinecap="round" strokeLinejoin="round" d="M9.813 15.904L9 18.75l-.813-2.846a4.5 4.5 0 00-3.09-3.09L2.25 12l2.846-.813a4.5 4.5 0 003.09-3.09L9 5.25l.813 2.846a4.5 4.5 0 003.09 3.09L15.75 12l-2.846.813a4.5 4.5 0 00-3.09 3.09zM18.259 8.715L18 9.75l-.259-1.035a3.375 3.375 0 00-2.455-2.456L14.25 6l1.036-.259a3.375 3.375 0 002.455-2.456L18 2.25l.259 1.035a3.375 3.375 0 002.455 2.456L21.75 6l-1.036.259a3.375 3.375 0 00-2.455 2.456z" />
-                </svg>
-                AI Assistant
-              </button>
-            </div>
+            {onOpenAI && (
+              <div className="px-4 pt-3">
+                <button
+                  onClick={() => {
+                    onOpenAI()
+                    setMoreOpen(false)
+                  }}
+                  className="w-full flex items-center gap-3 px-4 py-3 rounded-full text-sm font-medium bg-sage-600 text-white hover:bg-sage-700 transition-colors min-h-[44px]"
+                >
+                  <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M9.813 15.904L9 18.75l-.813-2.846a4.5 4.5 0 00-3.09-3.09L2.25 12l2.846-.813a4.5 4.5 0 003.09-3.09L9 5.25l.813 2.846a4.5 4.5 0 003.09 3.09L15.75 12l-2.846.813a4.5 4.5 0 00-3.09 3.09zM18.259 8.715L18 9.75l-.259-1.035a3.375 3.375 0 00-2.455-2.456L14.25 6l1.036-.259a3.375 3.375 0 002.455-2.456L18 2.25l.259 1.035a3.375 3.375 0 002.455 2.456L21.75 6l-1.036.259a3.375 3.375 0 00-2.455 2.456z" />
+                  </svg>
+                  AI Assistant
+                </button>
+              </div>
+            )}
             <div className="grid grid-cols-3 gap-2 p-4">
-              {TAB_GROUPS.more.views.map((view) => (
+              {tabGroups.more.views.map((view) => (
                 <button
                   key={view}
                   onClick={() => {
                     onChangeView(view)
                     setMoreOpen(false)
                   }}
-                  className={`flex flex-col items-center gap-1 px-2 py-3 rounded-xl text-xs font-medium transition-colors min-h-[44px] ${
+                  className={`flex flex-col items-center gap-1 px-2 py-3 rounded-xl text-xs font-medium transition-colors min-h-[44px] border ${
                     activeView === view
-                      ? 'bg-sage-100 text-sage-700'
-                      : 'bg-warm-50 text-warm-600 hover:bg-warm-100'
+                      ? 'bg-white text-sage-700 border-warm-200 shadow-sm'
+                      : 'bg-warm-50 text-warm-600 border-transparent hover:bg-warm-100'
                   }`}
                 >
-                  {TAB_GROUPS.more.viewLabels[view] || view}
+                  {tabGroups.more.viewLabels[view] || view}
                 </button>
               ))}
             </div>
@@ -165,12 +197,11 @@ export default function MobileTabBar({ activeView, onChangeView, onOpenAI }) {
         </>
       )}
 
-      {/* Sub-view strip (above bottom bar) */}
       {showSubStrip && (
         <div className="fixed bottom-14 left-0 right-0 z-30 bg-white/95 backdrop-blur-sm border-t border-warm-200 flex items-center gap-1 px-2 py-1.5 overflow-x-auto scrollbar-hide pb-safe">
           <button
             onClick={() => navigate(-1)}
-            className="p-1.5 rounded-full text-warm-400 hover:bg-warm-100 hover:text-warm-600 transition-colors min-h-[44px] min-w-[44px] flex items-center justify-center shrink-0"
+            className="p-1.5 rounded-full text-warm-500 hover:bg-warm-100 hover:text-warm-600 transition-colors min-h-[44px] min-w-[44px] flex items-center justify-center shrink-0"
             aria-label="Go back"
             title="Go back"
           >
@@ -184,7 +215,7 @@ export default function MobileTabBar({ activeView, onChangeView, onOpenAI }) {
               onClick={() => onChangeView(view)}
               className={`px-3 py-2 rounded-full text-xs font-medium whitespace-nowrap transition-colors min-h-[44px] flex items-center ${
                 activeView === view
-                  ? 'bg-sage-500 text-white'
+                  ? 'bg-sage-600 text-white'
                   : 'text-warm-500 hover:bg-warm-100'
               }`}
             >
@@ -194,23 +225,24 @@ export default function MobileTabBar({ activeView, onChangeView, onOpenAI }) {
         </div>
       )}
 
-      {/* Main bottom tab bar */}
       <nav className="fixed bottom-0 left-0 right-0 z-30 bg-white border-t border-warm-200 flex items-stretch pb-safe sm:hidden">
-        {['dashboard', 'assess', 'clients', 'tools', 'more'].map((tab) => {
-          const isActive = tab === activeTab || (tab === 'more' && moreOpen)
-          return (
-            <button
-              key={tab}
-              onClick={() => handleTabPress(tab)}
-              className={`flex-1 flex flex-col items-center justify-center gap-0.5 py-2 min-h-[56px] transition-colors ${
-                isActive ? 'text-sage-600' : 'text-warm-400'
-              }`}
-            >
-              <TabIcon tab={tab} active={isActive} />
-              <span className="text-[10px] font-medium">{TAB_GROUPS[tab].label}</span>
-            </button>
-          )
-        })}
+        {['dashboard', 'assess', 'clients', 'tools', 'more']
+          .filter((tab) => tabGroups[tab]?.views?.length > 0)
+          .map((tab) => {
+            const isActive = tab === activeTab || (tab === 'more' && moreOpen)
+            return (
+              <button
+                key={tab}
+                onClick={() => handleTabPress(tab)}
+                className={`flex-1 flex flex-col items-center justify-center gap-0.5 py-2 min-h-[56px] transition-colors ${
+                  isActive ? 'text-sage-600' : 'text-warm-500'
+                }`}
+              >
+                <TabIcon tab={tab} active={isActive} />
+                <span className="text-[10px] font-medium">{tabGroups[tab].label}</span>
+              </button>
+            )
+          })}
       </nav>
     </>
   )

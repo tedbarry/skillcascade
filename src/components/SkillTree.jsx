@@ -62,28 +62,28 @@ const STATE_CONFIG = {
   blocked: {
     fill: '#3a2020',
     stroke: '#8b4444',
-    glow: '#e8928a',
+    glow: '#F59E0B',
     textColor: '#ccc',
     label: 'Blocked',
   },
   'needs-work': {
     fill: '#3a2525',
-    stroke: '#e8928a',
-    glow: '#e8928a',
+    stroke: '#F59E0B',
+    glow: '#F59E0B',
     textColor: '#f5c4c0',
     label: 'Needs Work',
   },
   developing: {
     fill: '#3a3520',
-    stroke: '#e5b76a',
-    glow: '#e5b76a',
+    stroke: '#F59E0B',
+    glow: '#F59E0B',
     textColor: '#f5e0b0',
     label: 'Developing',
   },
   mastered: {
     fill: '#1e3525',
-    stroke: '#7fb589',
-    glow: '#7fb589',
+    stroke: '#10B981',
+    glow: '#10B981',
     textColor: '#b5e8bf',
     label: 'Mastered',
   },
@@ -495,7 +495,7 @@ export default memo(function SkillTree({ assessments = {}, onSelectDomain }) {
             transform: tooltip.x > width * 0.6 ? 'translateX(-110%)' : 'none',
           }}
         >
-          <div className="bg-[#2a2a30]/95 backdrop-blur-sm border border-[#444] rounded-lg shadow-2xl px-4 py-3">
+          <div className="bg-[#2a2a30]/95 backdrop-blur-sm border border-[#444] rounded-lg shadow-lg px-4 py-3">
             <div className="flex items-center gap-2 mb-1">
               <span className="font-bold text-sm" style={{ color: STATE_CONFIG[tooltip.state]?.textColor }}>
                 {tooltip.domain}
@@ -579,7 +579,7 @@ function SubAreaNodes({ domain, pos, nodeW, nodeH, assessments }) {
         const avg = assessed > 0 ? scoreSum / assessed : 0
         const pct = total > 0 ? assessed / total : 0
 
-        const color = assessed === 0 ? '#555' : avg >= 2.5 ? '#7fb589' : avg >= 1.5 ? '#e5b76a' : '#e8928a'
+        const color = assessed === 0 ? '#555' : avg >= 2.5 ? '#10B981' : avg >= 1.5 ? '#F59E0B' : '#F59E0B'
 
         return (
           <g key={sa.id}>

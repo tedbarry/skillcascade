@@ -1,31 +1,55 @@
-import { useState, lazy, Suspense } from 'react'
+import { useEffect, useMemo, useState, lazy, Suspense } from 'react'
 import { Navigate, Link } from 'react-router-dom'
 import { useAuth } from '../contexts/AuthContext.jsx'
 import useResponsive from '../hooks/useResponsive.js'
+import usePermissions from '../hooks/usePermissions.js'
 import TeamManager from '../components/admin/TeamManager.jsx'
 import AuditLogViewer from '../components/admin/AuditLogViewer.jsx'
 import OrgSettings from '../components/admin/OrgSettings.jsx'
 
 const UsageAnalytics = lazy(() => import('../components/admin/UsageAnalytics.jsx'))
 
-function buildTabs(isSuperAdmin) {
-  const tabs = [
-    { id: 'team', label: 'Team', icon: TeamIcon },
-    { id: 'audit', label: 'Audit Log', icon: AuditIcon },
-  ]
-  if (isSuperAdmin) {
+function buildTabs({ canViewTeam, canViewAudit, canViewAnalytics, canViewSettings }) {
+  const tabs = []
+  if (canViewTeam) {
+    tabs.push({ id: 'team', label: 'Team', icon: TeamIcon })
+  }
+  if (canViewAudit) {
+    tabs.push({ id: 'audit', label: 'Audit Log', icon: AuditIcon })
+  }
+  if (canViewAnalytics) {
     tabs.push({ id: 'analytics', label: 'Analytics', icon: AnalyticsIcon })
   }
-  tabs.push({ id: 'settings', label: 'Settings', icon: SettingsIcon })
+  if (canViewSettings) {
+    tabs.push({ id: 'settings', label: 'Settings', icon: SettingsIcon })
+  }
   return tabs
 }
 
 export default function Admin() {
-  const { user, loading, isAdmin, isSuperAdmin, profile } = useAuth()
+  const { user, loading, isSuperAdmin, profile } = useAuth()
+  const { can, canAny, loading: permissionsLoading } = usePermissions()
   const { isPhone } = useResponsive()
-  const [activeTab, setActiveTab] = useState('team')
+  const [activeTab, setActiveTab] = useState(null)
 
-  if (loading) {
+  const tabs = useMemo(() => buildTabs({
+    canViewTeam: canAny('team'),
+    canViewAudit: can('team', 'view') || can('settings', 'view'),
+    canViewAnalytics: isSuperAdmin,
+    canViewSettings: canAny('settings'),
+  }), [can, canAny, isSuperAdmin])
+
+  useEffect(() => {
+    if (!tabs.length) {
+      setActiveTab(null)
+      return
+    }
+    if (!activeTab || !tabs.some(tab => tab.id === activeTab)) {
+      setActiveTab(tabs[0].id)
+    }
+  }, [activeTab, tabs])
+
+  if (loading || permissionsLoading) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-warm-50">
         <div className="w-6 h-6 border-2 border-sage-200 border-t-sage-500 rounded-full animate-spin" />
@@ -34,9 +58,7 @@ export default function Admin() {
   }
 
   if (!user) return <Navigate to="/login" replace />
-  if (!isAdmin) return <Navigate to="/dashboard" replace />
-
-  const TABS = buildTabs(isSuperAdmin)
+  if (!tabs.length || !activeTab) return <Navigate to="/dashboard" replace />
 
   return (
     <div className="min-h-screen bg-warm-50">
@@ -44,14 +66,14 @@ export default function Admin() {
       <header className="bg-white border-b border-warm-200">
         <div className="max-w-6xl mx-auto px-4 sm:px-6 py-4 flex items-center justify-between">
           <div className="flex items-center gap-3">
-            <Link to="/dashboard" className="text-warm-400 hover:text-warm-600 transition-colors min-h-[44px] flex items-center">
+            <Link to="/dashboard" className="text-warm-500 hover:text-warm-600 transition-colors min-h-[44px] flex items-center">
               <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
                 <path strokeLinecap="round" strokeLinejoin="round" d="M10.5 19.5 3 12m0 0 7.5-7.5M3 12h18" />
               </svg>
             </Link>
             <div>
               <h1 className="text-lg font-bold text-warm-800 font-display">Admin</h1>
-              <p className="text-xs text-warm-400">{profile?.organizations?.name || 'Organization'}</p>
+              <p className="text-xs text-warm-500">{profile?.organizations?.name || 'Organization'}</p>
             </div>
           </div>
         </div>
@@ -62,7 +84,7 @@ export default function Admin() {
           /* Phone: horizontal tab bar */
           <div className="space-y-4">
             <div className="flex gap-1 bg-white rounded-xl border border-warm-200 p-1 overflow-x-auto">
-              {TABS.map((tab) => {
+              {tabs.map((tab) => {
                 const Icon = tab.icon
                 const isActive = activeTab === tab.id
                 return (
@@ -71,7 +93,7 @@ export default function Admin() {
                     onClick={() => setActiveTab(tab.id)}
                     className={`flex-1 flex items-center justify-center gap-1.5 px-3 py-2.5 min-h-[44px] text-xs font-medium rounded-lg transition-colors whitespace-nowrap ${
                       isActive
-                        ? 'bg-sage-500 text-white'
+                        ? 'bg-sage-600 text-white'
                         : 'text-warm-500 hover:text-warm-700 hover:bg-warm-50'
                     }`}
                   >
@@ -88,7 +110,7 @@ export default function Admin() {
           <div className="flex gap-6">
             <nav className="w-48 shrink-0">
               <div className="bg-white rounded-xl border border-warm-200 p-2 sticky top-6">
-                {TABS.map((tab) => {
+                {tabs.map((tab) => {
                   const Icon = tab.icon
                   const isActive = activeTab === tab.id
                   return (

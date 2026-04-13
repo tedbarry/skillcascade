@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback, useMemo } from 'react'
 import { supabase } from '../lib/supabase.js'
+import { api } from '../lib/api.js'
 import { useAuth } from '../contexts/AuthContext.jsx'
 
 // Plan model: Solo / Practice / Enterprise
@@ -27,9 +28,8 @@ export const PLAN_LABELS = {
 }
 
 export const PLAN_PRICING = {
-  solo: { monthly: 29, annual: 23 },
-  practice: { monthly: 19, annual: 15, perUser: true, minSeats: 3 },
-  enterprise: { monthly: 14, annual: 11, perUser: true, minSeats: 10 },
+  solo: { monthly: 29, annual: 19.99 },
+  clinical: { monthly: 19, annual: 15, perClient: true, minimum: 99 },
 }
 
 export const FEATURE_META = {
@@ -53,9 +53,13 @@ export default function useSubscription() {
       return
     }
 
+    // Wait for profile to load before checking subscription
+    // This prevents the race condition where org lookup fails because profile is null
+    if (!profile) return
+
     async function loadSubscription() {
       // First try: load user's own subscription
-      const { data: ownSub } = await supabase
+      const { data: ownSub, error: ownErr } = await api
         .from('subscriptions')
         .select('*')
         .eq('user_id', user.id)
@@ -67,17 +71,28 @@ export default function useSubscription() {
         return
       }
 
+      // If there was an API error (not just "no rows"), retry once after a short delay
+      if (ownErr && ownErr.status && ownErr.status >= 500) {
+        await new Promise(r => setTimeout(r, 1000))
+        const { data: retry } = await api.from('subscriptions').select('*').eq('user_id', user.id).single()
+        if (retry) {
+          setSubscription(retry)
+          setLoading(false)
+          return
+        }
+      }
+
       // Second try: load org owner's subscription (for team members)
       const orgId = profile?.org_id
       if (orgId) {
-        const { data: orgMembers } = await supabase
+        const { data: orgMembers } = await api
           .from('profiles')
           .select('id')
           .eq('org_id', orgId)
 
         if (orgMembers?.length) {
           // Check each org member for a subscription (the owner will have one)
-          const { data: orgSub } = await supabase
+          const { data: orgSub } = await api
             .from('subscriptions')
             .select('*')
             .in('user_id', orgMembers.map(m => m.id))
@@ -109,6 +124,11 @@ export default function useSubscription() {
   const plan = isSuperAdmin ? 'enterprise' : rawPlan
   const limits = PLAN_LIMITS[plan] || PLAN_LIMITS.solo
   const seats = subscription?.seats || 1
+
+  // Clinical add-on tier
+  const hasClinical = isSuperAdmin || (subscription?.clinical_access === true)
+  const clinicalPlan = subscription?.clinical_plan || null
+  const clinicalSeats = subscription?.clinical_seats || 0
 
   // Check if subscription period has passed (client-side safeguard)
   const periodEnded = subscription?.current_period_end
@@ -155,7 +175,7 @@ export default function useSubscription() {
     const orgId = profile?.org_id
     if (!orgId) return false
 
-    const { count } = await supabase
+    const { count } = await api
       .from('profiles')
       .select('*', { count: 'exact', head: true })
       .eq('org_id', orgId)
@@ -167,7 +187,7 @@ export default function useSubscription() {
     if (isSuperAdmin || limits.clients === Infinity) return true
     if (!user) return false
 
-    const { data: profile } = await supabase
+    const { data: profile } = await api
       .from('profiles')
       .select('org_id')
       .eq('id', user.id)
@@ -175,7 +195,7 @@ export default function useSubscription() {
 
     if (!profile?.org_id) return true
 
-    const { count } = await supabase
+    const { count } = await api
       .from('clients')
       .select('*', { count: 'exact', head: true })
       .eq('org_id', profile.org_id)
@@ -192,8 +212,8 @@ export default function useSubscription() {
     const { data: { session } } = await supabase.auth.getSession()
     if (!session?.access_token) return null
 
-    const supabaseUrl = import.meta.env.VITE_SUPABASE_URL
-    const res = await fetch(`${supabaseUrl}/functions/v1/stripe-checkout`, {
+    const apiUrl = import.meta.env.VITE_API_URL || 'https://skillcascade-api.teddybahary.workers.dev'
+    const res = await fetch(`${apiUrl}/api/stripe-checkout`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -217,8 +237,8 @@ export default function useSubscription() {
     const { data: { session } } = await supabase.auth.getSession()
     if (!session?.access_token) return null
 
-    const supabaseUrl = import.meta.env.VITE_SUPABASE_URL
-    const res = await fetch(`${supabaseUrl}/functions/v1/stripe-portal`, {
+    const apiUrl = import.meta.env.VITE_API_URL || 'https://skillcascade-api.teddybahary.workers.dev'
+    const res = await fetch(`${apiUrl}/api/stripe-portal`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -248,8 +268,8 @@ export default function useSubscription() {
     const { data: { session } } = await supabase.auth.getSession()
     if (!session?.access_token) return
 
-    const supabaseUrl = import.meta.env.VITE_SUPABASE_URL
-    const res = await fetch(`${supabaseUrl}/functions/v1/stripe-portal`, {
+    const apiUrl = import.meta.env.VITE_API_URL || 'https://skillcascade-api.teddybahary.workers.dev'
+    const res = await fetch(`${apiUrl}/api/stripe-portal`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -261,7 +281,7 @@ export default function useSubscription() {
     if (!res.ok) {
       // If the portal approach fails, try to cancel via the subscription record directly
       // Mark the subscription as canceled in our DB at minimum
-      await supabase
+      await api
         .from('subscriptions')
         .update({ status: 'canceled', cancel_at_period_end: true })
         .eq('user_id', user.id)
@@ -275,7 +295,7 @@ export default function useSubscription() {
   const refreshSubscription = useCallback(async () => {
     if (!user) return null
 
-    const { data: sub } = await supabase
+    const { data: sub } = await api
       .from('subscriptions')
       .select('*')
       .eq('user_id', user.id)
@@ -289,13 +309,13 @@ export default function useSubscription() {
     // Check org-level subscription
     const orgId = profile?.org_id
     if (orgId) {
-      const { data: orgMembers } = await supabase
+      const { data: orgMembers } = await api
         .from('profiles')
         .select('id')
         .eq('org_id', orgId)
 
       if (orgMembers?.length) {
-        const { data: orgSub } = await supabase
+        const { data: orgSub } = await api
           .from('subscriptions')
           .select('*')
           .in('user_id', orgMembers.map(m => m.id))
@@ -327,6 +347,9 @@ export default function useSubscription() {
     trialDaysLeft,
     graceExpiry,
     loading,
+    hasClinical,
+    clinicalPlan,
+    clinicalSeats,
     hasFeature,
     getRequiredPlan,
     canAddClient,

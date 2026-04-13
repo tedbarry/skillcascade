@@ -14,6 +14,9 @@ const PLAN_INFO = {
   enterprise: { name: 'Enterprise', price: '$14/user/mo', desc: '10-49 users, unlimited clients' },
 }
 
+// Maintenance mode — set to true to block signups
+const MAINTENANCE_MODE = false
+
 export default function Signup() {
   const [searchParams] = useSearchParams()
   const preselectedPlan = useMemo(() => {
@@ -21,6 +24,45 @@ export default function Signup() {
     return VALID_PLANS.includes(p) ? p : null
   }, [searchParams])
   const [selectedPlan, setSelectedPlan] = useState(preselectedPlan || 'solo')
+
+  if (MAINTENANCE_MODE) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-warm-50 px-4">
+        <div className="w-full max-w-sm text-center">
+          <div className="bg-white rounded-xl border border-warm-200 shadow-sm p-8">
+            <div className="mb-5">
+              <svg className="w-10 h-10 text-amber-500 mx-auto" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
+                <path strokeLinecap="round" strokeLinejoin="round" d="M11.42 15.17l-1.42.83V18a1 1 0 001 1h2a1 1 0 001-1v-2l-1.42-.83a1 1 0 00-1.16 0zM12 2l.642.005c.89.025 1.544.2 2.358.675l5 3.5A3 3 0 0121.5 8.68v6.64a3 3 0 01-1.5 2.5l-5 3.5a3 3 0 01-3 0l-5-3.5a3 3 0 01-1.5-2.5V8.68a3 3 0 011.5-2.5l5-3.5A3 3 0 0112 2z" />
+              </svg>
+            </div>
+            <h1 className="text-xl font-bold text-warm-800 font-display mb-2">
+              Skill<span className="text-sage-500">Cascade</span>
+            </h1>
+            <h2 className="text-lg font-semibold text-warm-700 mb-3">
+              Coming Soon
+            </h2>
+            <p className="text-sm text-warm-500 leading-relaxed mb-4">
+              We're upgrading our infrastructure to bring you a faster, more secure experience.
+              Sign-ups will reopen shortly.
+            </p>
+            <p className="text-xs text-warm-500 mb-6">
+              Want to be notified when we're back?
+            </p>
+            <a
+              href="mailto:support@skillcascade.com?subject=Notify me when SkillCascade is ready"
+              className="inline-block px-6 py-2.5 rounded-full bg-sage-600 text-white text-sm font-semibold hover:bg-sage-700 transition-colors"
+            >
+              Email Us
+            </a>
+            <p className="text-sm text-warm-500 mt-4">
+              Already have an account?{' '}
+              <Link to="/login" className="text-sage-600 hover:text-sage-700 font-medium">Sign In</Link>
+            </p>
+          </div>
+        </div>
+      </div>
+    )
+  }
 
   // Capture UTM params on page load
   useEffect(() => { captureUtmParams() }, [])
@@ -38,7 +80,7 @@ export default function Signup() {
       try {
         const { data, error: err } = await supabase
           .from('invite_tokens')
-          .select('token, org_id, role, email, expires_at, used_at, organizations(name)')
+          .select('token, org_id, role, email, expires_at, used_at')
           .eq('token', inviteToken)
           .single()
         if (err || !data) {
@@ -53,12 +95,22 @@ export default function Signup() {
           setInviteError('This invite has expired.')
           return
         }
+        // Fetch org name separately
+        let orgName = ''
+        if (data.org_id) {
+          const { data: org } = await supabase
+            .from('organizations')
+            .select('name')
+            .eq('id', data.org_id)
+            .single()
+          orgName = org?.name || ''
+        }
         setInvite({
           token: data.token,
           org_id: data.org_id,
           role: data.role,
           email: data.email || '',
-          orgName: data.organizations?.name || '',
+          orgName,
         })
         if (data.email) setEmail(data.email)
         setRole(data.role)
@@ -165,8 +217,8 @@ export default function Signup() {
       <div className="min-h-screen flex items-center justify-center bg-warm-50 px-4">
         <div className="w-full max-w-sm text-center">
           <div className="bg-white rounded-xl border border-warm-200 shadow-sm p-8">
-            <div className="w-12 h-12 mx-auto mb-4 rounded-full bg-sage-100 flex items-center justify-center">
-              <svg className="w-6 h-6 text-sage-600" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+            <div className="mb-4">
+              <svg className="w-8 h-8 text-sage-600 mx-auto" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
                 <path strokeLinecap="round" strokeLinejoin="round" d="M21.75 6.75v10.5a2.25 2.25 0 01-2.25 2.25h-15a2.25 2.25 0 01-2.25-2.25V6.75m19.5 0A2.25 2.25 0 0019.5 4.5h-15a2.25 2.25 0 00-2.25 2.25m19.5 0v.243a2.25 2.25 0 01-1.07 1.916l-7.5 4.615a2.25 2.25 0 01-2.36 0L3.32 8.91a2.25 2.25 0 01-1.07-1.916V6.75" />
               </svg>
             </div>
@@ -175,12 +227,12 @@ export default function Signup() {
               We sent a confirmation link to <strong className="text-warm-700">{email}</strong>.
               Click it to activate your account.
             </p>
-            <p className="text-xs text-warm-400 mb-6">
+            <p className="text-xs text-warm-500 mb-6">
               After confirming, you'll set up your {PLAN_INFO[selectedPlan]?.name || 'Solo'} plan with a 14-day free trial. No charge until the trial ends.
             </p>
             <Link
               to="/login"
-              className="inline-block px-6 py-2.5 rounded-lg bg-sage-500 text-white text-sm font-semibold hover:bg-sage-600 transition-colors"
+              className="inline-block px-6 py-2.5 rounded-full bg-sage-600 text-white text-sm font-semibold hover:bg-sage-700 transition-colors"
             >
               Go to Sign In
             </Link>
@@ -237,7 +289,7 @@ export default function Signup() {
               required
               value={displayName}
               onChange={(e) => setDisplayName(e.target.value)}
-              className="w-full px-3 py-2 rounded-lg border border-warm-200 text-sm text-warm-800 placeholder-warm-300 focus:outline-none focus:ring-2 focus:ring-sage-300 focus:border-sage-400"
+              className="w-full px-3 py-2 rounded-lg border border-warm-200 text-sm text-warm-800 placeholder-warm-300 focus:outline-none focus:ring-2 focus:ring-sage-500 focus:border-sage-500"
               placeholder="Your name"
             />
           </div>
@@ -253,14 +305,14 @@ export default function Signup() {
               autoComplete="email"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
-              className="w-full px-3 py-2 rounded-lg border border-warm-200 text-sm text-warm-800 placeholder-warm-300 focus:outline-none focus:ring-2 focus:ring-sage-300 focus:border-sage-400"
+              className="w-full px-3 py-2 rounded-lg border border-warm-200 text-sm text-warm-800 placeholder-warm-300 focus:outline-none focus:ring-2 focus:ring-sage-500 focus:border-sage-500"
               placeholder="you@example.com"
             />
           </div>
 
           <div>
             <label htmlFor="signup-password" className="block text-xs font-medium text-warm-600 mb-1">
-              Password <span className="text-warm-400">(min 8 characters)</span>
+              Password <span className="text-warm-500">(min 8 characters)</span>
             </label>
             <input
               id="signup-password"
@@ -270,7 +322,7 @@ export default function Signup() {
               minLength={8}
               value={password}
               onChange={(e) => setPassword(e.target.value)}
-              className="w-full px-3 py-2 rounded-lg border border-warm-200 text-sm text-warm-800 placeholder-warm-300 focus:outline-none focus:ring-2 focus:ring-sage-300 focus:border-sage-400"
+              className="w-full px-3 py-2 rounded-lg border border-warm-200 text-sm text-warm-800 placeholder-warm-300 focus:outline-none focus:ring-2 focus:ring-sage-500 focus:border-sage-500"
               placeholder="Min. 8 characters"
             />
           </div>
@@ -319,10 +371,10 @@ export default function Signup() {
                 type="text"
                 value={orgName}
                 onChange={(e) => setOrgName(e.target.value)}
-                className="w-full px-3 py-2 rounded-lg border border-warm-200 text-sm text-warm-800 placeholder-warm-300 focus:outline-none focus:ring-2 focus:ring-sage-300 focus:border-sage-400"
+                className="w-full px-3 py-2 rounded-lg border border-warm-200 text-sm text-warm-800 placeholder-warm-300 focus:outline-none focus:ring-2 focus:ring-sage-500 focus:border-sage-500"
                 placeholder="Your clinic or practice name"
               />
-              <p className="text-[11px] text-warm-400 mt-1">
+              <p className="text-[11px] text-warm-500 mt-1">
                 Creates a new organization. Leave blank to set up later.
               </p>
             </div>
@@ -350,7 +402,7 @@ export default function Signup() {
                       <span className={`font-medium ${selectedPlan === p ? 'text-sage-700' : 'text-warm-700'}`}>
                         {PLAN_INFO[p].name}
                       </span>
-                      <span className="text-warm-400 ml-2 text-xs">{PLAN_INFO[p].desc}</span>
+                      <span className="text-warm-500 ml-2 text-xs">{PLAN_INFO[p].desc}</span>
                     </div>
                     <span className={`text-xs font-semibold ${selectedPlan === p ? 'text-sage-600' : 'text-warm-500'}`}>
                       {PLAN_INFO[p].price}
@@ -358,7 +410,7 @@ export default function Signup() {
                   </button>
                 ))}
               </div>
-              <p className="text-[11px] text-warm-400 mt-1.5">
+              <p className="text-[11px] text-warm-500 mt-1.5">
                 14-day free trial on all plans. You won't be charged until the trial ends.
               </p>
             </div>
@@ -367,7 +419,7 @@ export default function Signup() {
           <button
             type="submit"
             disabled={loading || inviteLoading || !!inviteError}
-            className="w-full py-2.5 min-h-[44px] rounded-lg bg-sage-500 text-white text-sm font-semibold hover:bg-sage-600 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+            className="w-full py-2.5 min-h-[44px] rounded-full bg-sage-600 text-white text-sm font-semibold hover:bg-sage-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
           >
             {loading ? 'Creating account...' : invite ? `Join ${invite.orgName || 'Organization'}` : `Start Free Trial — ${PLAN_INFO[selectedPlan]?.name || 'Solo'}`}
           </button>
@@ -380,7 +432,7 @@ export default function Signup() {
             Sign In
           </Link>
         </p>
-        <p className="text-center text-xs text-warm-400 mt-2">
+        <p className="text-center text-xs text-warm-500 mt-2">
           Need help?{' '}
           <a href="mailto:support@skillcascade.com" className="text-sage-500 hover:text-sage-600">
             support@skillcascade.com

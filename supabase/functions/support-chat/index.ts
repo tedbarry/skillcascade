@@ -1,9 +1,10 @@
 // Supabase Edge Function: Support Chat
-// Proxies to Anthropic Claude API for the in-app support chatbot.
+// Routes through AWS Bedrock (Claude) for HIPAA-compliant in-app support chat.
 // Deploy: supabase functions deploy support-chat --no-verify-jwt
 //
 // Environment variables needed:
-//   ANTHROPIC_API_KEY — your Anthropic API key
+//   AWS_ACCESS_KEY_ID — Bedrock IAM user access key
+//   AWS_SECRET_ACCESS_KEY — Bedrock IAM user secret key
 
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
 import { getCorsHeaders } from '../_shared/cors.ts'
@@ -243,8 +244,10 @@ function buildSystemPromptWithContext(context: {
   if (context.currentView) {
     parts.push(`- Currently viewing: ${context.currentView}`)
   }
+  // HIPAA: Never include client names in AI context
+  // if (context.clientName) — stripped for de-identification
   if (context.clientName) {
-    parts.push(`- Active client: ${context.clientName}`)
+    parts.push('- Active client: [current client]') // generic placeholder, never send real name
   }
   if (context.plan) {
     parts.push(`- Subscription plan: ${context.plan}`)
@@ -328,6 +331,11 @@ Deno.serve(async (req) => {
     const body = await req.json()
     const { messages, context } = body
 
+    // HIPAA: Strip clientName from context if frontend sent it
+    if (context?.clientName) {
+      context.clientName = null
+    }
+
     if (!messages || !Array.isArray(messages)) {
       return new Response(JSON.stringify({ error: 'Messages array is required' }), {
         status: 400,
@@ -335,56 +343,65 @@ Deno.serve(async (req) => {
       })
     }
 
-    const anthropicKey = Deno.env.get('ANTHROPIC_API_KEY')
-    if (!anthropicKey) {
-      return new Response(JSON.stringify({ error: 'Support chat is not configured. Please contact support.' }), {
+    // Build system prompt with user context
+    const systemPrompt = buildSystemPromptWithContext(context || {})
+
+    // Call Claude via AWS Bedrock ONLY (HIPAA-compliant — no direct Anthropic fallback)
+    const awsAccessKey = Deno.env.get('AWS_ACCESS_KEY_ID')
+    const awsSecretKey = Deno.env.get('AWS_SECRET_ACCESS_KEY')
+
+    if (!awsAccessKey || !awsSecretKey) {
+      return new Response(JSON.stringify({ error: 'AI service not configured. Contact support.' }), {
         status: 500,
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       })
     }
 
-    // Build system prompt with user context
-    const systemPrompt = buildSystemPromptWithContext(context || {})
-
-    // Call Anthropic Claude API
-    const anthropicRes = await fetch('https://api.anthropic.com/v1/messages', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'x-api-key': anthropicKey,
-        'anthropic-version': '2023-06-01',
-      },
-      body: JSON.stringify({
-        model: 'claude-haiku-4-5-20251001',
-        max_tokens: 500,
-        system: systemPrompt,
-        messages: messages.slice(-20), // Keep last 20 messages
-      }),
+    const { AwsClient } = await import('npm:aws4fetch@1.0.18')
+    const aws = new AwsClient({
+      accessKeyId: awsAccessKey,
+      secretAccessKey: awsSecretKey,
+      region: 'us-east-1',
+      service: 'bedrock',
     })
 
-    if (!anthropicRes.ok) {
-      const err = await anthropicRes.json().catch(() => ({}))
-      const errMsg = (err as Record<string, Record<string, string>>)?.error?.message || `Anthropic error: ${anthropicRes.status}`
-      return new Response(JSON.stringify({ error: errMsg }), {
-        status: anthropicRes.status,
+    const bedrockRes = await aws.fetch(
+      'https://bedrock-runtime.us-east-1.amazonaws.com/model/us.anthropic.claude-3-5-haiku-20241022-v1:0/invoke',
+      {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          anthropic_version: 'bedrock-2023-05-31',
+          max_tokens: 500,
+          system: systemPrompt,
+          messages: messages.slice(-20),
+        }),
+      }
+    )
+
+    if (!bedrockRes.ok) {
+      const err = await bedrockRes.text()
+      console.error('Bedrock error:', bedrockRes.status, err)
+      return new Response(JSON.stringify({ error: `AI service error: ${bedrockRes.status}` }), {
+        status: bedrockRes.status,
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       })
     }
 
-    const data = await anthropicRes.json()
-    const content = (data as Record<string, Array<{ type: string; text: string }>>).content?.[0]?.text || 'No response generated.'
+    const bedrockData = await bedrockRes.json()
+    const content = (bedrockData as Record<string, Array<{ type: string; text: string }>>).content?.[0]?.text || 'No response generated.'
 
-    // Audit log
-    await supabase.from('audit_log').insert({
-      user_id: user.id,
-      action: 'support_chat',
-      resource_type: 'support_chatbot',
-      metadata: {
-        model: 'claude-haiku-4-5-20251001',
-        input_tokens: (data as Record<string, Record<string, number>>).usage?.input_tokens,
-        output_tokens: (data as Record<string, Record<string, number>>).usage?.output_tokens,
-      },
-    })
+    // Audit log (non-blocking)
+    try {
+      await supabase.from('audit_log').insert({
+        user_id: user.id,
+        action: 'support_chat',
+        resource_type: 'support_chatbot',
+        metadata: { model: 'claude-haiku', via: 'bedrock' },
+      })
+    } catch {
+      // Ignore audit log failures
+    }
 
     return new Response(JSON.stringify({ response: content }), {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },

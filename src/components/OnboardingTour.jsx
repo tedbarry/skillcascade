@@ -104,17 +104,19 @@ export default function OnboardingTour({ onComplete, onNavigate }) {
 
       {/* Modal card */}
       <div
-        className="relative bg-white rounded-2xl shadow-2xl max-w-md w-full mx-4 overflow-hidden"
+        className="relative bg-white rounded-xl shadow-lg max-w-md w-full mx-4 overflow-hidden"
         style={{ animation: 'tourFadeScaleIn 0.3s ease-out both' }}
       >
         {/* Header accent */}
         <div className="h-1.5 bg-gradient-to-r from-sage-400 via-warm-400 to-coral-400" />
 
         <div className="px-8 pt-8 pb-6 text-center">
-          {/* Icon */}
-          <div className="inline-flex items-center justify-center w-16 h-16 rounded-2xl bg-sage-50 mb-5">
-            {ClipboardIcon}
-          </div>
+          {/* Welcome illustration */}
+          <img
+            src="/brand/onboarding-welcome.jpg"
+            alt="Welcome to SkillCascade"
+            className="w-48 max-w-[200px] h-auto rounded-xl mx-auto mb-5"
+          />
 
           <h2 className="text-xl font-bold text-warm-800 font-display mb-2">
             Welcome to Skill<span className="text-sage-500">Cascade</span>
@@ -128,26 +130,26 @@ export default function OnboardingTour({ onComplete, onNavigate }) {
           <div className="grid grid-cols-2 gap-3 mb-6">
             <button
               onClick={() => handleRoleSelect(ROLES.BCBA)}
-              className="group flex flex-col items-center gap-2 p-5 rounded-xl border-2 border-warm-200 hover:border-sage-400 hover:bg-sage-50 transition-all text-warm-600 hover:text-sage-700 min-h-[44px]"
+              className="group flex flex-col items-center gap-2 p-5 rounded-xl border border-warm-200 shadow-[0_1px_3px_rgba(0,0,0,0.04)] hover:border-sage-400 hover:shadow-[0_4px_12px_rgba(0,0,0,0.08)] hover:bg-sage-50 transition-all text-warm-600 hover:text-sage-700 min-h-[44px]"
             >
-              <div className="w-12 h-12 rounded-xl bg-warm-100 group-hover:bg-sage-100 flex items-center justify-center transition-colors">
+              <div className="text-sage-500">
                 {BCBAIcon}
               </div>
               <span className="text-sm font-semibold">BCBA / Clinician</span>
-              <span className="text-[11px] text-warm-400 leading-tight">
+              <span className="text-[11px] text-warm-500 leading-tight">
                 Full clinical workflow
               </span>
             </button>
 
             <button
               onClick={() => handleRoleSelect(ROLES.PARENT)}
-              className="group flex flex-col items-center gap-2 p-5 rounded-xl border-2 border-warm-200 hover:border-sage-400 hover:bg-sage-50 transition-all text-warm-600 hover:text-sage-700 min-h-[44px]"
+              className="group flex flex-col items-center gap-2 p-5 rounded-xl border border-warm-200 shadow-[0_1px_3px_rgba(0,0,0,0.04)] hover:border-sage-400 hover:shadow-[0_4px_12px_rgba(0,0,0,0.08)] hover:bg-sage-50 transition-all text-warm-600 hover:text-sage-700 min-h-[44px]"
             >
-              <div className="w-12 h-12 rounded-xl bg-warm-100 group-hover:bg-sage-100 flex items-center justify-center transition-colors">
+              <div className="text-sage-500">
                 {ParentIcon}
               </div>
               <span className="text-sm font-semibold">Parent / Caregiver</span>
-              <span className="text-[11px] text-warm-400 leading-tight">
+              <span className="text-[11px] text-warm-500 leading-tight">
                 Simplified overview
               </span>
             </button>
@@ -156,7 +158,7 @@ export default function OnboardingTour({ onComplete, onNavigate }) {
           {/* Skip link */}
           <button
             onClick={handleSkip}
-            className="text-xs text-warm-400 hover:text-warm-600 transition-colors underline underline-offset-2 min-h-[44px]"
+            className="text-xs text-warm-500 hover:text-warm-600 transition-colors underline underline-offset-2 min-h-[44px]"
           >
             Skip, I know my way around
           </button>

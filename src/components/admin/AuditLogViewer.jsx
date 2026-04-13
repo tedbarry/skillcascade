@@ -1,6 +1,8 @@
 import { useState, useEffect, useCallback } from 'react'
-import { supabase } from '../../lib/supabase.js'
-import { downloadFile } from '../../data/exportUtils.js'
+import { api } from '../../lib/api.js'
+import { downloadFile } from '../../lib/fileExports.js'
+import usePermissions from '../../hooks/usePermissions.js'
+import { buildExportAccessState } from '../../lib/exportAccess.js'
 
 const PAGE_SIZE = 25
 
@@ -23,38 +25,55 @@ const RESOURCE_LABELS = {
 }
 
 export default function AuditLogViewer() {
+  const { can, loading: permissionsLoading } = usePermissions()
   const [entries, setEntries] = useState([])
   const [loading, setLoading] = useState(true)
   const [page, setPage] = useState(0)
   const [hasMore, setHasMore] = useState(true)
   const [filterAction, setFilterAction] = useState('')
   const [filterResource, setFilterResource] = useState('')
+  const exportAccess = buildExportAccessState({
+    canViewTeam: can('team', 'view'),
+    canViewSettings: can('settings', 'view'),
+  })
 
   const loadEntries = useCallback(async (pageNum = 0, append = false) => {
     setLoading(true)
     try {
-      let query = supabase
+      let query = api
         .from('audit_log')
-        .select('*, profiles!audit_log_user_id_fkey(display_name)')
+        .select('*')
         .order('created_at', { ascending: false })
-        .range(pageNum * PAGE_SIZE, (pageNum + 1) * PAGE_SIZE - 1)
+        .limit(PAGE_SIZE)
 
       if (filterAction) query = query.eq('action', filterAction)
       if (filterResource) query = query.eq('resource_type', filterResource)
 
       const { data, error } = await query
       if (error) {
-        // If the join fails (no FK), fall back without profiles
-        const { data: fallback } = await supabase
-          .from('audit_log')
-          .select('*')
-          .order('created_at', { ascending: false })
-          .range(pageNum * PAGE_SIZE, (pageNum + 1) * PAGE_SIZE - 1)
-        setEntries(append ? prev => [...prev, ...(fallback || [])] : fallback || [])
-        setHasMore((fallback || []).length === PAGE_SIZE)
+        setEntries(append ? prev => [...prev] : [])
+        setHasMore(false)
       } else {
-        setEntries(append ? prev => [...prev, ...(data || [])] : data || [])
-        setHasMore((data || []).length === PAGE_SIZE)
+        const entries = data || []
+
+        // Batch-fetch display names from profiles for user_ids in results
+        const userIds = [...new Set(entries.map(e => e.user_id).filter(Boolean))]
+        if (userIds.length > 0) {
+          const { data: profiles } = await api
+            .from('profiles')
+            .select('id, display_name')
+            .in('id', userIds)
+          const profileMap = {}
+          for (const p of (profiles || [])) profileMap[p.id] = p
+          for (const entry of entries) {
+            if (entry.user_id && profileMap[entry.user_id]) {
+              entry.profiles = profileMap[entry.user_id]
+            }
+          }
+        }
+
+        setEntries(append ? prev => [...prev, ...entries] : entries)
+        setHasMore(entries.length === PAGE_SIZE)
       }
     } catch (e) {
       console.error('Failed to load audit log:', e)
@@ -75,6 +94,7 @@ export default function AuditLogViewer() {
   }
 
   const handleExport = () => {
+    if (!exportAccess.canExportAuditLog) return
     const csv = [
       'Timestamp,User,Action,Resource Type,Resource ID',
       ...entries.map(e => {
@@ -116,7 +136,7 @@ export default function AuditLogViewer() {
         </select>
         <button
           onClick={handleExport}
-          disabled={entries.length === 0}
+          disabled={entries.length === 0 || permissionsLoading || !exportAccess.canExportAuditLog}
           className="ml-auto px-4 py-2 min-h-[44px] text-sm font-medium rounded-lg bg-white border border-warm-200 text-warm-600 hover:bg-warm-50 disabled:opacity-50 transition-colors"
         >
           Export CSV
@@ -126,9 +146,9 @@ export default function AuditLogViewer() {
       {/* Log entries */}
       <div className="bg-white rounded-xl border border-warm-200 overflow-hidden">
         {loading && entries.length === 0 ? (
-          <div className="p-6 text-center text-warm-400 text-sm">Loading audit log...</div>
+          <div className="p-6 text-center text-warm-500 text-sm">Loading audit log...</div>
         ) : entries.length === 0 ? (
-          <div className="p-6 text-center text-warm-400 text-sm">No audit entries found.</div>
+          <div className="p-6 text-center text-warm-500 text-sm">No audit entries found.</div>
         ) : (
           <>
             <div className="overflow-x-auto">

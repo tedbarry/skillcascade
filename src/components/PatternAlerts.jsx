@@ -34,16 +34,16 @@ const ALERT_CONFIG = {
   [ALERT_TYPES.PLATEAU]: {
     label: 'Plateau',
     subtitle: 'Domains where the average score has not moved across recent snapshots.',
-    color: '#c49a6c',       // warm-400 / orange-gold
-    bg: '#fdf8f0',          // warm-50
-    border: '#e8d5c0',      // warm-200
-    badgeBg: '#f5ebe0',     // warm-100
+    color: '#D97706',       // warm-400 / orange-gold
+    bg: '#FAFAF9',          // warm-50
+    border: '#E7E5E4',      // warm-200
+    badgeBg: '#F5F5F4',     // warm-100
     badgeText: '#9a6740',   // warm-600
   },
   [ALERT_TYPES.FOUNDATION]: {
     label: 'Foundation Weakness',
     subtitle: 'Regulation or Self-Awareness lags behind higher domains, violating the cascade model.',
-    color: '#e06b5f',       // coral-400
+    color: '#EF4444',       // coral-400
     bg: '#fdf2f1',          // coral-50
     border: '#f5b8b2',      // coral-200
     badgeBg: '#fce0dd',     // coral-100
@@ -400,10 +400,7 @@ function AlertSection({ type, alerts, onNavigateToAssess, defaultExpanded }) {
         </span>
 
         {/* Icon */}
-        <span
-          className="w-7 h-7 rounded-lg flex items-center justify-center shrink-0"
-          style={{ backgroundColor: config.color + '20', color: config.color }}
-        >
+        <span className="shrink-0" style={{ color: config.color }}>
           {ICONS[type]}
         </span>
 
@@ -420,7 +417,7 @@ function AlertSection({ type, alerts, onNavigateToAssess, defaultExpanded }) {
               {countLabel}
             </span>
           </div>
-          <p className="text-[11px] text-warm-400 mt-0.5 truncate">
+          <p className="text-[11px] text-warm-500 mt-0.5 truncate">
             {config.subtitle}
           </p>
         </div>
@@ -489,7 +486,7 @@ function RegressionCard({ alert, onNavigateToAssess }) {
         <span className="text-xs font-semibold text-warm-700">
           {alert.domainName}
         </span>
-        <span className="text-[10px] text-warm-300">
+        <span className="text-[10px] text-warm-500">
           {alert.skills.length} skill{alert.skills.length !== 1 ? 's' : ''} regressed
         </span>
       </div>
@@ -538,7 +535,7 @@ function RegressionCard({ alert, onNavigateToAssess }) {
             {onNavigateToAssess && (
               <button
                 onClick={() => onNavigateToAssess(skill.subAreaId)}
-                className="text-warm-400 hover:text-sage-600 transition-colors shrink-0 min-h-[44px] min-w-[44px] flex items-center justify-center"
+                className="text-warm-500 hover:text-sage-600 transition-colors shrink-0 min-h-[44px] min-w-[44px] flex items-center justify-center"
                 title={`Jump to ${skill.subAreaName}`}
               >
                 {ICONS.jumpTo}
@@ -549,7 +546,7 @@ function RegressionCard({ alert, onNavigateToAssess }) {
       </div>
 
       {/* Snapshot reference */}
-      <div className="mt-2.5 pt-2 border-t border-warm-100">
+      <div className="mt-2.5 pt-2 border-t border-warm-200">
         <span className="text-[10px] text-warm-300">
           Compared against: {alert.snapshotLabel}
         </span>
@@ -582,7 +579,7 @@ function PlateauCard({ alert, onNavigateToAssess }) {
         <div className="text-xs font-semibold text-warm-700">
           {alert.domainName}
         </div>
-        <div className="text-[11px] text-warm-400 mt-0.5">
+        <div className="text-[11px] text-warm-500 mt-0.5">
           Average score has held at {alert.avg.toFixed(1)} across {alert.dataPoints} data point{alert.dataPoints !== 1 ? 's' : ''}.
           Consider reviewing intervention strategies or skill targets.
         </div>
@@ -596,7 +593,7 @@ function PlateauCard({ alert, onNavigateToAssess }) {
         >
           {alert.avg.toFixed(1)}
         </div>
-        <div className="text-[9px] text-warm-300">avg</div>
+        <div className="text-[9px] text-warm-500">avg</div>
       </div>
 
       {/* Jump */}
@@ -647,14 +644,14 @@ function FoundationCard({ alert, onNavigateToAssess }) {
               >
                 {alert.foundationAvg.toFixed(1)}
               </div>
-              <div className="text-[9px] text-warm-300">{alert.domainName}</div>
+              <div className="text-[9px] text-warm-500">{alert.domainName}</div>
             </div>
             <div className="text-warm-200 text-xs">vs</div>
             <div className="text-center">
               <div className="text-base font-bold text-sage-600">
                 {alert.higherAvg.toFixed(1)}
               </div>
-              <div className="text-[9px] text-warm-300">Higher domains</div>
+              <div className="text-[9px] text-warm-500">Higher domains</div>
             </div>
             <div
               className="text-[10px] font-medium px-2 py-0.5 rounded-full ml-1"
@@ -665,7 +662,7 @@ function FoundationCard({ alert, onNavigateToAssess }) {
           </div>
 
           {/* Cascade warning */}
-          <p className="text-[11px] text-warm-400 mt-2">
+          <p className="text-[11px] text-warm-500 mt-2">
             The cascade model expects foundational skills (D1, D2) to be stable before
             higher domains are targeted. Skills in{' '}
             {alert.exceedingDomains.map((d) => d.domainName).join(', ')}{' '}
@@ -712,7 +709,7 @@ function GapsCard({ alert, onNavigateToAssess }) {
         <div className="text-xs font-semibold text-warm-700">
           {alert.domainName}
         </div>
-        <div className="text-[11px] text-warm-400 mt-0.5">
+        <div className="text-[11px] text-warm-500 mt-0.5">
           {alert.pctUnassessed}% of skills unassessed ({alert.assessed} of {alert.total} completed).
           Completing this domain will give a fuller clinical picture.
         </div>
@@ -728,7 +725,7 @@ function GapsCard({ alert, onNavigateToAssess }) {
             }}
           />
         </div>
-        <div className="text-[9px] text-warm-300 text-center mt-0.5">
+        <div className="text-[9px] text-warm-500 text-center mt-0.5">
           {alert.assessed}/{alert.total}
         </div>
       </div>
@@ -806,13 +803,7 @@ export default function PatternAlerts({
         }`}
       >
         <div className="flex items-center gap-3">
-          <span
-            className={`w-8 h-8 rounded-lg flex items-center justify-center shrink-0 ${
-              hasAlerts
-                ? 'bg-coral-100 text-coral-500'
-                : 'bg-sage-100 text-sage-500'
-            }`}
-          >
+          <span className={`shrink-0 ${hasAlerts ? 'text-coral-500' : 'text-sage-500'}`}>
             {hasAlerts ? ICONS.gaps : ICONS.check}
           </span>
           <div>
@@ -821,7 +812,7 @@ export default function PatternAlerts({
                 ? `${totalAlerts.count} alert${totalAlerts.count !== 1 ? 's' : ''} detected across ${totalAlerts.domains} domain${totalAlerts.domains !== 1 ? 's' : ''}`
                 : 'No concerns detected'} <KBHelpIcon term="view-alerts" />
             </h2>
-            <p className="text-[11px] text-warm-400 mt-0.5">
+            <p className="text-[11px] text-warm-500 mt-0.5">
               {hasAlerts
                 ? 'Review the alerts below for patterns that may affect intervention planning.'
                 : 'The current profile shows no regressions, plateaus, or foundation gaps.'}

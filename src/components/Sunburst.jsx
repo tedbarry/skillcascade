@@ -24,7 +24,7 @@ function adjustOpacity(hex, opacity) {
 }
 
 function getNodeColor(d, assessments) {
-  if (d.depth === 0) return '#fdf8f0'
+  if (d.depth === 0) return '#FAFAF9'
 
   // Leaf node (individual skill): color by assessment
   if (!d.children && !d._children) {
@@ -249,7 +249,7 @@ export default memo(function Sunburst({ data, assessments = {}, width = 800, hei
       .attr('pointer-events', (d) => (arcVisible(d.current) ? 'auto' : 'none'))
       .attr('d', (d) => arcGen(d))
       .style('cursor', 'pointer')
-      .style('stroke', '#fdf8f0')
+      .style('stroke', '#FAFAF9')
       .style('stroke-width', '0.5px')
       .style('outline', 'none')
       .attr('role', 'button')
@@ -265,7 +265,7 @@ export default memo(function Sunburst({ data, assessments = {}, width = 800, hei
         select(this).style('stroke', '#3d6b4f').style('stroke-width', '2px')
       })
       .on('blur', function (event, d) {
-        select(this).style('stroke', '#fdf8f0').style('stroke-width', '0.5px')
+        select(this).style('stroke', '#FAFAF9').style('stroke-width', '0.5px')
       })
 
     // Hover
@@ -308,7 +308,7 @@ export default memo(function Sunburst({ data, assessments = {}, width = 800, hei
 
         select(event.currentTarget)
           .attr('fill-opacity', 1)
-          .style('stroke', '#3d2a1c')
+          .style('stroke', '#1C1917')
           .style('stroke-width', '1.5px')
       })
       .on('mousemove', (event) => {
@@ -318,7 +318,7 @@ export default memo(function Sunburst({ data, assessments = {}, width = 800, hei
         setTooltip(null)
         select(event.currentTarget)
           .attr('fill-opacity', d.children ? 0.85 : 0.7)
-          .style('stroke', '#fdf8f0')
+          .style('stroke', '#FAFAF9')
           .style('stroke-width', '0.5px')
       })
       .on('touchend', (event, d) => {
@@ -362,7 +362,7 @@ export default memo(function Sunburst({ data, assessments = {}, width = 800, hei
 
         select(event.currentTarget)
           .attr('fill-opacity', 1)
-          .style('stroke', '#3d2a1c')
+          .style('stroke', '#1C1917')
           .style('stroke-width', '1.5px')
 
         if (touchTimerRef.current) clearTimeout(touchTimerRef.current)
@@ -370,7 +370,7 @@ export default memo(function Sunburst({ data, assessments = {}, width = 800, hei
           setTooltip(null)
           select(event.currentTarget)
             .attr('fill-opacity', d.children ? 0.85 : 0.7)
-            .style('stroke', '#fdf8f0')
+            .style('stroke', '#FAFAF9')
             .style('stroke-width', '0.5px')
         }, 3000)
       })
@@ -387,7 +387,7 @@ export default memo(function Sunburst({ data, assessments = {}, width = 800, hei
       .data(root.descendants().slice(1))
       .join('text')
       .attr('dy', '0.35em')
-      .attr('fill', '#3d2a1c')
+      .attr('fill', '#1C1917')
       .attr('fill-opacity', (d) => +labelVisible(d.current))
       .attr('transform', (d) => labelTransform(d.current, radius))
       .style('font-size', (d) => (d.depth === 1 ? '11px' : d.depth === 2 ? '9px' : '7.5px'))
@@ -407,7 +407,7 @@ export default memo(function Sunburst({ data, assessments = {}, width = 800, hei
       .append('circle')
       .datum(root)
       .attr('r', radius)
-      .attr('fill', '#fdf8f0')
+      .attr('fill', '#FAFAF9')
       .attr('pointer-events', 'all')
       .style('cursor', 'pointer')
       .style('outline', 'none')
@@ -439,7 +439,7 @@ export default memo(function Sunburst({ data, assessments = {}, width = 800, hei
       .style('font-size', '14px')
       .style('font-weight', '700')
       .style('font-family', 'Plus Jakarta Sans, Inter, sans-serif')
-      .style('fill', '#3d2a1c')
+      .style('fill', '#1C1917')
       .text('Client')
       .attr('pointer-events', 'none')
 
@@ -463,7 +463,7 @@ export default memo(function Sunburst({ data, assessments = {}, width = 800, hei
       <div className="flex items-center gap-1.5 mb-3 text-sm text-warm-600 min-h-[28px] flex-wrap">
         {breadcrumb.map((item, i) => (
           <span key={i} className="flex items-center gap-1.5">
-            {i > 0 && <span className="text-warm-400">{'›'}</span>}
+            {i > 0 && <span className="text-warm-500">{'›'}</span>}
             {i < breadcrumb.length - 1 ? (
               <button
                 onClick={() => {
@@ -499,7 +499,7 @@ export default memo(function Sunburst({ data, assessments = {}, width = 800, hei
             <div className="flex items-center gap-2 text-xs">
               <span className="text-warm-700 font-medium">{tooltip.level}</span>
               {tooltip.depth < 4 && tooltip.childCount > 1 && (
-                <span className="text-warm-400">
+                <span className="text-warm-500">
                   ({tooltip.assessedCount}/{tooltip.childCount} skills assessed)
                 </span>
               )}

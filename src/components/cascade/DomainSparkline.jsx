@@ -70,7 +70,7 @@ export default memo(function DomainSparkline({
     y: pad + h - (scores[scores.length - 1] / maxScore) * h,
   }
   const trend = scores[scores.length - 1] - scores[0]
-  const trendColor = trend >= 0 ? '#7fb589' : '#e8928a'
+  const trendColor = trend >= 0 ? '#10B981' : '#F59E0B'
 
   return (
     <svg width={width} height={height}>
@@ -95,7 +95,7 @@ export default memo(function DomainSparkline({
           cx={lastPt.x}
           cy={lastPt.y}
           r={large ? 3.5 : 2}
-          fill={trend >= 0 ? color : '#e8928a'}
+          fill={trend >= 0 ? color : '#F59E0B'}
           stroke={large ? '#12121a' : 'none'}
           strokeWidth={large ? 1.5 : 0}
         />

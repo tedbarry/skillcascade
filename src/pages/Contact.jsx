@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { Link } from 'react-router-dom'
-import { supabase } from '../lib/supabase.js'
+import { api } from '../lib/api.js'
 
 export default function Contact() {
   const [name, setName] = useState('')
@@ -18,7 +18,7 @@ export default function Contact() {
 
     try {
       // Store contact submission in Supabase
-      const { error: dbError } = await supabase
+      const { error: dbError } = await api
         .from('contact_submissions')
         .insert({
           name: name.trim(),
@@ -46,8 +46,8 @@ export default function Contact() {
       <div className="min-h-screen flex items-center justify-center bg-warm-50 px-4">
         <div className="w-full max-w-md text-center">
           <div className="bg-white rounded-xl border border-warm-200 shadow-sm p-8">
-            <div className="w-12 h-12 mx-auto mb-4 rounded-full bg-sage-100 flex items-center justify-center">
-              <svg className="w-6 h-6 text-sage-600" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+            <div className="text-sage-600 mx-auto mb-4">
+              <svg className="w-6 h-6 mx-auto" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
                 <path strokeLinecap="round" strokeLinejoin="round" d="M4.5 12.75l6 6 9-13.5" />
               </svg>
             </div>
@@ -57,7 +57,7 @@ export default function Contact() {
             </p>
             <Link
               to="/"
-              className="inline-block px-6 py-2.5 rounded-lg bg-sage-500 text-white text-sm font-semibold hover:bg-sage-600 transition-colors"
+              className="inline-block px-6 py-2.5 rounded-lg bg-sage-600 text-white text-sm font-semibold hover:bg-sage-700 transition-colors"
             >
               Back to Home
             </Link>
@@ -163,7 +163,7 @@ export default function Contact() {
           <button
             type="submit"
             disabled={sending}
-            className="w-full py-2.5 rounded-lg bg-sage-500 text-white text-sm font-semibold hover:bg-sage-600 transition-colors disabled:opacity-50 disabled:cursor-not-allowed min-h-[44px]"
+            className="w-full py-2.5 rounded-lg bg-sage-600 text-white text-sm font-semibold hover:bg-sage-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed min-h-[44px]"
           >
             {sending ? 'Sending...' : 'Send Message'}
           </button>

@@ -1,4 +1,5 @@
 import { createClient } from '@supabase/supabase-js'
+import { api } from './api.js'
 
 const supabaseUrl = import.meta.env.VITE_SUPABASE_URL
 const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY
@@ -25,7 +26,7 @@ export const supabase = createClient(supabaseUrl, supabaseAnonKey, {
  * This prevents different components from overwriting each other.
  */
 export async function mergeUserSettings(userId, partial) {
-  const { data } = await supabase
+  const { data } = await api
     .from('user_settings')
     .select('settings')
     .eq('user_id', userId)
@@ -33,7 +34,7 @@ export async function mergeUserSettings(userId, partial) {
 
   const merged = { ...(data?.settings || {}), ...partial }
 
-  const { error } = await supabase
+  const { error } = await api
     .from('user_settings')
     .upsert({ user_id: userId, settings: merged }, { onConflict: 'user_id' })
 

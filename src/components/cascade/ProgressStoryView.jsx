@@ -131,7 +131,7 @@ export default memo(function ProgressStoryView({
 
         {/* Before/After comparison or simple progress bars */}
         {hasData && (
-          <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-4 mb-6">
+          <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-4 mb-6">
             <BeforeAfterComparison
               currentAssessments={assessments}
               snapshots={snapshots}
@@ -182,7 +182,7 @@ export default memo(function ProgressStoryView({
         {/* Expanded domain detail */}
         {expandedInfo && (
           <div
-            className="bg-white rounded-2xl shadow-sm border p-5 mb-6 transition-all"
+            className="bg-white rounded-xl shadow-sm border p-5 mb-6 transition-all"
             style={{ borderColor: expandedInfo.color + '40' }}
           >
             <div className="flex items-start justify-between gap-3">

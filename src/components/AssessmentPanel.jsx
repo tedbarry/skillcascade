@@ -68,7 +68,7 @@ function getDomainStats(domain, assessments) {
   return { total, assessed, avg: assessed > 0 ? scoreSum / assessed : 0 }
 }
 
-export default function AssessmentPanel({ assessments, onAssess, initialSubAreaId, initialIndex, onPositionChange, onDrillDown }) {
+export default function AssessmentPanel({ assessments, onAssess, initialSubAreaId, initialIndex, onPositionChange, onDrillDown, onAssessmentComplete, onSkillGoal }) {
   const { isPhone } = useResponsive()
   const onPositionChangeRef = useRef(onPositionChange)
   onPositionChangeRef.current = onPositionChange
@@ -148,6 +148,17 @@ export default function AssessmentPanel({ assessments, onAssess, initialSubAreaI
     })
     return { total, assessed, pct: total > 0 ? Math.round((assessed / total) * 100) : 0 }
   }, [assessments])
+
+  // Detect assessment completion (100%) and trigger modal
+  const prevPctRef = useRef(overallStats.pct)
+  useEffect(() => {
+    const prev = prevPctRef.current
+    prevPctRef.current = overallStats.pct
+    // Only trigger when transitioning TO 100%, not on initial load at 100%
+    if (overallStats.pct === 100 && prev < 100 && prev > 0 && onAssessmentComplete) {
+      onAssessmentComplete()
+    }
+  }, [overallStats.pct, onAssessmentComplete])
 
   const subAreaStats = getSubAreaStats(currentSubArea, assessments)
 
@@ -284,7 +295,7 @@ export default function AssessmentPanel({ assessments, onAssess, initialSubAreaI
             <div className="fixed inset-0 z-50 bg-white overflow-y-auto">
               <div className="flex items-center justify-between px-4 py-3 border-b border-warm-200 sticky top-0 bg-white z-10">
                 <h3 className="text-sm font-semibold text-warm-800">Navigate Assessment</h3>
-                <button onClick={() => setNavOverlayOpen(false)} className="p-2 text-warm-400 min-h-[44px] min-w-[44px] flex items-center justify-center" aria-label="Close navigation">
+                <button onClick={() => setNavOverlayOpen(false)} className="p-2 text-warm-500 min-h-[44px] min-w-[44px] flex items-center justify-center" aria-label="Close navigation">
                   <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
                     <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
                   </svg>
@@ -324,7 +335,7 @@ export default function AssessmentPanel({ assessments, onAssess, initialSubAreaI
                             >
                               {saPct === 100 ? <span className="text-sage-500">&#10003;</span> : saPct > 0 ? <span className="w-2 h-2 rounded-full bg-warm-400 shrink-0" /> : <span className="w-2 h-2 rounded-full bg-warm-200 shrink-0" />}
                               <span className="flex-1 truncate">{sa.name}</span>
-                              <span className="text-[10px] text-warm-400">{saPct}%</span>
+                              <span className="text-[10px] text-warm-500">{saPct}%</span>
                             </button>
                           )
                         })}
@@ -343,7 +354,7 @@ export default function AssessmentPanel({ assessments, onAssess, initialSubAreaI
             onClick={() => setNavOverlayOpen(true)}
             className="flex items-center gap-1.5 text-sm text-warm-600 min-h-[44px]"
           >
-            <svg className="w-4 h-4 text-warm-400 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+            <svg className="w-4 h-4 text-warm-500 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
               <path strokeLinecap="round" strokeLinejoin="round" d="M3.75 6.75h16.5M3.75 12h16.5m-16.5 5.25h16.5" />
             </svg>
             <span className="font-medium text-warm-700 truncate">{currentDomain.name}</span>
@@ -355,7 +366,7 @@ export default function AssessmentPanel({ assessments, onAssess, initialSubAreaI
             <div className="flex-1 h-1.5 bg-warm-200 rounded-full overflow-hidden">
               <div className="h-full rounded-full bg-sage-500 transition-all" style={{ width: `${subAreaStats.total > 0 ? (subAreaStats.assessed / subAreaStats.total) * 100 : 0}%` }} />
             </div>
-            <span className="text-[10px] text-warm-400 whitespace-nowrap">{subAreaStats.assessed}/{subAreaStats.total}</span>
+            <span className="text-[10px] text-warm-500 whitespace-nowrap">{subAreaStats.assessed}/{subAreaStats.total}</span>
           </div>
         </div>
 
@@ -363,7 +374,7 @@ export default function AssessmentPanel({ assessments, onAssess, initialSubAreaI
         <div className="flex-1 overflow-y-auto px-4 py-4 pb-20" ref={contentRef}>
           {/* Bulk actions */}
           <div className="flex items-center gap-1.5 mb-4 pb-4 border-b border-warm-200 overflow-x-auto scrollbar-hide">
-            <span className="text-[10px] text-warm-400 shrink-0">Quick:</span>
+            <span className="text-[10px] text-warm-500 shrink-0">Quick:</span>
             {[ASSESSMENT_LEVELS.NOT_PRESENT, ASSESSMENT_LEVELS.NEEDS_WORK, ASSESSMENT_LEVELS.DEVELOPING, ASSESSMENT_LEVELS.SOLID].map(
               (level) => (
                 <button
@@ -404,7 +415,7 @@ export default function AssessmentPanel({ assessments, onAssess, initialSubAreaI
           {/* Skill groups */}
           <div className="space-y-6">
             {currentSubArea.skillGroups.map((sg) => (
-              <SkillGroupRater key={sg.id} skillGroup={sg} assessments={assessments} onAssess={onAssess} showAllDescs={showAllDescs} showAllTeaching={showAllTeaching} onNavigateToSkill={navigateToSkill} highlightedSkillId={highlightedSkillId} />
+              <SkillGroupRater key={sg.id} skillGroup={sg} assessments={assessments} onAssess={onAssess} showAllDescs={showAllDescs} showAllTeaching={showAllTeaching} onNavigateToSkill={navigateToSkill} highlightedSkillId={highlightedSkillId} onSkillGoal={onSkillGoal} />
             ))}
           </div>
         </div>
@@ -419,11 +430,11 @@ export default function AssessmentPanel({ assessments, onAssess, initialSubAreaI
             >
               {'\u2190'} Prev
             </button>
-            <span className="text-[10px] text-warm-400 whitespace-nowrap">{currentIndex + 1}/{ALL_SUB_AREAS.length}</span>
+            <span className="text-[10px] text-warm-500 whitespace-nowrap">{currentIndex + 1}/{ALL_SUB_AREAS.length}</span>
             <button
               onClick={() => goTo(currentIndex + 1)}
               disabled={currentIndex === ALL_SUB_AREAS.length - 1}
-              className={`flex-1 flex items-center justify-center gap-1 py-2.5 rounded-lg text-sm font-medium min-h-[44px] transition-colors ${currentIndex === ALL_SUB_AREAS.length - 1 ? 'text-warm-300' : 'bg-sage-500 text-white hover:bg-sage-600'}`}
+              className={`flex-1 flex items-center justify-center gap-1 py-2.5 rounded-lg text-sm font-medium min-h-[44px] transition-colors ${currentIndex === ALL_SUB_AREAS.length - 1 ? 'text-warm-300' : 'bg-sage-600 text-white hover:bg-sage-700'}`}
             >
               Next {'\u2192'}
             </button>
@@ -449,7 +460,7 @@ export default function AssessmentPanel({ assessments, onAssess, initialSubAreaI
       {/* Left nav — domain/sub-area list */}
       <div className="w-64 bg-white border-r border-warm-200 overflow-y-auto shrink-0">
         <div className="p-4">
-          <h3 className="text-xs uppercase tracking-wider text-warm-400 font-semibold mb-3">
+          <h3 className="text-xs uppercase tracking-wider text-warm-500 font-semibold mb-3">
             Assessment Progress
           </h3>
 
@@ -465,7 +476,7 @@ export default function AssessmentPanel({ assessments, onAssess, initialSubAreaI
                 style={{ width: `${overallStats.pct}%` }}
               />
             </div>
-            <div className="text-[10px] text-warm-400 mt-1">
+            <div className="text-[10px] text-warm-500 mt-1">
               {overallStats.assessed} / {overallStats.total} skills
             </div>
           </div>
@@ -596,7 +607,7 @@ export default function AssessmentPanel({ assessments, onAssess, initialSubAreaI
                   className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
                     currentIndex === ALL_SUB_AREAS.length - 1
                       ? 'text-warm-300 cursor-not-allowed'
-                      : 'bg-sage-500 text-white hover:bg-sage-600'
+                      : 'bg-sage-600 text-white hover:bg-sage-700'
                   }`}
                 >
                   <span>Next</span>
@@ -604,7 +615,7 @@ export default function AssessmentPanel({ assessments, onAssess, initialSubAreaI
                 </button>
               </div>
             </div>
-            <p className="text-[10px] text-warm-400 text-center mt-1">
+            <p className="text-[10px] text-warm-500 text-center mt-1">
               {'\u2190'} {'\u2192'} arrow keys
             </p>
           </div>
@@ -613,7 +624,7 @@ export default function AssessmentPanel({ assessments, onAssess, initialSubAreaI
         <div className="max-w-3xl mx-auto px-8 py-6">
           {/* Header */}
           <div className="mb-6">
-            <div className="flex items-center gap-2 text-xs text-warm-400 mb-1">
+            <div className="flex items-center gap-2 text-xs text-warm-500 mb-1">
               <span>Domain {currentDomain.domain}:</span>
               <span className="font-medium text-warm-600">{currentDomain.name}</span>
               <span>{'›'}</span>
@@ -647,7 +658,7 @@ export default function AssessmentPanel({ assessments, onAssess, initialSubAreaI
 
           {/* Bulk actions */}
           <div className="flex items-center gap-2 mb-6 pb-6 border-b border-warm-200 flex-wrap">
-            <span className="text-xs text-warm-400 mr-1">Quick fill:</span>
+            <span className="text-xs text-warm-500 mr-1">Quick fill:</span>
             {[ASSESSMENT_LEVELS.NOT_PRESENT, ASSESSMENT_LEVELS.NEEDS_WORK, ASSESSMENT_LEVELS.DEVELOPING, ASSESSMENT_LEVELS.SOLID].map(
               (level) => (
                 <button
@@ -701,6 +712,7 @@ export default function AssessmentPanel({ assessments, onAssess, initialSubAreaI
                 showAllTeaching={showAllTeaching}
                 onNavigateToSkill={navigateToSkill}
                 highlightedSkillId={highlightedSkillId}
+                onSkillGoal={onSkillGoal}
               />
             ))}
           </div>
@@ -713,7 +725,7 @@ export default function AssessmentPanel({ assessments, onAssess, initialSubAreaI
 /**
  * A single skill group with all its skills to rate
  */
-function SkillGroupRater({ skillGroup, assessments, onAssess, showAllDescs, showAllTeaching, onNavigateToSkill, highlightedSkillId }) {
+function SkillGroupRater({ skillGroup, assessments, onAssess, showAllDescs, showAllTeaching, onNavigateToSkill, highlightedSkillId, onSkillGoal }) {
   return (
     <div>
       <h3 className="text-sm font-semibold text-warm-700 mb-3">
@@ -735,6 +747,7 @@ function SkillGroupRater({ skillGroup, assessments, onAssess, showAllDescs, show
             showAllTeaching={showAllTeaching}
             onNavigateToSkill={onNavigateToSkill}
             isHighlighted={highlightedSkillId === skill.id}
+            onSkillGoal={onSkillGoal}
           />
         ))}
       </div>
@@ -745,7 +758,7 @@ function SkillGroupRater({ skillGroup, assessments, onAssess, showAllDescs, show
 /**
  * Individual skill rating row
  */
-function SkillRater({ skill, level, onRate, showAllDescs, showAllTeaching, assessments = {}, onNavigateToSkill, isHighlighted }) {
+function SkillRater({ skill, level, onRate, showAllDescs, showAllTeaching, assessments = {}, onNavigateToSkill, isHighlighted, onSkillGoal }) {
   const [showDescLocal, setShowDescLocal] = useState(false)
   const [showTeachingLocal, setShowTeachingLocal] = useState(false)
   const [showDependents, setShowDependents] = useState(false)
@@ -818,14 +831,27 @@ function SkillRater({ skill, level, onRate, showAllDescs, showAllTeaching, asses
                 </svg>
               </button>
             )}
+            {onSkillGoal && isAssessed(level) && (
+              <button
+                onClick={() => onSkillGoal(skill.id)}
+                className="transition-colors shrink-0 text-warm-300 hover:text-sage-500"
+                title="Generate goal for this skill"
+              >
+                <svg className="w-3.5 h-3.5" viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+                  <circle cx="10" cy="10" r="7" />
+                  <circle cx="10" cy="10" r="4" />
+                  <circle cx="10" cy="10" r="1" fill="currentColor" />
+                </svg>
+              </button>
+            )}
           </div>
           {!showDesc && desc && (
-            <p className="text-[11px] text-warm-400 truncate mt-0.5 max-w-md">{desc.description}</p>
+            <p className="text-[11px] text-warm-500 truncate mt-0.5 max-w-md">{desc.description}</p>
           )}
         </div>
         <div className="flex gap-1.5 shrink-0 items-center">
           {!isAssessed(level) && (
-            <span className="text-[9px] text-warm-400 mr-0.5">—</span>
+            <span className="text-[9px] text-warm-500 mr-0.5">—</span>
           )}
           {[
             ASSESSMENT_LEVELS.NOT_PRESENT,

@@ -173,8 +173,8 @@ export default function AdaptiveAssessment({ assessments, onAssess, onComplete, 
     return (
       <div className="flex flex-col items-center justify-center min-h-[60vh] px-4 text-center">
         <div className="max-w-lg">
-          <div className="w-16 h-16 mx-auto mb-4 rounded-2xl bg-sage-500/10 flex items-center justify-center">
-            <svg className="w-8 h-8 text-sage-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
+          <div className="text-sage-500 mx-auto mb-4">
+            <svg className="w-8 h-8 mx-auto" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
               <path strokeLinecap="round" strokeLinejoin="round" d="M3.75 13.5l10.5-11.25L12 10.5h8.25L9.75 21.75 12 13.5H3.75z" />
             </svg>
           </div>
@@ -201,13 +201,13 @@ export default function AdaptiveAssessment({ assessments, onAssess, onComplete, 
               color="text-warm-500"
             />
           </div>
-          <p className="text-xs text-warm-400 mb-4">
+          <p className="text-xs text-warm-500 mb-4">
             You can stop at any time. The most impactful skills come first,
             so even 15-20 ratings gives useful coverage.
           </p>
           <button
             onClick={() => setStarted(true)}
-            className="px-6 py-3 min-h-[44px] bg-sage-500 text-white rounded-lg font-semibold hover:bg-sage-600 transition-colors"
+            className="px-6 py-3 min-h-[44px] bg-sage-600 text-white rounded-lg font-semibold hover:bg-sage-700 transition-colors"
           >
             {totalRated > 0 ? 'Continue Rating' : 'Begin'}
           </button>
@@ -245,7 +245,7 @@ export default function AdaptiveAssessment({ assessments, onAssess, onComplete, 
             </button>
             <button
               onClick={handleDone}
-              className="px-3 py-1.5 min-h-[44px] text-xs font-semibold rounded-md bg-sage-500 text-white hover:bg-sage-600 transition-colors"
+              className="px-3 py-1.5 min-h-[44px] text-xs font-semibold rounded-md bg-sage-600 text-white hover:bg-sage-700 transition-colors"
             >
               Done for now
             </button>
@@ -284,7 +284,7 @@ export default function AdaptiveAssessment({ assessments, onAssess, onComplete, 
 
       {/* Contextual hint */}
       <ContextualHint show={hint.show} onDismiss={hint.dismiss} className="mb-4 mx-3 sm:mx-4 mt-3">
-        Skills are ordered by developmental influence — each one sets ceilings for skills above it. Even 15-20 ratings gives useful cascade coverage across all 9 domains. <KBLink term="view-start-here" className="text-[#7fb589]">Learn more</KBLink>
+        Skills are ordered by developmental influence — each one sets ceilings for skills above it. Even 15-20 ratings gives useful cascade coverage across all 9 domains. <KBLink term="view-start-here" className="text-[#10B981]">Learn more</KBLink>
       </ContextualHint>
 
       {/* Skill Cards */}
@@ -298,7 +298,7 @@ export default function AdaptiveAssessment({ assessments, onAssess, onComplete, 
             </p>
             <button
               onClick={handleDone}
-              className="px-5 py-2.5 min-h-[44px] bg-sage-500 text-white rounded-lg font-semibold hover:bg-sage-600"
+              className="px-5 py-2.5 min-h-[44px] bg-sage-600 text-white rounded-lg font-semibold hover:bg-sage-700"
             >
               Finish
             </button>
@@ -313,7 +313,7 @@ export default function AdaptiveAssessment({ assessments, onAssess, onComplete, 
                   <span className="font-semibold text-warm-600">{firstSkill.domainName}</span>
                   <span className="text-warm-300">|</span>
                   <span>{firstSkill.subAreaName}</span>
-                  <span className="ml-auto text-warm-400">Tier {firstSkill.tier}</span>
+                  <span className="ml-auto text-warm-500">Tier {firstSkill.tier}</span>
                 </div>
               )
             })()}
@@ -384,20 +384,20 @@ export default function AdaptiveAssessment({ assessments, onAssess, onComplete, 
             >
               Previous
             </button>
-            <span className="text-xs text-warm-400">
+            <span className="text-xs text-warm-500">
               {batchIndex + 1} / {totalBatches}
             </span>
             {hasMore ? (
               <button
                 onClick={handleNextBatch}
-                className="px-4 py-2 min-h-[44px] text-sm font-semibold rounded-md bg-sage-500 text-white hover:bg-sage-600 transition-colors"
+                className="px-4 py-2 min-h-[44px] text-sm font-semibold rounded-md bg-sage-600 text-white hover:bg-sage-700 transition-colors"
               >
                 Next batch
               </button>
             ) : (
               <button
                 onClick={handleDone}
-                className="px-4 py-2 min-h-[44px] text-sm font-semibold rounded-md bg-sage-500 text-white hover:bg-sage-600 transition-colors"
+                className="px-4 py-2 min-h-[44px] text-sm font-semibold rounded-md bg-sage-600 text-white hover:bg-sage-700 transition-colors"
               >
                 Finish
               </button>
@@ -447,7 +447,7 @@ function SkillRatingCard({ item, currentLevel, assessments, onRate, expanded, on
               </span>
             )}
           </div>
-          <p className="text-[11px] text-warm-400 mt-0.5 leading-snug">
+          <p className="text-[11px] text-warm-500 mt-0.5 leading-snug">
             {item.reason}
           </p>
           {hasCeiling && (() => {
@@ -457,7 +457,7 @@ function SkillRatingCard({ item, currentLevel, assessments, onRate, expanded, on
               <p className="text-[10px] mt-0.5 text-amber-600 font-medium">
                 Ceiling: {ASSESSMENT_LABELS[ceiling]}
                 {prereqName && (
-                  <span className="text-warm-400 font-normal">
+                  <span className="text-warm-500 font-normal">
                     {' '}(limited by {prereqName}{weakPrereq.level != null ? ` at ${ASSESSMENT_LABELS[weakPrereq.level]}` : ' — unassessed'})
                   </span>
                 )}
@@ -466,7 +466,7 @@ function SkillRatingCard({ item, currentLevel, assessments, onRate, expanded, on
           })()}
         </div>
         <svg
-          className={`w-4 h-4 text-warm-400 mt-0.5 shrink-0 transition-transform ${expanded ? 'rotate-180' : ''}`}
+          className={`w-4 h-4 text-warm-500 mt-0.5 shrink-0 transition-transform ${expanded ? 'rotate-180' : ''}`}
           fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}
         >
           <path strokeLinecap="round" strokeLinejoin="round" d="M19 9l-7 7-7-7" />
@@ -540,7 +540,7 @@ function SkillRatingCard({ item, currentLevel, assessments, onRate, expanded, on
             })}
           </div>
           {item.downstreamCount > 0 && (
-            <p className="text-[10px] text-warm-400 mt-2 italic">
+            <p className="text-[10px] text-warm-500 mt-2 italic">
               This skill influences {item.downstreamCount} downstream skill{item.downstreamCount !== 1 ? 's' : ''}.
             </p>
           )}

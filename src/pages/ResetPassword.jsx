@@ -61,8 +61,8 @@ export default function ResetPassword() {
       <div className="min-h-screen flex items-center justify-center bg-warm-50 px-4">
         <div className="w-full max-w-sm text-center">
           <div className="bg-white rounded-xl border border-warm-200 shadow-sm p-8">
-            <div className="w-12 h-12 mx-auto mb-4 rounded-full bg-sage-100 flex items-center justify-center">
-              <svg className="w-6 h-6 text-sage-600" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+            <div className="text-sage-600 mx-auto mb-4">
+              <svg className="w-6 h-6 mx-auto" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
                 <path strokeLinecap="round" strokeLinejoin="round" d="M4.5 12.75l6 6 9-13.5" />
               </svg>
             </div>
@@ -72,7 +72,7 @@ export default function ResetPassword() {
             </p>
             <Link
               to="/login"
-              className="inline-block px-6 py-2.5 rounded-lg bg-sage-500 text-white text-sm font-semibold hover:bg-sage-600 transition-colors"
+              className="inline-block px-6 py-2.5 rounded-lg bg-sage-600 text-white text-sm font-semibold hover:bg-sage-700 transition-colors"
             >
               Sign In Now
             </Link>
@@ -89,7 +89,7 @@ export default function ResetPassword() {
           <div className="bg-white rounded-xl border border-warm-200 shadow-sm p-8">
             <div className="w-6 h-6 border-2 border-sage-200 border-t-sage-500 rounded-full animate-spin mx-auto mb-4" />
             <p className="text-sm text-warm-500">Verifying reset link...</p>
-            <p className="text-xs text-warm-400 mt-2">
+            <p className="text-xs text-warm-500 mt-2">
               If this takes too long, the link may have expired.{' '}
               <Link to="/forgot-password" className="text-sage-600 hover:text-sage-700 font-medium">
                 Request a new one
@@ -121,7 +121,7 @@ export default function ResetPassword() {
         <form onSubmit={handleSubmit} className="bg-white rounded-xl border border-warm-200 shadow-sm p-6 space-y-4">
           <div>
             <label htmlFor="new-password" className="block text-xs font-medium text-warm-600 mb-1">
-              New Password <span className="text-warm-400">(min 8 characters)</span>
+              New Password <span className="text-warm-500">(min 8 characters)</span>
             </label>
             <input
               id="new-password"
@@ -156,7 +156,7 @@ export default function ResetPassword() {
           <button
             type="submit"
             disabled={loading}
-            className="w-full py-2.5 rounded-lg bg-sage-500 text-white text-sm font-semibold hover:bg-sage-600 transition-colors disabled:opacity-50 disabled:cursor-not-allowed min-h-[44px]"
+            className="w-full py-2.5 rounded-lg bg-sage-600 text-white text-sm font-semibold hover:bg-sage-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed min-h-[44px]"
           >
             {loading ? 'Updating...' : 'Update Password'}
           </button>

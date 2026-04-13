@@ -64,9 +64,9 @@ export default memo(function StatusMapView({
           </h2>
           {hasData ? (
             <p className="text-xs text-gray-400">
-              {statusCounts.mastered > 0 && <span className="text-[#7fb589]">{statusCounts.mastered} mastered</span>}
-              {statusCounts.developing > 0 && <span>{statusCounts.mastered > 0 ? ' · ' : ''}<span className="text-[#e5b76a]">{statusCounts.developing} developing</span></span>}
-              {statusCounts.needsWork > 0 && <span>{(statusCounts.mastered + statusCounts.developing) > 0 ? ' · ' : ''}<span className="text-[#e8928a]">{statusCounts.needsWork} needs work</span></span>}
+              {statusCounts.mastered > 0 && <span className="text-[#10B981]">{statusCounts.mastered} mastered</span>}
+              {statusCounts.developing > 0 && <span>{statusCounts.mastered > 0 ? ' · ' : ''}<span className="text-[#F59E0B]">{statusCounts.developing} developing</span></span>}
+              {statusCounts.needsWork > 0 && <span>{(statusCounts.mastered + statusCounts.developing) > 0 ? ' · ' : ''}<span className="text-[#F59E0B]">{statusCounts.needsWork} needs work</span></span>}
               {statusCounts.unassessed > 0 && <span className="text-gray-600"> · {statusCounts.unassessed} not assessed</span>}
             </p>
           ) : (

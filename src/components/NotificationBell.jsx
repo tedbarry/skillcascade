@@ -37,8 +37,8 @@ function groupByTime(items) {
 function ActivityIcon({ type }) {
   if (type === 'assessment') {
     return (
-      <div className="w-7 h-7 rounded-full bg-sage-100 flex items-center justify-center flex-shrink-0">
-        <svg className="w-3.5 h-3.5 text-sage-600" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+      <div className="text-sage-600 flex-shrink-0">
+        <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
           <path strokeLinecap="round" strokeLinejoin="round" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
         </svg>
       </div>
@@ -195,7 +195,7 @@ export default function NotificationBell({ assessments = {}, snapshots = [], ris
                     <path strokeLinecap="round" strokeLinejoin="round" d="M9 12.75L11.25 15 15 9.75M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
                   </svg>
                   <p className="text-sm text-warm-500">All caught up!</p>
-                  <p className="text-[10px] text-warm-400 mt-0.5">No recent activity</p>
+                  <p className="text-[10px] text-warm-500 mt-0.5">No recent activity</p>
                 </div>
               ) : (
                 Object.entries(grouped).map(([period, periodItems]) => {
@@ -228,7 +228,7 @@ export default function NotificationBell({ assessments = {}, snapshots = [], ris
                               {item.description}
                             </p>
                           </div>
-                          <span className="text-[10px] text-warm-400 flex-shrink-0 mt-0.5">
+                          <span className="text-[10px] text-warm-500 flex-shrink-0 mt-0.5">
                             {relativeTime(item.timestamp)}
                           </span>
                         </button>

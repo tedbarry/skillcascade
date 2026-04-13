@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef } from 'react'
-import { supabase } from '../lib/supabase.js'
+import { api } from '../lib/api.js'
 import { useAuth } from '../contexts/AuthContext.jsx'
+import usePermissions from '../hooks/usePermissions.js'
 import { safeGetItem, safeSetItem, safeRemoveItem } from '../lib/safeStorage.js'
 import KBHelpIcon from './kb/KBHelpIcon.jsx'
 
@@ -9,7 +10,7 @@ const STORAGE_KEY = 'skillcascade_branding'
 const DEFAULT_BRANDING = {
   orgName: '',
   tagline: '',
-  primaryColor: '#4f8460',
+  primaryColor: '#059669',
   logoUrl: '',
   reportHeader: '',
   reportFooter: '',
@@ -78,9 +79,11 @@ const Icons = {
 
 export default function BrandingSettings({ onBrandingChange }) {
   const { profile } = useAuth()
+  const { can } = usePermissions()
   const [branding, setBranding] = useState(loadBranding)
   const [saved, setSaved] = useState(false)
   const fileRef = useRef(null)
+  const canManageBranding = profile?.is_super_admin || can('settings', 'edit')
 
   // Load from Supabase org branding on mount
   useEffect(() => {
@@ -99,10 +102,12 @@ export default function BrandingSettings({ onBrandingChange }) {
   /* ── Helpers ─────────────────────────────── */
 
   function update(field, value) {
+    if (!canManageBranding) return
     setBranding((prev) => ({ ...prev, [field]: value }))
   }
 
   function handleLogoUpload(e) {
+    if (!canManageBranding) return
     const file = e.target.files?.[0]
     if (!file) return
     const reader = new FileReader()
@@ -111,17 +116,19 @@ export default function BrandingSettings({ onBrandingChange }) {
   }
 
   function removeLogo() {
+    if (!canManageBranding) return
     update('logoUrl', '')
     if (fileRef.current) fileRef.current.value = ''
   }
 
   async function handleSave() {
+    if (!canManageBranding) return
     safeSetItem(STORAGE_KEY, JSON.stringify(branding))
     onBrandingChange?.(branding)
 
     // Persist to Supabase organization record
     if (profile?.org_id) {
-      const { error } = await supabase
+      const { error } = await api
         .from('organizations')
         .update({ branding })
         .eq('id', profile.org_id)
@@ -132,6 +139,7 @@ export default function BrandingSettings({ onBrandingChange }) {
   }
 
   async function handleReset() {
+    if (!canManageBranding) return
     const fresh = { ...DEFAULT_BRANDING }
     setBranding(fresh)
     safeRemoveItem(STORAGE_KEY)
@@ -139,7 +147,7 @@ export default function BrandingSettings({ onBrandingChange }) {
     if (fileRef.current) fileRef.current.value = ''
 
     if (profile?.org_id) {
-      await supabase
+      await api
         .from('organizations')
         .update({ branding: {} })
         .eq('id', profile.org_id)
@@ -162,7 +170,7 @@ export default function BrandingSettings({ onBrandingChange }) {
     <div className="max-w-2xl mx-auto px-4 sm:px-0 space-y-8">
       {/* ── Header ──────────────────────────── */}
       <div className="flex items-start gap-3">
-        <div className="p-2 rounded-lg bg-sage-50 text-sage-600 shrink-0">{Icons.building}</div>
+        <div className="text-sage-600 shrink-0">{Icons.building}</div>
         <div>
           <h2 className="font-display text-lg font-semibold text-warm-800">Organization Branding <KBHelpIcon term="view-branding" /></h2>
           <p className="text-sm text-warm-500 mt-0.5">
@@ -172,10 +180,16 @@ export default function BrandingSettings({ onBrandingChange }) {
         </div>
       </div>
 
+      {!canManageBranding && (
+        <div className="rounded-lg border border-amber-200 bg-amber-50 px-4 py-2.5 text-sm text-amber-800">
+          Branding is view-only for your role. Ask an admin or a user with settings access to update it.
+        </div>
+      )}
+
       {/* ── Logo Section ────────────────────── */}
       <section className={sectionCls}>
         <h3 className="font-display text-sm font-semibold text-warm-700 flex items-center gap-2">
-          <svg className="w-4 h-4 text-warm-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
+          <svg className="w-4 h-4 text-warm-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
             <path strokeLinecap="round" strokeLinejoin="round" d="M2.25 15.75l5.159-5.159a2.25 2.25 0 013.182 0l5.159 5.159m-1.5-1.5l1.409-1.41a2.25 2.25 0 013.182 0l2.909 2.91m-18 3.75h16.5a1.5 1.5 0 001.5-1.5V6a1.5 1.5 0 00-1.5-1.5H3.75A1.5 1.5 0 002.25 6v12a1.5 1.5 0 001.5 1.5z" />
           </svg>
           Logo
@@ -187,7 +201,7 @@ export default function BrandingSettings({ onBrandingChange }) {
             {branding.logoUrl ? (
               <img src={branding.logoUrl} alt="Logo preview" className="max-w-full max-h-full object-contain" />
             ) : (
-              <span className="text-xs text-warm-300">No logo set</span>
+              <span className="text-xs text-warm-500">No logo set</span>
             )}
           </div>
 
@@ -214,7 +228,7 @@ export default function BrandingSettings({ onBrandingChange }) {
                 </button>
               )}
             </div>
-            <p className="text-xs text-warm-400">Recommended: 200x60px, PNG or SVG</p>
+            <p className="text-xs text-warm-500">Recommended: 200x60px, PNG or SVG</p>
           </div>
         </div>
       </section>
@@ -238,7 +252,7 @@ export default function BrandingSettings({ onBrandingChange }) {
             />
           </div>
           <div>
-            <label className={labelCls}>Tagline <span className="text-warm-300">(optional)</span></label>
+            <label className={labelCls}>Tagline <span className="text-warm-500">(optional)</span></label>
             <input
               type="text"
               value={branding.tagline}
@@ -333,7 +347,7 @@ export default function BrandingSettings({ onBrandingChange }) {
         <label className="flex items-center justify-between p-3 rounded-lg border border-warm-200 bg-white cursor-pointer hover:border-warm-300 transition-colors">
           <div>
             <span className="text-sm font-medium text-warm-700">Show "Powered by SkillCascade" badge</span>
-            <p className="text-xs text-warm-400 mt-0.5">Displays a small attribution on exported reports</p>
+            <p className="text-xs text-warm-500 mt-0.5">Displays a small attribution on exported reports</p>
           </div>
           <div className="relative shrink-0 ml-4">
             <input
@@ -342,7 +356,7 @@ export default function BrandingSettings({ onBrandingChange }) {
               onChange={(e) => update('showPoweredBy', e.target.checked)}
               className="sr-only peer"
             />
-            <div className="w-9 h-5 rounded-full bg-warm-200 peer-checked:bg-sage-500 transition-colors" />
+            <div className="w-9 h-5 rounded-full bg-warm-200 peer-checked:bg-sage-600 transition-colors" />
             <div className="absolute top-0.5 left-0.5 w-4 h-4 rounded-full bg-white shadow transition-transform peer-checked:translate-x-4" />
           </div>
         </label>
@@ -377,7 +391,7 @@ export default function BrandingSettings({ onBrandingChange }) {
               )}
             </div>
           </div>
-          <div className="px-4 py-2 bg-white border-t border-warm-100 text-xs text-warm-400">
+          <div className="px-4 py-2 bg-white border-t border-warm-100 text-xs text-warm-500">
             Branded header preview
           </div>
         </div>
@@ -394,7 +408,7 @@ export default function BrandingSettings({ onBrandingChange }) {
                 {branding.reportHeader || 'Assessment Report'}
               </span>
             </div>
-            <span className="text-xs text-warm-400">Client Name — 02/23/2026</span>
+            <span className="text-xs text-warm-500">Client Name — 02/23/2026</span>
           </div>
 
           {/* Placeholder content */}
@@ -407,7 +421,7 @@ export default function BrandingSettings({ onBrandingChange }) {
 
           {/* Report footer */}
           <div className="px-4 py-2 border-t border-warm-100 flex items-center justify-between">
-            <span className="text-xs text-warm-400">
+            <span className="text-xs text-warm-500">
               {branding.reportFooter || 'Generated by SkillCascade'}
             </span>
             {branding.showPoweredBy && (
@@ -421,7 +435,8 @@ export default function BrandingSettings({ onBrandingChange }) {
       <div className="flex items-center justify-between pt-2 border-t border-warm-100">
         <button
           onClick={handleReset}
-          className="inline-flex items-center gap-1.5 px-4 py-2 text-sm font-medium rounded-lg text-warm-500 hover:text-warm-700 hover:bg-warm-100 transition-colors"
+          disabled={!canManageBranding}
+          className="inline-flex items-center gap-1.5 px-4 py-2 text-sm font-medium rounded-lg text-warm-500 hover:text-warm-700 hover:bg-warm-100 transition-colors disabled:cursor-not-allowed disabled:opacity-50"
         >
           {Icons.reset}
           Reset to Default
@@ -435,6 +450,7 @@ export default function BrandingSettings({ onBrandingChange }) {
           )}
           <button
             onClick={handleSave}
+            disabled={!canManageBranding}
             className="inline-flex items-center gap-1.5 px-5 py-2 text-sm font-medium rounded-lg text-white shadow-sm hover:opacity-90 transition-opacity"
             style={{ backgroundColor: branding.primaryColor }}
           >

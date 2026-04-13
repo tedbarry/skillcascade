@@ -531,7 +531,7 @@ export default function Marketplace() {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
           <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-6">
             <div className="flex items-center gap-3">
-              <div className="w-11 h-11 rounded-xl bg-sage-100 flex items-center justify-center text-sage-600">
+              <div className="text-sage-600">
                 <IconStore className="w-6 h-6" />
               </div>
               <div>
@@ -546,7 +546,7 @@ export default function Marketplace() {
 
             {/* Search */}
             <div className="relative w-full md:w-80">
-              <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-warm-400">
+              <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-warm-500">
                 <IconSearch className="w-4 h-4" />
               </div>
               <input
@@ -559,7 +559,7 @@ export default function Marketplace() {
               {search && (
                 <button
                   onClick={() => setSearch('')}
-                  className="absolute inset-y-0 right-0 pr-3 flex items-center text-warm-400 hover:text-warm-600"
+                  className="absolute inset-y-0 right-0 pr-3 flex items-center text-warm-500 hover:text-warm-600"
                   aria-label="Clear search"
                 >
                   <IconX />
@@ -632,14 +632,14 @@ export default function Marketplace() {
               <div className="flex items-center gap-1">
                 <button
                   onClick={() => scrollFeatured('left')}
-                  className="p-1.5 rounded-lg text-warm-400 hover:text-warm-600 hover:bg-warm-100 transition-colors"
+                  className="p-1.5 rounded-lg text-warm-500 hover:text-warm-600 hover:bg-warm-100 transition-colors"
                   aria-label="Scroll featured left"
                 >
                   <IconChevronLeft className="w-4 h-4" />
                 </button>
                 <button
                   onClick={() => scrollFeatured('right')}
-                  className="p-1.5 rounded-lg text-warm-400 hover:text-warm-600 hover:bg-warm-100 transition-colors"
+                  className="p-1.5 rounded-lg text-warm-500 hover:text-warm-600 hover:bg-warm-100 transition-colors"
                   aria-label="Scroll featured right"
                 >
                   <IconChevronRight className="w-4 h-4" />
@@ -840,7 +840,7 @@ export default function Marketplace() {
         ) : (
           /* ── Empty State ──────────────────────── */
           <div className="flex flex-col items-center justify-center py-20 text-center">
-            <div className="w-16 h-16 rounded-2xl bg-warm-100 flex items-center justify-center text-warm-400 mb-4">
+            <div className="w-16 h-16 rounded-xl bg-warm-100 flex items-center justify-center text-warm-500 mb-4">
               <IconSearch className="w-7 h-7" />
             </div>
             <h3 className="font-display text-lg font-semibold text-warm-800 mb-2">
@@ -866,7 +866,7 @@ export default function Marketplace() {
         {/* ── Submit Your Own CTA ──────────────── */}
         <section className="bg-white rounded-xl border border-warm-200 p-8 mb-8">
           <div className="flex flex-col md:flex-row items-center gap-6">
-            <div className="w-14 h-14 rounded-2xl bg-coral-50 flex items-center justify-center text-coral-500 shrink-0">
+            <div className="w-14 h-14 rounded-xl bg-coral-50 flex items-center justify-center text-coral-500 shrink-0">
               <IconUploadCloud className="w-7 h-7" />
             </div>
             <div className="flex-1 text-center md:text-left">
@@ -893,13 +893,13 @@ export default function Marketplace() {
         const isInstalled = installedIds.has(previewItem.id)
         return (
           <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/40" onClick={() => setPreviewItem(null)}>
-            <div ref={previewTrapRef} className="bg-white rounded-2xl shadow-2xl max-w-lg w-full max-h-[80vh] overflow-y-auto" onClick={(e) => e.stopPropagation()} role="dialog" aria-modal="true" aria-label={`Preview: ${previewItem.title}`}>
+            <div ref={previewTrapRef} className="bg-white rounded-2xl shadow-lg max-w-lg w-full max-h-[80vh] overflow-y-auto" onClick={(e) => e.stopPropagation()} role="dialog" aria-modal="true" aria-label={`Preview: ${previewItem.title}`}>
               <div className="p-6">
                 <div className="flex items-start justify-between mb-4">
                   <span className={`inline-flex px-2.5 py-0.5 rounded-full text-xs font-medium ${config.pillBg} ${config.pillText}`}>
                     {config.label}
                   </span>
-                  <button onClick={() => setPreviewItem(null)} className="text-warm-400 hover:text-warm-600 p-1 min-h-[44px] min-w-[44px] flex items-center justify-center" aria-label="Close preview">
+                  <button onClick={() => setPreviewItem(null)} className="text-warm-500 hover:text-warm-600 p-1 min-h-[44px] min-w-[44px] flex items-center justify-center" aria-label="Close preview">
                     <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
                       <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
                     </svg>
@@ -910,7 +910,7 @@ export default function Marketplace() {
                 <div className="flex items-center gap-3 mb-4">
                   <StarRating rating={previewItem.rating} />
                   <span className="text-sm text-warm-600">{previewItem.rating}</span>
-                  <span className="text-sm text-warm-400">|</span>
+                  <span className="text-sm text-warm-500">|</span>
                   <span className="text-sm text-warm-500">{formatDownloads(previewItem.downloads)} downloads</span>
                 </div>
                 <p className="text-sm text-warm-700 leading-relaxed mb-4">{previewItem.description}</p>

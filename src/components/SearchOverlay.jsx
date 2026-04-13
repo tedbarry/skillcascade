@@ -224,7 +224,19 @@ function addRecentSearch(entry) {
   } catch {}
 }
 
-export default function SearchOverlay({ isOpen, onClose, onNavigate, assessments, clientName, onChangeView, onPrint, onSaveSnapshot, onOpenAI }) {
+export default function SearchOverlay({
+  isOpen,
+  onClose,
+  onNavigate,
+  assessments,
+  clientName,
+  onChangeView,
+  onPrint,
+  onSaveSnapshot,
+  onOpenAI,
+  canUseAI = true,
+  canAccessView = () => true,
+}) {
   const [query, setQuery] = useState('')
   const [activeIndex, setActiveIndex] = useState(0)
   const [recentSearches, setRecentSearches] = useState([])
@@ -237,12 +249,18 @@ export default function SearchOverlay({ isOpen, onClose, onNavigate, assessments
   const inputRef = useRef(null)
   const listRef = useRef(null)
   const trapRef = useFocusTrap(isOpen)
+  const commandDefinitions = useMemo(() => (
+    (canUseAI
+      ? COMMAND_DEFINITIONS
+      : COMMAND_DEFINITIONS.filter((cmd) => cmd.action !== 'ai'))
+      .filter((cmd) => cmd.action !== 'navigate' || canAccessView(cmd.value))
+  ), [canUseAI, canAccessView])
 
   // Build the search index once on mount (skills + commands)
   const searchIndex = useMemo(() => {
     const skillIndex = buildSearchIndex()
     // Add command entries
-    const commandEntries = COMMAND_DEFINITIONS.map(cmd => ({
+    const commandEntries = commandDefinitions.map(cmd => ({
       id: cmd.id,
       name: cmd.name,
       nameLower: cmd.name.toLowerCase(),
@@ -256,7 +274,7 @@ export default function SearchOverlay({ isOpen, onClose, onNavigate, assessments
       commandValue: cmd.value,
     }))
     return [...commandEntries, ...skillIndex]
-  }, [])
+  }, [commandDefinitions])
 
   // KB search index (manual + concept articles, excludes skill entries to avoid duplicates)
   const kbSearchIndex = useMemo(() => {
@@ -372,7 +390,12 @@ export default function SearchOverlay({ isOpen, onClose, onNavigate, assessments
     if (isOpen) {
       setQuery('')
       setActiveIndex(0)
-      setRecentSearches(getRecentSearches())
+      const availableIds = new Set(searchIndex.map((entry) => entry.id))
+      setRecentSearches(
+        getRecentSearches().filter((entry) => (
+          availableIds.has(entry.id) || String(entry.id || '').startsWith('kb:')
+        ))
+      )
       setAiMode(false)
       setAiResponse(null)
       setAiError(null)
@@ -382,7 +405,20 @@ export default function SearchOverlay({ isOpen, onClose, onNavigate, assessments
         inputRef.current?.focus()
       })
     }
-  }, [isOpen])
+  }, [isOpen, searchIndex])
+
+  useEffect(() => {
+    if (!canUseAI && aiMode) {
+      setAiMode(false)
+      setAiResponse(null)
+      setAiError(null)
+      setAiLoading(false)
+      if (abortRef.current) {
+        abortRef.current.abort()
+        abortRef.current = null
+      }
+    }
+  }, [canUseAI, aiMode])
 
   // Cancel AI request on close
   useEffect(() => {
@@ -391,6 +427,7 @@ export default function SearchOverlay({ isOpen, onClose, onNavigate, assessments
 
   // Handle AI search submission
   const handleAskAI = useCallback(async (questionOverride) => {
+    if (!canUseAI) return
     const q = (questionOverride || query).trim()
     if (!q || aiLoading) return
 
@@ -417,7 +454,7 @@ export default function SearchOverlay({ isOpen, onClose, onNavigate, assessments
     } finally {
       if (!controller.signal.aborted) setAiLoading(false)
     }
-  }, [query, assessments, clientName, aiLoading])
+  }, [query, assessments, clientName, aiLoading, canUseAI])
 
   // Scroll active item into view
   useEffect(() => {
@@ -504,7 +541,7 @@ export default function SearchOverlay({ isOpen, onClose, onNavigate, assessments
         if (onSaveSnapshot) onSaveSnapshot()
         break
       case 'ai':
-        if (onOpenAI) onOpenAI()
+        if (canUseAI && onOpenAI) onOpenAI()
         break
     }
     onClose()
@@ -543,7 +580,7 @@ export default function SearchOverlay({ isOpen, onClose, onNavigate, assessments
       {/* Modal */}
       <div
         ref={trapRef}
-        className="relative w-full max-w-[640px] mx-4 bg-white rounded-2xl shadow-2xl border border-warm-200 overflow-hidden flex flex-col max-h-[70vh]"
+        className="relative w-full max-w-[640px] mx-4 bg-white rounded-xl shadow-sm border border-warm-200 overflow-hidden flex flex-col max-h-[70vh]"
         onClick={(e) => e.stopPropagation()}
         role="dialog"
         aria-modal="true"
@@ -557,7 +594,7 @@ export default function SearchOverlay({ isOpen, onClose, onNavigate, assessments
               <path strokeLinecap="round" strokeLinejoin="round" d="M9.813 15.904L9 18.75l-.813-2.846a4.5 4.5 0 00-3.09-3.09L2.25 12l2.846-.813a4.5 4.5 0 003.09-3.09L9 5.25l.813 2.846a4.5 4.5 0 003.09 3.09L15.75 12l-2.846.813a4.5 4.5 0 00-3.09 3.09zM18.259 8.715L18 9.75l-.259-1.035a3.375 3.375 0 00-2.455-2.456L14.25 6l1.036-.259a3.375 3.375 0 002.455-2.456L18 2.25l.259 1.035a3.375 3.375 0 002.455 2.456L21.75 6l-1.036.259a3.375 3.375 0 00-2.455 2.456z" />
             </svg>
           ) : (
-            <svg className="w-5 h-5 text-warm-400 shrink-0" viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+            <svg className="w-5 h-5 text-warm-500 shrink-0" viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
               <circle cx="8.5" cy="8.5" r="6" />
               <path d="M13 13 L18 18" />
             </svg>
@@ -570,40 +607,31 @@ export default function SearchOverlay({ isOpen, onClose, onNavigate, assessments
             onChange={(e) => { setQuery(e.target.value); if (aiResponse) { setAiResponse(null); setAiError(null) } }}
             onKeyDown={handleKeyDown}
             placeholder={aiMode ? 'Ask a question about your client or the app...' : 'Search skills, articles, views, or type > for commands...'}
-            className="flex-1 text-sm text-warm-800 placeholder-warm-400 bg-transparent outline-none"
+            className="flex-1 text-sm text-warm-800 placeholder-warm-400 bg-transparent outline-none focus:ring-0"
             autoComplete="off"
             spellCheck="false"
           />
 
           {/* Mode toggle button */}
-          <button
-            onClick={() => { setAiMode(!aiMode); setAiResponse(null); setAiError(null) }}
-            className={`shrink-0 flex items-center gap-1 px-2 py-1 rounded-md text-[10px] font-medium transition-colors cursor-pointer ${
-              aiMode
-                ? 'bg-sage-100 text-sage-700 border border-sage-300'
-                : 'bg-warm-50 text-warm-500 border border-warm-200 hover:bg-warm-100'
-            }`}
-            title={aiMode ? 'Switch to search mode' : 'Switch to AI mode'}
-          >
-            {aiMode ? (
-              <>
-                <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                  <path strokeLinecap="round" strokeLinejoin="round" d="M9.813 15.904L9 18.75l-.813-2.846a4.5 4.5 0 00-3.09-3.09L2.25 12l2.846-.813a4.5 4.5 0 003.09-3.09L9 5.25l.813 2.846a4.5 4.5 0 003.09 3.09L15.75 12l-2.846.813a4.5 4.5 0 00-3.09 3.09z" />
-                </svg>
-                AI
-              </>
-            ) : (
-              <>
-                <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                  <path strokeLinecap="round" strokeLinejoin="round" d="M9.813 15.904L9 18.75l-.813-2.846a4.5 4.5 0 00-3.09-3.09L2.25 12l2.846-.813a4.5 4.5 0 003.09-3.09L9 5.25l.813 2.846a4.5 4.5 0 003.09 3.09L15.75 12l-2.846.813a4.5 4.5 0 00-3.09 3.09z" />
-                </svg>
-                AI
-              </>
-            )}
-          </button>
+          {canUseAI && (
+            <button
+              onClick={() => { setAiMode(!aiMode); setAiResponse(null); setAiError(null) }}
+              className={`shrink-0 flex items-center gap-1 px-2 py-1 rounded-full text-[10px] font-medium transition-colors cursor-pointer ${
+                aiMode
+                  ? 'bg-sage-100 text-sage-700 border border-sage-300'
+                  : 'bg-warm-50 text-warm-500 border border-warm-200 hover:bg-warm-100'
+              }`}
+              title={aiMode ? 'Switch to search mode' : 'Switch to AI mode'}
+            >
+              <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                <path strokeLinecap="round" strokeLinejoin="round" d="M9.813 15.904L9 18.75l-.813-2.846a4.5 4.5 0 00-3.09-3.09L2.25 12l2.846-.813a4.5 4.5 0 003.09-3.09L9 5.25l.813 2.846a4.5 4.5 0 003.09 3.09L15.75 12l-2.846.813a4.5 4.5 0 00-3.09 3.09z" />
+              </svg>
+              AI
+            </button>
+          )}
 
           {/* Keyboard shortcut hint */}
-          <kbd className="hidden sm:inline-flex items-center gap-0.5 px-2 py-0.5 rounded-md bg-warm-100 text-warm-400 text-[10px] font-mono border border-warm-200">
+          <kbd className="hidden sm:inline-flex items-center gap-0.5 px-2 py-0.5 rounded-lg bg-warm-100 text-warm-500 text-[10px] font-mono border border-warm-200">
             ESC
           </kbd>
         </div>
@@ -646,7 +674,7 @@ export default function SearchOverlay({ isOpen, onClose, onNavigate, assessments
                   {/* Source links */}
                   {aiResponse.sources?.length > 0 && (
                     <div className="mt-4 pt-3 border-t border-warm-100">
-                      <div className="text-[10px] uppercase tracking-wider text-warm-400 font-semibold mb-2">Related articles</div>
+                      <div className="text-[10px] uppercase tracking-wider text-warm-500 font-semibold mb-2">Related articles</div>
                       <div className="flex flex-wrap gap-1.5">
                         {aiResponse.sources.map(s => (
                           <a
@@ -671,13 +699,13 @@ export default function SearchOverlay({ isOpen, onClose, onNavigate, assessments
               {/* AI empty state — no query yet */}
               {!aiLoading && !aiResponse && !aiError && (
                 <div className="py-8 text-center">
-                  <div className="inline-flex items-center justify-center w-10 h-10 rounded-full bg-sage-50 mb-3">
-                    <svg className="w-5 h-5 text-sage-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                  <div className="mb-3">
+                    <svg className="w-8 h-8 text-sage-600 mx-auto" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
                       <path strokeLinecap="round" strokeLinejoin="round" d="M9.813 15.904L9 18.75l-.813-2.846a4.5 4.5 0 00-3.09-3.09L2.25 12l2.846-.813a4.5 4.5 0 003.09-3.09L9 5.25l.813 2.846a4.5 4.5 0 003.09 3.09L15.75 12l-2.846.813a4.5 4.5 0 00-3.09 3.09zM18.259 8.715L18 9.75l-.259-1.035a3.375 3.375 0 00-2.455-2.456L14.25 6l1.036-.259a3.375 3.375 0 002.455-2.456L18 2.25l.259 1.035a3.375 3.375 0 002.455 2.456L21.75 6l-1.036.259a3.375 3.375 0 00-2.455 2.456z" />
                     </svg>
                   </div>
                   <div className="text-warm-600 text-sm font-medium mb-1">Ask AI anything</div>
-                  <div className="text-warm-400 text-xs mb-4">
+                  <div className="text-warm-500 text-xs mb-4">
                     Get personalized answers based on your client's assessment data
                   </div>
                   <div className="flex flex-wrap gap-1.5 justify-center">
@@ -702,7 +730,7 @@ export default function SearchOverlay({ isOpen, onClose, onNavigate, assessments
               {recentSearches.length > 0 ? (
                 <>
                   <div className="px-3 pb-1.5">
-                    <span className="text-[10px] uppercase tracking-wider text-warm-400 font-semibold">Recent</span>
+                    <span className="text-[10px] uppercase tracking-wider text-warm-500 font-semibold">Recent</span>
                   </div>
                   {recentSearches.map((item, i) => (
                     <button
@@ -719,7 +747,7 @@ export default function SearchOverlay({ isOpen, onClose, onNavigate, assessments
                         i === activeIndex ? 'bg-sage-50 text-sage-800' : 'text-warm-700 hover:bg-warm-50'
                       }`}
                     >
-                      <div className="w-5 shrink-0 flex items-center justify-center text-warm-400">
+                      <div className="w-5 shrink-0 flex items-center justify-center text-warm-500">
                         <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
                           <path strokeLinecap="round" strokeLinejoin="round" d="M12 6v6h4.5m4.5 0a9 9 0 11-18 0 9 9 0 0118 0z" />
                         </svg>
@@ -727,23 +755,23 @@ export default function SearchOverlay({ isOpen, onClose, onNavigate, assessments
                       <div className="flex-1 min-w-0">
                         <div className="text-sm font-medium truncate leading-tight">{item.name}</div>
                         {item.breadcrumb && (
-                          <div className="text-[11px] text-warm-400 truncate mt-0.5 leading-tight">{item.breadcrumb}</div>
+                          <div className="text-[11px] text-warm-500 truncate mt-0.5 leading-tight">{item.breadcrumb}</div>
                         )}
                       </div>
                     </button>
                   ))}
                   <div className="px-3 pt-2 mt-1 border-t border-warm-100">
-                    <div className="text-warm-300 text-[11px]">
+                    <div className="text-warm-500 text-[11px]">
                       Type <kbd className="px-1 py-0.5 rounded bg-warm-100 border border-warm-200 font-mono text-warm-500">&gt;</kbd> for commands &nbsp;·&nbsp; {searchIndex.length} searchable items
                     </div>
                   </div>
                 </>
               ) : (
                 <div className="px-3 py-5 text-center">
-                  <div className="text-warm-400 text-sm">
+                  <div className="text-warm-500 text-sm">
                     Search skills, domains, or navigate anywhere
                   </div>
-                  <div className="text-warm-300 text-xs mt-2">
+                  <div className="text-warm-500 text-xs mt-2">
                     Type <kbd className="px-1.5 py-0.5 rounded bg-warm-100 border border-warm-200 font-mono text-warm-500">&gt;</kbd> for commands &nbsp;·&nbsp; {searchIndex.length} searchable items
                   </div>
                 </div>
@@ -754,21 +782,23 @@ export default function SearchOverlay({ isOpen, onClose, onNavigate, assessments
           {/* No results */}
           {!aiMode && query.trim() && results.length === 0 && (
             <div className="px-5 py-12 text-center">
-              <div className="text-warm-400 text-sm">
+              <div className="text-warm-500 text-sm">
                 No results for &ldquo;{query}&rdquo;
               </div>
-              <div className="text-warm-300 text-xs mt-2">
+              <div className="text-warm-500 text-xs mt-2">
                 Try a different search term
               </div>
-              <button
-                onClick={() => { setAiMode(true); handleAskAI() }}
-                className="mt-3 inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-sage-50 border border-sage-200 text-sage-700 text-xs font-medium hover:bg-sage-100 transition-colors cursor-pointer"
-              >
-                <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                  <path strokeLinecap="round" strokeLinejoin="round" d="M9.813 15.904L9 18.75l-.813-2.846a4.5 4.5 0 00-3.09-3.09L2.25 12l2.846-.813a4.5 4.5 0 003.09-3.09L9 5.25l.813 2.846a4.5 4.5 0 003.09 3.09L15.75 12l-2.846.813a4.5 4.5 0 00-3.09 3.09z" />
-                </svg>
-                Ask AI instead
-              </button>
+              {canUseAI && (
+                <button
+                  onClick={() => { setAiMode(true); handleAskAI() }}
+                  className="mt-3 inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-sage-600 text-white text-xs font-medium hover:bg-sage-700 transition-colors cursor-pointer"
+                >
+                  <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M9.813 15.904L9 18.75l-.813-2.846a4.5 4.5 0 00-3.09-3.09L2.25 12l2.846-.813a4.5 4.5 0 003.09-3.09L9 5.25l.813 2.846a4.5 4.5 0 003.09 3.09L15.75 12l-2.846.813a4.5 4.5 0 00-3.09 3.09z" />
+                  </svg>
+                  Ask AI instead
+                </button>
+              )}
             </div>
           )}
 
@@ -777,7 +807,7 @@ export default function SearchOverlay({ isOpen, onClose, onNavigate, assessments
             <div key={group.type}>
               {/* Group header */}
               <div className="px-5 pt-3 pb-1">
-                <span className="text-[10px] uppercase tracking-wider text-warm-400 font-semibold">
+                <span className="text-[10px] uppercase tracking-wider text-warm-500 font-semibold">
                   {group.label}
                 </span>
               </div>
@@ -822,7 +852,7 @@ export default function SearchOverlay({ isOpen, onClose, onNavigate, assessments
                           {item.name}
                         </div>
                         {item.type !== RESULT_TYPES.DOMAIN && (
-                          <div className="text-[11px] text-warm-400 truncate mt-0.5 leading-tight">
+                          <div className="text-[11px] text-warm-500 truncate mt-0.5 leading-tight">
                             {item.breadcrumb}
                           </div>
                         )}
@@ -868,7 +898,7 @@ export default function SearchOverlay({ isOpen, onClose, onNavigate, assessments
           {/* Remaining count */}
           {!aiMode && remainingCount > 0 && (
             <div className="px-5 py-3 text-center border-t border-warm-100">
-              <span className="text-xs text-warm-400">
+              <span className="text-xs text-warm-500">
                 +{remainingCount} more result{remainingCount !== 1 ? 's' : ''} — refine your search
               </span>
             </div>
@@ -877,7 +907,7 @@ export default function SearchOverlay({ isOpen, onClose, onNavigate, assessments
 
         {/* Footer with keyboard hints */}
         {(aiMode || results.length > 0 || recentSearches.length > 0) && (
-          <div className="px-5 py-2.5 border-t border-warm-100 bg-warm-50/50 flex items-center gap-4 text-[10px] text-warm-400 shrink-0">
+          <div className="px-5 py-2.5 border-t border-warm-100 bg-warm-50/50 flex items-center gap-4 text-[10px] text-warm-500 shrink-0">
             {aiMode ? (
               <>
                 <span className="flex items-center gap-1">

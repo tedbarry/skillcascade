@@ -6,38 +6,46 @@ html, body, #root {
 }
 
 @theme {
-  /* Warm color palette: "Clinical Precision meets Warm Humanity" */
-  --color-warm-50: #fdf8f0;
-  --color-warm-100: #f5ebe0;
-  --color-warm-200: #e8d5c0;
-  --color-warm-300: #d4b896;
-  --color-warm-400: #c49a6c;
-  --color-warm-500: #b07d4f;
-  --color-warm-600: #9a6740;
-  --color-warm-700: #7d5235;
-  --color-warm-800: #5f3e2a;
-  --color-warm-900: #3d2a1c;
+  /* ─── Lovart Brand System ─────────────────────────────────
+     Forest green primary, stone neutral, earth brown accent.
+     Warm palette → Neutral (stone)
+     Sage palette → Primary (forest green)
+     Coral palette → Accent (earth brown / error)
+     Blue palette → Info / interactive
+     ──────────────────────────────────────────────────────── */
 
-  /* Skill assessment states */
-  --color-not-assessed: #9ca3af;
-  --color-not-present: #c47070;
-  --color-needs-work: #e8928a;
-  --color-developing: #e5b76a;
-  --color-solid: #7fb589;
+  /* Neutral palette — warm cream tinted (Lovart spec + warmth users love) */
+  --color-warm-50: #FBF9F5;
+  --color-warm-100: #F5F2ED;
+  --color-warm-200: #E8E4DF;
+  --color-warm-300: #D6D1CB;
+  --color-warm-400: #A8A29E;
+  --color-warm-500: #78716C;
+  --color-warm-600: #57534E;
+  --color-warm-700: #44403C;
+  --color-warm-800: #292524;
+  --color-warm-900: #1C1917;
 
-  /* Sage green accent */
-  --color-sage-50: #f0f5f1;
-  --color-sage-100: #dce8de;
-  --color-sage-200: #b8d1bd;
-  --color-sage-300: #8fb898;
-  --color-sage-400: #6a9e76;
-  --color-sage-500: #4f8460;
-  --color-sage-600: #3d6a4c;
-  --color-sage-700: #31543d;
-  --color-sage-800: #273f30;
-  --color-sage-900: #1d2e23;
+  /* Skill assessment states (colorblind-safe — Lovart) */
+  --color-not-assessed: #9CA3AF;
+  --color-not-present: #DC2626;
+  --color-needs-work: #F59E0B;
+  --color-developing: #3B82F6;
+  --color-solid: #059669;
 
-  /* Blue — needed for prereq navigation chip-buttons */
+  /* Primary: Forest Green (sage → green from Lovart) */
+  --color-sage-50: #F0FDF4;
+  --color-sage-100: #DCFCE7;
+  --color-sage-200: #BBF7D0;
+  --color-sage-300: #86EFAC;
+  --color-sage-400: #4ADE80;
+  --color-sage-500: #10B981;
+  --color-sage-600: #059669;
+  --color-sage-700: #047857;
+  --color-sage-800: #065F46;
+  --color-sage-900: #064E3B;
+
+  /* Blue — info, interactive, prereq navigation */
   --color-blue-50: #eff6ff;
   --color-blue-100: #dbeafe;
   --color-blue-200: #bfdbfe;
@@ -49,21 +57,22 @@ html, body, #root {
   --color-blue-800: #1e40af;
   --color-blue-900: #1e3a8a;
 
-  /* Coral accent */
-  --color-coral-50: #fdf2f1;
-  --color-coral-100: #fce0dd;
-  --color-coral-200: #f5b8b2;
-  --color-coral-300: #ec8e85;
-  --color-coral-400: #e06b5f;
-  --color-coral-500: #d44d3f;
-  --color-coral-600: #b63a2e;
-  --color-coral-700: #912e24;
-  --color-coral-800: #6d231b;
-  --color-coral-900: #491813;
+  /* Accent: Earth Brown / Error (coral → warm brown from Lovart) */
+  --color-coral-50: #FEF3C7;
+  --color-coral-100: #FDE68A;
+  --color-coral-200: #FCD34D;
+  --color-coral-300: #FBBF24;
+  --color-coral-400: #F59E0B;
+  --color-coral-500: #D97706;
+  --color-coral-600: #B45309;
+  --color-coral-700: #92400E;
+  --color-coral-800: #78350F;
+  --color-coral-900: #451A03;
 
-  /* Fonts */
+  /* Fonts (Lovart brand) */
   --font-sans: 'Inter', 'system-ui', '-apple-system', sans-serif;
   --font-display: 'Plus Jakarta Sans', 'Inter', sans-serif;
+  --font-mono: 'JetBrains Mono', 'Fira Code', monospace;
 }
 
 /* Base styles */
@@ -82,41 +91,41 @@ body {
 .dark {
   color-scheme: dark;
 
-  /* Warm palette — inverted for dark backgrounds */
-  --color-warm-50: #1c1714;
-  --color-warm-100: #2a2320;
-  --color-warm-200: #3d332c;
-  --color-warm-300: #5a4a3e;
-  --color-warm-400: #7d6b5a;
-  --color-warm-500: #a08a74;
-  --color-warm-600: #bca68e;
-  --color-warm-700: #d4c0a8;
-  --color-warm-800: #e8dac8;
-  --color-warm-900: #f5efe6;
+  /* Neutral palette — inverted for dark (Lovart dark neutrals) */
+  --color-warm-50: #1C1917;
+  --color-warm-100: #292524;
+  --color-warm-200: #44403C;
+  --color-warm-300: #57534E;
+  --color-warm-400: #78716C;
+  --color-warm-500: #A8A29E;
+  --color-warm-600: #D6D3D1;
+  --color-warm-700: #E7E5E4;
+  --color-warm-800: #F5F5F4;
+  --color-warm-900: #FAFAF9;
 
-  /* Sage — slightly muted for dark */
-  --color-sage-50: #1a2320;
-  --color-sage-100: #243330;
-  --color-sage-200: #2e4540;
-  --color-sage-300: #3d6050;
-  --color-sage-400: #4f8460;
-  --color-sage-500: #6a9e76;
-  --color-sage-600: #8fb898;
-  --color-sage-700: #b8d1bd;
-  --color-sage-800: #dce8de;
-  --color-sage-900: #f0f5f1;
+  /* Primary green — brighter for dark backgrounds */
+  --color-sage-50: #052e16;
+  --color-sage-100: #064E3B;
+  --color-sage-200: #065F46;
+  --color-sage-300: #047857;
+  --color-sage-400: #059669;
+  --color-sage-500: #10B981;
+  --color-sage-600: #34D399;
+  --color-sage-700: #6EE7B7;
+  --color-sage-800: #A7F3D0;
+  --color-sage-900: #D1FAE5;
 
-  /* Coral — slightly muted for dark */
-  --color-coral-50: #2a1815;
-  --color-coral-100: #3d2320;
-  --color-coral-200: #5a332e;
-  --color-coral-300: #7d4a42;
-  --color-coral-400: #c06055;
-  --color-coral-500: #d44d3f;
-  --color-coral-600: #ec8e85;
-  --color-coral-700: #f5b8b2;
-  --color-coral-800: #fce0dd;
-  --color-coral-900: #fdf2f1;
+  /* Earth brown accent — warmer for dark */
+  --color-coral-50: #271505;
+  --color-coral-100: #451A03;
+  --color-coral-200: #78350F;
+  --color-coral-300: #92400E;
+  --color-coral-400: #B45309;
+  --color-coral-500: #D97706;
+  --color-coral-600: #F59E0B;
+  --color-coral-700: #FBBF24;
+  --color-coral-800: #FDE68A;
+  --color-coral-900: #FEF3C7;
 }
 
 .dark body {
@@ -290,7 +299,7 @@ html {
 }
 
 .a11y-focus *:focus {
-  outline: 3px solid #4f8460 !important;
+  outline: 3px solid #059669 !important;
   outline-offset: 2px !important;
 }
 
@@ -312,29 +321,41 @@ html {
   --color-solid: #2d8a6e;
 }
 
+/* ─── Lovart Typography Scale ────────────────────────────── */
+h1, .text-h1 { font-family: 'Plus Jakarta Sans', 'Inter', sans-serif; font-weight: 700; line-height: 1.2; letter-spacing: -0.02em; }
+h2, .text-h2 { font-family: 'Plus Jakarta Sans', 'Inter', sans-serif; font-weight: 700; line-height: 1.3; letter-spacing: -0.01em; }
+h3, .text-h3 { font-family: 'Plus Jakarta Sans', 'Inter', sans-serif; font-weight: 600; line-height: 1.3; letter-spacing: -0.01em; }
+h4, .text-h4 { font-family: 'Plus Jakarta Sans', 'Inter', sans-serif; font-weight: 600; line-height: 1.4; }
+h5, .text-h5 { font-family: 'Plus Jakarta Sans', 'Inter', sans-serif; font-weight: 600; line-height: 1.4; }
+h6, .text-h6 { font-family: 'Plus Jakarta Sans', 'Inter', sans-serif; font-weight: 600; line-height: 1.4; }
+
 /* ─── Design System Utilities ────────────────────────────── */
 
-/* Consistent card elevation */
+/* Consistent card elevation — Lovart spec */
 .card {
   background-color: white;
   border: 1px solid var(--color-warm-200);
   border-radius: 0.75rem;
-  transition: box-shadow 0.2s ease, border-color 0.2s ease;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
+  transition: box-shadow 0.2s ease, border-color 0.2s ease, transform 0.2s ease;
 }
 
 .card:hover {
   border-color: var(--color-warm-300);
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+  transform: translateY(-1px);
 }
 
 .dark .card {
   background-color: var(--color-warm-100);
   border-color: var(--color-warm-200);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
 }
 
 .dark .card:hover {
   border-color: var(--color-warm-300);
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.25);
+  transform: translateY(-1px);
 }
 
 /* Consistent focus rings (keyboard-only) */
@@ -405,6 +426,213 @@ textarea:focus-visible {
 
 /* ─── Header Accent Gradient ─────────────────────────────── */
 .header-accent {
-  background: linear-gradient(90deg, var(--color-sage-400), var(--color-warm-400), var(--color-coral-400));
+  background: linear-gradient(90deg, var(--color-sage-700), var(--color-sage-500), var(--color-sage-300));
   height: 2px;
+}
+
+/* ─── Lovart Button System ──────────────────────────────── */
+/* Primary: solid forest green */
+.btn-primary,
+button.bg-sage-500,
+button.bg-sage-600,
+a.bg-sage-500,
+a.bg-sage-600 {
+  transition: background-color 0.15s ease, transform 0.15s ease, box-shadow 0.15s ease;
+}
+
+.btn-primary:hover { box-shadow: 0 4px 12px rgba(5, 150, 105, 0.25); }
+.btn-primary:active { transform: scale(0.97); }
+
+/* ─── Lovart Loading Screen ─────────────────────────────── */
+@keyframes pulse-scale {
+  0%, 100% { transform: scale(0.92); opacity: 0.6; }
+  50% { transform: scale(1); opacity: 1; }
+}
+
+@keyframes pulse-dot {
+  0%, 100% { opacity: 0.3; transform: scale(0.8); }
+  50% { opacity: 1; transform: scale(1); }
+}
+
+.loading-pulse {
+  animation: pulse-scale 1.5s ease-in-out infinite;
+}
+
+.loading-dot {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  background-color: var(--color-sage-500);
+  animation: pulse-dot 1.5s ease-in-out infinite;
+}
+
+.loading-dot:nth-child(2) { animation-delay: 0.15s; }
+.loading-dot:nth-child(3) { animation-delay: 0.3s; }
+
+/* ─── Lovart Skeleton Loaders ───────────────────────────── */
+@keyframes shimmer {
+  0% { background-position: 200% 0; }
+  100% { background-position: -200% 0; }
+}
+
+.skeleton {
+  background: linear-gradient(90deg, var(--color-warm-200) 0%, var(--color-warm-100) 40%, var(--color-warm-200) 100%);
+  background-size: 200% 100%;
+  animation: shimmer 1.5s ease-in-out infinite;
+  border-radius: 6px;
+}
+
+.dark .skeleton {
+  background: linear-gradient(90deg, var(--color-warm-200) 0%, var(--color-warm-300) 40%, var(--color-warm-200) 100%);
+  background-size: 200% 100%;
+}
+
+/* ─── Lovart Modal System ───────────────────────────────── */
+@keyframes modal-appear {
+  from { opacity: 0; transform: scale(0.95) translateY(8px); }
+  to { opacity: 1; transform: scale(1) translateY(0); }
+}
+
+@keyframes modal-fade-in {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+.modal-overlay {
+  animation: modal-fade-in 0.2s ease-out;
+}
+
+.modal-content {
+  animation: modal-appear 0.25s ease-out;
+}
+
+/* ─── Lovart Toast Notifications ────────────────────────── */
+@keyframes slide-in-right {
+  from { transform: translateX(100%); opacity: 0; }
+  to { transform: translateX(0); opacity: 1; }
+}
+
+@keyframes slide-out-right {
+  from { transform: translateX(0); opacity: 1; }
+  to { transform: translateX(100%); opacity: 0; }
+}
+
+/* ─── Lovart Micro-Interactions ─────────────────────────── */
+
+/* Button press feedback */
+button:not(:disabled):active,
+[role="button"]:not(:disabled):active {
+  transform: scale(0.97);
+  transition-duration: 0.1s;
+}
+
+/* Interactive elements hover lift */
+.hover-lift {
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+.hover-lift:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 16px rgba(0, 0, 0, 0.08);
+}
+
+/* Tab underline slide */
+.tab-active {
+  position: relative;
+}
+.tab-active::after {
+  content: '';
+  position: absolute;
+  bottom: -1px;
+  left: 0;
+  right: 0;
+  height: 2px;
+  background-color: var(--color-sage-500);
+  border-radius: 1px;
+  animation: tab-underline 0.25s ease-out;
+}
+
+@keyframes tab-underline {
+  from { transform: scaleX(0); }
+  to { transform: scaleX(1); }
+}
+
+/* Subtle fade-in for lazy-loaded content */
+@keyframes fade-in-up {
+  from { opacity: 0; transform: translateY(12px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.fade-in-up {
+  animation: fade-in-up 0.3s ease-out;
+}
+
+/* Chevron rotation for dropdowns */
+.chevron-rotate {
+  transition: transform 0.25s ease;
+}
+.chevron-rotate.open {
+  transform: rotate(180deg);
+}
+
+/* Smooth toggle switch */
+.toggle-thumb {
+  transition: transform 0.2s ease-in-out, background-color 0.2s ease;
+}
+
+/* ─── Global Enhancements ───────────────────────────────── */
+
+/* Smoother scrolling */
+html {
+  scroll-behavior: smooth;
+}
+
+/* Better input focus states — Lovart spec */
+input:focus,
+select:focus,
+textarea:focus {
+  border-color: var(--color-sage-500) !important;
+  box-shadow: 0 0 0 3px rgba(16, 185, 129, 0.15);
+  outline: none;
+}
+
+.dark input:focus,
+.dark select:focus,
+.dark textarea:focus {
+  box-shadow: 0 0 0 3px rgba(16, 185, 129, 0.25);
+}
+
+/* Badge/tag component */
+.badge {
+  display: inline-flex;
+  align-items: center;
+  padding: 2px 10px;
+  font-size: 12px;
+  font-weight: 500;
+  border-radius: 9999px;
+  letter-spacing: 0.01em;
+}
+
+/* Progress bar animation */
+@keyframes progress-fill {
+  from { width: 0; }
+}
+
+.progress-bar {
+  transition: width 0.5s ease-out;
+  animation: progress-fill 0.8s ease-out;
+}
+
+/* Tooltip styling */
+.tooltip {
+  background-color: var(--color-warm-800);
+  color: white;
+  padding: 6px 12px;
+  border-radius: 6px;
+  font-size: 13px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+  animation: fade-in-up 0.15s ease-out;
+}
+
+.dark .tooltip {
+  background-color: var(--color-warm-700);
 }

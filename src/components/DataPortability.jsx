@@ -1,11 +1,14 @@
 import { useState, useRef, useMemo, useEffect, useCallback } from 'react'
 import { getClients, getAssessments, getSnapshots, saveClient, saveAssessment, saveSnapshot, clearAllData } from '../data/storage.js'
 import { framework } from '../data/framework.js'
-import { downloadFile } from '../data/exportUtils.js'
+import { downloadFile } from '../lib/fileExports.js'
 import { processImportFile, transformToAssessments, detectScoreValues, mapScore } from '../data/csvImportEngine.js'
 import { safeGetItem, safeSetItem } from '../lib/safeStorage.js'
 import KBHelpIcon from './kb/KBHelpIcon.jsx'
 import { useAuth } from '../contexts/AuthContext.jsx'
+import usePermissions from '../hooks/usePermissions.js'
+import { buildExportAccessState } from '../lib/exportAccess.js'
+import { NoPermission } from './PermissionGate.jsx'
 
 const APP_VERSION = '1.0.0'
 
@@ -160,9 +163,9 @@ function FileDropZone({ accept, onFile, label, disabled }) {
         className="hidden"
         disabled={disabled}
       />
-      <IconUpload className="w-5 h-5 mx-auto mb-1.5 text-warm-400" />
+      <IconUpload className="w-5 h-5 mx-auto mb-1.5 text-warm-500" />
       <div className="text-xs text-warm-500">{label || 'Drop file here or click to browse'}</div>
-      <div className="text-[10px] text-warm-400 mt-1">Accepts: {accept}</div>
+      <div className="text-[10px] text-warm-500 mt-1">Accepts: {accept}</div>
     </div>
   )
 }
@@ -172,7 +175,8 @@ function FileDropZone({ accept, onFile, label, disabled }) {
    ───────────────────────────────────────────── */
 
 export default function DataPortability({ onImportComplete }) {
-  const { profile, isAdmin } = useAuth()
+  const { profile } = useAuth()
+  const { can, loading: permissionsLoading } = usePermissions()
   const orgId = profile?.org_id
   const [clients, setClients] = useState([])
   const [selectedClientId, setSelectedClientId] = useState('')
@@ -181,6 +185,15 @@ export default function DataPortability({ onImportComplete }) {
   const [showClearConfirm, setShowClearConfirm] = useState(false)
   const [lastBackup, setLastBackup] = useState(() => safeGetItem('skillcascade_last_backup'))
   const [dataSummary, setDataSummary] = useState({ clients: 0, assessments: 0, snapshots: 0 })
+  const exportAccess = buildExportAccessState({
+    canViewClients: can('clients', 'view'),
+    canEditClients: can('clients', 'edit'),
+    canCreateClients: can('clients', 'create'),
+    canDeleteClients: can('clients', 'delete'),
+    canViewTeam: can('team', 'view'),
+    canViewSettings: can('settings', 'view'),
+    canEditSettings: can('settings', 'edit'),
+  })
 
   const refreshClients = useCallback(async () => {
     if (!orgId) return
@@ -222,6 +235,10 @@ export default function DataPortability({ onImportComplete }) {
   /* ── Full Backup Export ── */
 
   async function handleFullExport() {
+    if (!exportAccess.canExportClientData) {
+      showStatus('You do not have permission to export organization data.', 'error')
+      return
+    }
     try {
       const clientsWithData = await Promise.all(clients.map(async (c) => ({
         ...c,
@@ -252,6 +269,10 @@ export default function DataPortability({ onImportComplete }) {
   /* ── Full Backup Import ── */
 
   function handleFullImport(file) {
+    if (!exportAccess.canImportClientData) {
+      showStatus('You do not have permission to import client data.', 'error')
+      return
+    }
     const reader = new FileReader()
     reader.onload = async (e) => {
       try {
@@ -311,6 +332,10 @@ export default function DataPortability({ onImportComplete }) {
   /* ── Per-Client Export ── */
 
   async function handleClientExport() {
+    if (!exportAccess.canExportClientData) {
+      showStatus('You do not have permission to export client data.', 'error')
+      return
+    }
     if (!selectedClientId) return
     const client = clients.find((c) => c.id === selectedClientId)
     if (!client) return
@@ -342,6 +367,10 @@ export default function DataPortability({ onImportComplete }) {
   const [importState, setImportState] = useState(null) // { step, systemId, fileName, parsed, columnMapping, scoreValues, customScoreMap, result }
 
   function handleExternalFile(systemId, file) {
+    if (!exportAccess.canImportClientData) {
+      showStatus('You do not have permission to import external data.', 'error')
+      return
+    }
     const reader = new FileReader()
     reader.onload = (e) => {
       try {
@@ -395,6 +424,10 @@ export default function DataPortability({ onImportComplete }) {
   }
 
   async function executeImport() {
+    if (!exportAccess.canImportClientData) {
+      showStatus('You do not have permission to import client data.', 'error')
+      return
+    }
     if (!importState?.result || !orgId) return
     try {
       const assessments = importState.result.assessments
@@ -439,6 +472,10 @@ export default function DataPortability({ onImportComplete }) {
   /* ── CSV Export (All Clients) ── */
 
   async function handleCSVExport() {
+    if (!exportAccess.canExportClientData) {
+      showStatus('You do not have permission to export organization data.', 'error')
+      return
+    }
     if (clients.length === 0) {
       showStatus('No clients to export', 'error')
       return
@@ -456,6 +493,10 @@ export default function DataPortability({ onImportComplete }) {
   /* ── JSON Export (All Clients) ── */
 
   async function handleJSONExport() {
+    if (!exportAccess.canExportClientData) {
+      showStatus('You do not have permission to export organization data.', 'error')
+      return
+    }
     if (clients.length === 0) {
       showStatus('No clients to export', 'error')
       return
@@ -488,6 +529,10 @@ export default function DataPortability({ onImportComplete }) {
   // Note: This is now a dangerous operation. In production, this should be admin-only.
 
   async function handleClearAll() {
+    if (!exportAccess.canDeleteAllData) {
+      showStatus('You do not have permission to clear organization data.', 'error')
+      return
+    }
     if (clearConfirmText !== 'DELETE' || !orgId) return
     try {
       await clearAllData(orgId)
@@ -505,13 +550,25 @@ export default function DataPortability({ onImportComplete }) {
      Render
      ───────────────────────────────────────────── */
 
+  if (permissionsLoading) {
+    return (
+      <div className="max-w-3xl mx-auto rounded-xl border border-warm-200 bg-white px-5 py-8 text-sm text-warm-500">
+        Loading data access...
+      </div>
+    )
+  }
+
+  if (!exportAccess.canViewDataPortability) {
+    return (
+      <NoPermission message="You don't have permission to access Data & Export. Contact your admin if you need backup or import access." />
+    )
+  }
+
   return (
     <div className="max-w-3xl mx-auto space-y-6">
       {/* Header */}
       <div className="flex items-center gap-3 mb-2">
-        <div className="p-2 bg-sage-100 rounded-lg">
-          <IconDatabase className="w-6 h-6 text-sage-600" />
-        </div>
+        <IconDatabase className="w-6 h-6 text-sage-600" />
         <div>
           <h2 className="font-display text-lg font-semibold text-warm-800">Data Management <KBHelpIcon term="guide-data-export" /></h2>
           <p className="text-xs text-warm-500">Backup, restore, and transfer your assessment data</p>
@@ -534,8 +591,14 @@ export default function DataPortability({ onImportComplete }) {
       )}
 
       {/* ─── Section 1: Full Backup / Restore ─── */}
+      {exportAccess.isDataPortabilityReadOnly && (
+        <div className="rounded-lg border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-700">
+          {exportAccess.dataPortabilityMessage}
+        </div>
+      )}
+
       <section className="bg-white border border-warm-200 rounded-xl overflow-hidden">
-        <div className="px-5 py-4 border-b border-warm-100 bg-warm-50/50">
+        <div className="px-5 py-4 border-b border-warm-200 bg-warm-50/50">
           <h3 className="font-display text-sm font-semibold text-warm-700 flex items-center gap-2">
             <IconShield className="w-4 h-4 text-sage-500" />
             Full Backup &amp; Restore
@@ -545,7 +608,8 @@ export default function DataPortability({ onImportComplete }) {
           <div className="flex flex-wrap gap-3">
             <button
               onClick={handleFullExport}
-              className="flex items-center gap-2 px-4 py-2 text-sm font-medium rounded-lg bg-sage-500 text-white hover:bg-sage-600 transition-colors"
+              disabled={!exportAccess.canExportClientData}
+              className="flex items-center gap-2 px-4 py-2 text-sm font-medium rounded-full bg-sage-600 text-white hover:bg-sage-700 transition-colors disabled:cursor-not-allowed disabled:opacity-40"
             >
               <IconDownload className="w-4 h-4" />
               Export All Data
@@ -554,6 +618,7 @@ export default function DataPortability({ onImportComplete }) {
               accept=".json"
               onFile={handleFullImport}
               label="Drop backup file or click to import"
+              disabled={!exportAccess.canImportClientData}
             />
           </div>
 
@@ -565,7 +630,7 @@ export default function DataPortability({ onImportComplete }) {
           </div>
 
           {lastBackup && (
-            <p className="text-[11px] text-warm-400">
+            <p className="text-[11px] text-warm-500">
               Last backup: {new Date(lastBackup).toLocaleDateString()} at {new Date(lastBackup).toLocaleTimeString()}
             </p>
           )}
@@ -574,7 +639,7 @@ export default function DataPortability({ onImportComplete }) {
 
       {/* ─── Section 2: Per-Client Export ─── */}
       <section className="bg-white border border-warm-200 rounded-xl overflow-hidden">
-        <div className="px-5 py-4 border-b border-warm-100 bg-warm-50/50">
+        <div className="px-5 py-4 border-b border-warm-200 bg-warm-50/50">
           <h3 className="font-display text-sm font-semibold text-warm-700 flex items-center gap-2">
             <IconFile className="w-4 h-4 text-sage-500" />
             Per-Client Export
@@ -598,22 +663,22 @@ export default function DataPortability({ onImportComplete }) {
             </div>
             <button
               onClick={handleClientExport}
-              disabled={!selectedClientId}
-              className="flex items-center gap-2 px-4 py-2 text-sm font-medium rounded-lg bg-sage-500 text-white hover:bg-sage-600 transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
+              disabled={!selectedClientId || !exportAccess.canExportClientData}
+              className="flex items-center gap-2 px-4 py-2 text-sm font-medium rounded-full bg-sage-600 text-white hover:bg-sage-700 transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
             >
               <IconDownload className="w-4 h-4" />
               Export Client
             </button>
           </div>
           {clients.length === 0 && (
-            <p className="text-xs text-warm-400 mt-3 italic">No clients saved yet.</p>
+            <p className="text-xs text-warm-500 mt-3 italic">No clients saved yet.</p>
           )}
         </div>
       </section>
 
       {/* ─── Section 3: Import from External Systems ─── */}
       <section className="bg-white border border-warm-200 rounded-xl overflow-hidden">
-        <div className="px-5 py-4 border-b border-warm-100 bg-warm-50/50">
+        <div className="px-5 py-4 border-b border-warm-200 bg-warm-50/50">
           <h3 className="font-display text-sm font-semibold text-warm-700 flex items-center gap-2">
             <svg className="w-4 h-4 text-sage-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
               <path strokeLinecap="round" strokeLinejoin="round" d="M7.5 21L3 16.5m0 0L7.5 12M3 16.5h13.5m0-13.5L21 7.5m0 0L16.5 12M21 7.5H7.5" />
@@ -632,15 +697,16 @@ export default function DataPortability({ onImportComplete }) {
                   <div key={sys.id}>
                     <div className="border border-warm-200 rounded-lg p-3">
                       <div className="text-xs font-semibold text-warm-600 mb-2 flex items-center gap-1.5">
-                        <div className="w-5 h-5 rounded bg-sage-100 flex items-center justify-center text-[10px] font-bold text-sage-600">
+                        <span className="text-[10px] font-bold text-sage-600">
                           {sys.name[0]}
-                        </div>
+                        </span>
                         {sys.name}
                       </div>
                       <FileDropZone
                         accept={sys.accepts}
                         onFile={(file) => handleExternalFile(sys.id, file)}
                         label="Drop file here"
+                        disabled={!exportAccess.canImportClientData}
                       />
                     </div>
                   </div>
@@ -678,14 +744,14 @@ export default function DataPortability({ onImportComplete }) {
                   <div className="flex gap-1">
                     {['columns', 'scores', 'preview'].map((s, i) => (
                       <div key={s} className={`w-2 h-2 rounded-full ${
-                        s === importState.step ? 'bg-sage-500' :
+                        s === importState.step ? 'bg-sage-600' :
                         ['columns', 'scores', 'preview'].indexOf(importState.step) > i ? 'bg-sage-300' : 'bg-warm-200'
                       }`} />
                     ))}
                   </div>
                   <button
                     onClick={() => setImportState(null)}
-                    className="text-warm-400 hover:text-warm-600 text-xs ml-2"
+                    className="text-warm-500 hover:text-warm-600 text-xs ml-2"
                   >
                     Cancel
                   </button>
@@ -761,7 +827,7 @@ export default function DataPortability({ onImportComplete }) {
                       <button
                         onClick={advanceImportStep}
                         disabled={importState.columnMapping.score === null && importState.columnMapping.skillName === null && importState.columnMapping.skillId === null}
-                        className="flex items-center gap-1.5 px-4 py-2 text-xs font-medium rounded-lg bg-sage-500 text-white hover:bg-sage-600 transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
+                        className="flex items-center gap-1.5 px-4 py-2 text-xs font-medium rounded-full bg-sage-600 text-white hover:bg-sage-700 transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
                       >
                         Next: Score Mapping
                         <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
@@ -784,7 +850,7 @@ export default function DataPortability({ onImportComplete }) {
                           return (
                             <div key={val} className="flex items-center gap-3">
                               <span className="text-xs text-warm-600 w-28 truncate font-mono bg-white px-2 py-1 rounded border border-warm-200">{val}</span>
-                              <svg className="w-3 h-3 text-warm-400 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                              <svg className="w-3 h-3 text-warm-500 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
                                 <path strokeLinecap="round" strokeLinejoin="round" d="M13.5 4.5L21 12m0 0l-7.5 7.5M21 12H3" />
                               </svg>
                               <select
@@ -813,7 +879,7 @@ export default function DataPortability({ onImportComplete }) {
                       </button>
                       <button
                         onClick={advanceImportStep}
-                        className="flex items-center gap-1.5 px-4 py-2 text-xs font-medium rounded-lg bg-sage-500 text-white hover:bg-sage-600 transition-colors"
+                        className="flex items-center gap-1.5 px-4 py-2 text-xs font-medium rounded-full bg-sage-600 text-white hover:bg-sage-700 transition-colors"
                       >
                         Preview Import
                         <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
@@ -847,12 +913,12 @@ export default function DataPortability({ onImportComplete }) {
                         <p className="text-[10px] text-warm-500 font-medium mb-1">Unmatched rows (first 10):</p>
                         <div className="space-y-0.5">
                           {importState.result.unmapped.slice(0, 10).map((u, i) => (
-                            <div key={i} className="text-[10px] text-warm-400 font-mono truncate">
+                            <div key={i} className="text-[10px] text-warm-500 font-mono truncate">
                               Row {u.row}: {u.name}
                             </div>
                           ))}
                           {importState.result.unmapped.length > 10 && (
-                            <div className="text-[10px] text-warm-400 italic">+{importState.result.unmapped.length - 10} more</div>
+                            <div className="text-[10px] text-warm-500 italic">+{importState.result.unmapped.length - 10} more</div>
                           )}
                         </div>
                       </div>
@@ -879,8 +945,8 @@ export default function DataPortability({ onImportComplete }) {
                       </button>
                       <button
                         onClick={executeImport}
-                        disabled={importState.result.mapped === 0}
-                        className="flex items-center gap-1.5 px-4 py-2 text-xs font-medium rounded-lg bg-sage-500 text-white hover:bg-sage-600 transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
+                        disabled={importState.result.mapped === 0 || !exportAccess.canImportClientData}
+                        className="flex items-center gap-1.5 px-4 py-2 text-xs font-medium rounded-full bg-sage-600 text-white hover:bg-sage-700 transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
                       >
                         <IconUpload className="w-3.5 h-3.5" />
                         Import {importState.result.mapped} Skills
@@ -896,7 +962,7 @@ export default function DataPortability({ onImportComplete }) {
 
       {/* ─── Section 4: Data Summary ─── */}
       <section className="bg-white border border-warm-200 rounded-xl overflow-hidden">
-        <div className="px-5 py-4 border-b border-warm-100 bg-warm-50/50">
+        <div className="px-5 py-4 border-b border-warm-200 bg-warm-50/50">
           <h3 className="font-display text-sm font-semibold text-warm-700 flex items-center gap-2">
             <IconDatabase className="w-4 h-4 text-sage-500" />
             Data Summary
@@ -917,7 +983,7 @@ export default function DataPortability({ onImportComplete }) {
           </div>
 
           {/* Clear All Data — admin only */}
-          {isAdmin ? (
+          {exportAccess.canDeleteAllData ? (
             !showClearConfirm ? (
               <button
                 onClick={() => setShowClearConfirm(true)}
@@ -970,14 +1036,14 @@ export default function DataPortability({ onImportComplete }) {
               </div>
             )
           ) : (
-            <p className="text-xs text-warm-400">Only admins can delete organization data. Contact your admin or visit the <a href="/admin" className="text-sage-600 hover:underline">Admin panel</a>.</p>
+            <p className="text-xs text-warm-500">{exportAccess.deleteAllDataMessage} Contact your admin or visit the <a href="/admin" className="text-sage-600 hover:underline">Admin panel</a>.</p>
           )}
         </div>
       </section>
 
       {/* ─── Section 5: Export Formats ─── */}
       <section className="bg-white border border-warm-200 rounded-xl overflow-hidden">
-        <div className="px-5 py-4 border-b border-warm-100 bg-warm-50/50">
+        <div className="px-5 py-4 border-b border-warm-200 bg-warm-50/50">
           <h3 className="font-display text-sm font-semibold text-warm-700 flex items-center gap-2">
             <IconDownload className="w-4 h-4 text-sage-500" />
             Export Formats
@@ -989,14 +1055,12 @@ export default function DataPortability({ onImportComplete }) {
             {/* CSV */}
             <div className="border border-warm-200 rounded-lg p-4 hover:border-sage-300 transition-colors">
               <div className="flex items-center gap-2 mb-2">
-                <div className="p-1.5 bg-warm-100 rounded">
-                  <svg className="w-4 h-4 text-warm-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
-                    <path strokeLinecap="round" strokeLinejoin="round" d="M3.375 19.5h17.25m-17.25 0a1.125 1.125 0 01-1.125-1.125M3.375 19.5h7.5c.621 0 1.125-.504 1.125-1.125m-9.75 0V5.625m0 12.75v-1.5c0-.621.504-1.125 1.125-1.125m18.375 2.625V5.625m0 12.75c0 .621-.504 1.125-1.125 1.125m1.125-1.125v-1.5c0-.621-.504-1.125-1.125-1.125m0 3.75h-7.5A1.125 1.125 0 0112 18.375m9.75-12.75c0-.621-.504-1.125-1.125-1.125H3.375c-.621 0-1.125.504-1.125 1.125m19.5 0v1.5c0 .621-.504 1.125-1.125 1.125M2.25 5.625v1.5c0 .621.504 1.125 1.125 1.125m0 0h17.25m-17.25 0h7.5c.621 0 1.125.504 1.125 1.125M3.375 8.25c-.621 0-1.125.504-1.125 1.125v1.5c0 .621.504 1.125 1.125 1.125m17.25-3.75h-7.5c-.621 0-1.125.504-1.125 1.125m8.625-1.125c.621 0 1.125.504 1.125 1.125v1.5c0 .621-.504 1.125-1.125 1.125m-17.25 0h7.5m-7.5 0c-.621 0-1.125.504-1.125 1.125v1.5c0 .621.504 1.125 1.125 1.125M12 10.875v-1.5m0 1.5c0 .621-.504 1.125-1.125 1.125M12 10.875c0 .621.504 1.125 1.125 1.125m-2.25 0c.621 0 1.125.504 1.125 1.125M13.125 12h7.5m-7.5 0c-.621 0-1.125.504-1.125 1.125M20.625 12c.621 0 1.125.504 1.125 1.125v1.5c0 .621-.504 1.125-1.125 1.125m-17.25 0h7.5M12 14.625v-1.5m0 1.5c0 .621-.504 1.125-1.125 1.125M12 14.625c0 .621.504 1.125 1.125 1.125m-2.25 0c.621 0 1.125.504 1.125 1.125m0 0v.375" />
-                  </svg>
-                </div>
+                <svg className="w-5 h-5 text-warm-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M3.375 19.5h17.25m-17.25 0a1.125 1.125 0 01-1.125-1.125M3.375 19.5h7.5c.621 0 1.125-.504 1.125-1.125m-9.75 0V5.625m0 12.75v-1.5c0-.621.504-1.125 1.125-1.125m18.375 2.625V5.625m0 12.75c0 .621-.504 1.125-1.125 1.125m1.125-1.125v-1.5c0-.621-.504-1.125-1.125-1.125m0 3.75h-7.5A1.125 1.125 0 0112 18.375m9.75-12.75c0-.621-.504-1.125-1.125-1.125H3.375c-.621 0-1.125.504-1.125 1.125m19.5 0v1.5c0 .621-.504 1.125-1.125 1.125M2.25 5.625v1.5c0 .621.504 1.125 1.125 1.125m0 0h17.25m-17.25 0h7.5c.621 0 1.125.504 1.125 1.125M3.375 8.25c-.621 0-1.125.504-1.125 1.125v1.5c0 .621.504 1.125 1.125 1.125m17.25-3.75h-7.5c-.621 0-1.125.504-1.125 1.125m8.625-1.125c.621 0 1.125.504 1.125 1.125v1.5c0 .621-.504 1.125-1.125 1.125m-17.25 0h7.5m-7.5 0c-.621 0-1.125.504-1.125 1.125v1.5c0 .621.504 1.125 1.125 1.125M12 10.875v-1.5m0 1.5c0 .621-.504 1.125-1.125 1.125M12 10.875c0 .621.504 1.125 1.125 1.125m-2.25 0c.621 0 1.125.504 1.125 1.125M13.125 12h7.5m-7.5 0c-.621 0-1.125.504-1.125 1.125M20.625 12c.621 0 1.125.504 1.125 1.125v1.5c0 .621-.504 1.125-1.125 1.125m-17.25 0h7.5M12 14.625v-1.5m0 1.5c0 .621-.504 1.125-1.125 1.125M12 14.625c0 .621.504 1.125 1.125 1.125m-2.25 0c.621 0 1.125.504 1.125 1.125m0 0v.375" />
+                </svg>
                 <div>
                   <div className="text-sm font-medium text-warm-700">CSV Spreadsheet</div>
-                  <div className="text-[10px] text-warm-400">One row per skill per client</div>
+                  <div className="text-[10px] text-warm-500">One row per skill per client</div>
                 </div>
               </div>
               <p className="text-xs text-warm-500 mb-3">
@@ -1004,7 +1068,7 @@ export default function DataPortability({ onImportComplete }) {
               </p>
               <button
                 onClick={handleCSVExport}
-                disabled={clients.length === 0}
+                disabled={clients.length === 0 || !exportAccess.canExportClientData}
                 className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium rounded-md bg-warm-100 text-warm-700 hover:bg-warm-200 transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
               >
                 <IconDownload className="w-3.5 h-3.5" />
@@ -1015,14 +1079,12 @@ export default function DataPortability({ onImportComplete }) {
             {/* JSON */}
             <div className="border border-warm-200 rounded-lg p-4 hover:border-sage-300 transition-colors">
               <div className="flex items-center gap-2 mb-2">
-                <div className="p-1.5 bg-warm-100 rounded">
-                  <svg className="w-4 h-4 text-warm-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
-                    <path strokeLinecap="round" strokeLinejoin="round" d="M17.25 6.75L22.5 12l-5.25 5.25m-10.5 0L1.5 12l5.25-5.25m7.5-3l-4.5 16.5" />
-                  </svg>
-                </div>
+                <svg className="w-5 h-5 text-warm-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M17.25 6.75L22.5 12l-5.25 5.25m-10.5 0L1.5 12l5.25-5.25m7.5-3l-4.5 16.5" />
+                </svg>
                 <div>
                   <div className="text-sm font-medium text-warm-700">JSON Structured</div>
-                  <div className="text-[10px] text-warm-400">Machine-readable with full metadata</div>
+                  <div className="text-[10px] text-warm-500">Machine-readable with full metadata</div>
                 </div>
               </div>
               <p className="text-xs text-warm-500 mb-3">
@@ -1030,7 +1092,7 @@ export default function DataPortability({ onImportComplete }) {
               </p>
               <button
                 onClick={handleJSONExport}
-                disabled={clients.length === 0}
+                disabled={clients.length === 0 || !exportAccess.canExportClientData}
                 className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium rounded-md bg-warm-100 text-warm-700 hover:bg-warm-200 transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
               >
                 <IconDownload className="w-3.5 h-3.5" />

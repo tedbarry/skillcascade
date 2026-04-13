@@ -471,11 +471,11 @@ export default function ProgressPrediction({
         {/* Insufficient Data */}
         <div className="bg-warm-50 border border-warm-200 rounded-lg p-4">
           <div className="flex items-center gap-2 mb-1">
-            <span className="text-warm-400">{InfoIcon}</span>
+            <span className="text-warm-500">{InfoIcon}</span>
             <h4 className="font-display text-sm font-semibold text-warm-600">Insufficient Data</h4>
           </div>
           <div className="text-2xl font-bold text-warm-600 mb-1">{insufficientData.length}</div>
-          <p className="text-[10px] text-warm-400 leading-snug">
+          <p className="text-[10px] text-warm-500 leading-snug">
             {insufficientData.length === 1 ? 'domain needs' : 'domains need'} at least 2 data points for prediction
           </p>
         </div>
@@ -501,13 +501,13 @@ export default function ProgressPrediction({
           <h3 className="font-display text-sm font-semibold text-warm-700 mb-1">
             Projection Timeline <KBHelpIcon term="view-predictions" />
           </h3>
-          <p className="text-xs text-warm-400 mb-4">
+          <p className="text-xs text-warm-500 mb-4">
             Solid lines show historical data. Dashed lines show projected growth.
           </p>
 
           {/* Domain toggles */}
           <div className="flex items-center gap-2 mb-4 flex-wrap">
-            <span className="text-[10px] text-warm-400">Show:</span>
+            <span className="text-[10px] text-warm-500">Show:</span>
             {framework.map((d) => {
               const pred = predictions.find((p) => p.domainId === d.id)
               if (!pred || !pred.hasEnoughData) return null
@@ -533,7 +533,7 @@ export default function ProgressPrediction({
 
           <ResponsiveContainer width="100%" height={380}>
             <LineChart data={combinedTimelineData}>
-              <CartesianGrid strokeDasharray="3 3" stroke="#e8d5c0" strokeOpacity={0.5} />
+              <CartesianGrid strokeDasharray="3 3" stroke="#E7E5E4" strokeOpacity={0.5} />
               <XAxis
                 dataKey="name"
                 tick={{ fontSize: 10, fill: '#9a6740' }}
@@ -547,8 +547,8 @@ export default function ProgressPrediction({
                 axisLine={false}
               />
               <Tooltip content={<PredictionTooltip />} />
-              <ReferenceLine y={2.0} stroke="#c49a6c" strokeDasharray="6 3" strokeOpacity={0.6} label={{ value: 'Developing', position: 'left', fontSize: 9, fill: '#c49a6c' }} />
-              <ReferenceLine y={2.5} stroke="#7fb589" strokeDasharray="6 3" strokeOpacity={0.6} label={{ value: 'Solid', position: 'left', fontSize: 9, fill: '#7fb589' }} />
+              <ReferenceLine y={2.0} stroke="#D97706" strokeDasharray="6 3" strokeOpacity={0.6} label={{ value: 'Developing', position: 'left', fontSize: 9, fill: '#D97706' }} />
+              <ReferenceLine y={2.5} stroke="#10B981" strokeDasharray="6 3" strokeOpacity={0.6} label={{ value: 'Solid', position: 'left', fontSize: 9, fill: '#10B981' }} />
 
               {/* Historical lines (solid) */}
               {framework.map((d) => {
@@ -628,7 +628,7 @@ function DomainPredictionCard({ prediction }) {
             <span className="text-xs text-warm-500">
               Current: <span className="font-semibold text-warm-700">{currentScore.toFixed(2)}</span>
             </span>
-            <span className="text-[10px] text-warm-400">of 3.0</span>
+            <span className="text-[10px] text-warm-500">of 3.0</span>
           </div>
         </div>
 
@@ -648,12 +648,12 @@ function DomainPredictionCard({ prediction }) {
       {/* Rate and estimates */}
       <div className="grid grid-cols-3 gap-2 mb-3">
         <div className="bg-white/60 rounded-md px-2.5 py-1.5">
-          <div className="text-[9px] uppercase tracking-wider text-warm-400 mb-0.5">Rate</div>
+          <div className="text-[9px] uppercase tracking-wider text-warm-500 mb-0.5">Rate</div>
           <div className={`text-xs font-semibold ${trend.colorClass}`}>{rateLabel}</div>
         </div>
 
         <div className="bg-white/60 rounded-md px-2.5 py-1.5">
-          <div className="text-[9px] uppercase tracking-wider text-warm-400 mb-0.5">To Developing</div>
+          <div className="text-[9px] uppercase tracking-wider text-warm-500 mb-0.5">To Developing</div>
           {currentScore >= 2.0 ? (
             <div className="text-xs font-semibold text-sage-600">Reached</div>
           ) : timeToDeveloping === Infinity ? (
@@ -661,12 +661,12 @@ function DomainPredictionCard({ prediction }) {
           ) : timeToDeveloping != null ? (
             <div className="text-xs font-semibold text-warm-700">{formatMonths(timeToDeveloping)}</div>
           ) : (
-            <div className="text-xs text-warm-400">--</div>
+            <div className="text-xs text-warm-500">--</div>
           )}
         </div>
 
         <div className="bg-white/60 rounded-md px-2.5 py-1.5">
-          <div className="text-[9px] uppercase tracking-wider text-warm-400 mb-0.5">To Solid</div>
+          <div className="text-[9px] uppercase tracking-wider text-warm-500 mb-0.5">To Solid</div>
           {currentScore >= 2.5 ? (
             <div className="text-xs font-semibold text-sage-600">Reached</div>
           ) : timeToSolid === Infinity ? (
@@ -674,7 +674,7 @@ function DomainPredictionCard({ prediction }) {
           ) : timeToSolid != null ? (
             <div className="text-xs font-semibold text-warm-700">{formatMonths(timeToSolid)}</div>
           ) : (
-            <div className="text-xs text-warm-400">--</div>
+            <div className="text-xs text-warm-500">--</div>
           )}
         </div>
       </div>
@@ -693,7 +693,7 @@ function DomainPredictionCard({ prediction }) {
       <div className="bg-white/50 rounded-lg p-2">
         <ResponsiveContainer width="100%" height={120}>
           <LineChart data={miniChartData}>
-            <CartesianGrid strokeDasharray="3 3" stroke="#e8d5c0" strokeOpacity={0.3} />
+            <CartesianGrid strokeDasharray="3 3" stroke="#E7E5E4" strokeOpacity={0.3} />
             <XAxis
               dataKey="date"
               tick={{ fontSize: 8, fill: '#9a6740' }}
@@ -708,8 +708,8 @@ function DomainPredictionCard({ prediction }) {
               axisLine={false}
               width={20}
             />
-            <ReferenceLine y={2.0} stroke="#c49a6c" strokeDasharray="4 2" strokeOpacity={0.5} />
-            <ReferenceLine y={2.5} stroke="#7fb589" strokeDasharray="4 2" strokeOpacity={0.5} />
+            <ReferenceLine y={2.0} stroke="#D97706" strokeDasharray="4 2" strokeOpacity={0.5} />
+            <ReferenceLine y={2.5} stroke="#10B981" strokeDasharray="4 2" strokeOpacity={0.5} />
 
             {/* Historical line */}
             <Line
@@ -738,10 +738,10 @@ function DomainPredictionCard({ prediction }) {
 
       {/* Projection values */}
       <div className="flex items-center gap-2 mt-2">
-        <span className="text-[9px] text-warm-400">Projected:</span>
+        <span className="text-[9px] text-warm-500">Projected:</span>
         {projections.map((p) => (
           <span key={p.months} className="text-[10px] px-1.5 py-0.5 rounded bg-white/70 text-warm-600">
-            <span className="text-warm-400">{p.months}mo:</span>{' '}
+            <span className="text-warm-500">{p.months}mo:</span>{' '}
             <span className="font-semibold">{p.score.toFixed(1)}</span>
           </span>
         ))}

@@ -83,7 +83,7 @@ export default function KnowledgeBase() {
                   {catInfo?.label || category}
                 </h2>
                 {catInfo?.description && (
-                  <p className="text-sm text-warm-400 mt-1">{catInfo.description}</p>
+                  <p className="text-sm text-warm-500 mt-1">{catInfo.description}</p>
                 )}
               </div>
               {category === 'domains' ? <DomainBrowser /> : <EntryList entries={categoryEntries} />}
@@ -93,14 +93,14 @@ export default function KnowledgeBase() {
             <div>
               <div className="mb-8 text-center">
                 <h1 className="text-2xl font-bold text-warm-900 font-display">Knowledge Base</h1>
-                <p className="text-sm text-warm-400 mt-2">
+                <p className="text-sm text-warm-500 mt-2">
                   Everything you need to know about SkillCascade — concepts, tools, and clinical guidance.
                 </p>
               </div>
               <KBCategoryGrid categoryCounts={categoryCounts} />
 
               {/* Quick stats */}
-              <div className="mt-8 text-center text-xs text-warm-300">
+              <div className="mt-8 text-center text-xs text-warm-500">
                 {getAllEntries().length} articles across {Object.keys(KB_CATEGORIES).length} categories
               </div>
             </div>
@@ -110,7 +110,7 @@ export default function KnowledgeBase() {
 
       {/* Footer */}
       <footer className="border-t border-warm-200 mt-12 py-6 text-center">
-        <div className="flex items-center justify-center gap-4 text-xs text-warm-400">
+        <div className="flex items-center justify-center gap-4 text-xs text-warm-500">
           <Link to="/" className="hover:text-warm-600 transition-colors">Home</Link>
           <span className="text-warm-200">|</span>
           <Link to="/dashboard" className="hover:text-warm-600 transition-colors">Dashboard</Link>
@@ -139,7 +139,7 @@ function KBHeader({ isPhone }) {
           {!isPhone && (
             <Link
               to="/dashboard"
-              className="text-xs px-3 py-1.5 rounded-lg bg-sage-500 text-white hover:bg-sage-600 transition-colors"
+              className="text-xs px-3 py-1.5 rounded-lg bg-sage-600 text-white hover:bg-sage-700 transition-colors"
             >
               Dashboard
             </Link>
@@ -152,7 +152,7 @@ function KBHeader({ isPhone }) {
 
 function EntryList({ entries }) {
   if (entries.length === 0) {
-    return <p className="text-sm text-warm-400 py-8 text-center">No articles found.</p>
+    return <p className="text-sm text-warm-500 py-8 text-center">No articles found.</p>
   }
 
   // Group by domain for skill entries, keep flat for others
@@ -194,12 +194,12 @@ function EntryCard({ entry }) {
     >
       <div className="flex items-center gap-2">
         <span className="text-sm font-medium text-warm-800">{entry.title}</span>
-        <span className="text-[9px] px-1.5 py-0.5 rounded-full bg-warm-100 text-warm-400 shrink-0">
+        <span className="text-[9px] px-1.5 py-0.5 rounded-full bg-warm-100 text-warm-500 shrink-0">
           {catInfo?.label || entry.category}
         </span>
       </div>
       {entry.summary && (
-        <p className="text-xs text-warm-400 mt-0.5 line-clamp-2">{entry.summary}</p>
+        <p className="text-xs text-warm-500 mt-0.5 line-clamp-2">{entry.summary}</p>
       )}
     </Link>
   )

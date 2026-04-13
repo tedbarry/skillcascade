@@ -34,13 +34,18 @@ export default class ErrorBoundary extends Component {
     return (
       <div className="min-h-screen flex items-center justify-center bg-warm-50 p-6">
         <div className="max-w-md text-center">
+          <img
+            src="/brand/error-page.jpg"
+            alt="Something went wrong"
+            className="w-48 max-w-[200px] h-auto rounded-xl mx-auto mb-4"
+          />
           <h1 className="text-2xl font-bold text-warm-800 font-display mb-2">
             Skill<span className="text-sage-500">Cascade</span>
           </h1>
           <p className="text-warm-600 mb-4">Something went wrong. This view encountered an unexpected error.</p>
           <button
             onClick={this.handleReset}
-            className="px-4 py-2 bg-sage-500 text-white rounded-lg hover:bg-sage-600 transition-colors text-sm font-medium"
+            className="px-4 py-2 bg-sage-600 text-white rounded-lg hover:bg-sage-700 transition-colors text-sm font-medium"
           >
             Try again
           </button>

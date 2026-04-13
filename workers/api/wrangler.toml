@@ -1,0 +1,25 @@
+name = "skillcascade-api"
+main = "src/index.js"
+compatibility_date = "2024-12-01"
+compatibility_flags = ["nodejs_compat"]
+
+[vars]
+SUPABASE_URL = "https://walshlbzxyzqxbbzsrcs.supabase.co"
+SUPABASE_ANON_KEY = "sb_publishable_oh0bvudMoPjqud7RCZ6X4Q_SXp-R_Wu"
+DATABASE_URL = "postgresql://postgres:SkCascade2026prodRDS@skillcascade-prod.c0li86e6kdup.us-east-1.rds.amazonaws.com:5432/skillcascade?sslmode=require"
+
+[[hyperdrive]]
+binding = "DB"
+id = "5c73132de99e43e1936fbf274e8d0a13"
+
+[env.preview]
+name = "skillcascade-api-preview"
+
+[env.preview.vars]
+SUPABASE_URL = "https://walshlbzxyzqxbbzsrcs.supabase.co"
+SUPABASE_ANON_KEY = "sb_publishable_oh0bvudMoPjqud7RCZ6X4Q_SXp-R_Wu"
+DATABASE_URL = "postgresql://postgres:SkCascade2026prodRDS@skillcascade-prod.c0li86e6kdup.us-east-1.rds.amazonaws.com:5432/skillcascade?sslmode=require"
+
+[[env.preview.hyperdrive]]
+binding = "DB"
+id = "5c73132de99e43e1936fbf274e8d0a13"

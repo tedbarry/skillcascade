@@ -90,12 +90,12 @@ function HandshakeIcon({ className = '' }) {
 
 const TIERS = [
   {
-    name: 'Solo',
+    name: 'Platform',
     planKey: 'solo',
     monthlyPrice: 29,
-    description: 'For individual BCBAs',
-    clients: '15 clients',
-    seats: '1 user',
+    annualPrice: 19.99,
+    annualSavePercent: 31,
+    description: 'For individual BCBAs — assessments, goals, reports, and AI tools',
     popular: false,
     cta: 'Start Free Trial',
     features: [
@@ -112,50 +112,29 @@ const TIERS = [
     ],
   },
   {
-    name: 'Practice',
-    planKey: 'practice',
+    name: 'Clinical',
+    planKey: 'clinical',
     monthlyPrice: 19,
-    description: 'For small-to-mid practices',
-    clients: '30 clients per user',
-    seats: '3–9 users',
-    perUser: true,
-    minSeats: 3,
+    annualPrice: 15,
+    annualSavePercent: 21,
+    perClient: true,
+    minimum: 99,
+    description: 'For clinics — scheduling, sessions, notes, files, AI intelligence, and everything in Platform',
     popular: true,
     cta: 'Start Free Trial',
+    exampleNote: 'A 30-client clinic pays $570/mo with unlimited staff',
     features: [
-      'Everything in Solo, plus:',
-      'Multi-user access (3–9 BCBAs)',
+      'Everything in Platform, plus:',
+      'Unlimited staff included',
+      'Practice management (scheduling, sessions, notes)',
+      'File management & client documents',
       'Shared client management',
       'Organization analytics',
       'Team management & invites',
       'Parent portal access',
       'Home practice module',
       'Messaging (BCBA-parent)',
-      'Milestone celebrations',
       'Priority support',
-    ],
-  },
-  {
-    name: 'Enterprise',
-    planKey: 'enterprise',
-    monthlyPrice: 14,
-    description: 'For large clinics & multi-location orgs',
-    clients: 'Unlimited clients',
-    seats: '10–49 users',
-    perUser: true,
-    minSeats: 10,
-    cta: 'Start Free Trial',
-    features: [
-      'Everything in Practice, plus:',
-      'Multi-user access (10–49 BCBAs)',
-      'White-label branding (reports & certificates)',
-      'Marketplace access',
-      'Custom assessments & skill libraries',
-      'API access for integrations',
-      'Central Reach / Raven / Passage integration',
-      'Outcome certification',
-      'Dedicated account manager',
-      'SLA guarantee',
     ],
   },
 ]
@@ -234,10 +213,10 @@ function BillingToggle({ isAnnual, onChange }) {
           Annual{' '}
           <span
             className={`inline-block transition-colors duration-200 ${
-              isAnnual ? 'text-sage-600' : 'text-warm-400'
+              isAnnual ? 'text-sage-600' : 'text-warm-500'
             }`}
           >
-            (Save 20%)
+            (Save up to 31%)
           </span>
         </button>
       </div>
@@ -246,24 +225,22 @@ function BillingToggle({ isAnnual, onChange }) {
 }
 
 function PricingCard({ tier, isAnnual, onCheckout, checkoutLoading }) {
-  const annualPrice = Math.round(tier.monthlyPrice * 0.8)
-  const displayPrice = isAnnual ? annualPrice : tier.monthlyPrice
-  const isPerUser = tier.perUser
-  const minTotal = isPerUser ? displayPrice * tier.minSeats : displayPrice
+  const displayPrice = isAnnual ? tier.annualPrice : tier.monthlyPrice
+  const isPerClient = tier.perClient
 
   return (
     <div
-      className={`relative flex flex-col rounded-2xl bg-white border transition-shadow duration-200 hover:shadow-xl ${
+      className={`relative flex flex-col rounded-[12px] bg-white border transition-shadow duration-200 hover:shadow-xl ${
         tier.popular
-          ? 'border-sage-400 border-2 shadow-lg'
-          : 'border-warm-200 shadow-md'
+          ? 'border-sage-500 border-2 shadow-lg'
+          : 'border-warm-200 shadow-sm'
       }`}
     >
       {/* Popular badge */}
       {tier.popular && (
         <div className="absolute -top-3.5 left-1/2 -translate-x-1/2">
-          <span className="inline-block rounded-full bg-sage-500 px-4 py-1 text-xs font-bold tracking-wide text-white uppercase">
-            Most Popular
+          <span className="inline-block rounded-full bg-sage-600 px-4 py-1 text-xs font-bold tracking-wide text-white uppercase">
+            Practice Management
           </span>
         </div>
       )}
@@ -280,43 +257,55 @@ function PricingCard({ tier, isAnnual, onCheckout, checkoutLoading }) {
         {/* Price */}
         <div className="mt-5 flex items-baseline gap-1.5">
           {isAnnual && (
-            <span className="text-lg text-warm-400 line-through" aria-label={`Was $${tier.monthlyPrice} per month`}>
+            <span className="text-lg text-warm-500 line-through" aria-label={`Was $${tier.monthlyPrice} per month`}>
               ${tier.monthlyPrice}
             </span>
           )}
           <span className="font-display text-4xl font-extrabold text-warm-900">
             ${displayPrice}
           </span>
-          <span className="text-sm text-warm-500">{isPerUser ? '/user/mo' : '/month'}</span>
+          <span className="text-sm text-warm-500">{isPerClient ? '/active client/mo' : '/mo'}</span>
         </div>
-        {isPerUser && (
-          <p className="mt-1 text-xs text-warm-600">
-            Starting at ${minTotal}/mo ({tier.minSeats} users)
+        {isAnnual && (
+          <p className="mt-1 text-xs text-sage-600 font-semibold">
+            Save {tier.annualSavePercent}% with annual billing
           </p>
         )}
-        {isAnnual && (
-          <p className="mt-1 text-xs text-sage-600">
-            Billed annually (${displayPrice * 12}{isPerUser ? '/user' : ''}/year)
+        {isPerClient && (
+          <p className="mt-1.5 text-xs text-warm-600">
+            Minimum ${tier.minimum}/mo
+          </p>
+        )}
+        {!isPerClient && isAnnual && (
+          <p className="mt-1 text-xs text-warm-500">
+            Billed as ${(tier.annualPrice * 12).toFixed(2)}/year
           </p>
         )}
 
-        {/* Capacity */}
-        <div className="mt-4 flex flex-col gap-1 text-sm font-medium text-warm-700">
-          <span>{tier.clients}</span>
-          <span>{tier.seats}</span>
-        </div>
+        {/* Unlimited staff callout for Clinical */}
+        {isPerClient && (
+          <div className="mt-3 inline-flex items-center gap-1.5 rounded-full bg-sage-50 px-3 py-1 text-xs font-semibold text-sage-700">
+            <CheckIcon className="w-3.5 h-3.5 text-sage-600" />
+            Unlimited staff included
+          </div>
+        )}
+
+        {/* Example pricing for Clinical */}
+        {tier.exampleNote && (
+          <p className="mt-3 text-xs text-warm-500 italic bg-warm-50 rounded-lg px-3 py-2">
+            {tier.exampleNote}
+          </p>
+        )}
 
         {/* CTA */}
         {onCheckout ? (
           <button
-            onClick={() => onCheckout(tier.planKey, isAnnual, tier.minSeats || 1)}
+            onClick={() => onCheckout(tier.planKey, isAnnual, 1)}
             disabled={checkoutLoading}
-            className={`mt-6 w-full rounded-lg py-2.5 text-sm font-semibold transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 min-h-[44px] disabled:opacity-50 ${
+            className={`mt-6 w-full rounded-full py-2.5 text-sm font-semibold transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 min-h-[44px] disabled:opacity-50 ${
               tier.popular
-                ? 'bg-sage-500 text-white hover:bg-sage-600 focus-visible:ring-sage-500'
-                : tier.name === 'Enterprise'
-                  ? 'bg-warm-800 text-white hover:bg-warm-900 focus-visible:ring-warm-700'
-                  : 'bg-warm-100 text-warm-800 hover:bg-warm-200 focus-visible:ring-warm-400'
+                ? 'bg-sage-600 text-white hover:bg-sage-700 focus-visible:ring-sage-500'
+                : 'bg-warm-100 text-warm-800 hover:bg-warm-200 focus-visible:ring-warm-400'
             }`}
           >
             {checkoutLoading ? 'Loading...' : tier.cta}
@@ -324,19 +313,17 @@ function PricingCard({ tier, isAnnual, onCheckout, checkoutLoading }) {
         ) : (
           <Link
             to={`/signup?plan=${tier.planKey}`}
-            className={`mt-6 w-full rounded-lg py-2.5 text-sm font-semibold transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 block text-center min-h-[44px] ${
+            className={`mt-6 w-full rounded-full py-2.5 text-sm font-semibold transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 block text-center min-h-[44px] ${
               tier.popular
-                ? 'bg-sage-500 text-white hover:bg-sage-600 focus-visible:ring-sage-500'
-                : tier.name === 'Enterprise'
-                  ? 'bg-warm-800 text-white hover:bg-warm-900 focus-visible:ring-warm-700'
-                  : 'bg-warm-100 text-warm-800 hover:bg-warm-200 focus-visible:ring-warm-400'
+                ? 'bg-sage-600 text-white hover:bg-sage-700 focus-visible:ring-sage-500'
+                : 'bg-warm-100 text-warm-800 hover:bg-warm-200 focus-visible:ring-warm-400'
             }`}
           >
             {tier.cta}
           </Link>
         )}
         {tier.cta !== 'Contact Sales' && (
-          <p className="mt-2 text-center text-xs text-warm-400">
+          <p className="mt-2 text-center text-xs text-warm-500">
             14-day free trial. Cancel anytime.
           </p>
         )}
@@ -355,7 +342,7 @@ function PricingCard({ tier, isAnnual, onCheckout, checkoutLoading }) {
                 }`}
               >
                 {!isHeader && (
-                  <CheckIcon className="mt-0.5 shrink-0 text-sage-500" />
+                  <CheckIcon className="mt-0.5 shrink-0 text-sage-600" />
                 )}
                 <span>{feature}</span>
               </li>
@@ -370,47 +357,41 @@ function PricingCard({ tier, isAnnual, onCheckout, checkoutLoading }) {
 /* ── Feature Comparison Data ──────────────────────────────── */
 
 const COMPARISON_FEATURES = [
-  { category: 'Capacity' },
-  { feature: 'Client limit', solo: '15', practice: '30 per user', enterprise: 'Unlimited' },
-  { feature: 'Users (seats)', solo: '1', practice: '3–9', enterprise: '10–49' },
-  { feature: '50+ users', solo: false, practice: false, enterprise: 'Contact us' },
   { category: 'Assessment & Visualization' },
-  { feature: 'Full assessment framework', solo: true, practice: true, enterprise: true },
-  { feature: 'Guided assessment (Start Here)', solo: true, practice: true, enterprise: true },
-  { feature: 'All visualizations', solo: true, practice: true, enterprise: true },
-  { feature: 'Clinical intelligence', solo: true, practice: true, enterprise: true },
-  { feature: 'Custom assessments & skill libraries', solo: false, practice: false, enterprise: true },
+  { feature: 'Full assessment framework', platform: true, clinical: true },
+  { feature: 'Guided assessment (Start Here)', platform: true, clinical: true },
+  { feature: 'All visualizations', platform: true, clinical: true },
+  { feature: 'Clinical intelligence', platform: true, clinical: true },
   { category: 'Clinical Tools' },
-  { feature: 'AI Assistant', solo: true, practice: true, enterprise: true },
-  { feature: 'Goal engine', solo: true, practice: true, enterprise: true },
-  { feature: 'Pattern alerts', solo: true, practice: true, enterprise: true },
-  { feature: 'Progress prediction', solo: true, practice: true, enterprise: true },
-  { feature: 'Caseload dashboard', solo: true, practice: true, enterprise: true },
+  { feature: 'AI Assistant', platform: true, clinical: true },
+  { feature: 'Goal engine', platform: true, clinical: true },
+  { feature: 'Pattern alerts', platform: true, clinical: true },
+  { feature: 'Progress prediction', platform: true, clinical: true },
+  { feature: 'Caseload dashboard', platform: true, clinical: true },
   { category: 'Reports & Export' },
-  { feature: 'Report generator (all types)', solo: true, practice: true, enterprise: true },
-  { feature: 'Data export (CSV, JSON, HTML)', solo: true, practice: true, enterprise: true },
-  { feature: 'Outcome certification', solo: false, practice: false, enterprise: true },
-  { feature: 'API access for integrations', solo: false, practice: false, enterprise: true },
-  { feature: 'Central Reach / Raven / Passage', solo: false, practice: false, enterprise: true },
+  { feature: 'Report generator (all types)', platform: true, clinical: true },
+  { feature: 'Data export (CSV, JSON, HTML)', platform: true, clinical: true },
+  { category: 'Practice Management' },
+  { feature: 'Scheduling & sessions', platform: false, clinical: true },
+  { feature: 'Session notes', platform: false, clinical: true },
+  { feature: 'File management', platform: false, clinical: true },
+  { feature: 'Unlimited staff', platform: false, clinical: true },
   { category: 'Collaboration' },
-  { feature: 'Organization analytics', solo: false, practice: true, enterprise: true },
-  { feature: 'Team management & invites', solo: false, practice: true, enterprise: true },
-  { feature: 'Parent portal access', solo: false, practice: true, enterprise: true },
-  { feature: 'Messaging (BCBA-parent)', solo: false, practice: true, enterprise: true },
-  { feature: 'White-label branding', solo: false, practice: false, enterprise: true },
-  { feature: 'Marketplace access', solo: false, practice: false, enterprise: true },
+  { feature: 'Organization analytics', platform: false, clinical: true },
+  { feature: 'Team management & invites', platform: false, clinical: true },
+  { feature: 'Parent portal access', platform: false, clinical: true },
+  { feature: 'Messaging (BCBA-parent)', platform: false, clinical: true },
   { category: 'Security & Support' },
-  { feature: 'Encrypted data storage', solo: true, practice: true, enterprise: true },
-  { feature: 'Encryption at rest & in transit', solo: true, practice: true, enterprise: true },
-  { feature: 'Data backup & restore', solo: true, practice: true, enterprise: true },
-  { feature: 'Support level', solo: 'Email', practice: 'Priority', enterprise: 'Dedicated account manager' },
-  { feature: 'SLA guarantee', solo: false, practice: false, enterprise: true },
+  { feature: 'Encrypted data storage', platform: true, clinical: true },
+  { feature: 'Encryption at rest & in transit', platform: true, clinical: true },
+  { feature: 'Data backup & restore', platform: true, clinical: true },
+  { feature: 'Support level', platform: 'Email', clinical: 'Priority' },
 ]
 
 function ComparisonCell({ value }) {
   if (value === true) {
     return (
-      <span className="inline-flex items-center justify-center text-sage-500" aria-label="Included">
+      <span className="inline-flex items-center justify-center text-sage-600" aria-label="Included">
         <CheckIcon />
       </span>
     )
@@ -444,7 +425,7 @@ function FeatureComparisonTable({ isAnnual }) {
         >
           Compare all features
           <ChevronDownIcon
-            className={`text-warm-400 transition-transform duration-200 ${
+            className={`text-warm-500 transition-transform duration-200 ${
               isOpen ? 'rotate-180' : ''
             }`}
           />
@@ -470,24 +451,22 @@ function FeatureComparisonTable({ isAnnual }) {
             >
               <thead>
                 <tr className="border-b-2 border-warm-200">
-                  <th className="py-3 pr-4 text-sm font-medium text-warm-500 w-[40%]" scope="col">
+                  <th className="py-3 pr-4 text-sm font-medium text-warm-500 w-[50%]" scope="col">
                     Feature
                   </th>
                   {TIERS.map((tier) => {
-                    const price = isAnnual
-                      ? Math.round(tier.monthlyPrice * 0.8)
-                      : tier.monthlyPrice
+                    const price = isAnnual ? tier.annualPrice : tier.monthlyPrice
                     return (
                       <th
                         key={tier.name}
-                        className={`py-3 px-3 text-center text-sm font-bold w-[20%] ${
+                        className={`py-3 px-3 text-center text-sm font-bold w-[25%] ${
                           tier.popular ? 'text-sage-700' : 'text-warm-800'
                         }`}
                         scope="col"
                       >
                         <div>{tier.name}</div>
-                        <div className="mt-0.5 text-xs font-medium text-warm-400">
-                          ${price}{tier.perUser ? '/user' : ''}/mo
+                        <div className="mt-0.5 text-xs font-medium text-warm-500">
+                          ${price}{tier.perClient ? '/client' : ''}/mo
                         </div>
                       </th>
                     )
@@ -500,7 +479,7 @@ function FeatureComparisonTable({ isAnnual }) {
                     return (
                       <tr key={row.category}>
                         <td
-                          colSpan={4}
+                          colSpan={3}
                           className="pt-6 pb-2 text-xs font-bold text-warm-500 uppercase tracking-wider"
                         >
                           {row.category}
@@ -519,13 +498,10 @@ function FeatureComparisonTable({ isAnnual }) {
                         {row.feature}
                       </td>
                       <td className="py-3 px-3 text-center">
-                        <ComparisonCell value={row.solo} />
+                        <ComparisonCell value={row.platform} />
                       </td>
                       <td className={`py-3 px-3 text-center ${TIERS[1].popular ? 'bg-sage-50/40' : ''}`}>
-                        <ComparisonCell value={row.practice} />
-                      </td>
-                      <td className="py-3 px-3 text-center">
-                        <ComparisonCell value={row.enterprise} />
+                        <ComparisonCell value={row.clinical} />
                       </td>
                     </tr>
                   )
@@ -543,7 +519,7 @@ function AllPlansSection() {
   return (
     <section className="mt-20 text-center" aria-labelledby="all-plans-heading">
       <div className="inline-flex items-center gap-2 rounded-full bg-sage-50 px-4 py-1.5 text-xs font-semibold text-sage-700 uppercase tracking-wider mb-4">
-        <ShieldIcon className="text-sage-500 w-4 h-4" />
+        <ShieldIcon className="text-sage-600 w-4 h-4" />
         Every plan
       </div>
       <h2
@@ -563,7 +539,7 @@ function AllPlansSection() {
             key={label}
             className="flex items-center gap-3 rounded-xl bg-white border border-warm-100 px-5 py-4 shadow-sm text-left"
           >
-            <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-sage-50 text-sage-600">
+            <span className="shrink-0 text-sage-600">
               <Icon />
             </span>
             <span className="text-sm font-medium text-warm-800">{label}</span>
@@ -587,7 +563,7 @@ function FAQItem({ item, isOpen, onToggle }) {
           {item.question}
         </span>
         <ChevronDownIcon
-          className={`shrink-0 text-warm-400 transition-transform duration-200 ${
+          className={`shrink-0 text-warm-500 transition-transform duration-200 ${
             isOpen ? 'rotate-180' : ''
           }`}
         />
@@ -635,7 +611,7 @@ function FAQSection() {
 function CTABanner() {
   return (
     <section
-      className="mt-20 rounded-2xl bg-sage-500 px-6 py-12 text-center sm:px-12"
+      className="mt-20 rounded-xl bg-sage-600 px-6 py-12 text-center sm:px-12"
       aria-labelledby="cta-heading"
     >
       <h2
@@ -651,13 +627,13 @@ function CTABanner() {
       <div className="mt-8 flex flex-col items-center gap-3 sm:flex-row sm:justify-center">
         <Link
           to="/signup"
-          className="rounded-lg bg-white px-8 py-3 text-sm font-semibold text-sage-700 shadow-sm transition-colors hover:bg-sage-50 focus:outline-none focus-visible:ring-2 focus-visible:ring-white focus-visible:ring-offset-2 focus-visible:ring-offset-sage-500"
+          className="rounded-full bg-white px-8 py-3 text-sm font-semibold text-sage-700 shadow-sm transition-colors hover:bg-sage-50 focus:outline-none focus-visible:ring-2 focus-visible:ring-white focus-visible:ring-offset-2 focus-visible:ring-offset-sage-600"
         >
           Start Free Trial
         </Link>
         <Link
           to="/signup"
-          className="rounded-lg border border-white/30 bg-transparent px-8 py-3 text-sm font-semibold text-white transition-colors hover:bg-white/10 focus:outline-none focus-visible:ring-2 focus-visible:ring-white focus-visible:ring-offset-2 focus-visible:ring-offset-sage-500"
+          className="rounded-full border border-white/30 bg-transparent px-8 py-3 text-sm font-semibold text-white transition-colors hover:bg-white/10 focus:outline-none focus-visible:ring-2 focus-visible:ring-white focus-visible:ring-offset-2 focus-visible:ring-offset-sage-600"
         >
           Talk to Sales
         </Link>
@@ -678,7 +654,7 @@ export default function PricingPage() {
 
     setCheckoutLoading(true)
     try {
-      const supabaseUrl = import.meta.env.VITE_SUPABASE_URL
+      const supabaseUrl = import.meta.env.VITE_API_URL || 'https://skillcascade-api.teddybahary.workers.dev'
       const { supabase } = await import('../lib/supabase.js')
       const { data: { session } } = await supabase.auth.getSession()
 
@@ -687,7 +663,7 @@ export default function PricingPage() {
         return
       }
 
-      const res = await fetch(`${supabaseUrl}/functions/v1/stripe-checkout`, {
+      const res = await fetch(`${supabaseUrl}/api/stripe-checkout`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -718,7 +694,7 @@ export default function PricingPage() {
         {/* ── Hero ──────────────────────────────────────── */}
         <section className="text-center" aria-labelledby="pricing-heading">
           <div className="inline-flex items-center gap-1.5 rounded-full bg-sage-50 px-3.5 py-1 text-xs font-semibold text-sage-700 uppercase tracking-wider mb-5">
-            <ShieldIcon className="w-3.5 h-3.5 text-sage-500" />
+            <ShieldIcon className="w-3.5 h-3.5 text-sage-600" />
             Secure on every plan
           </div>
           <h1
@@ -734,7 +710,7 @@ export default function PricingPage() {
         </section>
 
         {/* ── Pricing Cards ────────────────────────────── */}
-        <div className="mt-14 grid gap-8 lg:grid-cols-3 items-start">
+        <div className="mt-14 grid gap-8 lg:grid-cols-2 max-w-4xl mx-auto items-start">
           {TIERS.map((tier) => (
             <PricingCard key={tier.name} tier={tier} isAnnual={isAnnual} onCheckout={user ? handleCheckout : null} checkoutLoading={checkoutLoading} />
           ))}

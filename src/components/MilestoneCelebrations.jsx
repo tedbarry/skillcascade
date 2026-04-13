@@ -48,13 +48,13 @@ const ICONS = {
 const CATEGORY_THEMES = {
   'First Steps': {
     icon: ICONS.seedling,
-    bg: '#fdf8f0',
-    border: '#e8d5c0',
-    iconBg: '#f5ebe0',
-    iconColor: '#c49a6c',
+    bg: '#FAFAF9',
+    border: '#E7E5E4',
+    iconBg: '#F5F5F4',
+    iconColor: '#D97706',
     glow: 'rgba(196, 154, 108, 0.15)',
-    gradientFrom: '#fdf8f0',
-    gradientTo: '#f5ebe0',
+    gradientFrom: '#FAFAF9',
+    gradientTo: '#F5F5F4',
   },
   Mastery: {
     icon: ICONS.star,
@@ -71,7 +71,7 @@ const CATEGORY_THEMES = {
     bg: '#f0f5f5',
     border: '#b3cece',
     iconBg: '#d6e6e6',
-    iconColor: '#4a8a8a',
+    iconColor: '#14B8A6',
     glow: 'rgba(74, 138, 138, 0.15)',
     gradientFrom: '#f0f5f5',
     gradientTo: '#d6e6e6',
@@ -88,13 +88,13 @@ const CATEGORY_THEMES = {
   },
   Progress: {
     icon: ICONS.chart,
-    bg: '#fdf8f0',
-    border: '#e8d5c0',
-    iconBg: '#f5ebe0',
-    iconColor: '#c49a6c',
+    bg: '#FAFAF9',
+    border: '#E7E5E4',
+    iconBg: '#F5F5F4',
+    iconColor: '#D97706',
     glow: 'rgba(196, 154, 108, 0.15)',
-    gradientFrom: '#fdf8f0',
-    gradientTo: '#f5ebe0',
+    gradientFrom: '#FAFAF9',
+    gradientTo: '#F5F5F4',
   },
 }
 
@@ -392,7 +392,7 @@ function MilestoneCard({ milestone, index }) {
           >
             {milestone.category}
           </span>
-          <span className="text-[11px] text-warm-400 italic">
+          <span className="text-[11px] text-warm-500 italic">
             {milestone.when}
           </span>
         </div>
@@ -424,8 +424,8 @@ function EmptyState({ clientName }) {
       <div
         className="w-16 h-16 rounded-full flex items-center justify-center mb-5"
         style={{
-          backgroundColor: '#f5ebe0',
-          color: '#c49a6c',
+          backgroundColor: '#F5F5F4',
+          color: '#D97706',
           boxShadow: '0 0 20px rgba(196, 154, 108, 0.2)',
         }}
       >
@@ -473,13 +473,13 @@ export default function MilestoneCelebrations({
   }, [milestones, clientName])
 
   return (
-    <div className="bg-white rounded-2xl border border-warm-200 shadow-sm overflow-hidden">
+    <div className="bg-white rounded-xl border border-warm-200 shadow-sm overflow-hidden">
       {/* Header */}
       <div className="px-5 py-4 border-b border-warm-100 flex items-center justify-between">
         <div className="flex items-center gap-3">
           <div
             className="w-8 h-8 rounded-lg flex items-center justify-center"
-            style={{ backgroundColor: '#f5ebe0', color: '#c49a6c' }}
+            style={{ backgroundColor: '#F5F5F4', color: '#D97706' }}
           >
             <svg className="w-4 h-4" viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
               <path d="M10 2l2.4 4.8 5.3.8-3.85 3.7.9 5.3L10 14.1l-4.75 2.5.9-5.3L2.3 7.6l5.3-.8z" />
@@ -489,7 +489,7 @@ export default function MilestoneCelebrations({
             <h2 className="font-display text-sm font-semibold text-warm-800">
               Milestones &amp; Achievements <KBHelpIcon term="view-milestones" />
             </h2>
-            <p className="text-[11px] text-warm-400">
+            <p className="text-[11px] text-warm-500">
               {clientName ? `${clientName}\u2019s` : 'Client'} progress celebrations
             </p>
           </div>
@@ -500,7 +500,7 @@ export default function MilestoneCelebrations({
             <>
               <button
                 onClick={copyAsText}
-                className="text-[11px] text-warm-400 hover:text-warm-600 px-2 py-1 min-h-[44px] rounded-lg hover:bg-warm-100 transition-colors flex items-center gap-1"
+                className="text-[11px] text-warm-500 hover:text-warm-600 px-2 py-1 min-h-[44px] rounded-lg hover:bg-warm-100 transition-colors flex items-center gap-1"
                 title="Copy milestones as text for progress notes"
               >
                 <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
@@ -511,7 +511,7 @@ export default function MilestoneCelebrations({
               </button>
               <span
                 className="text-xs font-semibold px-2.5 py-1 rounded-full"
-                style={{ backgroundColor: '#f5ebe0', color: '#c49a6c' }}
+                style={{ backgroundColor: '#F5F5F4', color: '#D97706' }}
               >
                 {milestones.length} milestone{milestones.length !== 1 ? 's' : ''}
               </span>
@@ -529,7 +529,7 @@ export default function MilestoneCelebrations({
             {/* Continuous timeline line behind icons */}
             <div
               className="absolute left-[19px] top-5 bottom-5 w-0.5"
-              style={{ backgroundColor: '#e8d5c0', opacity: 0.5 }}
+              style={{ backgroundColor: '#E7E5E4', opacity: 0.5 }}
             />
 
             {/* Milestone cards */}

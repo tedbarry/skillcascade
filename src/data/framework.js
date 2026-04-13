@@ -32,10 +32,10 @@ export const ASSESSMENT_LABELS = {
 }
 
 export const ASSESSMENT_COLORS = {
-  [ASSESSMENT_LEVELS.NOT_PRESENT]: '#c47070',
-  [ASSESSMENT_LEVELS.NEEDS_WORK]: '#e8928a',
-  [ASSESSMENT_LEVELS.DEVELOPING]: '#e5b76a',
-  [ASSESSMENT_LEVELS.SOLID]: '#7fb589',
+  [ASSESSMENT_LEVELS.NOT_PRESENT]: '#DC2626',
+  [ASSESSMENT_LEVELS.NEEDS_WORK]: '#F59E0B',
+  [ASSESSMENT_LEVELS.DEVELOPING]: '#F59E0B',
+  [ASSESSMENT_LEVELS.SOLID]: '#10B981',
 }
 
 export const framework = [
@@ -84,9 +84,9 @@ export const framework = [
             id: 'd1-sa1-sg4',
             name: 'Differentiate and sequence signals',
             skills: [
-              { id: 'd1-sa1-sg4-s1', name: 'Label whether a sensation is physical or emotional when asked' },
-              { id: 'd1-sa1-sg4-s2', name: 'Report whether arousal is rising or at peak when prompted' },
-              { id: 'd1-sa1-sg4-s3', name: 'Notice patterns of escalation over time (building vs stabilizing)' },
+              { id: 'd1-sa1-sg4-s1', name: 'Label sensation as physical or emotional' },
+              { id: 'd1-sa1-sg4-s2', name: 'Report arousal level when prompted' },
+              { id: 'd1-sa1-sg4-s3', name: 'Notice escalation patterns over time' },
             ],
           },
         ],
@@ -124,7 +124,7 @@ export const framework = [
             id: 'd1-sa2-sg4',
             name: 'Stabilize at a functional level',
             skills: [
-              { id: 'd1-sa2-sg4-s1', name: 'Use calming strategy before arousal exceeds workable range' },
+              { id: 'd1-sa2-sg4-s1', name: 'Use calming strategy before overarousal' },
               { id: 'd1-sa2-sg4-s2', name: 'Maintain engagement once activated' },
             ],
           },
@@ -178,8 +178,8 @@ export const framework = [
             id: 'd1-sa4-sg1',
             name: 'Differentiate discomfort from danger',
             skills: [
-              { id: 'd1-sa4-sg1-s1', name: 'Continue task during mild discomfort without emergency behavior' },
-              { id: 'd1-sa4-sg1-s2', name: 'Respond proportionally to the severity of the situation' },
+              { id: 'd1-sa4-sg1-s1', name: 'Continue task during mild discomfort' },
+              { id: 'd1-sa4-sg1-s2', name: 'Respond proportionally to situation' },
             ],
           },
           {
@@ -194,15 +194,15 @@ export const framework = [
             name: 'Hold discomfort without escalation',
             skills: [
               { id: 'd1-sa4-sg3-s1', name: 'Allow sensations to exist without immediate relief' },
-              { id: 'd1-sa4-sg3-s2', name: 'Refrain from aggression, self-injury, or elopement during discomfort' },
+              { id: 'd1-sa4-sg3-s2', name: 'No aggression/SIB/elopement when upset' },
             ],
           },
           {
             id: 'd1-sa4-sg4',
             name: 'Wait after signaling',
             skills: [
-              { id: 'd1-sa4-sg4-s1', name: 'Tolerate short delays after requesting help or a break' },
-              { id: 'd1-sa4-sg4-s2', name: 'Wait after requesting help without escalating behavior' },
+              { id: 'd1-sa4-sg4-s1', name: 'Tolerate delays after requesting help' },
+              { id: 'd1-sa4-sg4-s2', name: 'Wait after help request without escalation' },
             ],
           },
         ],
@@ -218,7 +218,7 @@ export const framework = [
               { id: 'd1-sa5-sg1-s1', name: 'Inhibit serious aggression' },
               { id: 'd1-sa5-sg1-s2', name: 'Inhibit self-injury requiring intervention' },
               { id: 'd1-sa5-sg1-s3', name: 'Remain in designated area during high arousal' },
-              { id: 'd1-sa5-sg1-s4', name: 'Keep objects in hands at rest or release them during escalation' },
+              { id: 'd1-sa5-sg1-s4', name: 'Release objects during escalation' },
             ],
           },
           {
@@ -226,16 +226,16 @@ export const framework = [
             name: 'Accept external safety control',
             skills: [
               { id: 'd1-sa5-sg2-s1', name: 'Follow adult safety directives under high arousal' },
-              { id: 'd1-sa5-sg2-s2', name: 'Follow safety directions even when they conflict with preference' },
+              { id: 'd1-sa5-sg2-s2', name: 'Follow safety directions over preference' },
             ],
           },
           {
             id: 'd1-sa5-sg3',
             name: 'Respond to emergency cues',
             skills: [
-              { id: 'd1-sa5-sg3-s1', name: 'Respond to alarms and urgent directives by stopping and attending' },
+              { id: 'd1-sa5-sg3-s1', name: 'Stop and attend to urgent directives' },
               { id: 'd1-sa5-sg3-s2', name: 'Stay with group during emergencies' },
-              { id: 'd1-sa5-sg3-s3', name: 'Transition from independent activity to following safety directives' },
+              { id: 'd1-sa5-sg3-s3', name: 'Shift from free activity to safety mode' },
             ],
           },
         ],
@@ -258,8 +258,8 @@ export const framework = [
             id: 'd2-sa1-sg1',
             name: 'Differentiate emotional states',
             skills: [
-              { id: 'd2-sa1-sg1-s1', name: 'Distinguish basic emotions (happy, sad, mad, scared)' },
-              { id: 'd2-sa1-sg1-s2', name: 'Differentiate similar emotions (frustrated vs angry, nervous vs excited)' },
+              { id: 'd2-sa1-sg1-s1', name: 'Distinguish basic emotions' },
+              { id: 'd2-sa1-sg1-s2', name: 'Differentiate similar emotions' },
             ],
           },
           {
@@ -267,7 +267,7 @@ export const framework = [
             name: 'Map emotions to internal experience',
             skills: [
               { id: 'd2-sa1-sg2-s1', name: 'Connect bodily sensations to emotional labels' },
-              { id: 'd2-sa1-sg2-s2', name: 'Report recurring emotion patterns across similar situations' },
+              { id: 'd2-sa1-sg2-s2', name: 'Report recurring emotion patterns' },
             ],
           },
           {
@@ -275,7 +275,7 @@ export const framework = [
             name: 'Use accessible labels',
             skills: [
               { id: 'd2-sa1-sg3-s1', name: 'Use words, visuals, AAC, or symbols consistently' },
-              { id: 'd2-sa1-sg3-s2', name: 'Use standard taught emotion vocabulary when labeling feelings' },
+              { id: 'd2-sa1-sg3-s2', name: 'Use taught emotion vocabulary' },
             ],
           },
         ],
@@ -288,24 +288,24 @@ export const framework = [
             id: 'd2-sa2-sg1',
             name: 'Notice precursors',
             skills: [
-              { id: 'd2-sa2-sg1-s1', name: 'Name the event or trigger that preceded an emotional change' },
-              { id: 'd2-sa2-sg1-s2', name: 'Notice environmental, social, and internal triggers' },
+              { id: 'd2-sa2-sg1-s1', name: 'Name the trigger for emotional change' },
+              { id: 'd2-sa2-sg1-s2', name: 'Notice environmental/social/internal triggers' },
             ],
           },
           {
             id: 'd2-sa2-sg2',
             name: 'Link cause to effect',
             skills: [
-              { id: 'd2-sa2-sg2-s1', name: 'State the link between a trigger and the resulting emotion' },
-              { id: 'd2-sa2-sg2-s2', name: 'Separately describe what happened and how they responded' },
+              { id: 'd2-sa2-sg2-s1', name: 'Link trigger to resulting emotion' },
+              { id: 'd2-sa2-sg2-s2', name: 'Separate event from own response' },
             ],
           },
           {
             id: 'd2-sa2-sg3',
             name: 'Predict recurrence',
             skills: [
-              { id: 'd2-sa2-sg3-s1', name: 'Verbally predict emotional response before entering a known situation' },
-              { id: 'd2-sa2-sg3-s2', name: 'State expected difficulty level before starting a familiar task type' },
+              { id: 'd2-sa2-sg3-s1', name: 'Predict emotional response to known situation' },
+              { id: 'd2-sa2-sg3-s2', name: 'Predict difficulty before familiar tasks' },
             ],
           },
         ],
@@ -318,16 +318,16 @@ export const framework = [
             id: 'd2-sa3-sg1',
             name: 'Detect cognitive breakdown',
             skills: [
-              { id: 'd2-sa3-sg1-s1', name: 'Signal or ask when information is missing or unclear' },
-              { id: 'd2-sa3-sg1-s2', name: 'Label whether they are confused, refusing, or bored when prompted' },
+              { id: 'd2-sa3-sg1-s1', name: 'Signal when information is unclear' },
+              { id: 'd2-sa3-sg1-s2', name: 'Label confused vs refusing vs bored' },
             ],
           },
           {
             id: 'd2-sa3-sg2',
             name: 'Differentiate effort states',
             skills: [
-              { id: 'd2-sa3-sg2-s1', name: 'Verbally differentiate difficulty from lack of understanding' },
-              { id: 'd2-sa3-sg2-s2', name: 'Label whether they are overwhelmed or disinterested when prompted' },
+              { id: 'd2-sa3-sg2-s1', name: 'Differentiate hard vs not understanding' },
+              { id: 'd2-sa3-sg2-s2', name: 'Label overwhelmed vs disinterested' },
             ],
           },
           {
@@ -335,7 +335,7 @@ export const framework = [
             name: 'Pause before escalation',
             skills: [
               { id: 'd2-sa3-sg3-s1', name: 'Notice confusion early enough to signal it' },
-              { id: 'd2-sa3-sg3-s2', name: 'Use a signal or strategy when confused before becoming dysregulated' },
+              { id: 'd2-sa3-sg3-s2', name: 'Signal confusion before dysregulation' },
             ],
           },
         ],
@@ -349,22 +349,22 @@ export const framework = [
             name: 'Assess internal capacity',
             skills: [
               { id: 'd2-sa4-sg1-s1', name: 'Notice fatigue, overload, or depletion' },
-              { id: 'd2-sa4-sg1-s2', name: 'Signal or pause when effort quality drops below expected level' },
+              { id: 'd2-sa4-sg1-s2', name: 'Signal when effort quality drops' },
             ],
           },
           {
             id: 'd2-sa4-sg2',
             name: 'Differentiate temporary vs absolute limits',
             skills: [
-              { id: 'd2-sa4-sg2-s1', name: 'State whether a task is temporarily too hard or beyond current ability' },
+              { id: 'd2-sa4-sg2-s1', name: 'Distinguish temporary vs absolute limits' },
                           ],
           },
           {
             id: 'd2-sa4-sg3',
             name: 'Accept limits without shame',
             skills: [
-              { id: 'd2-sa4-sg3-s1', name: 'Continue participating at reduced level without shutting down or escalating' },
-              { id: 'd2-sa4-sg3-s2', name: 'Accept adjusted task demands without refusal or emotional escalation' },
+              { id: 'd2-sa4-sg3-s1', name: 'Participate at reduced level without shutdown' },
+              { id: 'd2-sa4-sg3-s2', name: 'Accept adjusted demands without escalation' },
             ],
           },
         ],
@@ -377,23 +377,23 @@ export const framework = [
             id: 'd2-sa5-sg1',
             name: 'Forecast emotional responses',
             skills: [
-              { id: 'd2-sa5-sg1-s1', name: 'Verbally predict how an upcoming situation will feel' },
-              { id: 'd2-sa5-sg1-s2', name: 'State expected stress level before entering a known stressor' },
+              { id: 'd2-sa5-sg1-s1', name: 'Predict how upcoming situation will feel' },
+              { id: 'd2-sa5-sg1-s2', name: 'Predict stress level before known stressor' },
             ],
           },
           {
             id: 'd2-sa5-sg2',
             name: 'Forecast behavioral impact',
             skills: [
-              { id: 'd2-sa5-sg2-s1', name: 'State how current or expected emotions might change behavior' },
-              { id: 'd2-sa5-sg2-s2', name: 'Signal when regulation or focus is about to be lost' },
+              { id: 'd2-sa5-sg2-s1', name: 'State how emotions may change behavior' },
+              { id: 'd2-sa5-sg2-s2', name: 'Signal impending loss of regulation' },
             ],
           },
           {
             id: 'd2-sa5-sg3',
             name: 'Adjust proactively',
             skills: [
-              { id: 'd2-sa5-sg3-s1', name: 'Request help or a break before reaching crisis point' },
+              { id: 'd2-sa5-sg3-s1', name: 'Request help/break before crisis' },
               { id: 'd2-sa5-sg3-s2', name: 'Modify plans based on predicted response' },
             ],
           },
@@ -417,7 +417,7 @@ export const framework = [
             id: 'd3-sa1-sg1',
             name: 'Respond to start cues',
             skills: [
-              { id: 'd3-sa1-sg1-s1', name: 'Begin after instruction, visual cue, or routine signal' },
+              { id: 'd3-sa1-sg1-s1', name: 'Begin after instruction or cue' },
               { id: 'd3-sa1-sg1-s2', name: 'Tolerate imperfect starts' },
             ],
           },
@@ -448,7 +448,7 @@ export const framework = [
             name: 'Sustain attention',
             skills: [
               { id: 'd3-sa2-sg1-s1', name: 'Maintain orientation to task' },
-              { id: 'd3-sa2-sg1-s2', name: 'Remain in task area for the expected duration of the activity' },
+              { id: 'd3-sa2-sg1-s2', name: 'Remain in task area for expected duration' },
             ],
           },
           {
@@ -464,7 +464,7 @@ export const framework = [
             name: 'Maintain momentum',
             skills: [
               { id: 'd3-sa2-sg3-s1', name: 'Keep action flowing once started' },
-              { id: 'd3-sa2-sg3-s2', name: 'Complete task steps in sequence without switching to unrelated activities' },
+              { id: 'd3-sa2-sg3-s2', name: 'Complete steps in sequence without switching' },
             ],
           },
         ],
@@ -508,7 +508,7 @@ export const framework = [
             name: 'Hold steps during action',
             skills: [
               { id: 'd3-sa4-sg1-s1', name: 'Maintain sequence awareness while acting' },
-              { id: 'd3-sa4-sg1-s2', name: 'Follow steps in correct order without omissions or repetition' },
+              { id: 'd3-sa4-sg1-s2', name: 'Follow steps in order without omissions' },
             ],
           },
           {
@@ -524,7 +524,7 @@ export const framework = [
             name: 'Organize materials and space',
             skills: [
               { id: 'd3-sa4-sg3-s1', name: 'Manage tools, workspace, and information' },
-              { id: 'd3-sa4-sg3-s2', name: 'Gather needed materials and set up workspace before starting' },
+              { id: 'd3-sa4-sg3-s2', name: 'Gather materials before starting' },
             ],
           },
         ],
@@ -546,7 +546,7 @@ export const framework = [
             name: 'Adjust effort',
             skills: [
               { id: 'd3-sa5-sg2-s1', name: 'Increase or decrease intensity as needed' },
-              { id: 'd3-sa5-sg2-s2', name: 'Accept corrective feedback and adjust behavior without shutting down' },
+              { id: 'd3-sa5-sg2-s2', name: 'Accept correction and adjust without shutdown' },
             ],
           },
         ],
@@ -559,15 +559,15 @@ export const framework = [
             id: 'd3-sa6-sg1',
             name: 'Resume after error',
             skills: [
-              { id: 'd3-sa6-sg1-s1', name: 'Resume task within 10 seconds of receiving a correction' },
-              { id: 'd3-sa6-sg1-s2', name: 'Continue working on task after receiving a correction' },
+              { id: 'd3-sa6-sg1-s1', name: 'Resume task within 10s of correction' },
+              { id: 'd3-sa6-sg1-s2', name: 'Continue task after correction' },
             ],
           },
           {
             id: 'd3-sa6-sg2',
             name: 'Tolerate imperfection',
             skills: [
-              { id: 'd3-sa6-sg2-s1', name: 'Continue task at expected effort level after making an error' },
+              { id: 'd3-sa6-sg2-s1', name: 'Maintain effort level after errors' },
                           ],
           },
         ],
@@ -597,7 +597,7 @@ export const framework = [
             id: 'd4-sa1-sg2',
             name: 'Regulate emotional amplification',
             skills: [
-              { id: 'd4-sa1-sg2-s1', name: 'Label when emotional reaction is larger than the situation warrants' },
+              { id: 'd4-sa1-sg2-s1', name: 'Label disproportionate emotional reactions' },
               { id: 'd4-sa1-sg2-s2', name: 'Downshift reactions for small problems' },
             ],
           },
@@ -620,7 +620,7 @@ export const framework = [
             name: 'Predict consequences',
             skills: [
               { id: 'd4-sa2-sg2-s1', name: 'State expected outcome before acting' },
-              { id: 'd4-sa2-sg2-s2', name: 'Describe both immediate and delayed consequences of a choice' },
+              { id: 'd4-sa2-sg2-s2', name: 'Describe immediate and delayed consequences' },
             ],
           },
         ],
@@ -642,7 +642,7 @@ export const framework = [
             name: 'Generate alternatives',
             skills: [
               { id: 'd4-sa3-sg2-s1', name: 'Identify more than one possible response' },
-              { id: 'd4-sa3-sg2-s2', name: 'Pause and consider at least one alternative before acting' },
+              { id: 'd4-sa3-sg2-s2', name: 'Consider alternatives before acting' },
             ],
           },
         ],
@@ -664,7 +664,7 @@ export const framework = [
             name: 'Abandon ineffective strategies',
             skills: [
               { id: 'd4-sa4-sg2-s1', name: 'Shift when effort is not working' },
-              { id: 'd4-sa4-sg2-s2', name: 'Switch strategies when current approach is not working' },
+              { id: 'd4-sa4-sg2-s2', name: 'Switch strategies when approach fails' },
             ],
           },
         ],
@@ -677,7 +677,7 @@ export const framework = [
             id: 'd4-sa5-sg1',
             name: 'Learn from outcomes',
             skills: [
-              { id: 'd4-sa5-sg1-s1', name: 'State what action led to what outcome after completing a task' },
+              { id: 'd4-sa5-sg1-s1', name: 'State action-to-outcome link after task' },
               { id: 'd4-sa5-sg1-s2', name: 'Update future choices based on experience' },
             ],
           },
@@ -724,14 +724,14 @@ export const framework = [
             name: 'Signal the request accessibly',
             skills: [
               { id: 'd5-sa1-sg4-s1', name: 'Use speech, AAC, gesture, or written form' },
-              { id: 'd5-sa1-sg4-s2', name: 'Use a trained communication mode matching the listener' },
+              { id: 'd5-sa1-sg4-s2', name: 'Use trained communication mode for listener' },
             ],
           },
           {
             id: 'd5-sa1-sg5',
             name: 'Wait after requesting',
             skills: [
-              { id: 'd5-sa1-sg5-s1', name: 'Wait up to 1 minute after requesting help without escalating' },
+              { id: 'd5-sa1-sg5-s1', name: 'Wait up to 1 min after help request' },
               { id: 'd5-sa1-sg5-s2', name: 'Maintain regulation while waiting' },
             ],
           },
@@ -752,9 +752,9 @@ export const framework = [
             id: 'd5-sa2-sg2',
             name: 'Differentiate types of discomfort',
             skills: [
-              { id: 'd5-sa2-sg2-s1', name: 'Differentiate pain from frustration when reporting discomfort' },
-              { id: 'd5-sa2-sg2-s2', name: 'Differentiate anxiety from boredom when reporting internal state' },
-              { id: 'd5-sa2-sg2-s3', name: 'Differentiate sensory overload from emotional upset when reporting' },
+              { id: 'd5-sa2-sg2-s1', name: 'Differentiate pain from frustration' },
+              { id: 'd5-sa2-sg2-s2', name: 'Differentiate anxiety from boredom' },
+              { id: 'd5-sa2-sg2-s3', name: 'Differentiate sensory overload from upset' },
             ],
           },
           {
@@ -769,7 +769,7 @@ export const framework = [
             id: 'd5-sa2-sg4',
             name: 'Express without escalation',
             skills: [
-              { id: 'd5-sa2-sg4-s1', name: 'Communicate discomfort without threat, aggression, or collapse' },
+              { id: 'd5-sa2-sg4-s1', name: 'Express discomfort without aggression' },
             ],
           },
         ],
@@ -783,7 +783,7 @@ export const framework = [
             name: 'Identify the problem',
             skills: [
               { id: 'd5-sa3-sg1-s1', name: 'Distinguish obstacle from emotion' },
-              { id: 'd5-sa3-sg1-s2', name: 'Separate "I don\'t like this" from "this isn\'t working"' },
+              { id: 'd5-sa3-sg1-s2', name: 'Separate dislike from actual problem' },
             ],
           },
           {
@@ -791,7 +791,7 @@ export const framework = [
             name: 'Sequence relevant details',
             skills: [
               { id: 'd5-sa3-sg2-s1', name: 'Provide cause → effect information' },
-              { id: 'd5-sa3-sg2-s2', name: 'Provide relevant details without over- or under-sharing' },
+              { id: 'd5-sa3-sg2-s2', name: 'Share relevant details appropriately' },
             ],
           },
           {
@@ -840,7 +840,7 @@ export const framework = [
             id: 'd5-sa5-sg1',
             name: 'Identify personal needs or boundaries',
             skills: [
-              { id: 'd5-sa5-sg1-s1', name: 'Request accommodation or additional support when task demands exceed capacity' },
+              { id: 'd5-sa5-sg1-s1', name: 'Request accommodation when overwhelmed' },
             ],
           },
           {
@@ -855,7 +855,7 @@ export const framework = [
             name: 'Tolerate resistance',
             skills: [
               { id: 'd5-sa5-sg3-s1', name: 'Accept "no" or delay without collapse' },
-              { id: 'd5-sa5-sg3-s2', name: 'Re-request up to 2 additional times using a calm voice' },
+              { id: 'd5-sa5-sg3-s2', name: 'Re-request calmly up to 2 more times' },
             ],
           },
         ],
@@ -890,7 +890,7 @@ export const framework = [
             id: 'd5-sa6-sg4',
             name: 'Re-establish shared understanding',
             skills: [
-              { id: 'd5-sa6-sg4-s1', name: 'Re-initiate conversation after a communication breakdown' },
+              { id: 'd5-sa6-sg4-s1', name: 'Re-initiate after communication breakdown' },
             ],
           },
         ],
@@ -938,14 +938,14 @@ export const framework = [
             id: 'd6-sa1-sg1',
             name: 'Differentiate self vs other',
             skills: [
-              { id: 'd6-sa1-sg1-s1', name: 'Demonstrate that others may have different knowledge, feelings, or desires' },
+              { id: 'd6-sa1-sg1-s1', name: 'Recognize others have different thoughts' },
             ],
           },
           {
             id: 'd6-sa1-sg2',
             name: 'Infer mental states',
             skills: [
-              { id: 'd6-sa1-sg2-s1', name: 'State what another person might think, feel, or want in a given situation' },
+              { id: 'd6-sa1-sg2-s1', name: 'Infer others\' thoughts/feelings/wants' },
             ],
           },
           {
@@ -965,7 +965,7 @@ export const framework = [
             id: 'd6-sa2-sg1',
             name: 'Detect contextual rules',
             skills: [
-              { id: 'd6-sa2-sg1-s1', name: 'State the behavioral expectations for the current setting' },
+              { id: 'd6-sa2-sg1-s1', name: 'State expectations for current setting' },
             ],
           },
           {
@@ -979,7 +979,7 @@ export const framework = [
             id: 'd6-sa2-sg3',
             name: 'Flexibly adapt',
             skills: [
-              { id: 'd6-sa2-sg3-s1', name: 'Follow social expectations while still expressing personal preferences' },
+              { id: 'd6-sa2-sg3-s1', name: 'Follow norms while expressing preferences' },
             ],
           },
         ],
@@ -999,7 +999,7 @@ export const framework = [
             id: 'd6-sa3-sg2',
             name: 'Inhibit impulse',
             skills: [
-              { id: 'd6-sa3-sg2-s1', name: 'Wait for a pause or turn signal before speaking in conversation' },
+              { id: 'd6-sa3-sg2-s1', name: 'Wait for turn signal before speaking' },
             ],
           },
           {
@@ -1019,7 +1019,7 @@ export const framework = [
             id: 'd6-sa4-sg1',
             name: 'Understand shared rules',
             skills: [
-              { id: 'd6-sa4-sg1-s1', name: 'State that rules or expectations apply equally to everyone' },
+              { id: 'd6-sa4-sg1-s1', name: 'State that rules apply equally to all' },
             ],
           },
           {
@@ -1033,7 +1033,7 @@ export const framework = [
             id: 'd6-sa4-sg3',
             name: 'Distinguish fairness from preference',
             skills: [
-              { id: 'd6-sa4-sg3-s1', name: 'Describe situational factors rather than blaming self or others for outcomes' },
+              { id: 'd6-sa4-sg3-s1', name: 'Describe situational factors vs blaming' },
             ],
           },
         ],
@@ -1080,7 +1080,7 @@ export const framework = [
             id: 'd6-sa6-sg2',
             name: 'Maintain connection',
             skills: [
-              { id: 'd6-sa6-sg2-s1', name: 'Continue interacting with the other person during and after disagreement' },
+              { id: 'd6-sa6-sg2-s1', name: 'Continue interacting during disagreement' },
             ],
           },
           {
@@ -1110,15 +1110,15 @@ export const framework = [
             id: 'd7-sa1-sg1',
             name: 'Generate internal narratives',
             skills: [
-              { id: 'd7-sa1-sg1-s1', name: 'Form self-referential statements ("I did X," "I felt Y")' },
+              { id: 'd7-sa1-sg1-s1', name: 'Form self-referential statements' },
                           ],
           },
           {
             id: 'd7-sa1-sg2',
             name: 'Differentiate event from identity',
             skills: [
-              { id: 'd7-sa1-sg2-s1', name: 'Distinguish "I made a mistake" from "I am a mistake"' },
-              { id: 'd7-sa1-sg2-s2', name: 'Use specific language about the situation rather than global self-labels' },
+              { id: 'd7-sa1-sg2-s1', name: 'Separate mistake from identity' },
+              { id: 'd7-sa1-sg2-s2', name: 'Use specific vs global self-labels' },
             ],
           },
           {
@@ -1126,7 +1126,7 @@ export const framework = [
             name: 'Update narratives with evidence',
             skills: [
               { id: 'd7-sa1-sg3-s1', name: 'Revise self-talk after new experiences' },
-              { id: 'd7-sa1-sg3-s2', name: 'Integrate corrective feedback into self-understanding' },
+              { id: 'd7-sa1-sg3-s2', name: 'Integrate feedback into self-concept' },
             ],
           },
           {
@@ -1146,8 +1146,8 @@ export const framework = [
             id: 'd7-sa2-sg1',
             name: 'Predict survivability',
             skills: [
-              { id: 'd7-sa2-sg1-s1', name: 'Begin a known-difficult task without avoidance or protest' },
-              { id: 'd7-sa2-sg1-s2', name: 'Engage in tasks with uncertain outcomes without excessive reassurance-seeking' },
+              { id: 'd7-sa2-sg1-s1', name: 'Begin difficult tasks without avoidance' },
+              { id: 'd7-sa2-sg1-s2', name: 'Engage in uncertain tasks without reassurance' },
             ],
           },
           {
@@ -1155,7 +1155,7 @@ export const framework = [
             name: 'Initiate action without guarantee',
             skills: [
               { id: 'd7-sa2-sg2-s1', name: 'Act despite incomplete confidence' },
-              { id: 'd7-sa2-sg2-s2', name: 'Begin tasks without requiring full information about the outcome' },
+              { id: 'd7-sa2-sg2-s2', name: 'Begin tasks without full outcome info' },
             ],
           },
           {
@@ -1171,7 +1171,7 @@ export const framework = [
             name: 'Maintain effort after partial failure',
             skills: [
               { id: 'd7-sa2-sg4-s1', name: 'Continue despite imperfect performance' },
-              { id: 'd7-sa2-sg4-s2', name: 'Continue participating after a minor error or setback' },
+              { id: 'd7-sa2-sg4-s2', name: 'Continue after minor error or setback' },
             ],
           },
         ],
@@ -1184,15 +1184,15 @@ export const framework = [
             id: 'd7-sa3-sg1',
             name: 'Recognize shame signals',
             skills: [
-              { id: 'd7-sa3-sg1-s1', name: 'Detect internal collapse, withdrawal, or defensiveness' },
-              { id: 'd7-sa3-sg1-s2', name: 'Label own defensive or withdrawal behavior as shame-related when prompted' },
+              { id: 'd7-sa3-sg1-s1', name: 'Detect collapse/withdrawal/defensiveness' },
+              { id: 'd7-sa3-sg1-s2', name: 'Label shame-driven behavior when prompted' },
             ],
           },
           {
             id: 'd7-sa3-sg2',
             name: 'Separate evaluation from worth',
             skills: [
-                            { id: 'd7-sa3-sg2-s2', name: 'Accept correction and continue task without self-deprecating statements' },
+                            { id: 'd7-sa3-sg2-s2', name: 'Accept correction without self-deprecation' },
             ],
           },
           {
@@ -1213,7 +1213,7 @@ export const framework = [
             name: 'Emotionally recover',
             skills: [
               { id: 'd7-sa4-sg1-s1', name: 'Regulate affect after error or failure' },
-              { id: 'd7-sa4-sg1-s2', name: 'Redirect attention to current task within a reasonable time after error' },
+              { id: 'd7-sa4-sg1-s2', name: 'Redirect attention to task after error' },
             ],
           },
           {
@@ -1235,7 +1235,7 @@ export const framework = [
             name: 'Differentiate self from group response',
             skills: [
               { id: 'd7-sa5-sg1-s1', name: 'Recognize rejection vs misalignment' },
-              { id: 'd7-sa5-sg1-s2', name: 'Describe a specific social difficulty without global statements about relationships' },
+              { id: 'd7-sa5-sg1-s2', name: 'Describe social difficulty specifically' },
             ],
           },
           {
@@ -1243,7 +1243,7 @@ export const framework = [
             name: 'Maintain authenticity',
             skills: [
               { id: 'd7-sa5-sg2-s1', name: 'Express needs and preferences honestly' },
-              { id: 'd7-sa5-sg2-s2', name: 'Express genuine disagreement or preference at least once per interaction when relevant' },
+              { id: 'd7-sa5-sg2-s2', name: 'Express genuine disagreement in context' },
             ],
           },
           {
@@ -1320,7 +1320,7 @@ export const framework = [
             name: 'Sustain procedure until resolution',
             skills: [
               { id: 'd8-sa2-sg3-s1', name: 'Remain in safety mode until cleared' },
-              { id: 'd8-sa2-sg3-s2', name: 'Wait for clearance before resuming independent activity' },
+              { id: 'd8-sa2-sg3-s2', name: 'Wait for clearance before resuming' },
             ],
           },
         ],
@@ -1334,7 +1334,7 @@ export const framework = [
             name: 'Detect environmental risk',
             skills: [
               { id: 'd8-sa3-sg1-s1', name: 'Identify unsafe objects, spaces, or actions' },
-              { id: 'd8-sa3-sg1-s2', name: 'Label or report when a situation is becoming more dangerous' },
+              { id: 'd8-sa3-sg1-s2', name: 'Report when situation becomes dangerous' },
             ],
           },
           {
@@ -1363,15 +1363,15 @@ export const framework = [
             id: 'd8-sa4-sg2',
             name: 'Follow authority under stress',
             skills: [
-                            { id: 'd8-sa4-sg2-s2', name: 'Follow another person\'s direction during safety situations without resistance' },
+                            { id: 'd8-sa4-sg2-s2', name: 'Follow directions in safety situations' },
             ],
           },
           {
             id: 'd8-sa4-sg3',
             name: 'Re-enter autonomy appropriately',
             skills: [
-              { id: 'd8-sa4-sg3-s1', name: 'Resume independent decision-making after safety clears' },
-              { id: 'd8-sa4-sg3-s2', name: 'Resume independent activity after safety situation is resolved' },
+              { id: 'd8-sa4-sg3-s1', name: 'Resume independence after safety clears' },
+              { id: 'd8-sa4-sg3-s2', name: 'Resume activity after safety resolved' },
             ],
           },
         ],

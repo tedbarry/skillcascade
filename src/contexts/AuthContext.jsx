@@ -1,5 +1,6 @@
 import { createContext, useContext, useState, useEffect, useCallback, useRef } from 'react'
 import { supabase } from '../lib/supabase.js'
+import { api } from '../lib/api.js'
 import { initAnalytics, identify as identifyUser, endSession } from '../lib/analytics.js'
 
 const AuthContext = createContext(null)
@@ -36,9 +37,9 @@ export function AuthProvider({ children }) {
 
   // Fetch profile from profiles table
   const fetchProfile = useCallback(async (userId) => {
-    const { data, error } = await supabase
+    const { data, error } = await api
       .from('profiles')
-      .select('*, organizations(id, name, branding)')
+      .select('id, org_id, role, display_name, is_super_admin, role_id, encrypted_master_key, kek_salt, kek_iv, recovery_phrase_hash, encryption_version, created_at')
       .eq('id', userId)
       .single()
 
@@ -46,6 +47,17 @@ export function AuthProvider({ children }) {
       console.error('Failed to fetch profile:', error.message)
       return null
     }
+
+    // Fetch organization separately if profile has an org_id
+    if (data?.org_id) {
+      const { data: org } = await api
+        .from('organizations')
+        .select('id, name, branding')
+        .eq('id', data.org_id)
+        .single()
+      if (org) data.organizations = org
+    }
+
     return data
   }, [])
 
@@ -119,8 +131,11 @@ export function AuthProvider({ children }) {
     const { data, error } = await supabase.auth.signInWithPassword({ email, password })
     if (error) throw error
 
+    // AWS-first + BAA is the active compliance path.
+    // Browser encryption setup is no longer part of login.
+
     // Audit login
-    await supabase.from('audit_log').insert({
+    await api.from('audit_log').insert({
       user_id: data.user.id,
       action: 'login',
       resource_type: 'session',
@@ -142,10 +157,14 @@ export function AuthProvider({ children }) {
     return data
   }, [])
 
-  const signOut = useCallback(async () => {
-    await endSession()
-    if (user) {
-      await supabase.from('audit_log').insert({
+  const signOut = useCallback(async (options = {}) => {
+    const { skipAudit = false, skipSessionEnd = false } = options
+
+    if (!skipSessionEnd) {
+      await endSession()
+    }
+    if (user && !skipAudit) {
+      await api.from('audit_log').insert({
         user_id: user.id,
         action: 'logout',
         resource_type: 'session',

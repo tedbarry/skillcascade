@@ -1,0 +1,1016 @@
+{
+  "domains": [
+    {
+      "name": "Behavior",
+      "ltgs": [
+        {
+          "name": "Maladaptive Behavior",
+          "stgs": [
+            {
+              "name": "Aggression",
+              "goalType": "increase",
+              "measurementType": "percentage",
+              "criteria": "",
+              "targets": [
+                "Decrease instances of Physical Aggression",
+                "Decrease instances of Verbal Aggression"
+              ]
+            },
+            {
+              "name": "Compliance",
+              "goalType": "increase",
+              "measurementType": "percentage",
+              "criteria": "",
+              "targets": [
+                "Reduce instances of non-compliance",
+                "Decrease instances of prompt dependency",
+                "Decrease instances of Disruptive Joking",
+                "Reduce instances of task refusal"
+              ]
+            },
+            {
+              "name": "Impolite Behavior",
+              "goalType": "increase",
+              "measurementType": "percentage",
+              "criteria": "",
+              "targets": [
+                "Decrease instances of impolite interrupting",
+                "Decrease instances of complaining",
+                "Decrease the use of inappropriate language"
+              ]
+            },
+            {
+              "name": "Elopement",
+              "goalType": "increase",
+              "measurementType": "percentage",
+              "criteria": "",
+              "targets": [
+                "Decrease instances of Elopement"
+              ]
+            },
+            {
+              "name": "Silly Behaviors",
+              "goalType": "increase",
+              "measurementType": "percentage",
+              "criteria": "",
+              "targets": [
+                "Decrease instances of silly behaviors"
+              ]
+            },
+            {
+              "name": "Tantrums",
+              "goalType": "increase",
+              "measurementType": "percentage",
+              "criteria": "",
+              "targets": [
+                "Decrease tantrum behaviors",
+                "Reduce the duration of tantrum behaviors"
+              ]
+            },
+            {
+              "name": "Off Task Behaviors",
+              "goalType": "increase",
+              "measurementType": "percentage",
+              "criteria": "",
+              "targets": [
+                "Decrease instances of engaging in unexpected behaviors",
+                "Decrease instances of inappropriate/annoying touch to peers"
+              ]
+            },
+            {
+              "name": "Property Destruction",
+              "goalType": "increase",
+              "measurementType": "percentage",
+              "criteria": "",
+              "targets": [
+                "Decrease instances of property destruction"
+              ]
+            },
+            {
+              "name": "Unsafe Behaviors",
+              "goalType": "increase",
+              "measurementType": "percentage",
+              "criteria": "",
+              "targets": [
+                "Decrease unsafe behaviors"
+              ]
+            }
+          ]
+        },
+        {
+          "name": "Compliance",
+          "stgs": [
+            {
+              "name": "Compliance",
+              "goalType": "increase",
+              "measurementType": "percentage",
+              "criteria": "",
+              "targets": [
+                "Comply with therapist instructions during session",
+                "Follow instructions given by the group leader in the absence of maladaptive behaviors",
+                "Maintain appropriate body orientation during sessions (feet on the ground, hands on the table, and head and body facing the technician)",
+                "Comply with the therapist's request to begin undesired task",
+                "Comply with tedious tasks such as reading and writing and begin with no prompting necessary",
+                "Comply to all adult directives aside from therapist"
+              ]
+            }
+          ]
+        },
+        {
+          "name": "Attention",
+          "stgs": [
+            {
+              "name": "Attention",
+              "goalType": "increase",
+              "measurementType": "percentage",
+              "criteria": "",
+              "targets": [
+                "Maintain focused attention on a non-preferred or play task for 5 minutes",
+                "Sustain focus on a task for 5 minutes while ignoring minor distractions e.g., peer noise, movement in the room",
+                "Divide attention between two tasks e.g., listening to instructions while completing written work for 3 minutes"
+              ]
+            }
+          ]
+        },
+        {
+          "name": "Self-Regulation & Adaptive Behavior",
+          "stgs": [
+            {
+              "name": "Task Persistence",
+              "goalType": "increase",
+              "measurementType": "percentage",
+              "criteria": "",
+              "targets": [
+                "Persist in completing a non-preferred or moderately challenging task for up to 5 minutes"
+              ]
+            },
+            {
+              "name": "Delayed Gratification",
+              "goalType": "increase",
+              "measurementType": "percentage",
+              "criteria": "",
+              "targets": [
+                "Delay gratification by waiting up to 2 minutes for a preferred item or activity when told \"wait,\""
+              ]
+            },
+            {
+              "name": "Effort Over Time",
+              "goalType": "increase",
+              "measurementType": "percentage",
+              "criteria": "",
+              "targets": [
+                "Sustain effort on a multi-step functional task until completion,"
+              ]
+            },
+            {
+              "name": "Staying Within Boundaries",
+              "goalType": "increase",
+              "measurementType": "percentage",
+              "criteria": "",
+              "targets": [
+                "Ask permission respectfully before leaving a session or room"
+              ]
+            },
+            {
+              "name": "Resilience",
+              "goalType": "increase",
+              "measurementType": "percentage",
+              "criteria": "",
+              "targets": [
+                "Respond to a failure or setback e.g., making an error, losing a game by using a positive coping response e.g., saying \"I'll try again,\" taking a deep breath"
+              ]
+            },
+            {
+              "name": "Flexibility",
+              "goalType": "increase",
+              "measurementType": "percentage",
+              "criteria": "",
+              "targets": [
+                "Display flexibility by tolerating situations where things don't go as expected or desired",
+                "Demonstrate tolerance of frustration by responding calmly to a setback through the use of an appropriate coping strategy"
+              ]
+            }
+          ]
+        },
+        {
+          "name": "Replacement Behaviors",
+          "stgs": [
+            {
+              "name": "Tantrum Replacement Behaviors",
+              "goalType": "increase",
+              "measurementType": "percentage",
+              "criteria": "",
+              "targets": [
+                "Respond appropriately and respectfully"
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "Communication",
+      "ltgs": [
+        {
+          "name": "Comprehension",
+          "stgs": [
+            {
+              "name": "Group Instruction",
+              "goalType": "increase",
+              "measurementType": "percentage",
+              "criteria": "",
+              "targets": [
+                "Respond appropriately to a group directive by initiating the expected action within 10 seconds",
+                "Respond appropriately to a group directive given during group instruction within 10 seconds"
+              ]
+            },
+            {
+              "name": "Functional Instructions",
+              "goalType": "increase",
+              "measurementType": "percentage",
+              "criteria": "",
+              "targets": [
+                "Follow a functional instruction in a daily context within 15 seconds"
+              ]
+            },
+            {
+              "name": "Temporal Directions",
+              "goalType": "increase",
+              "measurementType": "percentage",
+              "criteria": "",
+              "targets": [
+                "Follow a sequenced instruction of 2-3 steps in order"
+              ]
+            }
+          ]
+        },
+        {
+          "name": "Language",
+          "stgs": [
+            {
+              "name": "Categorization",
+              "goalType": "increase",
+              "measurementType": "percentage",
+              "criteria": "",
+              "targets": [
+                "Categorize 2 objects and situations"
+              ]
+            },
+            {
+              "name": "Compare and Contrast",
+              "goalType": "increase",
+              "measurementType": "percentage",
+              "criteria": "",
+              "targets": [
+                "Compare and contrast by finding similarities and differences between 2 objects and 2 situations"
+              ]
+            }
+          ]
+        },
+        {
+          "name": "Functional Communication",
+          "stgs": [
+            {
+              "name": "Self Advocacy",
+              "goalType": "increase",
+              "measurementType": "percentage",
+              "criteria": "",
+              "targets": [
+                "Appropriately communicate personal needs when prompted in various settings",
+                "Clearly and audibly say the word \"no\" when prompted with a choice or activity they do not wish to partake in. The response should be within 5 seconds of the prompt and must be made in an appropriate tone and volume.",
+                "Ask for help with a difficult task",
+                "Ask for help if he feels overwhelmed by a transition",
+                "Verbally describe progress on his own task performance"
+              ]
+            },
+            {
+              "name": "Manding",
+              "goalType": "increase",
+              "measurementType": "percentage",
+              "criteria": "",
+              "targets": [
+                "Identify Personal Need for a Break and Communicate It",
+                "Appropriately ask for a break when he needs one, such as saying \"I need a break\",",
+                "Ask to shorten skill coaching discussions to a reasonable time, such as 3 minutes,",
+                "Mand for attention appropriately from the technician",
+                "Mand for attention appropriately from peers"
+              ]
+            },
+            {
+              "name": "Asking for Help",
+              "goalType": "increase",
+              "measurementType": "percentage",
+              "criteria": "",
+              "targets": [
+                "Ask for help with a difficult task"
+              ]
+            }
+          ]
+        },
+        {
+          "name": "Conversational Skills",
+          "stgs": [
+            {
+              "name": "Conversation Skills",
+              "goalType": "increase",
+              "measurementType": "percentage",
+              "criteria": "",
+              "targets": [
+                "Engage in a back-and-forth conversation with 4 exchanges",
+                "Speak in full sentences during conversations, avoiding 1-2 word answers",
+                "Stay on topic for at least 3 conversational turns",
+                "Ask for time after or during a conversation to tell jokes such as during a lull in the conversation or after important points have been made and the discussion is at a less serious turn",
+                "Demonstrate Basic Respectful Behavior, Like Listening When Others Speak, in 1 Activity",
+                "Engage in Simple Conversational Exchanges with the Therapist, Like Answering Questions",
+                "Maintain a conversation for 4 conversational turns",
+                "Stay on the topic of the conversation for at least 3 conversational turns",
+                "Increase the duration in which he engages in conversational exchanges for up to 1 minute, in the absence of maladaptive behaviors",
+                "Identify 3 contrived communication breakdowns and 1 possible solution to each"
+              ]
+            },
+            {
+              "name": "Asking Questions",
+              "goalType": "increase",
+              "measurementType": "percentage",
+              "criteria": "",
+              "targets": [
+                "Initiate questions during verbal interactions in various settings"
+              ]
+            },
+            {
+              "name": "Answering Questions",
+              "goalType": "increase",
+              "measurementType": "percentage",
+              "criteria": "",
+              "targets": [
+                "Use full sentences of at least 5-7 words to respond to questions or contribute to a conversation"
+              ]
+            },
+            {
+              "name": "Initiating Conversations",
+              "goalType": "increase",
+              "measurementType": "percentage",
+              "criteria": "",
+              "targets": [
+                "Initiate an appropriate conversation with a peer",
+                "Wait 2 minutes before trying to politely interrupt",
+                "Greet the other person when appropriate"
+              ]
+            },
+            {
+              "name": "Wait Time and Turn-Taking",
+              "goalType": "increase",
+              "measurementType": "percentage",
+              "criteria": "",
+              "targets": [
+                "Wait 10 seconds before saying 'I don't know' in response to a question posed to him",
+                "Wait until the adult pauses before he says what he wants to",
+                "Wait until the peer pauses before he says what he wants to say",
+                "Use a verbal cue such as \"excuse me\" before interjecting when others are speaking"
+              ]
+            }
+          ]
+        },
+        {
+          "name": "Social-Pragmatic Communication",
+          "stgs": [
+            {
+              "name": "Using Proper Tone and Volume",
+              "goalType": "increase",
+              "measurementType": "percentage",
+              "criteria": "",
+              "targets": [
+                "Use the proper tone and volume for different situations",
+                "Use a calm tone of voice to discuss when he thinks he was treated unfairly"
+              ]
+            },
+            {
+              "name": "Manners and Politeness",
+              "goalType": "increase",
+              "measurementType": "percentage",
+              "criteria": "",
+              "targets": [
+                "Use Polite Phrases or Gestures, Like Saying \"Thank You\" or \"Excuse Me,\" in Appropriate Situations",
+                "Accept a Differing Opinion from an Adult in a Constructive Manner Without Arguing",
+                "Accept a Differing Opinion from a Peer in a Constructive Manner Without Arguing",
+                "Express a Differing Opinion in a Constructive Manner Without Arguing",
+                "Show Respectful Behavior for 3 rounds of conversation, Like Listening or Nodding, When Interacting with an Adult"
+              ]
+            },
+            {
+              "name": "Responding Appropriately",
+              "goalType": "increase",
+              "measurementType": "percentage",
+              "criteria": "",
+              "targets": [
+                "Respond within 3 seconds when spoken to during verbal interactions in various settings",
+                "Accept a 30-second latency from when he requests an item until he receives the item without engaging in maladaptive behaviors",
+                "Acknowledge a Peer's Comment or Action with a Nod or Brief Verbal Response",
+                "Acknowledge and Correct a False Statement",
+                "Respond to Requests from Adults with a Calm 'Yes' or an Appropriate Alternative Suggestion"
+              ]
+            },
+            {
+              "name": "Accepting Feedback",
+              "goalType": "increase",
+              "measurementType": "percentage",
+              "criteria": "",
+              "targets": [
+                "Respond to Feedback with a Simple Acknowledgment or Thank You"
+              ]
+            },
+            {
+              "name": "Role-Playing Social Skills",
+              "goalType": "increase",
+              "measurementType": "percentage",
+              "criteria": "",
+              "targets": [
+                "Use Role-Playing to Practice Appropriate Social Responses and Behaviors in 1 Scenario"
+              ]
+            },
+            {
+              "name": "Honesty",
+              "goalType": "increase",
+              "measurementType": "percentage",
+              "criteria": "",
+              "targets": [
+                "Discuss the Consequences of Dishonesty and Identify Alternatives in 1 Scenario"
+              ]
+            },
+            {
+              "name": "Conflict Resolution",
+              "goalType": "increase",
+              "measurementType": "percentage",
+              "criteria": "",
+              "targets": [
+                "Use Basic Conflict Resolution Strategies, Like Asking for Help from an Adult, in a Disagreement with Peers"
+              ]
+            }
+          ]
+        },
+        {
+          "name": "Receptive Language & Comprehension",
+          "stgs": [
+            {
+              "name": "Following Directions",
+              "goalType": "increase",
+              "measurementType": "percentage",
+              "criteria": "",
+              "targets": [
+                "Follow 2 step directives that involve distance"
+              ]
+            },
+            {
+              "name": "Retelling Information",
+              "goalType": "increase",
+              "measurementType": "percentage",
+              "criteria": "",
+              "targets": [
+                "Independently retell one activity or discussion that occurred during the therapy session",
+                "Use necessary details when retelling an activity or discussion from the therapy session",
+                "Retell a daily experience including 2 expanded details and one personal connection,"
+              ]
+            },
+            {
+              "name": "Inferencing",
+              "goalType": "increase",
+              "measurementType": "percentage",
+              "criteria": "",
+              "targets": [
+                "Answer 1 inferencing question after hearing or reading a short story",
+                "Identify the logical next step in a short written or spoken scenario",
+                "Predict the expected answer or outcome in a short written prompt"
+              ]
+            }
+          ]
+        },
+        {
+          "name": "Emotional Expression",
+          "stgs": [
+            {
+              "name": "Tacting Emotions",
+              "goalType": "increase",
+              "measurementType": "percentage",
+              "criteria": "",
+              "targets": [
+                "Identify their emotions without using profane language when they are frustrated, angry, sad etc."
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "Social",
+      "ltgs": [
+        {
+          "name": "Perspective Taking",
+          "stgs": [
+            {
+              "name": "Emotion Recognition",
+              "goalType": "increase",
+              "measurementType": "percentage",
+              "criteria": "",
+              "targets": [
+                "Identify Basic Emotions in Himself or Others, Such as Happiness or Frustration, in Contrived Scenarios",
+                "Identify and verbalize the feelings of others when presented with a contrived or hypothetical scenario",
+                "Identify and verbalize the feelings of others in natural, real-world scenarios"
+              ]
+            },
+            {
+              "name": "Understanding Others",
+              "goalType": "increase",
+              "measurementType": "percentage",
+              "criteria": "",
+              "targets": [
+                "Identify and verbalize the perspective of another person when presented with a contrived or hypothetical scenario",
+                "Identify and verbalize the perspective of another person in natural, real world scenarios",
+                "Accept another person's opinion or view",
+                "Compromise or apologize for what he did when given another's perspective with prompt",
+                "Describe one alternative point of view of a contrived social situation",
+                "Figure out someone else's perspective in a contrived scenario",
+                "Identify possible reasons for another's actions",
+                "Demonstrate social awareness by observing peer reactions to a situation and adjusting their own response accordingly"
+              ]
+            }
+          ]
+        },
+        {
+          "name": "Problem Solving",
+          "stgs": [
+            {
+              "name": "Size of Problem",
+              "goalType": "increase",
+              "measurementType": "percentage",
+              "criteria": "",
+              "targets": [
+                "Label a minor everyday problem and state or demonstrate an independent problem-solving strategy",
+                "Label a small problem in a natural setting and use a defined coping or problem-solving strategy",
+                "Label a medium-sized problem that requires adult help and use an appropriate help-seeking strategy",
+                "Identify a big problem lasting weeks or months, requiring multiple adults and communicate an appropriate coping or help-seeking response",
+                "Identify one \"big problem\" (lasting weeks/months and typically requiring involvement from multiple adults/services) and communicate an appropriate coping or help-seeking response",
+                "Identify a huge problem e.g., emergency requiring immediate group response and follow established safety procedures",
+                "Demonstrate a constructive response to an error by engaging in observable problem-solving e.g., correcting work, asking for help and using at least one positive statement e.g., \"I'll try again\" following a mistake"
+              ]
+            },
+            {
+              "name": "Solutions",
+              "goalType": "increase",
+              "measurementType": "percentage",
+              "criteria": "",
+              "targets": [
+                "Identify 1 solution when presented with a problem in a contrived setting",
+                "State one workable solution when presented with a contrived problem scenario",
+                "Verbalize their initial reaction to a problem and restate it in a constructive manner"
+              ]
+            }
+          ]
+        },
+        {
+          "name": "Self Image",
+          "stgs": [
+            {
+              "name": "Positive Self-Statements",
+              "goalType": "increase",
+              "measurementType": "percentage",
+              "criteria": "",
+              "targets": [
+                "Independently use a positive self-statement about their appearance e.g., \"I look nice today\" during a social interaction across school and home settings"
+              ]
+            }
+          ]
+        },
+        {
+          "name": "Peer Interaction",
+          "stgs": [
+            {
+              "name": "Initiating with Others",
+              "goalType": "increase",
+              "measurementType": "percentage",
+              "criteria": "",
+              "targets": [
+                "Initiate a game or activity with a peer by approaching peer and asking \"do you want to play?\" in various social settings",
+                "Identify 2 Ways to Respectfully initiate conversations with peers",
+                "Offer a compliment to a peer",
+                "Utilize a shared interest to initiate a conversation with a peer"
+              ]
+            },
+            {
+              "name": "Interacting with Peers",
+              "goalType": "increase",
+              "measurementType": "percentage",
+              "criteria": "",
+              "targets": [
+                "Accept a compliment from a peer/adult graciously such as with a thank you",
+                "Acknowledge a Peer's Comment or Action with a Nod or Brief Verbal Response",
+                "Identify one interest he shares with a peer",
+                "Play fairly and follow the rules in a game",
+                "Identify a realistic reaction to a contrived social initiation",
+                "Identify and acknowledge a contribution made by a peer to a game or group project"
+              ]
+            },
+            {
+              "name": "Joining Peers",
+              "goalType": "increase",
+              "measurementType": "percentage",
+              "criteria": "",
+              "targets": [
+                "Identify 1 activity that peers may welcome him to join, like a game or conversation",
+                "Suggest or Join a Structured Play Activity with Peers, Like a Sports Game or Art Project, for 2 minutes per opportunity",
+                "Respond to compliments with a clear, polite verbal reply e.g., \"thank you,\" \"I appreciate that\" during social interactions"
+              ]
+            },
+            {
+              "name": "Sharing Personal Information",
+              "goalType": "increase",
+              "measurementType": "percentage",
+              "criteria": "",
+              "targets": [
+                "Tolerate discussion and reflect on how his own personal likes and dislikes are similar or different from a peer or adult"
+              ]
+            },
+            {
+              "name": "Group Skills",
+              "goalType": "increase",
+              "measurementType": "percentage",
+              "criteria": "",
+              "targets": [
+                "Actively participate in the group discussion by asking/answering a question posed by the group leader",
+                "Engage in an Activity Common among Peers, Like Discussing a Popular Toy or Playing a Trending Game",
+                "Initiate a verbal interaction with a peer in the social setting",
+                "Join in group discussions",
+                "Join group activities during group instruction"
+              ]
+            }
+          ]
+        },
+        {
+          "name": "Social Awareness & Expectations",
+          "stgs": [
+            {
+              "name": "Social Cues",
+              "goalType": "increase",
+              "measurementType": "percentage",
+              "criteria": "",
+              "targets": [
+                "Demonstrate recognition of facial and gestural cues made by an adult",
+                "Demonstrate recognition of facial and gestural cues made by a peer"
+              ]
+            },
+            {
+              "name": "Following Environmental Expectations",
+              "goalType": "increase",
+              "measurementType": "percentage",
+              "criteria": "",
+              "targets": [
+                "Follow the expectations of his environment"
+              ]
+            },
+            {
+              "name": "Personal Space",
+              "goalType": "increase",
+              "measurementType": "percentage",
+              "criteria": "",
+              "targets": [
+                "Demonstrate an understanding and respect of personal space by maintaining appropriate physical distance",
+                "Maintain appropriate distance from adult when conversing",
+                "Maintain appropriate distance from peer when conversing"
+              ]
+            },
+            {
+              "name": "Respecting Boundaries and Property",
+              "goalType": "increase",
+              "measurementType": "percentage",
+              "criteria": "",
+              "targets": [
+                "Ask before touching or using another person's belongings during activities"
+              ]
+            },
+            {
+              "name": "Following Single-Step Directions",
+              "goalType": "increase",
+              "measurementType": "percentage",
+              "criteria": "",
+              "targets": [
+                "Successfully Follow a One-Step Instruction, Such as \"Please Hand Me the Book,\""
+              ]
+            },
+            {
+              "name": "Appropriate Alternatives",
+              "goalType": "increase",
+              "measurementType": "percentage",
+              "criteria": "",
+              "targets": [
+                "State an appropriate alternative action to throwing out useful items (e.g., \"put it in my backpack/return it to the bin/label it\") for 3 different items"
+              ]
+            },
+            {
+              "name": "Understanding Authority and Roles",
+              "goalType": "increase",
+              "measurementType": "percentage",
+              "criteria": "",
+              "targets": [
+                "Identify the next two levels of authority above self for a given setting and state \"who answers to who and why\" (one role - who they report to - one brief reason)",
+                "Follow the appropriate chain of command using a 3-step script: gain attention - state issue - request help/permission, and explain why that person is in charge.",
+                "Respond to questions demonstrating awareness of his role in the environment",
+                "Respond to questions demonstrating awareness of others' roles in the environment"
+              ]
+            }
+          ]
+        },
+        {
+          "name": "Daily Living & Functional Skills",
+          "stgs": [
+            {
+              "name": "Leisure Skills",
+              "goalType": "increase",
+              "measurementType": "percentage",
+              "criteria": "",
+              "targets": [
+                "Choose and Engage in a Simple Activity, Like Reading or Drawing, during unstructured time"
+              ]
+            },
+            {
+              "name": "Personal Hygiene",
+              "goalType": "increase",
+              "measurementType": "percentage",
+              "criteria": "",
+              "targets": [
+                "Make sure his face is clean after finishing a meal or snack"
+              ]
+            },
+            {
+              "name": "Organizational Skills",
+              "goalType": "increase",
+              "measurementType": "percentage",
+              "criteria": "",
+              "targets": [
+                "Organize His personal belongings",
+                "Organize personal belongings by placing items in labeled areas at session end",
+                "Check for and secure personal belongings before leaving an area during transitions"
+              ]
+            },
+            {
+              "name": "Understanding Item Function",
+              "goalType": "increase",
+              "measurementType": "percentage",
+              "criteria": "",
+              "targets": [
+                "Identify the primary function of common items"
+              ]
+            },
+            {
+              "name": "Cause and Effect",
+              "goalType": "increase",
+              "measurementType": "percentage",
+              "criteria": "",
+              "targets": [
+                "Explain the cause-and-effect of discarding a useful item by naming one realistic consequence (e.g., \"then I can't use it\") for 3 different items"
+              ]
+            }
+          ]
+        },
+        {
+          "name": "Task Engagement & Independence",
+          "stgs": [
+            {
+              "name": "Transitions",
+              "goalType": "increase",
+              "measurementType": "percentage",
+              "criteria": "",
+              "targets": [
+                "Use a verbal or visual signal to ask for an additional 2 minutes to finish his current activity",
+                "Prepare for and Move from one Activity to another, within 2 Minutes of a Verbal Prompt"
+              ]
+            },
+            {
+              "name": "Completing Non-Preferred Tasks",
+              "goalType": "increase",
+              "measurementType": "percentage",
+              "criteria": "",
+              "targets": [
+                "Initiate a non preferred task without getting distracted by other activity or task, upon deciding to do an activity or being given instructions to work on a given task",
+                "Clean up around his spot after eating"
+              ]
+            },
+            {
+              "name": "Staying on Task",
+              "goalType": "increase",
+              "measurementType": "percentage",
+              "criteria": "",
+              "targets": [
+                "Stay focused on task/activity until the task/activity is complete"
+              ]
+            }
+          ]
+        },
+        {
+          "name": "Self-Concept & Identity",
+          "stgs": [
+            {
+              "name": "Self Image and Achievement",
+              "goalType": "increase",
+              "measurementType": "percentage",
+              "criteria": "",
+              "targets": [
+                "Share 1 Personal Achievement,",
+                "Set a Personal Goal and Take 1 Step Towards Achieving It"
+              ]
+            },
+            {
+              "name": "Self Monitoring",
+              "goalType": "increase",
+              "measurementType": "percentage",
+              "criteria": "",
+              "targets": [
+                "Utilize a self-monitoring tool to manage his age-appropriate behaviors"
+              ]
+            },
+            {
+              "name": "Responsibility for Actions",
+              "goalType": "increase",
+              "measurementType": "percentage",
+              "criteria": "",
+              "targets": [
+                "Acknowledge Responsibility for a Personal Action"
+              ]
+            }
+          ]
+        },
+        {
+          "name": "Emotional Regulation & Coping",
+          "stgs": [
+            {
+              "name": "Flexibility and Tolerance",
+              "goalType": "increase",
+              "measurementType": "percentage",
+              "criteria": "",
+              "targets": [
+                "Tolerate another peer when he feels the game is not fair with prompt",
+                "Tolerate discussion and identify his personal likes and dislikes"
+              ]
+            },
+            {
+              "name": "Coping Skills",
+              "goalType": "increase",
+              "measurementType": "percentage",
+              "criteria": "",
+              "targets": [
+                "Practice Coping Strategies for Challenging Situations",
+                "Select and perform an appropriate coping strategy in response to a contrived challenging-situation cue during Discrete Trial Training (DTT), with ≤2 verbal prompts.",
+                "Utilize a confusion scale to identify how confused they are with the task in demand",
+                "Utilize coping strategies such as using deep breathing or a stress ball during stressful conversations",
+                "Identify a situation that will trigger intense emotions",
+                "Answer three questions to help him label the size of a problem accurately",
+                "Respond to a no-problem situation e.g., minor inconvenience, waiting, or change in plans by demonstrating calm and socially acceptable behavior"
+              ]
+            },
+            {
+              "name": "Waiting and Impulse Control",
+              "goalType": "increase",
+              "measurementType": "percentage",
+              "criteria": "",
+              "targets": [
+                "Hold back for minimum of 5 minutes when told not to do something",
+                "Wait until the timer rings without continuously asking to gain access to reinforcing activity"
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "Parent Training",
+      "ltgs": [
+        {
+          "name": "Implementation of Behavior Plans",
+          "stgs": [
+            {
+              "name": "Following the BIP",
+              "goalType": "increase",
+              "measurementType": "percentage",
+              "criteria": "80% accuracy across 3 consecutive sessions",
+              "targets": [
+                "Caregiver will implement the Behavior Intervention Plan as written during target routines Once Per Session with 1 Verbal Prompt.",
+                "Caregiver will deliver programmed reinforcement according to the specified schedule 3 times per session with 1 Verbal Prompt.",
+                "Caregiver will apply the planned consequence procedure when a defined maladaptive behavior occurs Once Per Session with 1 Verbal Prompt."
+              ]
+            }
+          ]
+        },
+        {
+          "name": "Data Collection & Monitoring",
+          "stgs": [
+            {
+              "name": "Recording & Tracking",
+              "goalType": "increase",
+              "measurementType": "percentage",
+              "criteria": "80% accuracy across 3 consecutive sessions",
+              "targets": [
+                "Caregiver will record frequency and intensity rating for the target behavior in identified home routines Once Per Session with a Visual Cue and 1 Verbal Prompt.",
+                "Caregiver will complete ABC entries for recorded incidents 3 times per session with 1 Verbal Prompt.",
+                "Caregiver will provide a brief progress/generalization rating with an example Once Per Session with 1 Verbal Prompt."
+              ]
+            }
+          ]
+        },
+        {
+          "name": "Reinforcement & Motivation",
+          "stgs": [
+            {
+              "name": "Delivering Reinforcement",
+              "goalType": "increase",
+              "measurementType": "percentage",
+              "criteria": "80% accuracy across 3 consecutive sessions",
+              "targets": [
+                "Caregiver will deliver positive reinforcement contingent on the identified replacement behavior 3 times per session with 1 Verbal Prompt.",
+                "Caregiver will acknowledge, prompt as needed, and reinforce functional communication (FCT) Once Per Session with 2 Verbal Prompts.",
+                "Caregiver will operate the token economy with correct criteria and exchange for 10 minutes Per Session with 1 Verbal Prompt."
+              ]
+            }
+          ]
+        },
+        {
+          "name": "Skill Generalization at Home",
+          "stgs": [
+            {
+              "name": "Supporting Generalization",
+              "goalType": "increase",
+              "measurementType": "percentage",
+              "criteria": "80% accuracy across 3 consecutive sessions",
+              "targets": [
+                "Caregiver will set up a play or activity to practice a targeted social skill and provide feedback Once Per Session with 1 Verbal Prompt.",
+                "Caregiver will follow the task analysis and prompting plan for an ADL routine Once Per Session with 1 Verbal Prompt.",
+                "Caregiver will prompt and reinforce the target communication skill across two natural routines 3 times per session with 1 Verbal Prompt."
+              ]
+            }
+          ]
+        },
+        {
+          "name": "Behavior Management",
+          "stgs": [
+            {
+              "name": "Proactive & Reactive Strategies",
+              "goalType": "increase",
+              "measurementType": "percentage",
+              "criteria": "80% accuracy across 3 consecutive sessions",
+              "targets": [
+                "Caregiver will implement two antecedent strategies (e.g., visual schedule, choices) before target routines Once Per Session with a Visual Cue.",
+                "Caregiver will follow the response flow during incidents (safety - neutral response - teach/reinforce replacement) Once Per Session with 1 Verbal Prompt.",
+                "Caregivers in the home will apply the agreed discipline strategies as written Once Per Session with 1 Verbal Prompt."
+              ]
+            }
+          ]
+        },
+        {
+          "name": "Communication with Child",
+          "stgs": [
+            {
+              "name": "Prompting & Modeling",
+              "goalType": "increase",
+              "measurementType": "percentage",
+              "criteria": "80% accuracy across 3 consecutive sessions",
+              "targets": [
+                "Caregiver will create motivating situations and use least-to-most prompts for the target mand 3 times per session with 2 Verbal Prompts.",
+                "Caregiver will apply the specified prompting hierarchy with a 3-5s wait time in a skill routine Once Per Session with 1 Verbal Prompt.",
+                "Caregiver will model the target language and social behavior during a daily activity Once Per Session with 1 Verbal Prompt."
+              ]
+            }
+          ]
+        },
+        {
+          "name": "Coping & Emotional Support",
+          "stgs": [
+            {
+              "name": "Supporting Regulation",
+              "goalType": "increase",
+              "measurementType": "percentage",
+              "criteria": "80% accuracy across 3 consecutive sessions",
+              "targets": [
+                "Caregiver will cue and reinforce a taught coping strategy (e.g., deep breaths, break card) at early signs of escalation Once Per Session with 2 Verbal Prompts.",
+                "Caregiver will run the regulation routine (identify feeling, choose tool, reflect) for 2 minutes Per Session with a Visual Cue and 1 Verbal Prompt.",
+                "Caregiver will use a calm voice, brief statements, and planned positioning during escalations Once Per Session with 1 Verbal Prompt."
+              ]
+            }
+          ]
+        },
+        {
+          "name": "Parent Collaboration with Team",
+          "stgs": [
+            {
+              "name": "Training & Follow-Through",
+              "goalType": "increase",
+              "measurementType": "percentage",
+              "criteria": "80% accuracy across 3 consecutive sessions",
+              "targets": [
+                "Caregiver will attend scheduled parent training and participate Once Per Session independently.",
+                "Caregiver will provide a concise home progress summary with one example Once Per Session with a Reminder.",
+                "Caregiver will implement the assigned home practice plan and submit a permanent product (photo/video/data) Once Per Session with a Reminder."
+              ]
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

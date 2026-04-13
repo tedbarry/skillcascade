@@ -4,7 +4,8 @@ import { motion } from 'framer-motion'
 import { useAuth } from '../contexts/AuthContext.jsx'
 import useResponsive from '../hooks/useResponsive.js'
 import useSubscription from '../hooks/useSubscription.js'
-import { supabase } from '../lib/supabase.js'
+import usePermissions from '../hooks/usePermissions.js'
+import { api } from '../lib/api.js'
 import { safeSetItem } from '../lib/safeStorage.js'
 
 const ORG_TYPES = [
@@ -46,7 +47,7 @@ function Toggle({ checked, onChange, label, id }) {
         aria-checked={checked}
         onClick={() => onChange(!checked)}
         className={`relative inline-flex h-6 w-11 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sage-400 focus-visible:ring-offset-2 ${
-          checked ? 'bg-sage-500' : 'bg-warm-200'
+          checked ? 'bg-sage-600' : 'bg-warm-200'
         }`}
       >
         <span
@@ -102,6 +103,7 @@ export default function Profile() {
   const { isPhone } = useResponsive()
   const navigate = useNavigate()
   const { subscription, plan, isTrial, openBillingPortal, cancelSubscription } = useSubscription()
+  const { can } = usePermissions()
 
   // Org settings (local state until saved)
   const [orgName, setOrgName] = useState('')
@@ -121,6 +123,7 @@ export default function Profile() {
   const displayName = profile?.display_name || user?.user_metadata?.display_name || 'User'
   const email = user?.email || ''
   const role = profile?.role || user?.user_metadata?.role || 'bcba'
+  const canManageOrgSettings = profile?.is_super_admin || can('settings', 'edit')
   const memberSince = user?.created_at
     ? new Date(user.created_at).toLocaleDateString('en-US', { month: 'long', year: 'numeric' })
     : 'N/A'
@@ -146,14 +149,14 @@ export default function Profile() {
     async function loadStats() {
       try {
         // Client count
-        const { count: clientCount } = await supabase
+        const { count: clientCount } = await api
           .from('clients')
           .select('*', { count: 'exact', head: true })
           .eq('org_id', profile.org_id)
           .is('deleted_at', null)
 
         // Assessment count (distinct client_ids with assessments)
-        const { data: clients } = await supabase
+        const { data: clients } = await api
           .from('clients')
           .select('id')
           .eq('org_id', profile.org_id)
@@ -164,12 +167,12 @@ export default function Profile() {
         let snapshotCount = 0
 
         if (clientIds.length > 0) {
-          const { count: aCount } = await supabase
+          const { count: aCount } = await api
             .from('assessments')
             .select('*', { count: 'exact', head: true })
             .in('client_id', clientIds)
 
-          const { count: sCount } = await supabase
+          const { count: sCount } = await api
             .from('snapshots')
             .select('*', { count: 'exact', head: true })
             .in('client_id', clientIds)
@@ -193,12 +196,12 @@ export default function Profile() {
 
   // Save org settings
   const handleSaveOrg = useCallback(async () => {
-    if (!profile?.org_id) return
+    if (!profile?.org_id || !canManageOrgSettings) return
     setOrgSaving(true)
     setOrgSaved(false)
 
     try {
-      await supabase
+      await api
         .from('organizations')
         .update({ name: orgName.trim(), type: orgType || null })
         .eq('id', profile.org_id)
@@ -210,7 +213,7 @@ export default function Profile() {
     } finally {
       setOrgSaving(false)
     }
-  }, [profile?.org_id, orgName, orgType])
+  }, [profile?.org_id, orgName, orgType, canManageOrgSettings])
 
   // Account deletion state
   const [deleteConfirm, setDeleteConfirm] = useState('')
@@ -235,44 +238,59 @@ export default function Profile() {
 
       // Delete all user data via Supabase RPC (or manual cascade)
       if (profile?.org_id) {
-        // Get client IDs for this org
-        const { data: clients } = await supabase
-          .from('clients')
-          .select('id')
-          .eq('org_id', profile.org_id)
+        let shouldDeleteOrg = false
+        if (canManageOrgSettings) {
+          const { count: memberCount, error: memberCountError } = await api
+            .from('profiles')
+            .select('*', { count: 'exact', head: true })
+            .eq('org_id', profile.org_id)
 
-        const clientIds = (clients || []).map(c => c.id)
-
-        if (clientIds.length > 0) {
-          // Delete assessments and snapshots
-          await supabase.from('assessments').delete().in('client_id', clientIds)
-          await supabase.from('snapshots').delete().in('client_id', clientIds)
+          if (memberCountError) throw memberCountError
+          shouldDeleteOrg = (memberCount || 0) <= 1
         }
 
-        // Delete clients
-        await supabase.from('clients').delete().eq('org_id', profile.org_id)
+        if (shouldDeleteOrg) {
+          // Get client IDs for this org
+          const { data: clients } = await api
+            .from('clients')
+            .select('id')
+            .eq('org_id', profile.org_id)
 
-        // Delete organization
-        await supabase.from('organizations').delete().eq('id', profile.org_id)
+          const clientIds = (clients || []).map(c => c.id)
+
+          if (clientIds.length > 0) {
+            // Delete assessments and snapshots
+            await api.from('assessments').delete().in('client_id', clientIds)
+            await api.from('snapshots').delete().in('client_id', clientIds)
+          }
+
+          // Delete clients
+          await api.from('clients').delete().eq('org_id', profile.org_id)
+
+          // Delete organization only when the deleting user is allowed to manage org settings
+          // and they are the last member of that org.
+          await api.from('organizations').delete().eq('id', profile.org_id)
+        }
       }
 
-      // Delete user settings
-      await supabase.from('user_settings').delete().eq('user_id', user.id)
-
-      // Delete profile
-      await supabase.from('profiles').delete().eq('id', user.id)
-
       // Delete audit log entries
-      await supabase.from('audit_log').delete().eq('user_id', user.id)
+      await api.from('audit_log').delete().eq('user_id', user.id)
+
+      // Delete user settings
+      await api.from('user_settings').delete().eq('user_id', user.id)
+
+      // Delete profile last, then sign out without writing a logout audit row.
+      // Otherwise the worker can auto-provision a fresh profile during sign-out.
+      await api.from('profiles').delete().eq('id', user.id)
 
       // Sign out and redirect
-      await signOut()
+      await signOut({ skipAudit: true, skipSessionEnd: true })
       navigate('/')
     } catch (err) {
       setDeleteError(err.message || 'Failed to delete account. Please contact support@skillcascade.com')
       setDeleteLoading(false)
     }
-  }, [deleteConfirm, profile?.org_id, user?.id, signOut, navigate, cancelSubscription])
+  }, [deleteConfirm, profile?.org_id, user?.id, signOut, navigate, cancelSubscription, canManageOrgSettings])
 
   return (
     <div className="min-h-screen bg-warm-50">
@@ -339,6 +357,11 @@ export default function Profile() {
         {/* ── Section 2: Organization ─────────────────────────────────── */}
         <Section title="Organization">
           <div className="space-y-3">
+            {!canManageOrgSettings && (
+              <div className="rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-xs text-amber-800">
+                You can view your organization details here, but only admins or users with settings access can change them.
+              </div>
+            )}
             <div>
               <label htmlFor="prof-org-name" className="block text-xs font-medium text-warm-500 mb-1">
                 Organization Name
@@ -349,6 +372,7 @@ export default function Profile() {
                 value={orgName}
                 onChange={(e) => setOrgName(e.target.value)}
                 placeholder="Your clinic or practice"
+                disabled={!canManageOrgSettings}
                 className="w-full rounded-lg border border-warm-200 px-3 py-2 text-sm text-warm-800 placeholder-warm-300 focus:outline-none focus:ring-2 focus:ring-sage-300 focus:border-sage-400 min-h-[44px]"
               />
             </div>
@@ -361,6 +385,7 @@ export default function Profile() {
                 id="prof-org-type"
                 value={orgType}
                 onChange={(e) => setOrgType(e.target.value)}
+                disabled={!canManageOrgSettings}
                 className="w-full rounded-lg border border-warm-200 px-3 py-2 text-sm text-warm-800 bg-white focus:outline-none focus:ring-2 focus:ring-sage-300 focus:border-sage-400 min-h-[44px]"
               >
                 {ORG_TYPES.map((t) => (
@@ -374,8 +399,8 @@ export default function Profile() {
             <button
               type="button"
               onClick={handleSaveOrg}
-              disabled={orgSaving}
-              className="px-4 py-2 rounded-lg bg-sage-500 text-white text-sm font-medium hover:bg-sage-600 transition-colors disabled:opacity-50 disabled:cursor-not-allowed min-h-[44px]"
+              disabled={!canManageOrgSettings || orgSaving}
+              className="px-4 py-2 rounded-lg bg-sage-600 text-white text-sm font-medium hover:bg-sage-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed min-h-[44px]"
             >
               {orgSaving ? 'Saving...' : orgSaved ? 'Saved!' : 'Save'}
             </button>
@@ -482,7 +507,7 @@ export default function Profile() {
                   safeSetItem('skillcascade_active_view', 'pricing')
                   navigate('/dashboard')
                 }}
-                className="px-4 py-2 rounded-lg bg-sage-500 text-white text-sm font-medium hover:bg-sage-600 transition-colors min-h-[44px] inline-flex items-center"
+                className="px-4 py-2 rounded-lg bg-sage-600 text-white text-sm font-medium hover:bg-sage-700 transition-colors min-h-[44px] inline-flex items-center"
               >
                 Choose Plan
               </button>

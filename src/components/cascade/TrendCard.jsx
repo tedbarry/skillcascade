@@ -6,9 +6,9 @@ import { DOMAIN_COLORS } from '../../constants/colors.js'
 const STATE_CONFIG = {
   locked:       { label: 'Locked',     color: '#666' },
   blocked:      { label: 'Blocked',    color: '#8b4444' },
-  'needs-work': { label: 'Needs Work', color: '#e8928a' },
-  developing:   { label: 'Developing', color: '#e5b76a' },
-  mastered:     { label: 'Mastered',   color: '#7fb589' },
+  'needs-work': { label: 'Needs Work', color: '#F59E0B' },
+  developing:   { label: 'Developing', color: '#F59E0B' },
+  mastered:     { label: 'Mastered',   color: '#10B981' },
 }
 
 /**

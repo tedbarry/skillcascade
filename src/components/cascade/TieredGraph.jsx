@@ -86,16 +86,16 @@ export default memo(function TieredGraph({
             <path d="M0,0.5 L7,3 L0,5.5" fill="#556" />
           </marker>
           <marker id="arrow-red" viewBox="0 0 8 6" refX="7" refY="3" markerWidth="9" markerHeight="7" orient="auto">
-            <path d="M0,0.5 L7,3 L0,5.5" fill="#ff4444" />
+            <path d="M0,0.5 L7,3 L0,5.5" fill="#EF4444" />
           </marker>
           <marker id="arrow-gold" viewBox="0 0 8 6" refX="7" refY="3" markerWidth="9" markerHeight="7" orient="auto">
-            <path d="M0,0.5 L7,3 L0,5.5" fill="#ffd700" />
+            <path d="M0,0.5 L7,3 L0,5.5" fill="#FBBF24" />
           </marker>
           <marker id="arrow-orange" viewBox="0 0 8 6" refX="7" refY="3" markerWidth="9" markerHeight="7" orient="auto">
-            <path d="M0,0.5 L7,3 L0,5.5" fill="#ff8800" />
+            <path d="M0,0.5 L7,3 L0,5.5" fill="#F97316" />
           </marker>
           <marker id="arrow-green" viewBox="0 0 8 6" refX="7" refY="3" markerWidth="8" markerHeight="6" orient="auto">
-            <path d="M0,0.5 L7,3 L0,5.5" fill="#7fb589" />
+            <path d="M0,0.5 L7,3 L0,5.5" fill="#10B981" />
           </marker>
           <marker id="arrow-blue" viewBox="0 0 8 6" refX="7" refY="3" markerWidth="9" markerHeight="7" orient="auto">
             <path d="M0,0.5 L7,3 L0,5.5" fill="#6889b5" />
@@ -191,7 +191,7 @@ export default memo(function TieredGraph({
       {/* Tooltip (HTML overlay) */}
       {tooltip && (
         <div
-          className="absolute pointer-events-none bg-[#1e1e24]/95 border border-[#444] rounded-lg px-3 py-2 text-xs z-10 shadow-xl backdrop-blur-sm"
+          className="absolute pointer-events-none bg-[#1e1e24]/95 border border-[#444] rounded-lg px-3 py-2 text-xs z-10 shadow-lg backdrop-blur-sm"
           style={{
             left: Math.min(tooltip.x + 10, (width || 400) - 180),
             top: Math.max(tooltip.y - 80, 10),

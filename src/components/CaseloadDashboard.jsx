@@ -113,9 +113,9 @@ const Icons = {
 
 function scoreBarColor(score) {
   if (score === 0) return '#d1d5db'       // gray-300  — not assessed
-  if (score < 1.5) return '#e8928a'       // coral     — needs work
-  if (score < 2.25) return '#e5b76a'      // warm gold — developing
-  return '#7fb589'                         // sage      — solid
+  if (score < 1.5) return '#F59E0B'       // coral     — needs work
+  if (score < 2.25) return '#F59E0B'      // warm gold — developing
+  return '#10B981'                         // sage      — solid
 }
 
 /* ─────────────────────────────────────────────
@@ -291,7 +291,7 @@ export default function CaseloadDashboard({ currentClientId, onSelectClient }) {
   if (clientData.length === 0) {
     return (
       <div className="max-w-lg mx-auto py-16 px-6 text-center">
-        <div className="w-16 h-16 mx-auto mb-4 rounded-2xl bg-sage-50 text-sage-400 flex items-center justify-center">
+        <div className="text-sage-400 mx-auto mb-4">
           {Icons.clipboard}
         </div>
         <h2 className="font-display text-xl font-semibold text-warm-800 mb-2">
@@ -319,7 +319,7 @@ export default function CaseloadDashboard({ currentClientId, onSelectClient }) {
         <h2 className="font-display text-lg font-semibold text-warm-800">
           Caseload Overview <KBHelpIcon term="view-caseload" />
         </h2>
-        <p className="text-xs text-warm-400 mt-0.5">
+        <p className="text-xs text-warm-500 mt-0.5">
           {summary.total} client{summary.total !== 1 ? 's' : ''} across your caseload
         </p>
       </div>
@@ -376,7 +376,7 @@ export default function CaseloadDashboard({ currentClientId, onSelectClient }) {
       <div className="flex flex-wrap items-center gap-3">
         {/* Sort */}
         <div className="flex items-center gap-1.5 text-xs text-warm-500">
-          <span className="text-warm-400">{Icons.sort}</span>
+          <span className="text-warm-500">{Icons.sort}</span>
           <select
             value={sortBy}
             onChange={(e) => setSortBy(e.target.value)}
@@ -393,7 +393,7 @@ export default function CaseloadDashboard({ currentClientId, onSelectClient }) {
 
         {/* Filter */}
         <div className="flex items-center gap-1.5 text-xs text-warm-500">
-          <span className="text-warm-400">{Icons.filter}</span>
+          <span className="text-warm-500">{Icons.filter}</span>
           <select
             value={filterBy}
             onChange={(e) => setFilterBy(e.target.value)}
@@ -410,7 +410,7 @@ export default function CaseloadDashboard({ currentClientId, onSelectClient }) {
 
         {/* Result count */}
         {filterBy !== 'all' && (
-          <span className="text-[10px] text-warm-400 ml-auto">
+          <span className="text-[10px] text-warm-500 ml-auto">
             Showing {sorted.length} of {clientData.length}
           </span>
         )}
@@ -419,7 +419,7 @@ export default function CaseloadDashboard({ currentClientId, onSelectClient }) {
       {/* ── Client cards grid ── */}
       {sorted.length === 0 ? (
         <div className="py-12 text-center">
-          <p className="text-sm text-warm-400">
+          <p className="text-sm text-warm-500">
             No clients match the current filter.
           </p>
           <button
@@ -447,7 +447,7 @@ export default function CaseloadDashboard({ currentClientId, onSelectClient }) {
 
           {/* ── Pagination ── */}
           <div className="flex flex-col items-center gap-2 pt-2">
-            <span className="text-xs text-warm-400">
+            <span className="text-xs text-warm-500">
               Showing {visible.length} of {sorted.length} client{sorted.length !== 1 ? 's' : ''}
             </span>
             {visibleCount < sorted.length && (
@@ -485,7 +485,7 @@ function SummaryCard({ icon, label, value, accent, bg, highlight }) {
         <div className={`text-base font-semibold leading-tight ${highlight ? 'text-red-600' : 'text-warm-800'}`}>
           {value}
         </div>
-        <div className="text-[10px] text-warm-400 uppercase tracking-wider font-medium mt-0.5 truncate">
+        <div className="text-[10px] text-warm-500 uppercase tracking-wider font-medium mt-0.5 truncate">
           {label}
         </div>
       </div>
@@ -546,7 +546,7 @@ function ClientCard({ client, isSelected, onSelect, formatRelative }) {
               )}
             </div>
           </div>
-          <div className="text-[10px] text-warm-400 mt-0.5">
+          <div className="text-[10px] text-warm-500 mt-0.5">
             Updated {formatRelative(client.updatedAt)}
             {client.isStale && (
               <span className="ml-1.5 text-amber-500 font-medium">
@@ -559,7 +559,7 @@ function ClientCard({ client, isSelected, onSelect, formatRelative }) {
 
       {/* Domain mini bar chart */}
       <div className="px-4 py-2">
-        <div className="text-[9px] text-warm-400 uppercase tracking-wider font-medium mb-1.5">
+        <div className="text-[9px] text-warm-500 uppercase tracking-wider font-medium mb-1.5">
           Domain Scores
         </div>
         <div className="flex items-end gap-[3px] h-8">
@@ -584,7 +584,7 @@ function ClientCard({ client, isSelected, onSelect, formatRelative }) {
           {client.domainScores.map((ds) => (
             <div
               key={ds.domainId}
-              className="flex-1 text-[7px] text-warm-300 text-center leading-tight truncate"
+              className="flex-1 text-[7px] text-warm-500 text-center leading-tight truncate"
               title={ds.domain}
             >
               D{ds.domainId.replace('d', '')}
@@ -605,10 +605,10 @@ function ClientCard({ client, isSelected, onSelect, formatRelative }) {
                   width: `${client.completion}%`,
                   backgroundColor:
                     client.completion > 75
-                      ? '#7fb589'
+                      ? '#10B981'
                       : client.completion > 40
-                        ? '#e5b76a'
-                        : '#e8928a',
+                        ? '#F59E0B'
+                        : '#F59E0B',
                 }}
               />
             </div>
@@ -628,7 +628,7 @@ function ClientCard({ client, isSelected, onSelect, formatRelative }) {
           onClick={onSelect}
           className={`flex items-center gap-1.5 text-xs font-medium px-3 py-1.5 rounded-lg transition-colors ml-2 flex-shrink-0 ${
             isSelected
-              ? 'bg-sage-500 text-white'
+              ? 'bg-sage-600 text-white'
               : 'bg-warm-100 text-warm-600 hover:bg-sage-100 hover:text-sage-700'
           }`}
         >

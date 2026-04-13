@@ -288,7 +288,7 @@ const EdgePaths = memo(function EdgePaths({ nodes, cascadeState, isMasteryCascad
       )
 
       const color = isActive
-        ? (isMasteryCascade ? '#ffd700' : '#ff4444')
+        ? (isMasteryCascade ? '#FBBF24' : '#EF4444')
         : DOMAIN_COLORS[edge.from] || '#556'
 
       return { geo, color, opacity: isActive ? 0.7 : 0.3, key: `edge-${i}` }

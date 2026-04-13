@@ -1,6 +1,7 @@
-import { useState, useCallback } from 'react'
+import { useState, useCallback, useMemo } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import useResponsive from '../hooks/useResponsive.js'
+import useSubscription from '../hooks/useSubscription.js'
 
 const NAV_GROUPS = [
   {
@@ -39,6 +40,7 @@ const NAV_GROUPS = [
     ),
     views: [
       { key: 'cascade', label: 'Intelligence' },
+      { key: 'client-ai', label: 'AI Agent' },
       { key: 'timeline', label: 'Timeline' },
       { key: 'alerts', label: 'Alerts' },
       { key: 'predictions', label: 'Predictions' },
@@ -68,9 +70,46 @@ const NAV_GROUPS = [
     ),
     views: [
       { key: 'goals', label: 'Goals' },
-      { key: 'reports', label: 'Reports' },
       { key: 'milestones', label: 'Milestones' },
       { key: 'certifications', label: 'Certifications' },
+      { key: 'goal-drafts', label: 'Goal Drafts' },
+      { key: 'deficit-goals', label: 'Deficit Goals' },
+      { key: 'lesson-plan', label: 'Lesson Plans' },
+    ],
+  },
+  {
+    id: 'schedule',
+    label: 'Schedule',
+    icon: (
+      <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+        <path strokeLinecap="round" strokeLinejoin="round" d="M6.75 3v2.25M17.25 3v2.25M3 18.75V7.5a2.25 2.25 0 012.25-2.25h13.5A2.25 2.25 0 0121 7.5v11.25m-18 0A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75m-18 0v-7.5A2.25 2.25 0 015.25 9h13.5A2.25 2.25 0 0121 11.25v7.5m-9-6h.008v.008H12v-.008zM12 15h.008v.008H12V15zm0 2.25h.008v.008H12v-.008zM9.75 15h.008v.008H9.75V15zm0 2.25h.008v.008H9.75v-.008zM7.5 15h.008v.008H7.5V15zm0 2.25h.008v.008H7.5v-.008zm6.75-4.5h.008v.008h-.008v-.008zm0 2.25h.008v.008h-.008V15zm0 2.25h.008v.008h-.008v-.008zm2.25-4.5h.008v.008H16.5v-.008zm0 2.25h.008v.008H16.5V15z" />
+      </svg>
+    ),
+    clinicalOnly: true,
+    views: [
+      { key: 'daily-agenda', label: 'My Day' },
+      { key: 'schedule', label: 'Weekly Schedule' },
+    ],
+  },
+  {
+    id: 'clinical',
+    label: 'Clinical',
+    icon: (
+      <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+        <path strokeLinecap="round" strokeLinejoin="round" d="M12 6.042A8.967 8.967 0 006 3.75c-1.052 0-2.062.18-3 .512v14.25A8.987 8.987 0 016 18c2.305 0 4.408.867 6 2.292m0-14.25a8.966 8.966 0 016-2.292c1.052 0 2.062.18 3 .512v14.25A8.987 8.987 0 0018 18a8.967 8.967 0 00-6 2.292m0-14.25v14.25" />
+      </svg>
+    ),
+    clinicalOnly: true,
+    views: [
+      { key: 'reports', label: 'Auth Reports' },
+      { key: 'authorizations', label: 'Authorizations' },
+      { key: 'learning-tree', label: 'Learning Tree' },
+      { key: 'goal-library', label: 'Goal Library' },
+      { key: 'graph-dashboard', label: 'Graph Dashboard' },
+      { key: 'sessions', label: 'Sessions' },
+      { key: 'notes', label: 'Session Notes' },
+      { key: 'client-files', label: 'Files' },
+      { key: 'client-contacts', label: 'Contacts' },
     ],
   },
   {
@@ -87,6 +126,7 @@ const NAV_GROUPS = [
       { key: 'practice', label: 'Home Practice' },
       { key: 'messages', label: 'Messages' },
       { key: 'org-analytics', label: 'Org Analytics' },
+      { key: 'practice-intelligence', label: 'Practice Intelligence' },
     ],
   },
   {
@@ -119,10 +159,39 @@ const VIEW_TOUR_ATTR = {
   'goals': 'goals',
 }
 
-export default function SidebarNav({ activeView, onChangeView, collapsed = false, onToggleCollapse, shortcutMap, onOpenShortcuts, onRestartTour }) {
+export default function SidebarNav({
+  activeView,
+  onChangeView,
+  collapsed = false,
+  onToggleCollapse,
+  shortcutMap,
+  onOpenShortcuts,
+  onRestartTour,
+  canUseClientAI = true,
+  canAccessView = () => true,
+}) {
   const { isTablet, isDesktop } = useResponsive()
+  const { hasClinical } = useSubscription()
   // Auto-collapse on tablet to save space — only show icons
   const effectiveCollapsed = isTablet || collapsed
+
+  // Filter groups: clinicalOnly groups require clinical subscription, devOnly still email-gated
+  const filteredGroups = useMemo(() => {
+    return NAV_GROUPS
+      .filter(g => {
+        if (g.clinicalOnly) return hasClinical
+        if (g.devOnly) return false // devOnly = not ready for anyone yet
+        return true
+      })
+      .map((group) => {
+        const views = (canUseClientAI
+          ? group.views
+          : group.views.filter((view) => view.key !== 'client-ai'))
+          .filter((view) => canAccessView(view.key))
+        return views === group.views ? group : { ...group, views }
+      })
+      .filter((group) => group.views.length > 0)
+  }, [hasClinical, canUseClientAI, canAccessView])
   const [expanded, setExpanded] = useState(() => {
     // Auto-expand the group containing the active view
     const group = VIEW_TO_GROUP[activeView]
@@ -147,7 +216,7 @@ export default function SidebarNav({ activeView, onChangeView, collapsed = false
         {!isTablet && (
           <button
             onClick={onToggleCollapse}
-            className="p-2 rounded-lg text-warm-400 hover:text-warm-600 hover:bg-warm-50 transition-colors mb-2"
+            className="p-2 rounded-lg text-warm-500 hover:text-warm-600 hover:bg-warm-50 transition-colors mb-2"
             title="Expand sidebar"
             aria-label="Expand sidebar"
           >
@@ -156,7 +225,7 @@ export default function SidebarNav({ activeView, onChangeView, collapsed = false
             </svg>
           </button>
         )}
-        {NAV_GROUPS.map((group) => {
+        {filteredGroups.map((group) => {
           const isActive = group.views.some(v => v.key === activeView)
           return (
             <button
@@ -174,8 +243,8 @@ export default function SidebarNav({ activeView, onChangeView, collapsed = false
               aria-label={group.label}
               className={`p-2.5 rounded-lg transition-colors ${
                 isActive
-                  ? 'bg-sage-50 text-sage-600'
-                  : 'text-warm-400 hover:text-warm-600 hover:bg-warm-50'
+                  ? 'bg-sage-50 text-sage-700 border-l-[3px] border-sage-500'
+                  : 'text-warm-500 hover:text-warm-600 hover:bg-warm-100'
               }`}
             >
               {group.icon}
@@ -187,7 +256,7 @@ export default function SidebarNav({ activeView, onChangeView, collapsed = false
             onClick={onOpenShortcuts}
             title="Keyboard shortcuts"
             aria-label="Keyboard shortcuts"
-            className="mt-auto p-2.5 rounded-lg text-warm-400 hover:text-warm-600 hover:bg-warm-50 transition-colors"
+            className="mt-auto p-2.5 rounded-lg text-warm-500 hover:text-warm-600 hover:bg-warm-50 transition-colors"
           >
             <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.75} strokeLinecap="round" strokeLinejoin="round">
               <rect x="2" y="4" width="20" height="16" rx="2" />
@@ -202,7 +271,7 @@ export default function SidebarNav({ activeView, onChangeView, collapsed = false
             onClick={onRestartTour}
             title="Restart tour"
             aria-label="Restart onboarding tour"
-            className="p-2.5 rounded-lg text-warm-400 hover:text-warm-600 hover:bg-warm-50 transition-colors"
+            className="p-2.5 rounded-lg text-warm-500 hover:text-warm-600 hover:bg-warm-50 transition-colors"
           >
             <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.75}>
               <path strokeLinecap="round" strokeLinejoin="round" d="M4.5 12c0-4.14 3.36-7.5 7.5-7.5 2.485 0 4.687 1.21 6.05 3.07M19.5 12c0 4.14-3.36 7.5-7.5 7.5-2.485 0-4.687-1.21-6.05-3.07M19.5 4.5v3.07h-3.07M4.5 19.5v-3.07h3.07" />
@@ -221,10 +290,10 @@ export default function SidebarNav({ activeView, onChangeView, collapsed = false
     >
       {/* Collapse button */}
       <div className="flex items-center justify-between px-3 py-2 border-b border-warm-100">
-        <span className="text-[10px] font-semibold uppercase tracking-wider text-warm-400">Navigation</span>
+        <span className="text-[10px] font-semibold uppercase tracking-wider text-warm-500">Navigation</span>
         <button
           onClick={onToggleCollapse}
-          className="p-1.5 rounded-md text-warm-400 hover:text-warm-600 hover:bg-warm-50 transition-colors"
+          className="p-1.5 rounded-md text-warm-500 hover:text-warm-600 hover:bg-warm-50 transition-colors"
           title="Collapse sidebar"
           aria-label="Collapse sidebar"
         >
@@ -235,38 +304,38 @@ export default function SidebarNav({ activeView, onChangeView, collapsed = false
       </div>
 
       <div className="py-1.5 flex-1">
-        {NAV_GROUPS.map((group) => {
+        {filteredGroups.map((group, groupIndex) => {
           const isGroupActive = group.views.some(v => v.key === activeView)
           // Respect explicit user collapse (false) even when group is active
           const isExpanded = expanded[group.id] === false ? false : (expanded[group.id] || isGroupActive)
 
           // Single-item groups render flat
+          // Section divider between groups
+          const divider = groupIndex < filteredGroups.length - 1 ? (
+            <div className="mx-3 my-1 border-b border-warm-100" />
+          ) : null
+
           if (group.single) {
             const view = group.views[0]
             const isActive = activeView === view.key
             return (
+              <div key={group.id}>
               <button
-                key={group.id}
                 onClick={() => handleViewClick(view.key, group.id)}
                 className={`relative w-full flex items-center gap-2.5 px-3 py-2 text-left text-sm transition-colors min-h-[44px] ${
                   isActive
-                    ? 'bg-sage-50 text-sage-700 font-medium'
-                    : 'text-warm-600 hover:bg-warm-50 hover:text-warm-700'
+                    ? 'bg-sage-50 text-sage-700 font-medium border-l-[3px] border-sage-500'
+                    : 'text-warm-600 hover:bg-warm-100 hover:text-warm-700'
                 }`}
               >
-                {isActive && (
-                  <motion.div
-                    layoutId="active-nav-indicator"
-                    className="absolute right-0 top-0 bottom-0 w-0.5 bg-sage-500 rounded-l"
-                    transition={{ type: 'spring', stiffness: 350, damping: 30 }}
-                  />
-                )}
-                <span className={isActive ? 'text-sage-600' : 'text-warm-400'}>{group.icon}</span>
+                <span className={isActive ? 'text-sage-600' : 'text-warm-500'}>{group.icon}</span>
                 <span className="flex-1">{group.label}</span>
                 {isDesktop && shortcutMap?.[view.key] && (
-                  <kbd className="text-[9px] font-mono bg-warm-50 border border-warm-100 text-warm-300 px-1 rounded">{shortcutMap[view.key]}</kbd>
+                  <kbd className="text-[9px] font-mono bg-warm-50 border border-warm-200 text-warm-300 px-1 rounded">{shortcutMap[view.key]}</kbd>
                 )}
               </button>
+              {divider}
+              </div>
             )
           }
 
@@ -278,13 +347,13 @@ export default function SidebarNav({ activeView, onChangeView, collapsed = false
                 className={`w-full flex items-center gap-2.5 px-3 py-2 text-left text-sm transition-colors min-h-[44px] ${
                   isGroupActive
                     ? 'text-sage-700 font-medium'
-                    : 'text-warm-600 hover:bg-warm-50 hover:text-warm-700'
+                    : 'text-warm-600 hover:bg-warm-100 hover:text-warm-700'
                 }`}
               >
-                <span className={isGroupActive ? 'text-sage-600' : 'text-warm-400'}>{group.icon}</span>
+                <span className={isGroupActive ? 'text-sage-600' : 'text-warm-500'}>{group.icon}</span>
                 <span className="flex-1">{group.label}</span>
                 <motion.svg
-                  className="w-3 h-3 text-warm-400 shrink-0"
+                  className="w-3 h-3 text-warm-500 shrink-0"
                   fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}
                   animate={{ rotate: isExpanded ? 90 : 0 }}
                   transition={{ duration: 0.15 }}
@@ -312,21 +381,13 @@ export default function SidebarNav({ activeView, onChangeView, collapsed = false
                           {...(VIEW_TOUR_ATTR[view.key] ? { 'data-tour': VIEW_TOUR_ATTR[view.key] } : {})}
                           className={`relative w-full flex items-center gap-2 pl-9 pr-3 py-1.5 text-left text-[13px] transition-colors min-h-[44px] ${
                             isActive
-                              ? 'bg-sage-50 text-sage-700 font-medium'
-                              : 'text-warm-500 hover:bg-warm-50 hover:text-warm-700'
+                              ? 'bg-sage-50 text-sage-700 font-medium border-l-[3px] border-sage-500'
+                              : 'text-warm-500 hover:bg-warm-100 hover:text-warm-700'
                           }`}
                         >
-                          {isActive && (
-                            <motion.div
-                              layoutId="active-nav-indicator"
-                              className="absolute right-0 top-0 bottom-0 w-0.5 bg-sage-500 rounded-l"
-                              transition={{ type: 'spring', stiffness: 350, damping: 30 }}
-                            />
-                          )}
-                          {isActive && <div className="w-1.5 h-1.5 rounded-full bg-sage-500 shrink-0" />}
                           <span className="flex-1">{view.label}</span>
                           {isDesktop && shortcutMap?.[view.key] && (
-                            <kbd className="text-[9px] font-mono bg-warm-50 border border-warm-100 text-warm-300 px-1 rounded">{shortcutMap[view.key]}</kbd>
+                            <kbd className="text-[9px] font-mono bg-warm-50 border border-warm-200 text-warm-300 px-1 rounded">{shortcutMap[view.key]}</kbd>
                           )}
                         </button>
                       )
@@ -334,6 +395,7 @@ export default function SidebarNav({ activeView, onChangeView, collapsed = false
                   </motion.div>
                 )}
               </AnimatePresence>
+              {divider}
             </div>
           )
         })}
@@ -344,24 +406,24 @@ export default function SidebarNav({ activeView, onChangeView, collapsed = false
         {onOpenShortcuts && (
           <button
             onClick={onOpenShortcuts}
-            className="w-full flex items-center gap-2.5 px-2 py-2 text-left text-[13px] text-warm-500 hover:text-warm-700 hover:bg-warm-50 rounded-lg transition-colors min-h-[44px]"
+            className="w-full flex items-center gap-2.5 px-2 py-2 text-left text-[13px] text-warm-500 hover:text-warm-700 hover:bg-warm-100 rounded-lg transition-colors min-h-[44px]"
           >
-            <svg className="w-4 h-4 text-warm-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.75} strokeLinecap="round" strokeLinejoin="round">
+            <svg className="w-4 h-4 text-warm-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.75} strokeLinecap="round" strokeLinejoin="round">
               <rect x="2" y="4" width="20" height="16" rx="2" />
               <path d="M6 8h.01M10 8h.01M14 8h.01M18 8h.01" />
               <path d="M6 12h.01M10 12h.01M14 12h.01M18 12h.01" />
               <path d="M8 16h8" />
             </svg>
             <span>Shortcuts</span>
-            <kbd className="ml-auto text-[9px] font-mono bg-warm-50 border border-warm-100 text-warm-300 px-1 rounded">?</kbd>
+            <kbd className="ml-auto text-[9px] font-mono bg-warm-50 border border-warm-200 text-warm-300 px-1 rounded">?</kbd>
           </button>
         )}
         {onRestartTour && (
           <button
             onClick={onRestartTour}
-            className="w-full flex items-center gap-2.5 px-2 py-2 text-left text-[13px] text-warm-500 hover:text-warm-700 hover:bg-warm-50 rounded-lg transition-colors min-h-[44px]"
+            className="w-full flex items-center gap-2.5 px-2 py-2 text-left text-[13px] text-warm-500 hover:text-warm-700 hover:bg-warm-100 rounded-lg transition-colors min-h-[44px]"
           >
-            <svg className="w-4 h-4 text-warm-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.75}>
+            <svg className="w-4 h-4 text-warm-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.75}>
               <path strokeLinecap="round" strokeLinejoin="round" d="M4.5 12c0-4.14 3.36-7.5 7.5-7.5 2.485 0 4.687 1.21 6.05 3.07M19.5 12c0 4.14-3.36 7.5-7.5 7.5-2.485 0-4.687-1.21-6.05-3.07M19.5 4.5v3.07h-3.07M4.5 19.5v-3.07h3.07" />
             </svg>
             <span>Restart Tour</span>
@@ -371,9 +433,9 @@ export default function SidebarNav({ activeView, onChangeView, collapsed = false
           href="/kb"
           target="_blank"
           rel="noopener"
-          className="w-full flex items-center gap-2.5 px-2 py-2 text-left text-[13px] text-warm-500 hover:text-warm-700 hover:bg-warm-50 rounded-lg transition-colors min-h-[44px]"
+          className="w-full flex items-center gap-2.5 px-2 py-2 text-left text-[13px] text-warm-500 hover:text-warm-700 hover:bg-warm-100 rounded-lg transition-colors min-h-[44px]"
         >
-          <svg className="w-4 h-4 text-warm-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.75}>
+          <svg className="w-4 h-4 text-warm-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.75}>
             <path strokeLinecap="round" strokeLinejoin="round" d="M12 6.042A8.967 8.967 0 006 3.75c-1.052 0-2.062.18-3 .512v14.25A8.987 8.987 0 016 18c2.305 0 4.408.867 6 2.292m0-14.25a8.966 8.966 0 016-2.292c1.052 0 2.062.18 3 .512v14.25A8.987 8.987 0 0018 18a8.967 8.967 0 00-6 2.292m0-14.25v14.25" />
           </svg>
           <span>Knowledge Base</span>

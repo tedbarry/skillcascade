@@ -1,16 +1,19 @@
 // Supabase Edge Function: AI Proxy
-// Proxies OpenAI API calls so the API key stays server-side.
+// Routes AI calls through AWS Bedrock (Claude) for HIPAA compliance.
 // Deploy: supabase functions deploy ai-proxy --no-verify-jwt
 //
 // Environment variables needed (set via Supabase dashboard):
-//   OPENAI_API_KEY — your OpenAI API key
+//   AWS_ACCESS_KEY_ID — Bedrock IAM user access key
+//   AWS_SECRET_ACCESS_KEY — Bedrock IAM user secret key
 
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
+// @ts-ignore — aws4fetch works in Deno via esm.sh
+import { AwsClient } from 'https://esm.sh/aws4fetch@1.0.18'
 import { getCorsHeaders } from '../_shared/cors.ts'
 
-// Simple in-memory rate limiter: max 10 requests per minute per user
+// Simple in-memory rate limiter: max 20 requests per minute per user
 const rateLimitMap = new Map<string, { count: number; resetAt: number }>()
-const RATE_LIMIT = 10
+const RATE_LIMIT = 20
 const RATE_WINDOW_MS = 60_000
 
 function checkRateLimit(userId: string): boolean {
@@ -25,16 +28,68 @@ function checkRateLimit(userId: string): boolean {
   return true
 }
 
+// Map frontend model names to Bedrock model IDs
+const MODEL_MAP: Record<string, string> = {
+  'gpt-4o-mini': 'us.anthropic.claude-3-5-haiku-20241022-v1:0',
+  'gpt-4o': 'us.anthropic.claude-sonnet-4-20250514-v1:0',
+  'claude-haiku': 'us.anthropic.claude-3-5-haiku-20241022-v1:0',
+  'claude-sonnet': 'us.anthropic.claude-sonnet-4-20250514-v1:0',
+}
+
+// Convert OpenAI-style messages to Bedrock/Claude format
+function convertMessages(messages: any[]): { system: string | undefined; messages: any[] } {
+  let system: string | undefined
+  const converted: any[] = []
+
+  for (const msg of messages) {
+    if (msg.role === 'system') {
+      // Claude uses top-level system parameter, not a system message
+      system = (system ? system + '\n\n' : '') + (typeof msg.content === 'string' ? msg.content : '')
+      continue
+    }
+
+    // Handle vision messages (image_url content)
+    if (Array.isArray(msg.content)) {
+      const parts: any[] = []
+      for (const part of msg.content) {
+        if (part.type === 'text') {
+          parts.push({ type: 'text', text: part.text })
+        } else if (part.type === 'image_url' && part.image_url?.url) {
+          const url = part.image_url.url
+          if (url.startsWith('data:')) {
+            // Base64 image — extract media type and data
+            const match = url.match(/^data:(image\/\w+);base64,(.+)$/)
+            if (match) {
+              parts.push({
+                type: 'image',
+                source: {
+                  type: 'base64',
+                  media_type: match[1],
+                  data: match[2],
+                },
+              })
+            }
+          }
+        }
+      }
+      converted.push({ role: msg.role, content: parts })
+    } else {
+      converted.push({ role: msg.role, content: msg.content })
+    }
+  }
+
+  return { system, messages: converted }
+}
+
 Deno.serve(async (req) => {
   const corsHeaders = getCorsHeaders(req)
 
-  // Handle CORS preflight
   if (req.method === 'OPTIONS') {
     return new Response('ok', { headers: corsHeaders })
   }
 
   try {
-    // Verify the user is authenticated via Supabase JWT
+    // Verify authentication
     const authHeader = req.headers.get('Authorization')
     if (!authHeader) {
       return new Response(JSON.stringify({ error: 'Missing authorization header' }), {
@@ -49,7 +104,6 @@ Deno.serve(async (req) => {
       global: { headers: { Authorization: authHeader } },
     })
 
-    // Verify user session
     const { data: { user }, error: authError } = await supabase.auth.getUser()
     if (authError || !user) {
       return new Response(JSON.stringify({ error: 'Unauthorized' }), {
@@ -58,20 +112,20 @@ Deno.serve(async (req) => {
       })
     }
 
-    // Rate limit check
+    // Rate limit
     if (!checkRateLimit(user.id)) {
-      return new Response(JSON.stringify({ error: 'Rate limit exceeded. Please wait a minute before trying again.' }), {
+      return new Response(JSON.stringify({ error: 'Rate limit exceeded. Please wait a minute.' }), {
         status: 429,
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       })
     }
 
-    // Parse request body
+    // Parse request
     const body = await req.json()
     const messages = body.messages
-    const model = body.model || 'gpt-4o-mini'
+    const requestedModel = body.model || 'gpt-4o-mini'
     const max_tokens = Math.min(body.max_tokens || 2000, 4000)
-    const temperature = Math.min(Math.max(body.temperature ?? 0.7, 0), 2)
+    const temperature = Math.min(Math.max(body.temperature ?? 0.7, 0), 1)
 
     if (!messages || !Array.isArray(messages)) {
       return new Response(JSON.stringify({ error: 'Messages array is required' }), {
@@ -80,63 +134,84 @@ Deno.serve(async (req) => {
       })
     }
 
-    // Get API key — first check user's own key, then fall back to platform key
-    let apiKey = ''
+    // Get AWS credentials
+    const accessKeyId = Deno.env.get('AWS_ACCESS_KEY_ID')
+    const secretAccessKey = Deno.env.get('AWS_SECRET_ACCESS_KEY')
 
-    // Check if user has their own API key stored
-    const { data: settings } = await supabase
-      .from('user_settings')
-      .select('settings')
-      .eq('user_id', user.id)
-      .single()
-
-    if (settings?.settings?.ai_api_key) {
-      apiKey = settings.settings.ai_api_key
-    } else {
-      // Fall back to platform-wide key
-      apiKey = Deno.env.get('OPENAI_API_KEY') || ''
-    }
-
-    if (!apiKey) {
-      return new Response(JSON.stringify({ error: 'No API key configured. Please add your OpenAI API key in settings.' }), {
-        status: 400,
+    if (!accessKeyId || !secretAccessKey) {
+      return new Response(JSON.stringify({ error: 'AI service not configured. Contact support.' }), {
+        status: 500,
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       })
     }
 
-    // Call OpenAI
-    const openaiRes = await fetch('https://api.openai.com/v1/chat/completions', {
+    // Map model name
+    const modelId = MODEL_MAP[requestedModel] || MODEL_MAP['gpt-4o-mini']
+
+    // Convert messages to Claude format
+    const { system, messages: claudeMessages } = convertMessages(messages)
+
+    // Build Bedrock request
+    const bedrockBody: any = {
+      anthropic_version: 'bedrock-2023-05-31',
+      max_tokens,
+      temperature,
+      messages: claudeMessages,
+    }
+    if (system) {
+      bedrockBody.system = system
+    }
+
+    // Call AWS Bedrock
+    const aws = new AwsClient({
+      accessKeyId,
+      secretAccessKey,
+      region: 'us-east-1',
+      service: 'bedrock',
+    })
+
+    const bedrockUrl = `https://bedrock-runtime.us-east-1.amazonaws.com/model/${modelId}/invoke`
+
+    const bedrockRes = await aws.fetch(bedrockUrl, {
       method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${apiKey}`,
-      },
-      body: JSON.stringify({ model, messages, max_tokens, temperature }),
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(bedrockBody),
     })
 
-    if (!openaiRes.ok) {
-      const err = await openaiRes.json().catch(() => ({}))
-      return new Response(JSON.stringify({ error: err.error?.message || `OpenAI error: ${openaiRes.status}` }), {
-        status: openaiRes.status,
+    if (!bedrockRes.ok) {
+      const errText = await bedrockRes.text()
+      console.error('Bedrock error:', bedrockRes.status, errText)
+      return new Response(JSON.stringify({ error: `AI service error: ${bedrockRes.status}` }), {
+        status: bedrockRes.status,
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       })
     }
 
-    const data = await openaiRes.json()
-    const content = data.choices?.[0]?.message?.content || 'No response generated.'
+    const data = await bedrockRes.json()
+    const content = data.content?.[0]?.text || 'No response generated.'
 
-    // Audit log the AI usage
-    await supabase.from('audit_log').insert({
-      user_id: user.id,
-      action: 'ai_query',
-      resource_type: 'ai_assistant',
-      metadata: { model, tokens: data.usage?.total_tokens },
-    })
+    // Audit log (non-blocking, ignore errors)
+    try {
+      await supabase.from('audit_log').insert({
+        user_id: user.id,
+        action: 'ai_query',
+        resource_type: 'ai_assistant',
+        metadata: {
+          model: modelId,
+          tokens: (data.usage?.input_tokens || 0) + (data.usage?.output_tokens || 0),
+          input_tokens: data.usage?.input_tokens,
+          output_tokens: data.usage?.output_tokens,
+        },
+      })
+    } catch {
+      // Ignore audit log failures
+    }
 
     return new Response(JSON.stringify({ content }), {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
     })
   } catch (err) {
+    console.error('AI proxy error:', err)
     return new Response(JSON.stringify({ error: err.message }), {
       status: 500,
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },

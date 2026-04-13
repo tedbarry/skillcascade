@@ -5,7 +5,7 @@
 
 function Shimmer({ className = '' }) {
   return (
-    <div className={`bg-warm-200 rounded animate-pulse ${className}`} />
+    <div className={`skeleton rounded ${className}`} />
   )
 }
 
@@ -29,7 +29,7 @@ export function SkeletonChart({ className = '' }) {
     <div className={`flex flex-col items-center w-full ${className}`}>
       <Shimmer className="h-5 w-48 mb-2" />
       <Shimmer className="h-3 w-64 mb-6" />
-      <div className="w-full max-w-lg aspect-square rounded-2xl bg-warm-100 border border-warm-200 flex items-center justify-center">
+      <div className="w-full max-w-lg aspect-square rounded-xl bg-warm-100 border border-warm-200 flex items-center justify-center">
         <div className="w-3/4 h-3/4 rounded-full border-4 border-warm-200 animate-pulse" />
       </div>
     </div>
@@ -69,10 +69,15 @@ export function SkeletonGrid({ cols = 3, rows = 3, className = '' }) {
 export function SkeletonDashboard() {
   return (
     <div className="w-full max-w-6xl mx-auto px-3 sm:px-6 py-4 sm:py-8 animate-pulse">
-      <Shimmer className="h-7 w-48 mb-2" />
-      <Shimmer className="h-4 w-72 mb-8" />
+      <div className="flex items-center gap-3 mb-8">
+        <img src="/brand/icon-mark.jpg" alt="" className="w-8 h-8 rounded animate-pulse" aria-hidden="true" />
+        <div>
+          <Shimmer className="h-7 w-48 mb-2" />
+          <Shimmer className="h-4 w-72" />
+        </div>
+      </div>
       <div className="grid grid-cols-[auto_1fr] gap-6 mb-8">
-        <div className="bg-white rounded-2xl border border-warm-200 p-6 w-[140px] h-[160px]">
+        <div className="bg-white rounded-xl border border-warm-200 p-6 w-[140px] h-[160px]">
           <div className="w-24 h-24 rounded-full border-4 border-warm-200 mx-auto" />
         </div>
         <div className="grid grid-cols-4 gap-3">

@@ -26,9 +26,9 @@ const CascadeGraph3D = lazy(() => import('./CascadeGraph3D.jsx'))
 const STATE_CONFIG = {
   locked:       { fill: '#2a2a2a', stroke: '#444',    textColor: '#888',    label: 'Locked' },
   blocked:      { fill: '#3a2020', stroke: '#8b4444', textColor: '#ccc',    label: 'Blocked' },
-  'needs-work': { fill: '#3a2525', stroke: '#e8928a', textColor: '#f5c4c0', label: 'Needs Work' },
-  developing:   { fill: '#3a3520', stroke: '#e5b76a', textColor: '#f5e0b0', label: 'Developing' },
-  mastered:     { fill: '#1e3525', stroke: '#7fb589', textColor: '#b5e8bf', label: 'Mastered' },
+  'needs-work': { fill: '#3a2525', stroke: '#F59E0B', textColor: '#f5c4c0', label: 'Needs Work' },
+  developing:   { fill: '#3a3520', stroke: '#F59E0B', textColor: '#f5e0b0', label: 'Developing' },
+  mastered:     { fill: '#1e3525', stroke: '#10B981', textColor: '#b5e8bf', label: 'Mastered' },
 }
 
 const MODES = {
@@ -267,18 +267,18 @@ export default function CascadeAnimation({
         return { fill: '#1a1a1e', stroke: '#333', textColor: '#555', glow: false, domainColor }
       }
       const step = pathChain?.find((s) => s.domainId === node.id)
-      if (step?.status === 'met') return { fill: '#1e3525', stroke: '#7fb589', textColor: '#b5e8bf', glow: true, domainColor }
-      if (step?.status === 'close') return { fill: '#3a3520', stroke: '#e5b76a', textColor: '#f5e0b0', glow: true, domainColor }
-      return { fill: '#3a2525', stroke: '#e8928a', textColor: '#f5c4c0', glow: true, domainColor }
+      if (step?.status === 'met') return { fill: '#1e3525', stroke: '#10B981', textColor: '#b5e8bf', glow: true, domainColor }
+      if (step?.status === 'close') return { fill: '#3a3520', stroke: '#F59E0B', textColor: '#f5e0b0', glow: true, domainColor }
+      return { fill: '#3a2525', stroke: '#F59E0B', textColor: '#f5c4c0', glow: true, domainColor }
     }
 
     // Cascade active: source and affected — gold for mastery, red for weakness
     if (cascadeState.active) {
       if (node.id === cascadeState.source) {
         if (isMasteryCascade) {
-          return { fill: '#2a2a15', stroke: '#ffd700', textColor: '#ffe680', glow: true, shake: true, domainColor }
+          return { fill: '#2a2a15', stroke: '#FBBF24', textColor: '#ffe680', glow: true, shake: true, domainColor }
         }
-        return { fill: '#5c1a1a', stroke: '#ff4444', textColor: '#ff8888', glow: true, shake: true, domainColor }
+        return { fill: '#5c1a1a', stroke: '#EF4444', textColor: '#ff8888', glow: true, shake: true, domainColor }
       }
       const affected = cascadeState.affected[node.id]
       if (affected) {
@@ -286,7 +286,7 @@ export default function CascadeAnimation({
         if (isMasteryCascade) {
           return {
             fill: `rgba(42, 42, 21, ${intensity})`,
-            stroke: `rgba(255, 215, 0, ${intensity})`,
+            stroke: `rgba(251, 191, 36, ${intensity})`,
             textColor: `rgba(255, 230, 128, ${intensity})`,
             glow: true,
             domainColor,
@@ -294,7 +294,7 @@ export default function CascadeAnimation({
         }
         return {
           fill: `rgba(92, 26, 26, ${intensity})`,
-          stroke: `rgba(255, 68, 68, ${intensity})`,
+          stroke: `rgba(239, 68, 68, ${intensity})`,
           textColor: `rgba(255, 136, 136, ${intensity})`,
           glow: true,
           domainColor,
@@ -303,7 +303,7 @@ export default function CascadeAnimation({
       if (isMasteryCascade) {
         return { fill: '#1e2520', stroke: '#5a8a5a', textColor: '#8ab88a', glow: false, domainColor }
       }
-      return { fill: '#1e3525', stroke: '#7fb589', textColor: '#b5e8bf', glow: false, domainColor }
+      return { fill: '#1e3525', stroke: '#10B981', textColor: '#b5e8bf', glow: false, domainColor }
     }
 
     // Heatmap overlay — proper d3 color scale
@@ -329,7 +329,7 @@ export default function CascadeAnimation({
   }
 
   function getEdgeStyle(edge) {
-    const cascadeColor = isMasteryCascade ? '#ffd700' : '#ff4444'
+    const cascadeColor = isMasteryCascade ? '#FBBF24' : '#EF4444'
 
     // Path trace: highlight path edges
     if (mode === MODES.PATHTRACE && pathGoal && pathDomainIds.has(edge.from) && pathDomainIds.has(edge.to)) {
@@ -361,7 +361,7 @@ export default function CascadeAnimation({
 
     // Data-driven default: color by source health
     if (hasData && edge.isWeak) {
-      return { stroke: '#e8928a', opacity: 0.7, width: 2.5, dash: 'none', animate: false, arrowId: 'arrow-red' }
+      return { stroke: '#F59E0B', opacity: 0.7, width: 2.5, dash: 'none', animate: false, arrowId: 'arrow-red' }
     }
 
     const healthPct = edge.sourceHealthPct
@@ -579,9 +579,9 @@ export default function CascadeAnimation({
           >
             <div className={`flex items-center gap-3 ${isPhone ? 'gap-2 px-2 py-1.5 flex-wrap' : 'px-4 py-1.5'} text-[9px]`}>
               {[
-                { color: '#7fb589', label: 'Mastered' },
-                { color: '#e5b76a', label: 'Developing' },
-                { color: '#e8928a', label: 'Needs Work' },
+                { color: '#10B981', label: 'Mastered' },
+                { color: '#F59E0B', label: 'Developing' },
+                { color: '#F59E0B', label: 'Needs Work' },
                 { color: '#8b4444', label: 'Blocked' },
                 { color: '#444', label: 'Locked' },
               ].map(s => (
@@ -679,13 +679,13 @@ export default function CascadeAnimation({
                 <path d="M0,0.5 L7,3 L0,5.5" fill="#333" />
               </marker>
               <marker id="arrow-green" viewBox="0 0 8 6" refX="7" refY="3" markerWidth="8" markerHeight="6" orient="auto">
-                <path d="M0,0.5 L7,3 L0,5.5" fill="#7fb589" />
+                <path d="M0,0.5 L7,3 L0,5.5" fill="#10B981" />
               </marker>
               <marker id="arrow-red" viewBox="0 0 8 6" refX="7" refY="3" markerWidth="9" markerHeight="7" orient="auto">
-                <path d="M0,0.5 L7,3 L0,5.5" fill="#ff4444" />
+                <path d="M0,0.5 L7,3 L0,5.5" fill="#EF4444" />
               </marker>
               <marker id="arrow-gold" viewBox="0 0 8 6" refX="7" refY="3" markerWidth="9" markerHeight="7" orient="auto">
-                <path d="M0,0.5 L7,3 L0,5.5" fill="#ffd700" />
+                <path d="M0,0.5 L7,3 L0,5.5" fill="#FBBF24" />
               </marker>
               <marker id="arrow-blue" viewBox="0 0 8 6" refX="7" refY="3" markerWidth="9" markerHeight="7" orient="auto">
                 <path d="M0,0.5 L7,3 L0,5.5" fill="#6889b5" />
@@ -709,7 +709,7 @@ export default function CascadeAnimation({
               {/* Red cascade glow */}
               <filter id="cascade-glow" x="-50%" y="-50%" width="200%" height="200%">
                 <feGaussianBlur stdDeviation="8" result="blur" />
-                <feFlood floodColor="#ff4444" floodOpacity="0.6" result="color" />
+                <feFlood floodColor="#EF4444" floodOpacity="0.6" result="color" />
                 <feComposite in="color" in2="blur" operator="in" result="shadow" />
                 <feMerge>
                   <feMergeNode in="shadow" />
@@ -720,7 +720,7 @@ export default function CascadeAnimation({
               {/* Gold mastery cascade glow */}
               <filter id="cascade-glow-gold" x="-50%" y="-50%" width="200%" height="200%">
                 <feGaussianBlur stdDeviation="8" result="blur" />
-                <feFlood floodColor="#ffd700" floodOpacity="0.5" result="color" />
+                <feFlood floodColor="#FBBF24" floodOpacity="0.5" result="color" />
                 <feComposite in="color" in2="blur" operator="in" result="shadow" />
                 <feMerge>
                   <feMergeNode in="shadow" />
@@ -765,12 +765,12 @@ export default function CascadeAnimation({
 
               {/* Ripple gradients */}
               <radialGradient id="ripple-gradient">
-                <stop offset="0%" stopColor="#ff4444" stopOpacity="0.4" />
-                <stop offset="100%" stopColor="#ff4444" stopOpacity="0" />
+                <stop offset="0%" stopColor="#EF4444" stopOpacity="0.4" />
+                <stop offset="100%" stopColor="#EF4444" stopOpacity="0" />
               </radialGradient>
               <radialGradient id="ripple-gradient-gold">
-                <stop offset="0%" stopColor="#ffd700" stopOpacity="0.4" />
-                <stop offset="100%" stopColor="#ffd700" stopOpacity="0" />
+                <stop offset="0%" stopColor="#FBBF24" stopOpacity="0.4" />
+                <stop offset="100%" stopColor="#FBBF24" stopOpacity="0" />
               </radialGradient>
 
               {/* Particle trail glow filter */}
@@ -910,7 +910,7 @@ export default function CascadeAnimation({
                       key={`bg-glow-${id}`}
                       cx={pos.x} cy={pos.y}
                       r={tierSpacing * 0.5}
-                      fill={isMasteryCascade ? '#ffd700' : '#ff4444'}
+                      fill={isMasteryCascade ? '#FBBF24' : '#EF4444'}
                       opacity="0"
                     >
                       <animate attributeName="r" from={tierSpacing * 0.5} to={tierSpacing * 1.2} dur="1s" fill="freeze" />
@@ -1068,11 +1068,11 @@ export default function CascadeAnimation({
             {/* Mastery celebration — golden halo rings pulsing outward from source */}
             {cascadeState.active && isMasteryCascade && cascadeState.source && positions[cascadeState.source] && (
               <g pointerEvents="none">
-                <circle cx={positions[cascadeState.source].x} cy={positions[cascadeState.source].y} r={nodeW / 2 + 5} fill="none" stroke="#ffd700" strokeWidth="1.5" opacity="0">
+                <circle cx={positions[cascadeState.source].x} cy={positions[cascadeState.source].y} r={nodeW / 2 + 5} fill="none" stroke="#FBBF24" strokeWidth="1.5" opacity="0">
                   <animate attributeName="r" from={nodeW / 2} to={nodeW / 2 + 30} dur="2s" repeatCount="indefinite" />
                   <animate attributeName="opacity" from="0.6" to="0" dur="2s" repeatCount="indefinite" />
                 </circle>
-                <circle cx={positions[cascadeState.source].x} cy={positions[cascadeState.source].y} r={nodeW / 2 + 5} fill="none" stroke="#ffd700" strokeWidth="1" opacity="0">
+                <circle cx={positions[cascadeState.source].x} cy={positions[cascadeState.source].y} r={nodeW / 2 + 5} fill="none" stroke="#FBBF24" strokeWidth="1" opacity="0">
                   <animate attributeName="r" from={nodeW / 2} to={nodeW / 2 + 30} dur="2s" begin="0.7s" repeatCount="indefinite" />
                   <animate attributeName="opacity" from="0.4" to="0" dur="2s" begin="0.7s" repeatCount="indefinite" />
                 </circle>
@@ -1147,7 +1147,7 @@ export default function CascadeAnimation({
 
                     {/* Warning dot */}
                     {hasWarning && !cascadeState.active && (
-                      <circle cx={pos.x + nodeW / 2 - 8} cy={pos.y - nodeH / 2 + 8} r={5} fill="#ff8800">
+                      <circle cx={pos.x + nodeW / 2 - 8} cy={pos.y - nodeH / 2 + 8} r={5} fill="#F97316">
                         <animate attributeName="opacity" values="1;0.4;1" dur="2s" repeatCount="indefinite" />
                       </circle>
                     )}
@@ -1308,7 +1308,7 @@ export default function CascadeAnimation({
                           y={pos.y + nodeH / 2 - 5}
                           width={(nodeW - 8) * impactData.impactStrength}
                           height={3} rx={1.5}
-                          fill={isMasteryCascade ? '#ffd700' : '#ff4444'}
+                          fill={isMasteryCascade ? '#FBBF24' : '#EF4444'}
                           opacity={0.7}
                           pointerEvents="none"
                         >
@@ -1389,7 +1389,7 @@ export default function CascadeAnimation({
               <text
                 x={width / 2} y={height - 16}
                 textAnchor="middle"
-                fill={isMasteryCascade ? '#ffd700' : '#888'}
+                fill={isMasteryCascade ? '#FBBF24' : '#888'}
                 fontSize="10"
                 fontWeight={isMasteryCascade ? '600' : '400'}
                 fontFamily="monospace"
@@ -1553,7 +1553,7 @@ function NodeTooltip({ tooltip, width, hasData, heatmapOn, mode, pathChain, isMa
         transform: x > width * 0.6 ? 'translateX(-110%)' : 'none',
       }}
     >
-      <div className="bg-[#2a2a30]/95 backdrop-blur-sm border border-[#444] rounded-lg shadow-2xl px-4 py-3">
+      <div className="bg-[#2a2a30]/95 backdrop-blur-sm border border-[#444] rounded-lg shadow-lg px-4 py-3">
         <div className="flex items-center gap-2 mb-1">
           <span
             className="w-3 h-3 rounded-sm"
@@ -1636,8 +1636,8 @@ function PathTraceSidebar({ chain, goalName, onNavigateToAssess, onClose, isTabl
       {/* Steps */}
       <div className="flex-1 overflow-y-auto px-4 py-3 space-y-2">
         {chain.map((step, i) => {
-          const color = step.status === 'met' ? '#7fb589'
-            : step.status === 'close' ? '#e5b76a' : '#e8928a'
+          const color = step.status === 'met' ? '#10B981'
+            : step.status === 'close' ? '#F59E0B' : '#F59E0B'
           const domainColor = DOMAIN_COLORS[step.domainId] || '#888'
           const statusLabel = step.status === 'met' ? 'Met'
             : step.status === 'close' ? 'Almost' : 'Gap'
@@ -1728,8 +1728,8 @@ function PathTraceBottomPanel({ chain, goalName, onNavigateToAssess }) {
 
       <div className="flex flex-col gap-1.5">
         {chain.map((step) => {
-          const color = step.status === 'met' ? '#7fb589'
-            : step.status === 'close' ? '#e5b76a' : '#e8928a'
+          const color = step.status === 'met' ? '#10B981'
+            : step.status === 'close' ? '#F59E0B' : '#F59E0B'
 
           return (
             <button
@@ -1827,7 +1827,7 @@ function SubAreaNodesSVG({ subAreas, parentPos, nodeW, nodeH, width, height, onN
         const saX = pos.x - saW / 2
         const saY = pos.y - saH / 2
         const pct = sa.total > 0 ? sa.assessed / sa.total : 0
-        const color = sa.assessed === 0 ? '#555' : sa.avg >= 2.5 ? '#7fb589' : sa.avg >= 1.5 ? '#e5b76a' : '#e8928a'
+        const color = sa.assessed === 0 ? '#555' : sa.avg >= 2.5 ? '#10B981' : sa.avg >= 1.5 ? '#F59E0B' : '#F59E0B'
 
         return (
           <g
@@ -1937,7 +1937,7 @@ function MobileSubAreaOverlay({ domainId, subAreas, onClose, onNavigateToAssess 
         <AnimatePresence>
           {subAreas.map((sa, i) => {
             const pct = sa.total > 0 ? sa.assessed / sa.total : 0
-            const color = sa.assessed === 0 ? '#555' : sa.avg >= 2.5 ? '#7fb589' : sa.avg >= 1.5 ? '#e5b76a' : '#e8928a'
+            const color = sa.assessed === 0 ? '#555' : sa.avg >= 2.5 ? '#10B981' : sa.avg >= 1.5 ? '#F59E0B' : '#F59E0B'
 
             return (
               <motion.button

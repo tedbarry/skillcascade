@@ -1,4 +1,4 @@
-import { defineConfig } from 'vite'
+import { defineConfig, configDefaults } from 'vitest/config'
 import react from '@vitejs/plugin-react'
 import tailwindcss from '@tailwindcss/vite'
 import { resolve } from 'path'
@@ -29,6 +29,7 @@ export default defineConfig({
   ],
   cacheDir: 'C:/Users/teddy/.vite-cache/skillcascade',
   build: {
+    emptyOutDir: false,
     chunkSizeWarningLimit: 750,
     rollupOptions: {
       output: {
@@ -43,5 +44,6 @@ export default defineConfig({
   test: {
     environment: 'jsdom',
     globals: true,
+    exclude: [...configDefaults.exclude, 'tests/e2e/**'],
   },
 })

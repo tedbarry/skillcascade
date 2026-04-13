@@ -26,7 +26,7 @@ export default function KBSearch({ initialQuery = '', autoFocus = false }) {
       {/* Search input */}
       <div className="relative">
         <svg
-          className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-warm-400"
+          className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-warm-500"
           fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}
         >
           <path strokeLinecap="round" strokeLinejoin="round" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
@@ -58,8 +58,8 @@ export default function KBSearch({ initialQuery = '', autoFocus = false }) {
         <div className="mt-3 rounded-xl border border-warm-200 bg-white overflow-hidden max-h-[60vh] overflow-y-auto">
           {results.length === 0 ? (
             <div className="px-5 py-8 text-center">
-              <p className="text-sm text-warm-400">No results for "{query}"</p>
-              <p className="text-xs text-warm-300 mt-1">Try a different search term</p>
+              <p className="text-sm text-warm-500">No results for "{query}"</p>
+              <p className="text-xs text-warm-500 mt-1">Try a different search term</p>
             </div>
           ) : (
             <div className="divide-y divide-warm-100">
@@ -76,7 +76,7 @@ export default function KBSearch({ initialQuery = '', autoFocus = false }) {
                     </span>
                   </div>
                   {result.summary && (
-                    <p className="text-xs text-warm-400 mt-0.5 line-clamp-1">{result.summary}</p>
+                    <p className="text-xs text-warm-500 mt-0.5 line-clamp-1">{result.summary}</p>
                   )}
                 </button>
               ))}

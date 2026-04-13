@@ -49,7 +49,7 @@ export default function UnsavedChangesDialog({ isOpen, onSaveLeave, onLeave, onS
             animate={{ opacity: 1, scale: 1, y: 0 }}
             exit={{ opacity: 0, scale: 0.95, y: 8 }}
             transition={{ duration: 0.15, ease: 'easeOut' }}
-            className="relative bg-white rounded-xl shadow-xl border border-warm-200 p-5 sm:p-6 w-full max-w-sm"
+            className="relative bg-white rounded-xl shadow-lg border border-warm-200 p-5 sm:p-6 w-full max-w-sm"
             onClick={(e) => e.stopPropagation()}
           >
             {/* Icon */}

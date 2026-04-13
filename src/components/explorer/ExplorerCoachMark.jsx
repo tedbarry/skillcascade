@@ -61,7 +61,7 @@ export default memo(function ExplorerCoachMark({ step, onDismiss, isPhone }) {
         </div>
 
         {/* Card */}
-        <div className="bg-gray-900/95 backdrop-blur-sm border border-gray-700 rounded-xl shadow-2xl overflow-hidden">
+        <div className="bg-gray-900/95 backdrop-blur-sm border border-gray-700 rounded-xl shadow-lg overflow-hidden">
           {/* Header: step counter + dismiss */}
           <div className="flex items-center justify-between px-4 pt-3 pb-0">
             <div className="flex items-center gap-2">

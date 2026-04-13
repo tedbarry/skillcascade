@@ -463,17 +463,17 @@ The domains fall into three tiers of dependency:
 
 ### Core domains (D4-D7)
 - **D4 Communication** — Depends on D1, D2, D3
-- **D5 Social** — Depends on D1, D2, D3, D4
-- **D6 Academic/Pre-Academic** — Depends on D1, D3
-- **D7 Daily Living** — Depends on D1, D3
+- **D5 Social Interaction** — Depends on D1, D2, D3, D4
+- **D6 Social Cognition** — Depends on D1, D2, D5, D8, D9
+- **D7 Identity & Self-Advocacy** — Depends on D1, D2, D3
 
 ### Supporting domains (D8-D9)
-- **D8 Motor** — More independent, but supports D6 and D7
-- **D9 Play/Leisure** — More independent, but supports D6
+- **D8 Safety & Well-Being** — Depends on D1, D2
+- **D9 Utilizing Support** — Depends on D1, D2, D4
 
 ## Why this matters
 
-When D1 is critical, every domain is at cascade risk. When D3 is struggling, D4-D7 all face potential ceilings. Understanding the dependency DAG helps clinicians prioritize: foundational domains first.
+When D1 is critical, every domain is at cascade risk. When D3 is struggling, multiple dependent domains face potential ceilings. Understanding the dependency DAG helps clinicians prioritize: foundational domains first.
 
 ## Where you'll see domain dependencies
 
@@ -724,11 +724,11 @@ Regulation is the bedrock. Managing arousal, attention, and emotional states is 
 Self-awareness builds on regulation. It includes interoception, emotional identification, and self-monitoring. Without adequate self-awareness, higher-level skills like perspective-taking and self-advocacy lack the internal data they need.
 
 ### D3: Executive Function
-Executive function builds on regulation and self-awareness. Attention, working memory, flexibility, planning, and inhibition are prerequisites for communication (D4), social interaction (D5), academics (D6), and daily living (D7).
+Executive function builds on regulation and self-awareness. Attention, working memory, flexibility, planning, and inhibition are prerequisites for communication (D4), social interaction (D5), and identity and self-advocacy (D7).
 
 ## The cascade risk
 
-When foundation domains are critical (health below 1.0), the Risk Monitor flags cascade risk — the most serious risk type because it threatens the entire developmental profile. A learner with critical D1 health may show superficial progress in D4-D7 that is fragile and context-dependent.
+When foundation domains are critical (health below 1.0), the Risk Monitor flags cascade risk — the most serious risk type because it threatens the entire developmental profile. A learner with critical D1 health may show superficial progress in D4-D9 that is fragile and context-dependent.
 
 ## Clinical priority
 

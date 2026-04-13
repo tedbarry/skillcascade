@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef, useCallback } from 'react'
 import { supabase } from '../lib/supabase.js'
+import { api } from '../lib/api.js'
 import { useAuth } from '../contexts/AuthContext.jsx'
 import EmptyState from './EmptyState.jsx'
 import KBHelpIcon from './kb/KBHelpIcon.jsx'
@@ -101,16 +102,16 @@ function dateDividerLabel(timestamp) {
 
 async function loadMessages(clientId) {
   if (!clientId) return []
-  const { data, error } = await supabase
+  const { data, error } = await api
     .from('messages')
-    .select('*, sender:profiles!sender_id(display_name, role)')
+    .select('*')
     .eq('client_id', clientId)
     .order('created_at')
   if (error) { console.error('Failed to load messages:', error.message); return [] }
   return (data || []).map((m) => ({
     id: m.id,
-    sender: m.sender?.display_name || 'Unknown',
-    role: m.sender?.role || 'bcba',
+    sender: m.sender_name || 'Unknown',
+    role: m.sender_role || 'bcba',
     text: m.text,
     timestamp: new Date(m.created_at).getTime(),
     read: (m.read_by || []).length > 0,
@@ -208,17 +209,17 @@ export default function Messaging({
     setSendError(null)
 
     try {
-      const { data, error } = await supabase
+      const { data, error } = await api
         .from('messages')
         .insert({
           client_id: clientId,
           sender_id: user.id,
           text,
         })
-        .select('*, sender:profiles!sender_id(display_name, role)')
-        .single()
+
 
       if (error) throw error
+      const inserted = Array.isArray(data) ? data[0] : data
 
       const newMsg = {
         id: data.id,
@@ -269,7 +270,7 @@ export default function Messaging({
 
   if (!clientId) {
     return (
-      <div className="flex flex-col items-center justify-center h-full min-h-[400px] text-warm-400">
+      <div className="flex flex-col items-center justify-center h-full min-h-[400px] text-warm-500">
         <div className="text-warm-300 mb-3">{ICONS.noClient}</div>
         <p className="text-sm font-medium">Select a client to view messages</p>
       </div>
@@ -294,7 +295,7 @@ export default function Messaging({
                 <span className="font-normal text-warm-500"> — {clientName}</span>
               )}
             </h3>
-            <p className="text-[11px] text-warm-400 leading-tight mt-0.5">
+            <p className="text-[11px] text-warm-500 leading-tight mt-0.5">
               Secure team messaging — synced across all your devices
             </p>
           </div>
@@ -317,7 +318,7 @@ export default function Messaging({
           /* ── Loading State ── */
           <div className="flex flex-col items-center justify-center h-full text-center py-12">
             <div className="w-5 h-5 border-2 border-warm-200 border-t-sage-500 rounded-full animate-spin mb-3" />
-            <p className="text-sm text-warm-400">Loading messages...</p>
+            <p className="text-sm text-warm-500">Loading messages...</p>
           </div>
         ) : messages.length === 0 ? (
           /* ── Empty State ── */
@@ -328,7 +329,7 @@ export default function Messaging({
               return (
                 <div key={item.key} className="flex items-center gap-3 py-3">
                   <div className="flex-1 h-px bg-warm-200" />
-                  <span className="text-[11px] font-medium text-warm-400 shrink-0">
+                  <span className="text-[11px] font-medium text-warm-500 shrink-0">
                     {dateDividerLabel(item.timestamp)}
                   </span>
                   <div className="flex-1 h-px bg-warm-200" />
@@ -368,7 +369,7 @@ export default function Messaging({
 
                   {/* Timestamp + Read receipt */}
                   <span
-                    className={`text-[10px] text-warm-400 mt-0.5 px-1 flex items-center gap-1 ${
+                    className={`text-[10px] text-warm-500 mt-0.5 px-1 flex items-center gap-1 ${
                       isSelf ? 'justify-end' : 'justify-start'
                     }`}
                   >

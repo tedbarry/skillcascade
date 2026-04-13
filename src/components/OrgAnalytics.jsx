@@ -16,12 +16,12 @@ import useResponsive from '../hooks/useResponsive.js'
    ───────────────────────────────────────────── */
 
 const CHART_COLORS = {
-  solid: '#7fb589',
-  developing: '#e5b76a',
-  needsWork: '#e8928a',
+  solid: '#10B981',
+  developing: '#F59E0B',
+  needsWork: '#F59E0B',
   notAssessed: '#9ca3af',
-  sage: '#4f8460',
-  warm: '#c49a6c',
+  sage: '#059669',
+  warm: '#D97706',
 }
 
 const TOTAL_SKILLS = framework.reduce(
@@ -449,7 +449,7 @@ export default function OrgAnalytics() {
   if (orgData.length === 0) {
     return (
       <div className="max-w-lg mx-auto py-16 px-6 text-center">
-        <div className="w-16 h-16 mx-auto mb-4 rounded-2xl bg-sage-50 text-sage-400 flex items-center justify-center">
+        <div className="text-sage-400 mx-auto mb-4">
           {Icons.building}
         </div>
         <h2 className="font-display text-xl font-semibold text-warm-800 mb-2">
@@ -480,7 +480,7 @@ export default function OrgAnalytics() {
         <h2 className="font-display text-lg font-semibold text-warm-800">
           Organization Analytics <KBHelpIcon term="view-org-analytics" />
         </h2>
-        <p className="text-xs text-warm-400 mt-0.5">
+        <p className="text-xs text-warm-500 mt-0.5">
           Aggregate outcomes across {kpis.total} client{kpis.total !== 1 ? 's' : ''}
         </p>
       </div>
@@ -527,7 +527,7 @@ export default function OrgAnalytics() {
           <h3 className="font-display text-sm font-semibold text-warm-700 mb-3">
             Domain Performance
           </h3>
-          <p className="text-[10px] text-warm-400 mb-3">
+          <p className="text-[10px] text-warm-500 mb-3">
             Average score per domain across all clients (0-3 scale)
           </p>
           <div style={{ width: '100%', height: 300 }}>
@@ -588,7 +588,7 @@ export default function OrgAnalytics() {
           <h3 className="font-display text-sm font-semibold text-warm-700 mb-3">
             Score Distribution
           </h3>
-          <p className="text-[10px] text-warm-400 mb-2">
+          <p className="text-[10px] text-warm-500 mb-2">
             All assessed skills across all clients
           </p>
           {scoreDistribution.length > 0 ? (
@@ -637,7 +637,7 @@ export default function OrgAnalytics() {
               </div>
             </>
           ) : (
-            <div className="h-48 flex items-center justify-center text-xs text-warm-400">
+            <div className="h-48 flex items-center justify-center text-xs text-warm-500">
               No assessment data yet
             </div>
           )}
@@ -650,7 +650,7 @@ export default function OrgAnalytics() {
           <h3 className="font-display text-sm font-semibold text-warm-700">
             Client Outcomes
           </h3>
-          <p className="text-[10px] text-warm-400 mt-0.5">
+          <p className="text-[10px] text-warm-500 mt-0.5">
             Click column headers to sort
           </p>
         </div>
@@ -761,7 +761,7 @@ export default function OrgAnalytics() {
                         {client.domainsAtRisk} domain{client.domainsAtRisk !== 1 ? 's' : ''}
                       </span>
                     ) : (
-                      <span className="text-warm-400">--</span>
+                      <span className="text-warm-500">--</span>
                     )}
                   </td>
                   <td className="text-right px-4 py-2.5 text-warm-500">
@@ -784,7 +784,7 @@ export default function OrgAnalytics() {
               <h3 className="font-display text-sm font-semibold text-warm-700 mb-1">
                 Domain Improvement Rates
               </h3>
-              <p className="text-[10px] text-warm-400 mb-3">
+              <p className="text-[10px] text-warm-500 mb-3">
                 Client progress per domain based on snapshot comparisons
               </p>
               <div style={{ width: '100%', height: 280 }}>
@@ -856,7 +856,7 @@ export default function OrgAnalytics() {
               <h3 className="font-display text-sm font-semibold text-warm-700 mb-1">
                 Org-Wide Score Trend
               </h3>
-              <p className="text-[10px] text-warm-400 mb-3">
+              <p className="text-[10px] text-warm-500 mb-3">
                 Average score across all clients over time
               </p>
               <div style={{ width: '100%', height: 280 }}>
@@ -913,11 +913,11 @@ function KpiCard({ icon, label, value, accent, bg, subtitle }) {
         <div className="text-base font-semibold leading-tight text-warm-800">
           {value}
         </div>
-        <div className="text-[10px] text-warm-400 uppercase tracking-wider font-medium mt-0.5 truncate">
+        <div className="text-[10px] text-warm-500 uppercase tracking-wider font-medium mt-0.5 truncate">
           {label}
         </div>
         {subtitle && (
-          <div className="text-[9px] text-warm-300 mt-0.5 truncate">{subtitle}</div>
+          <div className="text-[9px] text-warm-500 mt-0.5 truncate">{subtitle}</div>
         )}
       </div>
     </div>

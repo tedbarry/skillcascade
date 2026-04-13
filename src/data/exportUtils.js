@@ -1,5 +1,6 @@
 import { framework, ASSESSMENT_LABELS, getDomainScores } from './framework.js'
 import { getBehavioralIndicator } from './behavioralIndicators.js'
+import { csvEscape } from '../lib/fileExports.js'
 
 /**
  * Generate RFC 4180-compliant CSV from assessments
@@ -32,13 +33,6 @@ export function generateCSV(assessments, clientName) {
   return rows.map((row) => row.map(csvEscape).join(',')).join('\r\n')
 }
 
-export function csvEscape(value) {
-  if (value.includes(',') || value.includes('"') || value.includes('\n')) {
-    return '"' + value.replace(/"/g, '""') + '"'
-  }
-  return value
-}
-
 /**
  * Generate JSON export with full assessment data
  */
@@ -63,21 +57,6 @@ export function generateJSON(assessments, snapshots, clientName, includeSnapshot
   }
 
   return JSON.stringify(data, null, 2)
-}
-
-/**
- * Download a file via Blob + temporary link
- */
-export function downloadFile(content, filename, mimeType) {
-  const blob = new Blob([content], { type: mimeType })
-  const url = URL.createObjectURL(blob)
-  const a = document.createElement('a')
-  a.href = url
-  a.download = filename
-  document.body.appendChild(a)
-  a.click()
-  document.body.removeChild(a)
-  URL.revokeObjectURL(url)
 }
 
 /**

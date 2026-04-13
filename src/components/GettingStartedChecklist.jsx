@@ -1,6 +1,7 @@
 import { memo, useState, useMemo } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { safeGetItem, safeSetItem } from '../lib/safeStorage.js'
+import { buildGettingStartedMilestones } from '../lib/homeDashboardAccess.js'
 
 const DISMISSED_KEY = 'skillcascade_checklist_dismissed'
 
@@ -22,48 +23,23 @@ export default memo(function GettingStartedChecklist({
   viewsVisited = new Set(),
   reportsVisited = false,
   snapshotCount = 0,
+  canCreateClients = true,
+  canAccessReports = true,
   onNavigate,
 }) {
   const [dismissed, setDismissed] = useState(() => safeGetItem(DISMISSED_KEY) === 'true')
   const [collapsed, setCollapsed] = useState(false)
 
-  const milestones = useMemo(() => [
-    {
-      id: 'explore',
-      label: 'Explore sample data',
-      description: 'Visit 2+ views to see what SkillCascade can do',
-      done: viewsVisited.size >= 2,
-      action: null, // no specific action
-    },
-    {
-      id: 'client',
-      label: 'Create your first client',
-      description: 'Set up a real learner profile',
-      done: hasClient,
-      action: () => onNavigate?.('clients'),
-    },
-    {
-      id: 'assess',
-      label: 'Rate 10 skills with Start Here',
-      description: 'Even a few ratings unlock cascade insights',
-      done: hasClient && assessedCount >= 10,
-      action: () => onNavigate?.('quick-assess'),
-    },
-    {
-      id: 'report',
-      label: 'View your first report',
-      description: 'See how assessment data becomes clinical reports',
-      done: reportsVisited && hasClient,
-      action: () => onNavigate?.('reports'),
-    },
-    {
-      id: 'snapshot',
-      label: 'Save a snapshot',
-      description: 'Capture a baseline to track progress over time',
-      done: snapshotCount > 0,
-      action: null,
-    },
-  ], [viewsVisited, hasClient, assessedCount, reportsVisited, snapshotCount, onNavigate])
+  const milestones = useMemo(() => buildGettingStartedMilestones({
+    hasClient,
+    assessedCount,
+    viewsVisited,
+    reportsVisited,
+    snapshotCount,
+    canCreateClients,
+    canAccessReports,
+    onNavigate,
+  }), [viewsVisited, hasClient, assessedCount, reportsVisited, snapshotCount, canCreateClients, canAccessReports, onNavigate])
 
   const completedCount = milestones.filter(m => m.done).length
   const allDone = completedCount === milestones.length
@@ -91,12 +67,12 @@ export default memo(function GettingStartedChecklist({
         <div className="flex items-center gap-3">
           <button
             onClick={(e) => { e.stopPropagation(); setDismissed(true); safeSetItem(DISMISSED_KEY, 'true') }}
-            className="text-[10px] text-warm-400 hover:text-warm-600 min-h-[44px] min-w-[44px] flex items-center justify-center"
+            className="text-[10px] text-warm-500 hover:text-warm-600 min-h-[44px] min-w-[44px] flex items-center justify-center"
           >
             Hide
           </button>
           <svg
-            className={`w-4 h-4 text-warm-400 transition-transform ${collapsed ? '' : 'rotate-180'}`}
+            className={`w-4 h-4 text-warm-500 transition-transform ${collapsed ? '' : 'rotate-180'}`}
             fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}
           >
             <path strokeLinecap="round" strokeLinejoin="round" d="M19 9l-7 7-7-7" />
@@ -131,7 +107,7 @@ export default memo(function GettingStartedChecklist({
                 <div key={m.id} className="flex items-center gap-3 py-1.5">
                   {/* Checkmark */}
                   <div className={`w-5 h-5 rounded-full flex items-center justify-center shrink-0 ${
-                    m.done ? 'bg-sage-500 text-white' : 'border-2 border-warm-200'
+                    m.done ? 'bg-sage-600 text-white' : 'border-2 border-warm-200'
                   }`}>
                     {m.done && (
                       <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={3}>
@@ -141,11 +117,11 @@ export default memo(function GettingStartedChecklist({
                   </div>
                   {/* Label */}
                   <div className="flex-1 min-w-0">
-                    <div className={`text-sm ${m.done ? 'text-warm-400 line-through' : 'text-warm-700'}`}>
+                    <div className={`text-sm ${m.done ? 'text-warm-500 line-through' : 'text-warm-700'}`}>
                       {m.label}
                     </div>
                     {!m.done && (
-                      <div className="text-[11px] text-warm-400">{m.description}</div>
+                      <div className="text-[11px] text-warm-500">{m.description}</div>
                     )}
                   </div>
                   {/* Go button */}

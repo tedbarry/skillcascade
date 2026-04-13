@@ -7,9 +7,9 @@ const RISK_ICONS = {
 }
 
 const RISK_COLORS = {
-  inversion: { bg: '#3a2525', border: '#e8928a', text: '#f5c4c0', badge: '#e8928a' },
-  regression: { bg: '#3a2020', border: '#ff6666', text: '#ffaaaa', badge: '#ff6666' },
-  bottleneck: { bg: '#3a3520', border: '#e5b76a', text: '#f5e0b0', badge: '#e5b76a' },
+  inversion: { bg: '#3a2525', border: '#F59E0B', text: '#f5c4c0', badge: '#F59E0B' },
+  regression: { bg: '#3a2020', border: '#EF4444', text: '#ffaaaa', badge: '#EF4444' },
+  bottleneck: { bg: '#3a3520', border: '#F59E0B', text: '#f5e0b0', badge: '#F59E0B' },
 }
 
 export default function CascadeWarnings({ risks = [], onJumpToAssess, onClose }) {

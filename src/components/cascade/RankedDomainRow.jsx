@@ -44,7 +44,7 @@ export default memo(function RankedDomainRow({
       }`}
       style={{
         backgroundColor: isRecommended ? '#1c1a28' : isSelected ? '#1a1a24' : '#16161e',
-        borderLeft: isRecommended ? '4px solid #ffd700' : isSelected ? `4px solid ${color}` : '4px solid transparent',
+        borderLeft: isRecommended ? '4px solid #FBBF24' : isSelected ? `4px solid ${color}` : '4px solid transparent',
       }}
     >
       <div className={`${isCompact ? 'px-3 py-2.5' : 'px-4 py-3'}`}>
@@ -53,7 +53,7 @@ export default memo(function RankedDomainRow({
           {/* Rank */}
           <span
             className={`text-lg font-bold font-mono w-7 shrink-0 ${isRecommended ? '' : 'text-gray-600'}`}
-            style={isRecommended ? { color: '#ffd700' } : undefined}
+            style={isRecommended ? { color: '#FBBF24' } : undefined}
           >
             {rank}
           </span>
@@ -69,7 +69,7 @@ export default memo(function RankedDomainRow({
             <div className="flex items-center gap-2">
               <span className="text-sm font-medium text-gray-200 truncate">{node.name}</span>
               {isRecommended && (
-                <span className="text-[9px] font-bold tracking-wider text-[#ffd700] bg-[#ffd700]/10 px-2 py-0.5 rounded-full shrink-0">
+                <span className="text-[9px] font-bold tracking-wider text-[#FBBF24] bg-[#FBBF24]/10 px-2 py-0.5 rounded-full shrink-0">
                   RECOMMENDED
                 </span>
               )}

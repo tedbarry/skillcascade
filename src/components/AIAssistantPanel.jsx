@@ -6,6 +6,7 @@ import { getAiChats, saveAiChat, deleteAiChat } from '../data/storage.js'
 import { supabase, mergeUserSettings } from '../lib/supabase.js'
 import { safeGetItem, safeSetItem, safeRemoveItem } from '../lib/safeStorage.js'
 import { track } from '../lib/analytics.js'
+import { callAI } from '../lib/aiClient.js'
 import useFocusTrap from '../hooks/useFocusTrap.js'
 import {
   findSimilarMessage,
@@ -668,7 +669,7 @@ function ChatMessage({ message, isLastAssistant, onRegenerate }) {
         <div
           className={`relative rounded-xl px-4 py-3 text-sm leading-relaxed ${
             isUser
-              ? 'bg-sage-500 text-white rounded-br-sm'
+              ? 'bg-sage-600 text-white rounded-br-sm'
               : isSystem
                 ? 'bg-warm-100 text-warm-600 border border-warm-200 rounded-bl-sm'
                 : 'bg-white text-warm-700 border border-warm-200 shadow-sm rounded-bl-sm'
@@ -695,7 +696,7 @@ function ChatMessage({ message, isLastAssistant, onRegenerate }) {
           {/* Role label for non-user messages */}
           {!isUser && (
             <div className={`text-[10px] font-semibold uppercase tracking-wider mb-1.5 ${
-              isSystem ? 'text-warm-400' : 'text-sage-500'
+              isSystem ? 'text-warm-500' : 'text-sage-500'
             }`}>
               {isSystem ? 'System' : 'AI Assistant'}
             </div>
@@ -735,7 +736,7 @@ function ToolChip({ tool, isSelected, onClick }) {
           : 'bg-white border-warm-200 text-warm-600 hover:border-warm-300 hover:bg-warm-50'
       }`}
     >
-      <span className={`shrink-0 ${isSelected ? 'text-sage-600' : 'text-warm-400'}`}>
+      <span className={`shrink-0 ${isSelected ? 'text-sage-600' : 'text-warm-500'}`}>
         {ICONS[tool.id]}
       </span>
       <span className="text-xs font-medium whitespace-nowrap">{tool.name}</span>
@@ -842,13 +843,13 @@ function SimilarMatchBanner({ match, onUse, onDismiss }) {
           <div className="flex gap-2 mt-2.5">
             <button
               onClick={onUse}
-              className="text-[11px] px-3 py-1.5 rounded-lg bg-amber-500 text-white hover:bg-amber-600 font-medium transition-colors"
+              className="text-[11px] px-3 py-1.5 rounded-full bg-amber-500 text-white hover:bg-amber-600 font-medium transition-colors"
             >
               Use previous answer (free)
             </button>
             <button
               onClick={onDismiss}
-              className="text-[11px] px-3 py-1.5 rounded-lg border border-amber-300 text-amber-700 hover:bg-amber-100 font-medium transition-colors"
+              className="text-[11px] px-3 py-1.5 rounded-full border border-amber-300 text-amber-700 hover:bg-amber-100 font-medium transition-colors"
             >
               Ask anyway
             </button>
@@ -1280,38 +1281,7 @@ export default function AIAssistantPanel({ isOpen, onClose, clientName, assessme
       { role: 'user', content: userText },
     ]
 
-    // All AI calls go through Supabase Edge Function proxy — API key stays server-side
-    const supabaseUrl = import.meta.env.VITE_SUPABASE_URL
-    const { data: { session } } = await supabase.auth.getSession()
-
-    if (!supabaseUrl || !session?.access_token) {
-      throw new Error('Please sign in to use AI features.')
-    }
-
-    const res = await fetch(`${supabaseUrl}/functions/v1/ai-proxy`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${session.access_token}`,
-      },
-      body: JSON.stringify({
-        messages: apiMessages,
-        model: 'gpt-4o-mini',
-        max_tokens: 2000,
-        temperature: 0.7,
-      }),
-    })
-
-    if (!res.ok) {
-      const err = await res.json().catch(() => ({}))
-      if (res.status === 400 && err.error?.includes('No API key')) {
-        throw new Error('No API key configured. Add your OpenAI API key in the AI assistant settings.')
-      }
-      throw new Error(err.error || `API error: ${res.status}`)
-    }
-
-    const data = await res.json()
-    return data.content || 'No response generated.'
+    return callAI({ messages: apiMessages })
   }
 
   const handleSendMessage = useCallback(async () => {
@@ -1450,7 +1420,7 @@ export default function AIAssistantPanel({ isOpen, onClose, clientName, assessme
       {/* Panel */}
       <div
         ref={trapRef}
-        className={`fixed top-0 right-0 z-50 h-full w-full sm:w-[400px] sm:max-w-[calc(100vw-48px)] bg-warm-50 border-l border-warm-200 shadow-2xl flex flex-col transition-transform duration-300 ease-in-out print:hidden ${
+        className={`fixed top-0 right-0 z-50 h-full w-full sm:w-[400px] sm:max-w-[calc(100vw-48px)] bg-warm-50 border-l border-warm-200 shadow-lg flex flex-col transition-transform duration-300 ease-in-out print:hidden ${
           isOpen ? 'translate-x-0' : 'translate-x-full'
         }`}
         role="dialog"
@@ -1461,17 +1431,15 @@ export default function AIAssistantPanel({ isOpen, onClose, clientName, assessme
         <div className="shrink-0 bg-white border-b border-warm-200 px-5 py-3.5">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-2.5">
-              <div className="w-7 h-7 rounded-lg bg-sage-100 flex items-center justify-center">
-                <svg className="w-4 h-4 text-sage-600" viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
-                  <path d="M10 2a6 6 0 016 6c0 2.5-1.5 4.5-3 5.5V15a1 1 0 01-1 1H8a1 1 0 01-1-1v-1.5C5.5 12.5 4 10.5 4 8a6 6 0 016-6z" />
-                  <path d="M8 17h4M9 17v1a1 1 0 002 0v-1" />
-                </svg>
-              </div>
+              <svg className="w-5 h-5 text-sage-600" viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M10 2a6 6 0 016 6c0 2.5-1.5 4.5-3 5.5V15a1 1 0 01-1 1H8a1 1 0 01-1-1v-1.5C5.5 12.5 4 10.5 4 8a6 6 0 016-6z" />
+                <path d="M8 17h4M9 17v1a1 1 0 002 0v-1" />
+              </svg>
               <div>
                 <h2 className="text-sm font-bold text-warm-800 font-display leading-none">
                   AI Assistant
                 </h2>
-                <p className="text-[11px] text-warm-400 mt-0.5">
+                <p className="text-[11px] text-warm-500 mt-0.5">
                   {clientName || 'No client selected'} — {assessmentProgress}% assessed
                 </p>
               </div>
@@ -1479,7 +1447,7 @@ export default function AIAssistantPanel({ isOpen, onClose, clientName, assessme
             <div className="flex items-center gap-1">
               <button
                 onClick={() => setShowHistory(!showHistory)}
-                className={`p-1.5 rounded-lg transition-colors ${showHistory ? 'text-sage-600 bg-sage-50' : 'text-warm-400 hover:text-warm-600 hover:bg-warm-100'}`}
+                className={`p-1.5 rounded-lg transition-colors ${showHistory ? 'text-sage-600 bg-sage-50' : 'text-warm-500 hover:text-warm-600 hover:bg-warm-100'}`}
                 aria-label="Chat history"
                 title="Chat history"
               >
@@ -1489,7 +1457,7 @@ export default function AIAssistantPanel({ isOpen, onClose, clientName, assessme
               </button>
               <button
                 onClick={handleNewChat}
-                className="p-1.5 rounded-lg text-warm-400 hover:text-warm-600 hover:bg-warm-100 transition-colors"
+                className="p-1.5 rounded-lg text-warm-500 hover:text-warm-600 hover:bg-warm-100 transition-colors"
                 aria-label="New conversation"
                 title="New conversation"
               >
@@ -1499,7 +1467,7 @@ export default function AIAssistantPanel({ isOpen, onClose, clientName, assessme
               </button>
               <button
                 onClick={onClose}
-                className="p-1.5 rounded-lg text-warm-400 hover:text-warm-600 hover:bg-warm-100 transition-colors"
+                className="p-1.5 rounded-lg text-warm-500 hover:text-warm-600 hover:bg-warm-100 transition-colors"
                 aria-label="Close AI Assistant"
               >
                 <CloseIcon />
@@ -1540,7 +1508,7 @@ export default function AIAssistantPanel({ isOpen, onClose, clientName, assessme
         {/* ── Quick Actions ── */}
         {selectedTool && selectedTool.actions.length > 0 && (
           <div className="shrink-0 px-5 py-3 bg-warm-50 border-b border-warm-200">
-            <div className="text-[10px] uppercase tracking-wider text-warm-400 font-semibold mb-2">
+            <div className="text-[10px] uppercase tracking-wider text-warm-500 font-semibold mb-2">
               Quick Actions
             </div>
             <div className="flex flex-wrap gap-1.5">
@@ -1548,7 +1516,7 @@ export default function AIAssistantPanel({ isOpen, onClose, clientName, assessme
                 <button
                   key={action.label}
                   onClick={() => handleQuickActionClick(action)}
-                  className={`text-xs px-3 py-1.5 rounded-lg border transition-all font-medium ${
+                  className={`text-xs px-3 py-1.5 rounded-full border transition-all font-medium ${
                     activeQuickAction?.label === action.label
                       ? 'bg-sage-50 border-sage-300 text-sage-700'
                       : 'bg-white border-warm-200 text-warm-600 hover:border-sage-300 hover:text-sage-700 hover:bg-sage-50'
@@ -1580,9 +1548,9 @@ export default function AIAssistantPanel({ isOpen, onClose, clientName, assessme
                   <button
                     type="submit"
                     disabled={!quickActionParam.trim()}
-                    className={`text-xs px-3 py-2 rounded-lg font-medium transition-colors ${
+                    className={`text-xs px-3 py-2 rounded-full font-medium transition-colors ${
                       quickActionParam.trim()
-                        ? 'bg-sage-500 text-white hover:bg-sage-600'
+                        ? 'bg-sage-600 text-white hover:bg-sage-700'
                         : 'bg-warm-100 text-warm-300 cursor-not-allowed'
                     }`}
                   >
@@ -1591,7 +1559,7 @@ export default function AIAssistantPanel({ isOpen, onClose, clientName, assessme
                   <button
                     type="button"
                     onClick={() => { setActiveQuickAction(null); setQuickActionParam('') }}
-                    className="text-xs px-2 py-2 rounded-lg text-warm-400 hover:text-warm-600 hover:bg-warm-100 transition-colors"
+                    className="text-xs px-2 py-2 rounded-lg text-warm-500 hover:text-warm-600 hover:bg-warm-100 transition-colors"
                   >
                     <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
                       <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
@@ -1607,7 +1575,7 @@ export default function AIAssistantPanel({ isOpen, onClose, clientName, assessme
         {showHistory ? (
           <div className="flex-1 overflow-y-auto">
             <div className="px-4 pt-3 pb-2">
-              <div className="text-[10px] uppercase tracking-wider text-warm-400 font-semibold mb-2">
+              <div className="text-[10px] uppercase tracking-wider text-warm-500 font-semibold mb-2">
                 Chat History — {selectedTool?.name}
               </div>
             </div>
@@ -1618,8 +1586,8 @@ export default function AIAssistantPanel({ isOpen, onClose, clientName, assessme
                     <path strokeLinecap="round" strokeLinejoin="round" d="M20.25 8.511c.884.284 1.5 1.128 1.5 2.097v4.286c0 1.136-.847 2.1-1.98 2.193-.34.027-.68.052-1.02.072v3.091l-3-3c-1.354 0-2.694-.055-4.02-.163a2.115 2.115 0 01-.825-.242m9.345-8.334a2.126 2.126 0 00-.476-.095 48.64 48.64 0 00-8.048 0c-1.131.094-1.976 1.057-1.976 2.192v4.286c0 .837.46 1.58 1.155 1.951m9.345-8.334V6.637c0-1.621-1.152-3.026-2.76-3.235A48.455 48.455 0 0011.25 3c-2.115 0-4.198.137-6.24.402-1.608.209-2.76 1.614-2.76 3.235v6.226c0 1.621 1.152 3.026 2.76 3.235.577.075 1.157.14 1.74.194V21l4.155-4.155" />
                   </svg>
                 </div>
-                <p className="text-xs text-warm-400">No saved conversations yet.</p>
-                <p className="text-[10px] text-warm-300 mt-1">Start chatting to create your first one.</p>
+                <p className="text-xs text-warm-500">No saved conversations yet.</p>
+                <p className="text-[10px] text-warm-500 mt-1">Start chatting to create your first one.</p>
               </div>
             ) : (
               <div className="space-y-1 px-3 pb-3">
@@ -1639,7 +1607,7 @@ export default function AIAssistantPanel({ isOpen, onClose, clientName, assessme
                       }`}>
                         {chat.title}
                       </div>
-                      <div className="text-[10px] text-warm-400 mt-0.5">
+                      <div className="text-[10px] text-warm-500 mt-0.5">
                         {chat.client_name && chat.client_name !== clientName && (
                           <span className="text-sage-500 font-medium">{chat.client_name} · </span>
                         )}
@@ -1680,7 +1648,7 @@ export default function AIAssistantPanel({ isOpen, onClose, clientName, assessme
                     <div className="w-2 h-2 bg-sage-400 rounded-full animate-pulse" />
                     <div className="w-2 h-2 bg-sage-400 rounded-full animate-pulse" style={{ animationDelay: '0.2s' }} />
                     <div className="w-2 h-2 bg-sage-400 rounded-full animate-pulse" style={{ animationDelay: '0.4s' }} />
-                    <span className="text-xs text-warm-400 ml-1">Thinking...</span>
+                    <span className="text-xs text-warm-500 ml-1">Thinking...</span>
                   </div>
                 </div>
               </div>
@@ -1717,9 +1685,9 @@ export default function AIAssistantPanel({ isOpen, onClose, clientName, assessme
             <button
               onClick={handleSendMessage}
               disabled={!inputValue.trim() || !!pendingMatch}
-              className={`p-2.5 rounded-xl transition-all shrink-0 ${
+              className={`p-2.5 rounded-full transition-all shrink-0 ${
                 inputValue.trim() && !pendingMatch
-                  ? 'bg-sage-500 text-white hover:bg-sage-600 shadow-sm'
+                  ? 'bg-sage-600 text-white hover:bg-sage-700 shadow-sm'
                   : 'bg-warm-100 text-warm-300 cursor-not-allowed'
               }`}
               aria-label="Send message"
@@ -1747,7 +1715,7 @@ export default function AIAssistantPanel({ isOpen, onClose, clientName, assessme
                 />
                 <button
                   onClick={handleSaveKey}
-                  className="px-3 py-1.5 text-xs font-medium rounded-lg bg-sage-500 text-white hover:bg-sage-600"
+                  className="px-3 py-1.5 text-xs font-medium rounded-full bg-sage-600 text-white hover:bg-sage-700"
                 >
                   Save
                 </button>
@@ -1758,7 +1726,7 @@ export default function AIAssistantPanel({ isOpen, onClose, clientName, assessme
                   Cancel
                 </button>
               </div>
-              <p className="text-[10px] text-warm-400">Key is stored securely in your account settings.</p>
+              <p className="text-[10px] text-warm-500">Key is stored securely in your account settings.</p>
             </div>
           ) : (
             <div className="px-4 py-2.5 flex items-center gap-2">

@@ -107,8 +107,8 @@ export default function SupportChat({ activeView, clientName, assessments, plan,
         .slice(-20)
         .map(m => ({ role: m.role, content: m.content }))
 
-      const supabaseUrl = import.meta.env.VITE_SUPABASE_URL
-      const res = await fetch(`${supabaseUrl}/functions/v1/support-chat`, {
+      const apiUrl = import.meta.env.VITE_API_URL || 'https://skillcascade-api.teddybahary.workers.dev'
+      const res = await fetch(`${apiUrl}/api/support-chat`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -158,7 +158,7 @@ export default function SupportChat({ activeView, clientName, assessments, plan,
       {!isOpen && (
         <button
           onClick={handleOpen}
-          className={`fixed ${bubbleBottom} right-5 z-[900] w-14 h-14 rounded-full bg-sage-500 hover:bg-sage-600 text-white shadow-lg hover:shadow-xl transition-all duration-200 flex items-center justify-center min-h-[44px] ${
+          className={`fixed ${bubbleBottom} right-5 z-[900] w-14 h-14 rounded-full bg-sage-600 hover:bg-sage-700 text-white shadow-lg hover:shadow-xl transition-all duration-200 flex items-center justify-center min-h-[44px] ${
             !hasBeenOpened ? 'animate-pulse' : ''
           }`}
           aria-label="Open support chat"
@@ -171,7 +171,7 @@ export default function SupportChat({ activeView, clientName, assessments, plan,
       {/* Chat panel */}
       {isOpen && (
         <div
-          className={`fixed ${bottomOffset} right-0 z-[900] flex flex-col bg-white border border-warm-200 shadow-2xl transition-all duration-300 ease-out ${
+          className={`fixed ${bottomOffset} right-0 z-[900] flex flex-col bg-white border border-warm-200 shadow-lg transition-all duration-300 ease-out ${
             isPhone
               ? 'inset-x-0 top-0 rounded-none'
               : 'right-5 w-[350px] h-[500px] rounded-xl'
@@ -181,14 +181,14 @@ export default function SupportChat({ activeView, clientName, assessments, plan,
           }}
         >
           {/* Header */}
-          <div className="flex items-center justify-between px-4 py-3 bg-sage-500 text-white rounded-t-xl shrink-0">
+          <div className="flex items-center justify-between px-4 py-3 bg-sage-600 text-white rounded-t-xl shrink-0">
             <div className="flex items-center gap-2">
               <ChatIcon />
               <span className="font-semibold text-sm">SkillCascade Guide</span>
             </div>
             <button
               onClick={handleClose}
-              className="p-1 rounded-md hover:bg-sage-600 transition-colors min-h-[44px] min-w-[44px] flex items-center justify-center"
+              className="p-1 rounded-md hover:bg-sage-700 transition-colors min-h-[44px] min-w-[44px] flex items-center justify-center"
               aria-label="Close chat"
             >
               <CloseIcon />
@@ -246,7 +246,7 @@ export default function SupportChat({ activeView, clientName, assessments, plan,
               <button
                 onClick={handleSend}
                 disabled={isLoading || !input.trim()}
-                className="px-3 py-2 rounded-lg bg-sage-500 text-white hover:bg-sage-600 disabled:opacity-40 disabled:cursor-not-allowed transition-colors min-h-[44px] min-w-[44px] flex items-center justify-center"
+                className="px-3 py-2 rounded-lg bg-sage-600 text-white hover:bg-sage-700 disabled:opacity-40 disabled:cursor-not-allowed transition-colors min-h-[44px] min-w-[44px] flex items-center justify-center"
                 aria-label="Send message"
               >
                 <SendIcon />

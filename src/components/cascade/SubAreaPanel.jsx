@@ -8,12 +8,12 @@ import { TIER_LABELS, TIER_COLORS } from '../../constants/tiers.js'
 
 const STATE_LABELS = {
   0: { label: 'Not assessed', color: '#666' },
-  0.5: { label: 'Getting Started', color: '#e8928a' },
-  1: { label: 'Needs Work', color: '#e8928a' },
-  1.5: { label: 'Developing', color: '#e5b76a' },
-  2: { label: 'Developing', color: '#e5b76a' },
-  2.5: { label: 'Strong', color: '#7fb589' },
-  3: { label: 'Mastered', color: '#7fb589' },
+  0.5: { label: 'Getting Started', color: '#F59E0B' },
+  1: { label: 'Needs Work', color: '#F59E0B' },
+  1.5: { label: 'Developing', color: '#F59E0B' },
+  2: { label: 'Developing', color: '#F59E0B' },
+  2.5: { label: 'Strong', color: '#10B981' },
+  3: { label: 'Mastered', color: '#10B981' },
 }
 
 function getStateLabel(avg) {
@@ -220,7 +220,7 @@ function SubAreaCard({ subArea, domainColor, isCritical, onNavigateToAssess, sho
               className="h-full rounded-full transition-all duration-500"
               style={{
                 width: `${prereqReadiness * 100}%`,
-                backgroundColor: prereqReadiness >= 0.8 ? '#7fb589' : prereqReadiness >= 0.5 ? '#e5b76a' : '#e8928a',
+                backgroundColor: prereqReadiness >= 0.8 ? '#10B981' : prereqReadiness >= 0.5 ? '#F59E0B' : '#F59E0B',
               }}
             />
           </div>
@@ -247,7 +247,7 @@ function SubAreaCard({ subArea, domainColor, isCritical, onNavigateToAssess, sho
                     className="w-1.5 h-1.5 rounded-full"
                     title={`Tier ${tier} (${TIER_LABELS[tier]}): ${data.met}/${data.total}`}
                     style={{
-                      backgroundColor: data.met === data.total ? '#7fb589' : data.met > 0 ? '#e5b76a' : '#444',
+                      backgroundColor: data.met === data.total ? '#10B981' : data.met > 0 ? '#F59E0B' : '#444',
                     }}
                   />
                 ))}
@@ -277,7 +277,7 @@ function SubAreaCard({ subArea, domainColor, isCritical, onNavigateToAssess, sho
                 {prereq.domainId.toUpperCase()} · T{prereq.tier}
               </span>
               <span className="text-[9px] shrink-0" style={{
-                color: prereq.currentLevel == null ? '#666' : prereq.currentLevel === 0 ? '#c47070' : prereq.currentLevel < 2 ? '#e8928a' : '#e5b76a'
+                color: prereq.currentLevel == null ? '#666' : prereq.currentLevel === 0 ? '#DC2626' : prereq.currentLevel < 2 ? '#F59E0B' : '#F59E0B'
               }}>
                 {prereq.currentLevel == null ? '—' : prereq.currentLevel.toFixed(0)}
               </span>

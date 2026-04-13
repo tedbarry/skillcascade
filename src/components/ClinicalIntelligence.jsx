@@ -37,15 +37,15 @@ const STATE_LABELS = {
 const STATE_DOT_COLORS = {
   locked: '#555',
   blocked: '#8b4444',
-  'needs-work': '#e8928a',
-  developing: '#e5b76a',
-  mastered: '#7fb589',
+  'needs-work': '#F59E0B',
+  developing: '#F59E0B',
+  mastered: '#10B981',
 }
 
 const RISK_COLORS = {
-  inversion: '#e8928a',
+  inversion: '#F59E0B',
   regression: '#ff6666',
-  bottleneck: '#e5b76a',
+  bottleneck: '#F59E0B',
   stalling: '#aaa',
   'score-inversion': '#b594d6',
   'prerequisite-gap': '#d694b5',
@@ -149,7 +149,7 @@ function TargetSkillCard({ skill, index, isExpanded, onToggle, onAssess, isPhone
           {/* Rank */}
           <span
             className="text-lg font-bold font-mono w-6 shrink-0"
-            style={{ color: index === 0 ? '#ffd700' : '#666' }}
+            style={{ color: index === 0 ? '#FBBF24' : '#666' }}
           >
             {index + 1}
           </span>
@@ -248,8 +248,8 @@ function LearningPath({ steps, isPhone }) {
         <div className="flex flex-wrap items-center gap-1">
           {steps.map((step, i) => {
             const color = DOMAIN_COLORS[step.domainId] || '#888'
-            const statusColor = step.status === 'met' ? '#7fb589'
-              : step.status === 'close' ? '#e5b76a' : '#e8928a'
+            const statusColor = step.status === 'met' ? '#10B981'
+              : step.status === 'close' ? '#F59E0B' : '#F59E0B'
 
             return (
               <div key={step.domainId} className="flex items-center gap-1">
@@ -278,13 +278,13 @@ function LearningPath({ steps, isPhone }) {
         {/* Legend */}
         <div className="flex items-center gap-3 mt-2 text-[9px] text-gray-600">
           <span className="flex items-center gap-1">
-            <span className="w-1.5 h-1.5 rounded-full bg-[#7fb589]" /> Met
+            <span className="w-1.5 h-1.5 rounded-full bg-[#10B981]" /> Met
           </span>
           <span className="flex items-center gap-1">
-            <span className="w-1.5 h-1.5 rounded-full bg-[#e5b76a]" /> Close
+            <span className="w-1.5 h-1.5 rounded-full bg-[#F59E0B]" /> Close
           </span>
           <span className="flex items-center gap-1">
-            <span className="w-1.5 h-1.5 rounded-full bg-[#e8928a]" /> Gap
+            <span className="w-1.5 h-1.5 rounded-full bg-[#F59E0B]" /> Gap
           </span>
         </div>
       </div>
@@ -403,7 +403,7 @@ function DomainDetail({ domainId, insight, isPhone, onAssess, onGoal, onShowPath
 }
 
 function RiskCard({ risk, isPhone }) {
-  const color = RISK_COLORS[risk.type] || '#e5b76a'
+  const color = RISK_COLORS[risk.type] || '#F59E0B'
   const typeLabel = risk.type?.replace(/-/g, ' ').toUpperCase() || 'RISK'
 
   return (
@@ -432,13 +432,13 @@ function RiskCard({ risk, isPhone }) {
   )
 }
 
-function AINudgeSection({ targetSkills, onOpenAI, onNavigateToGoals, onDismiss, isPhone }) {
+function AINudgeSection({ targetSkills, onOpenAI, onNavigateToGoals, onGenerateGoals, onDismiss, isPhone }) {
   const topTarget = targetSkills[0]
 
   return (
     <div className="rounded-lg bg-[#1a2420] border border-[#2a3f35] p-3">
       <div className="flex items-center justify-between mb-2">
-        <span className="text-[10px] font-mono tracking-widest text-[#7fb589] uppercase">AI Can Help</span>
+        <span className="text-[10px] font-mono tracking-widest text-[#10B981] uppercase">AI Can Help</span>
         <button
           onClick={onDismiss}
           className="text-[10px] text-gray-600 hover:text-gray-400 min-h-[44px] min-w-[44px] flex items-center justify-center"
@@ -447,13 +447,22 @@ function AINudgeSection({ targetSkills, onOpenAI, onNavigateToGoals, onDismiss, 
         </button>
       </div>
       <div className="space-y-1.5">
+        {onGenerateGoals && (
+          <button
+            onClick={onGenerateGoals}
+            className="w-full text-left text-[11px] text-gray-300 hover:text-white bg-[#1e2e26] hover:bg-[#243828] rounded px-3 py-2 min-h-[44px] flex items-center gap-2 transition-colors"
+          >
+            <span className="text-[#10B981] shrink-0">&#8250;</span>
+            Generate AI Goals from assessment
+          </button>
+        )}
         {onNavigateToGoals && (
           <button
             onClick={() => onNavigateToGoals(topTarget?.domainId)}
             className="w-full text-left text-[11px] text-gray-300 hover:text-white bg-[#1e2e26] hover:bg-[#243828] rounded px-3 py-2 min-h-[44px] flex items-center gap-2 transition-colors"
           >
-            <span className="text-[#7fb589] shrink-0">&#8250;</span>
-            Draft goals for your top {Math.min(3, targetSkills.length)} targets
+            <span className="text-[#10B981] shrink-0">&#8250;</span>
+            View goal priorities for top {Math.min(3, targetSkills.length)} targets
           </button>
         )}
         {onOpenAI && (
@@ -462,7 +471,7 @@ function AINudgeSection({ targetSkills, onOpenAI, onNavigateToGoals, onDismiss, 
               onClick={onOpenAI}
               className="w-full text-left text-[11px] text-gray-300 hover:text-white bg-[#1e2e26] hover:bg-[#243828] rounded px-3 py-2 min-h-[44px] flex items-center gap-2 transition-colors"
             >
-              <span className="text-[#7fb589] shrink-0">&#8250;</span>
+              <span className="text-[#10B981] shrink-0">&#8250;</span>
               Write a parent summary of this profile
             </button>
             {topTarget && (
@@ -470,7 +479,7 @@ function AINudgeSection({ targetSkills, onOpenAI, onNavigateToGoals, onDismiss, 
                 onClick={onOpenAI}
                 className="w-full text-left text-[11px] text-gray-300 hover:text-white bg-[#1e2e26] hover:bg-[#243828] rounded px-3 py-2 min-h-[44px] flex items-center gap-2 transition-colors"
               >
-                <span className="text-[#7fb589] shrink-0">&#8250;</span>
+                <span className="text-[#10B981] shrink-0">&#8250;</span>
                 Generate teaching plan for {topTarget.skillName}
               </button>
             )}
@@ -489,6 +498,7 @@ export default memo(function ClinicalIntelligence({
   clientName = '',
   onNavigateToAssess,
   onNavigateToGoals,
+  onGenerateGoals,
   onSelectNode,
   onOpenAI,
   initialTab,
@@ -585,7 +595,7 @@ export default memo(function ClinicalIntelligence({
     <div className="flex flex-col flex-1 min-h-0 overflow-hidden">
       {/* Contextual hint */}
       <ContextualHint show={hint.show} onDismiss={hint.dismiss} className="mb-0 mx-3 sm:mx-5 mt-3">
-        Five specialized views analyze your assessment data for bottlenecks, risks, and intervention targets. Use 'Tell me what to do' for directive guidance or 'Show me why' for deeper exploration. <KBLink term="view-intelligence" className="text-[#7fb589]">Learn more</KBLink>
+        Five specialized views analyze your assessment data for bottlenecks, risks, and intervention targets. Use 'Tell me what to do' for directive guidance or 'Show me why' for deeper exploration. <KBLink term="view-intelligence" className="text-[#10B981]">Learn more</KBLink>
       </ContextualHint>
 
       {/* Headline banner — always visible */}
@@ -644,6 +654,7 @@ export default memo(function ClinicalIntelligence({
                   targetSkills={targetSkills}
                   onOpenAI={onOpenAI}
                   onNavigateToGoals={onNavigateToGoals}
+                  onGenerateGoals={onGenerateGoals}
                   onDismiss={() => setAiNudgeDismissed(true)}
                   isPhone
                 />
@@ -811,6 +822,7 @@ export default memo(function ClinicalIntelligence({
                     targetSkills={targetSkills}
                     onOpenAI={onOpenAI}
                     onNavigateToGoals={onNavigateToGoals}
+                    onGenerateGoals={onGenerateGoals}
                     onDismiss={() => setAiNudgeDismissed(true)}
                   />
                 )}

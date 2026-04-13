@@ -4,23 +4,23 @@
  */
 
 export const DOMAIN_COLORS = {
-  d1: '#e07b6e',
-  d2: '#d4956a',
-  d3: '#c9a84c',
-  d4: '#8fb570',
-  d5: '#5da87a',
-  d6: '#4a9e9e',
-  d7: '#6889b5',
-  d8: '#8b7bb5',
-  d9: '#a86e9a',
+  d1: '#8B5CF6',  // Social Communication (purple)
+  d2: '#EC4899',  // Self-Regulation (pink)
+  d3: '#3B82F6',  // Executive Function (blue)
+  d4: '#F59E0B',  // Problem Solving (amber)
+  d5: '#14B8A6',  // Identity (teal)
+  d6: '#EF4444',  // Safety (red)
+  d7: '#10B981',  // Support Systems (green)
+  d8: '#6366F1',  // Self-Awareness (indigo)
+  d9: '#F97316',  // Functional Academics (orange)
 }
 
 export const STATE_CONFIG = {
   locked:       { label: 'Locked',     color: '#666' },
   blocked:      { label: 'Blocked',    color: '#8b4444' },
-  'needs-work': { label: 'Needs Work', color: '#e8928a' },
-  developing:   { label: 'Developing', color: '#e5b76a' },
-  mastered:     { label: 'Mastered',   color: '#7fb589' },
+  'needs-work': { label: 'Needs Work', color: '#F59E0B' },
+  developing:   { label: 'Developing', color: '#F59E0B' },
+  mastered:     { label: 'Mastered',   color: '#10B981' },
 }
 
 export function getStatusLabel(state) {

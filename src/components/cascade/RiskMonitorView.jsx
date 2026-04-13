@@ -11,9 +11,9 @@ import { getTeachingPlaybook } from '../../data/teachingPlaybook.js'
 import KBHelpIcon from '../kb/KBHelpIcon.jsx'
 
 const RISK_BORDER_COLORS = {
-  inversion: '#e8928a',
+  inversion: '#F59E0B',
   regression: '#ff6666',
-  bottleneck: '#e5b76a',
+  bottleneck: '#F59E0B',
   stalling: '#aaa',
   'ceiling-constraint': '#d694e8',
   // Learning barrier types
@@ -70,7 +70,7 @@ export default memo(function RiskMonitorView({
     if (highlightedDomains.size === 0) return null
     if (!highlightedDomains.has(domainId)) return null
     const risk = cascadeRisks[selectedRisk]
-    return RISK_BORDER_COLORS[risk?.type] || '#e5b76a'
+    return RISK_BORDER_COLORS[risk?.type] || '#F59E0B'
   }, [highlightedDomains, selectedRisk, cascadeRisks])
 
   const handleRiskClick = useCallback((index) => {
@@ -155,7 +155,7 @@ export default memo(function RiskMonitorView({
         <div className={`${isPhone ? 'px-3 pt-3' : 'px-5 pt-4'} space-y-2`}>
           <AnimatePresence>
             {cascadeRisks.length === 0 && hasData ? (
-              <div className="rounded-lg bg-[#1a2a1a] border-l-4 border-[#7fb589] px-4 py-3">
+              <div className="rounded-lg bg-[#1a2a1a] border-l-4 border-[#10B981] px-4 py-3">
                 <div className="flex items-center gap-2">
                   <span className="text-green-400 text-sm">{'\u2713'}</span>
                   <span className="text-sm font-medium text-green-300">All Clear</span>

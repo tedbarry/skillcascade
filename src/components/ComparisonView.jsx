@@ -17,15 +17,15 @@ import {
 const MODES = { CLIENTS: 'clients', SNAPSHOTS: 'snapshots' }
 
 /* ── Hex colors pulled from CSS custom properties for chart use ── */
-const SAGE_STROKE = '#4f8460'
-const SAGE_FILL = '#4f8460'
+const SAGE_STROKE = '#059669'
+const SAGE_FILL = '#059669'
 const CORAL_STROKE = '#d44d3f'
 const CORAL_FILL = '#d44d3f'
 const SCORE_COLORS = {
-  [ASSESSMENT_LEVELS.NOT_PRESENT]: '#c47070',
-  [ASSESSMENT_LEVELS.NEEDS_WORK]: '#e8928a',
-  [ASSESSMENT_LEVELS.DEVELOPING]: '#e5b76a',
-  [ASSESSMENT_LEVELS.SOLID]: '#7fb589',
+  [ASSESSMENT_LEVELS.NOT_PRESENT]: '#DC2626',
+  [ASSESSMENT_LEVELS.NEEDS_WORK]: '#F59E0B',
+  [ASSESSMENT_LEVELS.DEVELOPING]: '#F59E0B',
+  [ASSESSMENT_LEVELS.SOLID]: '#10B981',
 }
 
 function scoreColor(score) {
@@ -124,7 +124,7 @@ function AxisTick({ payload, x, y, textAnchor }) {
   const name = payload.value
   const parts = name.length > 14 ? name.split(/[\s&]+/, 2) : [name]
   return (
-    <text x={x} y={y} textAnchor={textAnchor} fill="#5f3e2a" fontSize={10} fontWeight={500} fontFamily="Plus Jakarta Sans, Inter, sans-serif">
+    <text x={x} y={y} textAnchor={textAnchor} fill="#292524" fontSize={10} fontWeight={500} fontFamily="Plus Jakarta Sans, Inter, sans-serif">
       {parts.map((part, i) => (
         <tspan key={part} x={x} dy={i === 0 ? 0 : 13}>{part}</tspan>
       ))}
@@ -136,7 +136,7 @@ function AxisTick({ payload, x, y, textAnchor }) {
 function DiffCell({ diff, className = '' }) {
   if (diff === null || diff === undefined) return <span className={`text-warm-300 ${className}`}>--</span>
   const rounded = Math.round(diff * 100) / 100
-  if (rounded === 0) return <span className={`text-warm-400 ${className}`}>--</span>
+  if (rounded === 0) return <span className={`text-warm-500 ${className}`}>--</span>
   const positive = rounded > 0
   return (
     <span className={`inline-flex items-center gap-0.5 font-medium ${positive ? 'text-sage-600' : 'text-coral-500'} ${className}`}>
@@ -339,7 +339,7 @@ export default function ComparisonView({
             <line x1="17" y1="11" x2="23" y2="11" />
           </svg>
           <p className="text-warm-500 font-medium">No other clients yet</p>
-          <p className="text-warm-400 text-sm mt-1">Create more clients to compare their profiles side by side</p>
+          <p className="text-warm-500 text-sm mt-1">Create more clients to compare their profiles side by side</p>
         </div>
       )}
 
@@ -351,7 +351,7 @@ export default function ComparisonView({
             <circle cx="15.5" cy="15.5" r="2.5" />
           </svg>
           <p className="text-warm-500 font-medium">No snapshots saved</p>
-          <p className="text-warm-400 text-sm mt-1">Save snapshots to compare progress over time</p>
+          <p className="text-warm-500 text-sm mt-1">Save snapshots to compare progress over time</p>
         </div>
       )}
 
@@ -361,7 +361,7 @@ export default function ComparisonView({
           <div className="flex items-center gap-3">
             {/* Left selector */}
             <div className="flex-1">
-              <label className="block text-[10px] uppercase tracking-wider text-warm-400 font-semibold mb-1.5">
+              <label className="block text-[10px] uppercase tracking-wider text-warm-500 font-semibold mb-1.5">
                 <span className="inline-block w-2 h-2 rounded-full mr-1" style={{ backgroundColor: SAGE_STROKE }} />
                 Left
               </label>
@@ -387,14 +387,14 @@ export default function ComparisonView({
 
             {/* VS divider */}
             <div className="flex flex-col items-center pt-4">
-              <span className="text-xs font-bold text-warm-400 bg-warm-100 rounded-full w-8 h-8 flex items-center justify-center">
+              <span className="text-xs font-bold text-warm-500 bg-warm-100 rounded-full w-8 h-8 flex items-center justify-center">
                 vs
               </span>
             </div>
 
             {/* Right selector */}
             <div className="flex-1">
-              <label className="block text-[10px] uppercase tracking-wider text-warm-400 font-semibold mb-1.5">
+              <label className="block text-[10px] uppercase tracking-wider text-warm-500 font-semibold mb-1.5">
                 <span className="inline-block w-2 h-2 rounded-full mr-1" style={{ backgroundColor: CORAL_STROKE }} />
                 Right
               </label>
@@ -435,9 +435,9 @@ export default function ComparisonView({
               <h3 className="text-sm font-semibold font-display text-warm-700 mb-2">Domain Overlay</h3>
               <ResponsiveContainer width="100%" height={380}>
                 <ReRadarChart data={chartData} cx="50%" cy="50%" outerRadius="70%">
-                  <PolarGrid stroke="#e8d5c0" strokeWidth={0.5} gridType="polygon" />
+                  <PolarGrid stroke="#E7E5E4" strokeWidth={0.5} gridType="polygon" />
                   <PolarAngleAxis dataKey="domain" tick={<AxisTick />} tickLine={false} />
-                  <PolarRadiusAxis angle={90} domain={[0, 3]} tickCount={4} tick={{ fontSize: 9, fill: '#b07d4f' }} axisLine={false} />
+                  <PolarRadiusAxis angle={90} domain={[0, 3]} tickCount={4} tick={{ fontSize: 9, fill: '#B45309' }} axisLine={false} />
                   <Radar
                     name={leftLabel}
                     dataKey="left"
@@ -472,7 +472,7 @@ export default function ComparisonView({
               </div>
 
               {/* Table header */}
-              <div className={`grid ${gridCols} gap-2 px-4 py-2 bg-warm-50 text-[10px] uppercase tracking-wider text-warm-400 font-semibold border-b border-warm-100`}>
+              <div className={`grid ${gridCols} gap-2 px-4 py-2 bg-warm-50 text-[10px] uppercase tracking-wider text-warm-500 font-semibold border-b border-warm-100`}>
                 <div>Domain</div>
                 <div className="text-center">{leftLabel}</div>
                 <div className="text-center">{rightLabel}</div>
@@ -497,7 +497,7 @@ export default function ComparisonView({
                       }`}
                     >
                       <div className="flex items-center gap-2">
-                        <ChevronIcon open={isExpanded} className="w-3.5 h-3.5 text-warm-400 flex-shrink-0" />
+                        <ChevronIcon open={isExpanded} className="w-3.5 h-3.5 text-warm-500 flex-shrink-0" />
                         <span className="font-medium text-warm-700">{row.domain}</span>
                       </div>
                       <div className="text-center">
@@ -565,44 +565,44 @@ export default function ComparisonView({
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
               {/* Strength comparison */}
               <div className="bg-white border border-warm-200 rounded-xl px-4 py-3">
-                <div className="text-[10px] uppercase tracking-wider text-warm-400 font-semibold mb-2">Strength Balance</div>
+                <div className="text-[10px] uppercase tracking-wider text-warm-500 font-semibold mb-2">Strength Balance</div>
                 <div className="flex items-center gap-3">
                   <div className="flex-1 text-center">
                     <div className="text-lg font-bold font-display text-sage-600">{summaryStats.leftStronger}</div>
-                    <div className="text-[10px] text-warm-400 mt-0.5 truncate">{leftLabel}</div>
+                    <div className="text-[10px] text-warm-500 mt-0.5 truncate">{leftLabel}</div>
                   </div>
                   <div className="text-warm-300">
                     <SwapIcon className="w-5 h-5" />
                   </div>
                   <div className="flex-1 text-center">
                     <div className="text-lg font-bold font-display text-coral-500">{summaryStats.rightStronger}</div>
-                    <div className="text-[10px] text-warm-400 mt-0.5 truncate">{rightLabel}</div>
+                    <div className="text-[10px] text-warm-500 mt-0.5 truncate">{rightLabel}</div>
                   </div>
                 </div>
-                <div className="text-[10px] text-warm-400 mt-2 text-center">
+                <div className="text-[10px] text-warm-500 mt-2 text-center">
                   domains where each side scores higher
                 </div>
               </div>
 
               {/* Biggest gap */}
               <div className="bg-white border border-warm-200 rounded-xl px-4 py-3">
-                <div className="text-[10px] uppercase tracking-wider text-warm-400 font-semibold mb-2">Biggest Gap</div>
+                <div className="text-[10px] uppercase tracking-wider text-warm-500 font-semibold mb-2">Biggest Gap</div>
                 {summaryStats.biggest ? (
                   <>
                     <div className="text-sm font-medium text-warm-700 truncate">{summaryStats.biggest.domain}</div>
                     <div className="flex items-center gap-1.5 mt-1">
                       <DiffCell diff={summaryStats.biggest.diff} className="text-sm" />
-                      <span className="text-[10px] text-warm-400">difference</span>
+                      <span className="text-[10px] text-warm-500">difference</span>
                     </div>
                   </>
                 ) : (
-                  <div className="text-sm text-warm-400">No assessed domains</div>
+                  <div className="text-sm text-warm-500">No assessed domains</div>
                 )}
               </div>
 
               {/* Most similar */}
               <div className="bg-white border border-warm-200 rounded-xl px-4 py-3">
-                <div className="text-[10px] uppercase tracking-wider text-warm-400 font-semibold mb-2">Most Similar</div>
+                <div className="text-[10px] uppercase tracking-wider text-warm-500 font-semibold mb-2">Most Similar</div>
                 {summaryStats.smallest ? (
                   <>
                     <div className="text-sm font-medium text-warm-700 truncate">{summaryStats.smallest.domain}</div>
@@ -616,7 +616,7 @@ export default function ComparisonView({
                     </div>
                   </>
                 ) : (
-                  <div className="text-sm text-warm-400">No assessed domains</div>
+                  <div className="text-sm text-warm-500">No assessed domains</div>
                 )}
               </div>
             </div>
@@ -636,7 +636,7 @@ export default function ComparisonView({
                   : 'Select two snapshots to compare progress over time'
                 }
               </p>
-              <p className="text-warm-400 text-sm mt-1">
+              <p className="text-warm-500 text-sm mt-1">
                 The radar chart and domain breakdown will appear once both sides are selected
               </p>
             </div>

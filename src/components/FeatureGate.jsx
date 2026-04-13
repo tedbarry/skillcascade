@@ -6,9 +6,10 @@ import useSubscription, { PLAN_LABELS, FEATURE_META } from '../hooks/useSubscrip
  * Shows an upgrade prompt if the user's plan doesn't include the feature.
  */
 export default function FeatureGate({ feature, children }) {
-  const { hasFeature, getRequiredPlan, plan } = useSubscription()
+  const { hasFeature, getRequiredPlan, plan, loading } = useSubscription()
 
-  if (hasFeature(feature)) return children
+  // Don't block while subscription is still loading (prevents flash of upgrade prompt)
+  if (loading || hasFeature(feature)) return children
 
   const requiredPlan = getRequiredPlan(feature)
   const meta = FEATURE_META[feature] || { label: feature, description: '' }
@@ -23,10 +24,10 @@ function UpgradePrompt({ featureLabel, description, requiredPlan }) {
   return (
     <div className="flex items-center justify-center min-h-[400px] px-4">
       <div className="max-w-md w-full text-center">
-        <div className="bg-warm-50 rounded-2xl border border-warm-200 p-8">
+        <div className="bg-warm-50 rounded-xl border border-warm-200 p-8">
           {/* Lock icon */}
-          <div className="mx-auto w-12 h-12 rounded-full bg-sage-100 flex items-center justify-center mb-4">
-            <svg className="w-6 h-6 text-sage-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
+          <div className="mx-auto text-sage-500 mb-4">
+            <svg className="w-6 h-6 mx-auto" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
               <path strokeLinecap="round" strokeLinejoin="round" d="M16.5 10.5V6.75a4.5 4.5 0 1 0-9 0v3.75m-.75 11.25h10.5a2.25 2.25 0 0 0 2.25-2.25v-6.75a2.25 2.25 0 0 0-2.25-2.25H6.75a2.25 2.25 0 0 0-2.25 2.25v6.75a2.25 2.25 0 0 0 2.25 2.25Z" />
             </svg>
           </div>
@@ -48,7 +49,7 @@ function UpgradePrompt({ featureLabel, description, requiredPlan }) {
           <div>
             <button
               onClick={() => setSearchParams({ v: 'pricing' }, { replace: false })}
-              className="inline-flex items-center gap-2 px-6 py-2.5 bg-sage-500 text-white rounded-lg text-sm font-semibold hover:bg-sage-600 transition-colors min-h-[44px]"
+              className="inline-flex items-center gap-2 px-6 py-2.5 bg-sage-600 text-white rounded-lg text-sm font-semibold hover:bg-sage-700 transition-colors min-h-[44px]"
             >
               View Plans
               <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>

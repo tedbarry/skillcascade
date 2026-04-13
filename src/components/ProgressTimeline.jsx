@@ -174,7 +174,7 @@ export default function ProgressTimeline({
     <div className={isPhone ? 'p-4' : 'p-4'}>
       {/* Save snapshot */}
       <div className="mb-5">
-        <h3 className="text-xs uppercase tracking-wider text-warm-400 font-semibold mb-2">
+        <h3 className="text-xs uppercase tracking-wider text-warm-500 font-semibold mb-2">
           Save Snapshot
         </h3>
         {hasClient ? (
@@ -190,12 +190,12 @@ export default function ProgressTimeline({
               />
               <button
                 onClick={handleSaveSnapshot}
-                className="text-xs px-3 py-1.5 rounded-md bg-sage-500 text-white hover:bg-sage-600 transition-colors font-medium shrink-0 min-h-[44px]"
+                className="text-xs px-3 py-1.5 rounded-md bg-sage-600 text-white hover:bg-sage-700 transition-colors font-medium shrink-0 min-h-[44px]"
               >
                 Save
               </button>
             </div>
-            <p className="text-[10px] text-warm-400 mt-1">
+            <p className="text-[10px] text-warm-500 mt-1">
               Saves a point-in-time copy of all ratings
             </p>
           </>
@@ -209,7 +209,7 @@ export default function ProgressTimeline({
       </div>
 
       {/* Snapshot list */}
-      <h3 className="text-xs uppercase tracking-wider text-warm-400 font-semibold mb-2">
+      <h3 className="text-xs uppercase tracking-wider text-warm-500 font-semibold mb-2">
         Snapshots ({snapshots.length})
       </h3>
       {snapshots.length === 0 ? (
@@ -232,13 +232,13 @@ export default function ProgressTimeline({
                 {confirmDeleteId === snap.id ? (
                   <span className="flex items-center gap-1">
                     <button onClick={() => { onDeleteSnapshot?.(snap.id); setConfirmDeleteId(null) }} className="text-[9px] text-coral-600 hover:text-coral-800 font-medium min-h-[44px] px-1">Delete</button>
-                    <button onClick={() => setConfirmDeleteId(null)} className="text-[9px] text-warm-400 hover:text-warm-600 min-h-[44px] px-1">Cancel</button>
+                    <button onClick={() => setConfirmDeleteId(null)} className="text-[9px] text-warm-500 hover:text-warm-600 min-h-[44px] px-1">Cancel</button>
                   </span>
                 ) : (
                   <button onClick={() => setConfirmDeleteId(snap.id)} className="text-warm-300 hover:text-red-400 text-sm transition-colors min-h-[44px] min-w-[44px] flex items-center justify-center" title="Delete snapshot" aria-label="Delete snapshot">{'×'}</button>
                 )}
               </div>
-              <div className="text-[10px] text-warm-400">
+              <div className="text-[10px] text-warm-500">
                 {formatDate(snap.timestamp)} at {formatTime(snap.timestamp)}
               </div>
               {compareMode && (
@@ -246,7 +246,7 @@ export default function ProgressTimeline({
                   <button
                     onClick={() => setCompareA(snap.id)}
                     className={`text-xs px-2 py-1 min-h-[44px] rounded font-medium inline-flex items-center ${
-                      compareA === snap.id ? 'bg-sage-500 text-white' : 'bg-warm-100 text-warm-500 hover:bg-warm-200'
+                      compareA === snap.id ? 'bg-sage-600 text-white' : 'bg-warm-100 text-warm-500 hover:bg-warm-200'
                     }`}
                   >
                     A
@@ -254,7 +254,7 @@ export default function ProgressTimeline({
                   <button
                     onClick={() => setCompareB(snap.id)}
                     className={`text-xs px-2 py-1 min-h-[44px] rounded font-medium inline-flex items-center ${
-                      compareB === snap.id ? 'bg-sage-500 text-white' : 'bg-warm-100 text-warm-500 hover:bg-warm-200'
+                      compareB === snap.id ? 'bg-sage-600 text-white' : 'bg-warm-100 text-warm-500 hover:bg-warm-200'
                     }`}
                   >
                     B
@@ -282,7 +282,7 @@ export default function ProgressTimeline({
             }}
             className={`w-full text-xs px-3 py-2 rounded-lg font-medium transition-colors min-h-[44px] ${
               compareMode
-                ? 'bg-sage-500 text-white'
+                ? 'bg-sage-600 text-white'
                 : 'bg-warm-100 text-warm-600 hover:bg-warm-200'
             }`}
           >
@@ -312,7 +312,7 @@ export default function ProgressTimeline({
           <h3 className="text-sm font-semibold text-warm-700 text-center mb-1">
             Profile Comparison
           </h3>
-          <p className="text-xs text-warm-400 text-center mb-4">
+          <p className="text-xs text-warm-500 text-center mb-4">
             Solid = {compareB === 'current' ? 'Current' : 'Snapshot B'} · Dashed = Snapshot A
           </p>
           <RadarChart
@@ -330,13 +330,13 @@ export default function ProgressTimeline({
               <h3 className="text-sm font-semibold text-warm-700 mb-1">
                 Score Over Time
               </h3>
-              <p className="text-xs text-warm-400 mb-4">
+              <p className="text-xs text-warm-500 mb-4">
                 Domain scores across all saved snapshots.
               </p>
 
               {/* Domain toggles */}
               <div className="flex items-center gap-2 mb-4 flex-wrap">
-                <span className="text-[10px] text-warm-400">Show:</span>
+                <span className="text-[10px] text-warm-500">Show:</span>
                 {framework.map((d) => (
                   <button
                     key={d.id}
@@ -358,7 +358,7 @@ export default function ProgressTimeline({
 
               <ResponsiveContainer width="100%" height={isPhone ? 250 : 350}>
                 <LineChart data={chartData}>
-                  <CartesianGrid strokeDasharray="3 3" stroke="#e8d5c0" strokeOpacity={0.5} />
+                  <CartesianGrid strokeDasharray="3 3" stroke="#E7E5E4" strokeOpacity={0.5} />
                   <XAxis
                     dataKey="name"
                     tick={{ fontSize: 10, fill: '#9a6740' }}
@@ -372,8 +372,8 @@ export default function ProgressTimeline({
                     axisLine={false}
                   />
                   <Tooltip content={<ChartTooltip />} />
-                  <ReferenceLine y={1.5} stroke="#e8d5c0" strokeDasharray="3 3" strokeOpacity={0.5} />
-                  <ReferenceLine y={2.5} stroke="#e8d5c0" strokeDasharray="3 3" strokeOpacity={0.5} />
+                  <ReferenceLine y={1.5} stroke="#E7E5E4" strokeDasharray="3 3" strokeOpacity={0.5} />
+                  <ReferenceLine y={2.5} stroke="#E7E5E4" strokeDasharray="3 3" strokeOpacity={0.5} />
 
                   {framework.map((d) =>
                     visibleDomains.has(d.id) ? (
@@ -396,10 +396,10 @@ export default function ProgressTimeline({
                     type="monotone"
                     dataKey="overall"
                     name="Overall"
-                    stroke="#3d2a1c"
+                    stroke="#1C1917"
                     strokeWidth={2.5}
                     strokeDasharray="6 3"
-                    dot={{ r: 5, fill: '#3d2a1c', stroke: '#fff', strokeWidth: 2 }}
+                    dot={{ r: 5, fill: '#1C1917', stroke: '#fff', strokeWidth: 2 }}
                     activeDot={{ r: 7 }}
                   />
                 </LineChart>
@@ -417,12 +417,12 @@ export default function ProgressTimeline({
           <h3 className="text-sm font-semibold text-warm-700 mb-1">
             Progress Since First Snapshot
           </h3>
-          <p className="text-xs text-warm-400 mb-3">
+          <p className="text-xs text-warm-500 mb-3">
             Comparing {formatDate(snapshots[0].timestamp)} to current.
           </p>
           <div className={`grid gap-2 ${isPhone ? 'grid-cols-1' : 'grid-cols-3'}`}>
             {progressSummary.map((d) => {
-              const changeColor = d.change > 0.2 ? 'text-sage-600' : d.change < -0.2 ? 'text-coral-500' : 'text-warm-400'
+              const changeColor = d.change > 0.2 ? 'text-sage-600' : d.change < -0.2 ? 'text-coral-500' : 'text-warm-500'
               const changeIcon = d.change > 0.2 ? '↑' : d.change < -0.2 ? '↓' : '→'
               const bgColor = d.change > 0.2 ? 'bg-sage-50 border-sage-200' : d.change < -0.2 ? 'bg-coral-50 border-coral-200' : 'bg-warm-50 border-warm-200'
 
@@ -444,7 +444,7 @@ export default function ProgressTimeline({
                   </div>
                   {d.first > 0 && (
                     <div className="flex items-center gap-1.5 mt-1">
-                      <span className="text-[9px] text-warm-400">
+                      <span className="text-[9px] text-warm-500">
                         {d.first.toFixed(1)}
                       </span>
                       <div className="flex-1 h-0.5 bg-warm-200 rounded-full relative">
@@ -452,19 +452,19 @@ export default function ProgressTimeline({
                           className="absolute h-full rounded-full"
                           style={{
                             width: `${(d.first / 3) * 100}%`,
-                            backgroundColor: '#c49a6c',
+                            backgroundColor: '#D97706',
                           }}
                         />
                         <div
                           className="absolute h-full rounded-full"
                           style={{
                             width: `${(d.current / 3) * 100}%`,
-                            backgroundColor: d.change > 0 ? '#7fb589' : '#e8928a',
+                            backgroundColor: d.change > 0 ? '#10B981' : '#F59E0B',
                             opacity: 0.7,
                           }}
                         />
                       </div>
-                      <span className="text-[9px] text-warm-400">
+                      <span className="text-[9px] text-warm-500">
                         {d.current.toFixed(1)}
                       </span>
                     </div>
@@ -491,7 +491,7 @@ export default function ProgressTimeline({
               className={`flex-1 py-3 text-sm font-medium text-center transition-colors min-h-[44px] ${
                 mobileTab === tab
                   ? 'text-sage-700 border-b-2 border-sage-500'
-                  : 'text-warm-400 hover:text-warm-600'
+                  : 'text-warm-500 hover:text-warm-600'
               }`}
             >
               {tab === 'chart' ? 'Chart' : 'Snapshots'}

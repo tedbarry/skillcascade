@@ -73,15 +73,31 @@ Go to Data & Export in the Settings group. Choose your format and click Export. 
     title: 'Data Privacy & Security',
     category: 'data',
     tags: ['privacy', 'security', 'encryption', 'data protection', 'safe'],
-    summary: 'How SkillCascade protects your data with enterprise-grade security.',
-    body: `SkillCascade is designed with strong security practices across all pricing tiers.
+    summary: 'How SkillCascade protects your data with HIPAA-compliant, enterprise-grade security.',
+    body: `SkillCascade is built with HIPAA compliance as a foundation, not an add-on. Every plan includes the same enterprise-grade security.
+
+## HIPAA compliance
+
+- Business Associate Agreement (BAA) signed with infrastructure providers
+- AWS RDS with encryption at rest for all clinical data
+- PHI (Protected Health Information) is encrypted client-side using AES-256-GCM before reaching the database
+- Audit logging tracks data access and modifications
+- Session timeout controls for inactive sessions
 
 ## Data protection
 
 - All data is encrypted in transit (TLS 1.2+) and at rest (AES-256)
+- Client-side encryption: PHI fields (client names, DOBs, notes, report content) are encrypted in the browser before being sent to the server. The encryption key lives only in browser memory — the server never has access to plaintext PHI.
 - Authentication via Supabase with secure session management
 - Row-level security (RLS) ensures you can only access your organization's data
-- AI features use a secure proxy — no client data is sent directly to AI providers
+- AI features powered by Claude via AWS Bedrock (HIPAA-eligible) — no client data is sent to consumer AI endpoints
+
+## Infrastructure
+
+- Database: AWS RDS (PostgreSQL) with encryption at rest, automated backups, and point-in-time recovery
+- Authentication: Supabase Auth with email/password and magic link support
+- API: Cloudflare Workers for edge computing and API routing
+- AI: Claude via AWS Bedrock with BAA coverage
 
 ## Local storage
 
@@ -101,22 +117,46 @@ You can permanently delete your account and all associated data from the Profile
     id: 'guide-ai-features',
     title: 'AI Features',
     category: 'data',
-    tags: ['ai', 'artificial intelligence', 'assistant', 'chatgpt', 'openai', 'generate', 'suggestions'],
-    summary: 'How SkillCascade uses AI to generate insights, reports, and recommendations.',
-    body: `SkillCascade includes AI-powered features that analyze your assessment data and generate clinical content.
+    tags: ['ai', 'artificial intelligence', 'assistant', 'claude', 'bedrock', 'anthropic', 'generate', 'suggestions'],
+    summary: 'How SkillCascade uses AI across 14+ clinical tools for insights, reports, goal generation, and more.',
+    body: `SkillCascade integrates AI throughout the platform with 14+ specialized clinical tools. All AI is powered by Claude via AWS Bedrock, which is HIPAA-eligible with BAA coverage.
 
-## What AI does
+## AI Assistant (14+ tools)
 
-- Generates clinical narratives for reports
-- Provides contextual suggestions in the Intelligence overview
-- Powers the AI Assistant panel for custom queries about your client's data
+The AI Assistant is accessed via the brain icon in the toolbar. It includes specialized tools:
+- **Goal Generation** — Create measurable treatment goals from assessment data
+- **Skill Analysis** — Deep analysis of any skill's status, prerequisites, and next steps
+- **Lesson Plan Generator** — Create session-ready lesson plans for specific skills
+- **Clinical Narratives** — Generate narrative summaries for reports and documentation
+- **Treatment Planning** — AI-guided treatment plan creation based on bottleneck analysis
+- **Progress Summaries** — Generate plain-language progress updates for parents
+- **Behavioral Analysis** — Analyze behavioral patterns across domains
+- **Teaching Strategies** — Get evidence-based teaching recommendations
+- **Deficit Analysis** — Identify and explain skill deficits with context
+- **Report Refinement** — AI-assisted refinement of authorization report sections
+- **Graph Intelligence** — Trend analysis and narrative generation for session data graphs
+- And more context-aware tools that adapt to your current view
+
+## Client AI Agent (Clinical plan)
+
+A per-client AI analyst available under Analyze > AI Agent. It provides deep, longitudinal analysis of a specific client's data including assessment history, session trends, and program performance.
+
+## Practice Intelligence (Clinical plan)
+
+Organization-wide AI analytics under Team > Practice Intelligence. Identifies cross-client patterns, staff performance insights, and program effectiveness metrics across your entire caseload.
+
+## Graph Intelligence (Clinical plan)
+
+Available in the Graph Dashboard. Analyzes per-program session data charts and generates trend narratives, mastery predictions, and intervention recommendations.
 
 ## Privacy and security
 
-- All AI requests go through a secure server-side proxy — your API key is never exposed to the browser
+- All AI requests route through AWS Bedrock (HIPAA-eligible) — not consumer AI endpoints
+- Server-side proxy ensures your API key is never exposed to the browser
 - Rate limited to 10 requests per minute per user
 - Maximum token limits prevent excessive data transmission
 - AI-generated content is NOT used to train AI models
+- PHI is encrypted before transmission
 
 ## Accuracy
 

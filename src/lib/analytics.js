@@ -4,7 +4,7 @@
  * Events are buffered in memory and flushed in batches.
  */
 
-import { supabase } from './supabase.js'
+import { api } from './api.js'
 
 let sessionId = null
 let userId = null
@@ -58,7 +58,7 @@ export async function identify(user, traits = {}) {
   orgId = traits.org_id || null
 
   try {
-    await supabase.from('usage_sessions').insert({
+    await api.from('usage_sessions').insert({
       id: sessionId,
       user_id: userId,
       org_id: orgId,
@@ -107,11 +107,11 @@ async function flush() {
   const batch = eventBuffer.splice(0)
 
   try {
-    await supabase.from('usage_events').insert(batch)
+    await api.from('usage_events').insert(batch)
 
     // Update session duration (event_count derived from usage_events table)
     const elapsed = Math.round((Date.now() - (sessionStartTime || Date.now())) / 1000)
-    await supabase
+    await api
       .from('usage_sessions')
       .update({ duration_seconds: elapsed })
       .eq('id', sessionId)
@@ -132,7 +132,7 @@ export async function endSession() {
 
   try {
     const elapsed = Math.round((Date.now() - (sessionStartTime || Date.now())) / 1000)
-    await supabase
+    await api
       .from('usage_sessions')
       .update({
         ended_at: new Date().toISOString(),

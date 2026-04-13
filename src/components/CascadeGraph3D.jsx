@@ -8,9 +8,9 @@ import { DOMAIN_COLORS } from '../constants/colors.js'
 const STATE_COLORS = {
   locked: '#444444',
   blocked: '#8b4444',
-  'needs-work': '#e8928a',
-  developing: '#e5b76a',
-  mastered: '#7fb589',
+  'needs-work': '#F59E0B',
+  developing: '#F59E0B',
+  mastered: '#10B981',
 }
 
 // Wider spread for cinematic feel
@@ -100,12 +100,12 @@ const CinematicNode = memo(function CinematicNode({ node, position, isSource, ca
 
   const color = useMemo(() => {
     if (cascadeState?.active) {
-      if (isSource) return isMasteryCascade ? '#ffd700' : '#ff4444'
+      if (isSource) return isMasteryCascade ? '#FBBF24' : '#EF4444'
       if (cascadeState.affected?.[node.id]) {
         const intensity = cascadeState.affected[node.id].impactStrength
         return isMasteryCascade
-          ? new THREE.Color('#ffd700').lerp(new THREE.Color(domainColor), 1 - intensity).getStyle()
-          : new THREE.Color('#ff4444').lerp(new THREE.Color(domainColor), 1 - intensity).getStyle()
+          ? new THREE.Color('#FBBF24').lerp(new THREE.Color(domainColor), 1 - intensity).getStyle()
+          : new THREE.Color('#EF4444').lerp(new THREE.Color(domainColor), 1 - intensity).getStyle()
       }
     }
     return node.state === 'mastered' ? domainColor : stateColor
@@ -254,7 +254,7 @@ function EdgeParticles({ edges: edgeDefs, nodePositions, cascadeState, isMastery
   })
 
   const particleColor = useMemo(() => {
-    if (cascadeState?.active) return isMasteryCascade ? '#ffd700' : '#ff8866'
+    if (cascadeState?.active) return isMasteryCascade ? '#FBBF24' : '#EF4444'
     return '#6889b5'
   }, [cascadeState?.active, isMasteryCascade])
 
@@ -309,7 +309,7 @@ const SceneContent = memo(function SceneContent({ nodes, cascadeState, isMastery
         )
 
         const edgeColor = isActive
-          ? (isMasteryCascade ? '#ffd700' : '#ff4444')
+          ? (isMasteryCascade ? '#FBBF24' : '#EF4444')
           : edge.type === 'supports' ? '#445' : '#556'
 
         return (

@@ -1,8 +1,12 @@
 import useSubscription from '../hooks/useSubscription.js'
+import { useAuth } from '../contexts/AuthContext.jsx'
 
 export default function SubscriptionBanner({ onNavigateToPricing, onOpenBilling }) {
-  const { subscription, isActive, isTrial, isExpired, isPastDue, needsSubscription, trialDaysLeft, plan } = useSubscription()
+  const { profile } = useAuth()
+  const { subscription, isActive, isTrial, isExpired, isPastDue, needsSubscription, trialDaysLeft, plan, loading } = useSubscription()
 
+  // Never show banners for super admins or while loading
+  if (loading || profile?.is_super_admin) return null
   if (!subscription) return null
 
   // No subscription yet — prompt to pick a plan
@@ -82,7 +86,7 @@ function Banner({ color, message, actionLabel, onAction }) {
     red: 'bg-red-50 border-red-200 text-red-800',
   }
   const btnColors = {
-    info: 'bg-sage-500 hover:bg-sage-600 text-white',
+    info: 'bg-sage-600 hover:bg-sage-700 text-white',
     amber: 'bg-amber-600 hover:bg-amber-700 text-white',
     red: 'bg-red-600 hover:bg-red-700 text-white',
   }
@@ -96,7 +100,7 @@ function Banner({ color, message, actionLabel, onAction }) {
   }
 
   return (
-    <div className={`rounded-xl border px-4 py-3 mb-4 flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-4 ${colors[color]}`}>
+    <div className={`rounded-xl border px-4 py-3 mb-4 flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-4 shadow-sm ${colors[color]}`}>
       <div className="flex items-center gap-2 flex-1 min-w-0">
         {color === 'info' ? (
           <svg className="w-5 h-5 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
@@ -112,7 +116,7 @@ function Banner({ color, message, actionLabel, onAction }) {
       {actionLabel && onAction && (
         <button
           onClick={handleClick}
-          className={`px-4 py-2 min-h-[44px] rounded-lg text-sm font-semibold transition-colors flex-shrink-0 ${btnColors[color]}`}
+          className={`px-4 py-2 min-h-[44px] rounded-full text-sm font-semibold transition-colors flex-shrink-0 ${btnColors[color]}`}
         >
           {actionLabel}
         </button>

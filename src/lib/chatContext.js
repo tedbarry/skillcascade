@@ -10,7 +10,7 @@ export function buildChatContext({ activeView, clientName, assessments, plan, ro
 
   return {
     currentView: activeView || 'home',
-    clientName: clientName || null,
+    clientName: null, // HIPAA: never send client names to AI — use "current client" instead
     assessmentSummary: summary,
     plan: plan || null,
     role: role || null,

@@ -220,10 +220,10 @@ export default memo(function PipelineFlow({
           let fillOpacity = node.assessed > 0 ? 0.15 + node.healthPct * 0.35 : 0.08
 
           if (isCascadeSource) {
-            fillColor = isMasteryCascade ? '#ffd700' : '#ff4444'
+            fillColor = isMasteryCascade ? '#FBBF24' : '#EF4444'
             fillOpacity = 0.5
           } else if (isCascadeAffected) {
-            fillColor = isMasteryCascade ? '#ffd700' : '#ff4444'
+            fillColor = isMasteryCascade ? '#FBBF24' : '#EF4444'
             fillOpacity = 0.15 + impactStrength * 0.4
           } else if (cascadeState.active) {
             fillOpacity = 0.05
@@ -255,7 +255,7 @@ export default memo(function PipelineFlow({
                   x={x} y={y} width={w} height={segH}
                   rx={4}
                   fill="none"
-                  stroke="#ff8800"
+                  stroke="#F97316"
                   strokeWidth="2"
                   opacity="0.8"
                 >
@@ -291,19 +291,19 @@ export default memo(function PipelineFlow({
 
                 {/* Bottleneck label */}
                 {isBottleneck && !cascadeState.active && (
-                  <text x={svgWidth - 8} y={y} textAnchor="end" fill="#ff8800" fontSize="9" fontWeight="bold" fontFamily="monospace">
+                  <text x={svgWidth - 8} y={y} textAnchor="end" fill="#F97316" fontSize="9" fontWeight="bold" fontFamily="monospace">
                     BOTTLENECK
                   </text>
                 )}
 
                 {/* Cascade labels */}
                 {isCascadeSource && (
-                  <text x={svgWidth - 8} y={y} textAnchor="end" fill={isMasteryCascade ? '#ffd700' : '#ff4444'} fontSize="9" fontWeight="bold" fontFamily="monospace">
+                  <text x={svgWidth - 8} y={y} textAnchor="end" fill={isMasteryCascade ? '#FBBF24' : '#EF4444'} fontSize="9" fontWeight="bold" fontFamily="monospace">
                     SOURCE
                   </text>
                 )}
                 {isCascadeAffected && (
-                  <text x={svgWidth - 8} y={y} textAnchor="end" fill={isMasteryCascade ? '#ffd700' : '#ff4444'} fontSize="9" fontWeight="bold" fontFamily="monospace">
+                  <text x={svgWidth - 8} y={y} textAnchor="end" fill={isMasteryCascade ? '#FBBF24' : '#EF4444'} fontSize="9" fontWeight="bold" fontFamily="monospace">
                     {impactPct}%
                   </text>
                 )}
@@ -327,19 +327,19 @@ export default memo(function PipelineFlow({
 
               {/* Bottleneck label above pipe */}
               {isBottleneck && !cascadeState.active && (
-                <text x={x} y={y - MAX_PIPE / 2 - 10} textAnchor="middle" fill="#ff8800" fontSize="10" fontWeight="bold" fontFamily="monospace">
+                <text x={x} y={y - MAX_PIPE / 2 - 10} textAnchor="middle" fill="#F97316" fontSize="10" fontWeight="bold" fontFamily="monospace">
                   BOTTLENECK
                 </text>
               )}
 
               {/* Cascade labels above pipe */}
               {isCascadeSource && (
-                <text x={x} y={y - MAX_PIPE / 2 - 10} textAnchor="middle" fill={isMasteryCascade ? '#ffd700' : '#ff4444'} fontSize="10" fontWeight="bold" fontFamily="monospace">
+                <text x={x} y={y - MAX_PIPE / 2 - 10} textAnchor="middle" fill={isMasteryCascade ? '#FBBF24' : '#EF4444'} fontSize="10" fontWeight="bold" fontFamily="monospace">
                   {isMasteryCascade ? 'STRENGTH' : 'CASCADE'} SOURCE
                 </text>
               )}
               {isCascadeAffected && (
-                <text x={x} y={y - MAX_PIPE / 2 - 10} textAnchor="middle" fill={isMasteryCascade ? '#ffd700' : '#ff4444'} fontSize="10" fontWeight="bold" fontFamily="monospace">
+                <text x={x} y={y - MAX_PIPE / 2 - 10} textAnchor="middle" fill={isMasteryCascade ? '#FBBF24' : '#EF4444'} fontSize="10" fontWeight="bold" fontFamily="monospace">
                   Impact: {impactPct}%
                 </text>
               )}
@@ -378,8 +378,8 @@ export default memo(function PipelineFlow({
 
           let fillOpacity = node.assessed > 0 ? 0.15 + node.healthPct * 0.35 : 0.08
           let fillColor = color
-          if (isCascadeSource) { fillColor = isMasteryCascade ? '#ffd700' : '#ff4444'; fillOpacity = 0.5 }
-          else if (isCascadeAffected) { fillColor = isMasteryCascade ? '#ffd700' : '#ff4444'; fillOpacity = 0.25 }
+          if (isCascadeSource) { fillColor = isMasteryCascade ? '#FBBF24' : '#EF4444'; fillOpacity = 0.5 }
+          else if (isCascadeAffected) { fillColor = isMasteryCascade ? '#FBBF24' : '#EF4444'; fillOpacity = 0.25 }
           else if (cascadeState.active) { fillOpacity = 0.05 }
 
           return (
@@ -400,7 +400,7 @@ export default memo(function PipelineFlow({
                 rx={6}
                 fill={fillColor}
                 opacity={fillOpacity}
-                stroke={isBottleneck ? '#ff8800' : color}
+                stroke={isBottleneck ? '#F97316' : color}
                 strokeWidth={isBottleneck ? 2 : 1}
                 className="cursor-pointer"
                 onClick={() => onSegmentClick?.(branch.id)}
@@ -415,7 +415,7 @@ export default memo(function PipelineFlow({
                   y={by - (isPhone ? segmentWidth * 0.3 : halfH)}
                   width={isPhone ? h : segmentWidth * 0.8}
                   height={isPhone ? segmentWidth * 0.6 : h}
-                  rx={6} fill="none" stroke="#ff8800" strokeWidth="2">
+                  rx={6} fill="none" stroke="#F97316" strokeWidth="2">
                   <animate attributeName="opacity" values="0.4;0.9;0.4" dur="2s" repeatCount="indefinite" />
                 </rect>
               )}
@@ -450,7 +450,7 @@ export default memo(function PipelineFlow({
       {/* Tooltip */}
       {tooltip && (
         <div
-          className="absolute pointer-events-none bg-[#1e1e24]/95 border border-[#444] rounded-lg px-3 py-2 text-xs z-10 shadow-xl"
+          className="absolute pointer-events-none bg-[#1e1e24]/95 border border-[#444] rounded-lg px-3 py-2 text-xs z-10 shadow-lg"
           style={{
             left: Math.min(tooltip.x + 10, (svgWidth || 400) - 180),
             top: Math.max(tooltip.y - 70, 10),

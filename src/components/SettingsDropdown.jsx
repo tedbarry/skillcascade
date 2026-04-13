@@ -3,6 +3,9 @@ import { mergeUserSettings } from '../lib/supabase.js'
 import { useAuth } from '../contexts/AuthContext.jsx'
 import { safeGetItem, safeSetItem, safeRemoveItem } from '../lib/safeStorage.js'
 import { resetAllHints, getTipsDisabled, setTipsDisabled } from '../hooks/useContextualHint.js'
+import useGoalPreferences from '../hooks/useGoalPreferences.js'
+import usePermissions from '../hooks/usePermissions.js'
+import CriteriaSelector from './CriteriaSelector.jsx'
 
 /**
  * Minimal settings dropdown — hidden in the header.
@@ -11,6 +14,7 @@ import { resetAllHints, getTipsDisabled, setTipsDisabled } from '../hooks/useCon
  */
 export default function SettingsDropdown() {
   const { user, signOut, isSuperAdmin, isAdmin } = useAuth()
+  const { canAny, loading: permissionsLoading } = usePermissions()
   const [open, setOpen] = useState(false)
   const [darkMode, setDarkMode] = useState(() => {
     return safeGetItem('skillcascade_dark_mode') === 'true'
@@ -49,6 +53,7 @@ export default function SettingsDropdown() {
     }
   }, [open])
 
+  const { goalPrefs, updateGoalPrefs } = useGoalPreferences()
   const [tipsEnabled, setTipsEnabled] = useState(() => !getTipsDisabled())
 
   function handleResetTips() {
@@ -68,11 +73,13 @@ export default function SettingsDropdown() {
     }
   }
 
+  const canAccessAdmin = isSuperAdmin || (!permissionsLoading && (canAny('team') || canAny('settings')))
+
   return (
     <div className="relative" ref={ref}>
       <button
         onClick={() => setOpen(!open)}
-        className="p-2 min-h-[44px] min-w-[44px] flex items-center justify-center rounded-lg text-warm-400 hover:text-warm-600 hover:bg-warm-100 transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-sage-400"
+        className="p-2 min-h-[44px] min-w-[44px] flex items-center justify-center rounded-lg text-warm-500 hover:text-warm-600 hover:bg-warm-100 transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-sage-400"
         title="Settings"
         aria-label="Settings"
         aria-expanded={open}
@@ -106,7 +113,7 @@ export default function SettingsDropdown() {
               )}
               <span>Dark Mode</span>
             </div>
-            <div className={`w-8 h-4.5 rounded-full transition-colors relative ${darkMode ? 'bg-sage-500' : 'bg-warm-200'}`}>
+            <div className={`w-8 h-4.5 rounded-full transition-colors relative ${darkMode ? 'bg-sage-600' : 'bg-warm-200'}`}>
               <div className={`absolute top-0.5 w-3.5 h-3.5 rounded-full bg-white shadow transition-transform ${darkMode ? 'translate-x-4' : 'translate-x-0.5'}`} />
             </div>
           </button>
@@ -124,10 +131,41 @@ export default function SettingsDropdown() {
               </svg>
               <span>Show Tips</span>
             </div>
-            <div className={`w-8 h-4.5 rounded-full transition-colors relative ${tipsEnabled ? 'bg-sage-500' : 'bg-warm-200'}`}>
+            <div className={`w-8 h-4.5 rounded-full transition-colors relative ${tipsEnabled ? 'bg-sage-600' : 'bg-warm-200'}`}>
               <div className={`absolute top-0.5 w-3.5 h-3.5 rounded-full bg-white shadow transition-transform ${tipsEnabled ? 'translate-x-4' : 'translate-x-0.5'}`} />
             </div>
           </button>
+
+          {/* Goal Preferences */}
+          <div className="border-t border-warm-100 my-1" />
+          <div className="px-3 py-2">
+            <p className="text-[10px] font-semibold text-warm-500 uppercase tracking-wider mb-2">Goal Preferences</p>
+            <CriteriaSelector
+              value={goalPrefs.masteryCriteria}
+              onChange={(val) => updateGoalPrefs({ masteryCriteria: val })}
+              className="mb-2"
+            />
+            <label className="flex items-center gap-2 text-[11px] text-warm-600 mb-1.5 cursor-pointer">
+              <input
+                type="checkbox"
+                checked={goalPrefs.includeCriteria}
+                onChange={(e) => updateGoalPrefs({ includeCriteria: e.target.checked })}
+                className="rounded border-warm-300 text-sage-500 focus:ring-sage-300 w-3.5 h-3.5"
+              />
+              Include criteria in goals
+            </label>
+            <label className="flex items-center gap-2 text-[11px] text-warm-600 cursor-pointer">
+              <input
+                type="checkbox"
+                checked={goalPrefs.includeCondition}
+                onChange={(e) => updateGoalPrefs({ includeCondition: e.target.checked })}
+                className="rounded border-warm-300 text-sage-500 focus:ring-sage-300 w-3.5 h-3.5"
+              />
+              Include condition prefix
+            </label>
+          </div>
+
+          <div className="border-t border-warm-100 my-1" />
 
           {/* Reset Tips */}
           <button
@@ -145,7 +183,7 @@ export default function SettingsDropdown() {
             <>
               <div className="border-t border-warm-100 my-1" />
               <div className="px-3 py-1.5 flex items-center gap-2">
-                <span className="text-xs text-warm-400 truncate flex-1">{user.email}</span>
+                <span className="text-xs text-warm-500 truncate flex-1">{user.email}</span>
                 {isSuperAdmin && (
                   <span className="text-[9px] font-bold text-amber-600 bg-amber-50 px-1.5 py-0.5 rounded shrink-0">OWNER</span>
                 )}
@@ -153,7 +191,7 @@ export default function SettingsDropdown() {
                   <span className="text-[9px] font-bold text-sage-600 bg-sage-50 px-1.5 py-0.5 rounded shrink-0">ADMIN</span>
                 )}
               </div>
-              {isAdmin && (
+              {canAccessAdmin && (
                 <a
                   href="/admin"
                   onClick={() => setOpen(false)}

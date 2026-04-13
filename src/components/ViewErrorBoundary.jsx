@@ -36,33 +36,21 @@ export default class ViewErrorBoundary extends Component {
 
     return (
       <div className="flex flex-col items-center justify-center py-16 px-6 text-center">
-        {/* Warning icon */}
-        <svg
-          className="w-12 h-12 text-warm-400 mb-4"
-          fill="none"
-          viewBox="0 0 48 48"
-          stroke="currentColor"
-          strokeWidth={1.5}
-        >
-          <path
-            d="M24 6L4 42h40L24 6z"
-            strokeLinejoin="round"
-          />
-          <path
-            d="M24 18v10"
-            strokeLinecap="round"
-          />
-          <circle cx="24" cy="34" r="1.5" fill="currentColor" stroke="none" />
-        </svg>
+        {/* Error illustration */}
+        <img
+          src="/brand/error-page.jpg"
+          alt="View error"
+          className="w-40 max-w-[180px] h-auto rounded-xl mb-2"
+        />
 
         {/* Error message */}
         <p className="text-warm-700 font-medium mb-1">
           The {viewName} view ran into a problem
         </p>
-        <p className="text-warm-400 text-sm mb-1 max-w-sm">
+        <p className="text-warm-500 text-sm mb-1 max-w-sm">
           This is usually caused by a temporary glitch or unexpected data.
         </p>
-        <p className="text-warm-400 text-sm mb-6 max-w-sm">
+        <p className="text-warm-500 text-sm mb-6 max-w-sm">
           Click <strong className="text-warm-500">Retry</strong> to reload the view, or <strong className="text-warm-500">Go Home</strong> to start fresh.
         </p>
 
@@ -70,7 +58,7 @@ export default class ViewErrorBoundary extends Component {
         <div className="flex items-center gap-3">
           <button
             onClick={this.resetErrorBoundary}
-            className="px-5 py-2 min-h-[44px] bg-sage-500 text-white rounded-xl hover:bg-sage-600 active:bg-sage-700 transition-colors text-sm font-medium focus:outline-none focus-visible:ring-2 focus-visible:ring-sage-400 focus-visible:ring-offset-2"
+            className="px-5 py-2 min-h-[44px] bg-sage-600 text-white rounded-xl hover:bg-sage-700 active:bg-sage-800 transition-colors text-sm font-medium focus:outline-none focus-visible:ring-2 focus-visible:ring-sage-400 focus-visible:ring-offset-2"
           >
             Retry
           </button>
@@ -87,7 +75,7 @@ export default class ViewErrorBoundary extends Component {
           <div className="mt-6 w-full max-w-lg">
             <button
               onClick={() => this.setState(s => ({ showDetails: !s.showDetails }))}
-              className="text-xs text-warm-400 hover:text-warm-500 transition-colors min-h-[44px] px-2 focus:outline-none focus-visible:ring-2 focus-visible:ring-warm-300 rounded"
+              className="text-xs text-warm-500 hover:text-warm-500 transition-colors min-h-[44px] px-2 focus:outline-none focus-visible:ring-2 focus-visible:ring-warm-300 rounded"
             >
               {showDetails ? 'Hide' : 'Show'} error details
             </button>

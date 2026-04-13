@@ -231,7 +231,7 @@ export default memo(function PlannerSidebar({
                     </div>
                   </div>
                   <span className="text-[10px] font-mono shrink-0" style={{
-                    color: b.currentLevel == null ? '#666' : b.currentLevel === 0 ? '#c47070' : b.currentLevel < 2 ? '#e8928a' : '#e5b76a'
+                    color: b.currentLevel == null ? '#666' : b.currentLevel === 0 ? '#DC2626' : b.currentLevel < 2 ? '#F59E0B' : '#F59E0B'
                   }}>
                     {b.currentLevel == null ? '—' : b.currentLevel}
                   </span>
@@ -286,7 +286,7 @@ export default memo(function PlannerSidebar({
         animate={{ y: 0 }}
         exit={{ y: '100%' }}
         transition={{ type: 'spring', damping: 25, stiffness: 300 }}
-        className="fixed inset-x-0 bottom-0 z-50 bg-[#12121a] border-t border-[#333] rounded-t-xl shadow-2xl"
+        className="fixed inset-x-0 bottom-0 z-50 bg-[#12121a] border-t border-[#333] rounded-t-xl shadow-lg"
         style={{ maxHeight: '70vh' }}
       >
         <div className="w-10 h-1 bg-[#444] rounded-full mx-auto mt-2 mb-1" />

@@ -1,5 +1,5 @@
 import { useState, useEffect, useMemo, useCallback } from 'react'
-import { supabase } from '../lib/supabase.js'
+import { api } from '../lib/api.js'
 
 const RANGES = {
   '7d': 7,
@@ -30,12 +30,12 @@ export default function useAnalyticsData(range = '30d') {
     setError(null)
     try {
       const [sessResult, evtResult] = await Promise.all([
-        supabase
+        api
           .from('usage_sessions')
           .select('*')
           .gte('started_at', previousStart)
           .order('started_at', { ascending: false }),
-        supabase
+        api
           .from('usage_events')
           .select('*')
           .gte('created_at', previousStart)

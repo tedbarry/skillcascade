@@ -293,22 +293,22 @@ const DEMO_TABS = [
 
 function DashboardMockup() {
   const domains = [
-    { name: 'Regulation', pct: 87, color: '#7fb589', state: 'Solid' },
-    { name: 'Self-Awareness', pct: 78, color: '#c4956a', state: 'Developing' },
-    { name: 'Exec Function', pct: 59, color: '#d4856a', state: 'Developing' },
-    { name: 'Problem Solving', pct: 61, color: '#d4856a', state: 'Blocked' },
-    { name: 'Communication', pct: 47, color: '#e8725c', state: 'Needs Work' },
-    { name: 'Social Understand.', pct: 53, color: '#d4856a', state: 'Blocked' },
+    { name: 'Regulation', pct: 87, color: '#10B981', state: 'Solid' },
+    { name: 'Self-Awareness', pct: 78, color: '#D97706', state: 'Developing' },
+    { name: 'Exec Function', pct: 59, color: '#B45309', state: 'Developing' },
+    { name: 'Problem Solving', pct: 61, color: '#B45309', state: 'Blocked' },
+    { name: 'Communication', pct: 47, color: '#DC2626', state: 'Needs Work' },
+    { name: 'Social Understand.', pct: 53, color: '#B45309', state: 'Blocked' },
   ]
   return (
     <div className="bg-warm-700/50 rounded-xl border border-warm-600/30 overflow-hidden">
       {/* Top stats bar */}
       <div className="grid grid-cols-4 gap-px bg-warm-600/20">
         {[
-          { label: 'Assessed', value: '282/282', accent: '#7fb589' },
-          { label: 'Solid', value: '86', accent: '#7fb589' },
-          { label: 'Needs Work', value: '81', accent: '#e8725c' },
-          { label: 'Alerts', value: '4', accent: '#e8725c' },
+          { label: 'Assessed', value: '282/282', accent: '#10B981' },
+          { label: 'Solid', value: '86', accent: '#10B981' },
+          { label: 'Needs Work', value: '81', accent: '#DC2626' },
+          { label: 'Alerts', value: '4', accent: '#DC2626' },
         ].map(s => (
           <div key={s.label} className="bg-warm-700/60 p-2.5 text-center">
             <div className="text-sm font-bold" style={{ color: s.accent }}>{s.value}</div>
@@ -353,27 +353,27 @@ function VisualizeMockup() {
       <div className="bg-warm-700/50 rounded-xl p-4 border border-warm-600/30">
         <div className="text-[10px] text-warm-400 font-medium mb-2 uppercase tracking-wider">Sunburst</div>
         <svg viewBox="0 0 120 120" className="w-full mx-auto">
-          <circle cx="60" cy="60" r="18" fill="#4f8460" opacity="0.9" />
-          <path d="M60 60 L60 10 A50 50 0 0 1 103 35 Z" fill="#7fb589" opacity="0.7" />
-          <path d="M60 60 L103 35 A50 50 0 0 1 103 85 Z" fill="#c4956a" opacity="0.7" />
-          <path d="M60 60 L103 85 A50 50 0 0 1 60 110 Z" fill="#e8a87c" opacity="0.6" />
-          <path d="M60 60 L60 110 A50 50 0 0 1 17 85 Z" fill="#d4856a" opacity="0.7" />
-          <path d="M60 60 L17 85 A50 50 0 0 1 17 35 Z" fill="#7fb589" opacity="0.6" />
-          <path d="M60 60 L17 35 A50 50 0 0 1 60 10 Z" fill="#90c49a" opacity="0.7" />
+          <circle cx="60" cy="60" r="18" fill="#059669" opacity="0.9" />
+          <path d="M60 60 L60 10 A50 50 0 0 1 103 35 Z" fill="#10B981" opacity="0.7" />
+          <path d="M60 60 L103 35 A50 50 0 0 1 103 85 Z" fill="#D97706" opacity="0.7" />
+          <path d="M60 60 L103 85 A50 50 0 0 1 60 110 Z" fill="#F59E0B" opacity="0.6" />
+          <path d="M60 60 L60 110 A50 50 0 0 1 17 85 Z" fill="#B45309" opacity="0.7" />
+          <path d="M60 60 L17 85 A50 50 0 0 1 17 35 Z" fill="#10B981" opacity="0.6" />
+          <path d="M60 60 L17 35 A50 50 0 0 1 60 10 Z" fill="#34D399" opacity="0.7" />
         </svg>
       </div>
       {/* Radar mockup */}
       <div className="bg-warm-700/50 rounded-xl p-4 border border-warm-600/30">
         <div className="text-[10px] text-warm-400 font-medium mb-2 uppercase tracking-wider">Radar</div>
         <svg viewBox="0 0 120 120" className="w-full mx-auto">
-          <polygon points="60,15 95,35 105,70 85,100 60,110 35,100 15,70 25,35" fill="none" stroke="#4a3f35" strokeWidth="0.5" opacity="0.4" />
-          <polygon points="60,30 82,43 90,68 75,90 60,97 45,90 30,68 38,43" fill="none" stroke="#4a3f35" strokeWidth="0.5" opacity="0.3" />
-          <polygon points="60,45 70,52 74,66 66,78 60,82 54,78 46,66 50,52" fill="none" stroke="#4a3f35" strokeWidth="0.5" opacity="0.2" />
-          <polygon points="60,20 88,40 95,72 78,95 60,102 42,95 22,72 32,40" fill="#7fb589" fillOpacity="0.3" stroke="#7fb589" strokeWidth="1.5" />
+          <polygon points="60,15 95,35 105,70 85,100 60,110 35,100 15,70 25,35" fill="none" stroke="#44403C" strokeWidth="0.5" opacity="0.4" />
+          <polygon points="60,30 82,43 90,68 75,90 60,97 45,90 30,68 38,43" fill="none" stroke="#44403C" strokeWidth="0.5" opacity="0.3" />
+          <polygon points="60,45 70,52 74,66 66,78 60,82 54,78 46,66 50,52" fill="none" stroke="#44403C" strokeWidth="0.5" opacity="0.2" />
+          <polygon points="60,20 88,40 95,72 78,95 60,102 42,95 22,72 32,40" fill="#10B981" fillOpacity="0.3" stroke="#10B981" strokeWidth="1.5" />
           {[0,1,2,3,4,5,6,7].map(i => {
             const a = (i * 45 - 90) * Math.PI / 180
             const r = [42, 30, 35, 25, 38, 32, 28, 36][i]
-            return <circle key={i} cx={60 + r * Math.cos(a)} cy={60 + r * Math.sin(a)} r="2.5" fill="#7fb589" />
+            return <circle key={i} cx={60 + r * Math.cos(a)} cy={60 + r * Math.sin(a)} r="2.5" fill="#10B981" />
           })}
         </svg>
       </div>
@@ -381,23 +381,23 @@ function VisualizeMockup() {
       <div className="bg-warm-700/50 rounded-xl p-4 border border-warm-600/30">
         <div className="text-[10px] text-warm-400 font-medium mb-2 uppercase tracking-wider">Skill Tree</div>
         <svg viewBox="0 0 120 80" className="w-full">
-          <line x1="25" y1="40" x2="55" y2="20" stroke="#7fb589" strokeWidth="1.5" opacity="0.5" />
-          <line x1="25" y1="40" x2="55" y2="40" stroke="#7fb589" strokeWidth="1.5" opacity="0.5" />
-          <line x1="25" y1="40" x2="55" y2="60" stroke="#7fb589" strokeWidth="1.5" opacity="0.5" />
-          <line x1="55" y1="20" x2="95" y2="12" stroke="#c4956a" strokeWidth="1.5" opacity="0.5" />
-          <line x1="55" y1="20" x2="95" y2="28" stroke="#c4956a" strokeWidth="1.5" opacity="0.5" />
-          <line x1="55" y1="40" x2="95" y2="40" stroke="#c4956a" strokeWidth="1.5" opacity="0.5" />
-          <line x1="55" y1="60" x2="95" y2="55" stroke="#d4856a" strokeWidth="1.5" opacity="0.5" />
-          <line x1="55" y1="60" x2="95" y2="68" stroke="#d4856a" strokeWidth="1.5" opacity="0.5" />
-          <circle cx="25" cy="40" r="8" fill="#4f8460" />
-          <circle cx="55" cy="20" r="6" fill="#7fb589" />
-          <circle cx="55" cy="40" r="6" fill="#7fb589" />
-          <circle cx="55" cy="60" r="6" fill="#d4856a" />
-          <circle cx="95" cy="12" r="5" fill="#c4956a" />
-          <circle cx="95" cy="28" r="5" fill="#7fb589" />
-          <circle cx="95" cy="40" r="5" fill="#c4956a" />
-          <circle cx="95" cy="55" r="5" fill="#d4856a" />
-          <circle cx="95" cy="68" r="5" fill="#e8a87c" />
+          <line x1="25" y1="40" x2="55" y2="20" stroke="#10B981" strokeWidth="1.5" opacity="0.5" />
+          <line x1="25" y1="40" x2="55" y2="40" stroke="#10B981" strokeWidth="1.5" opacity="0.5" />
+          <line x1="25" y1="40" x2="55" y2="60" stroke="#10B981" strokeWidth="1.5" opacity="0.5" />
+          <line x1="55" y1="20" x2="95" y2="12" stroke="#D97706" strokeWidth="1.5" opacity="0.5" />
+          <line x1="55" y1="20" x2="95" y2="28" stroke="#D97706" strokeWidth="1.5" opacity="0.5" />
+          <line x1="55" y1="40" x2="95" y2="40" stroke="#D97706" strokeWidth="1.5" opacity="0.5" />
+          <line x1="55" y1="60" x2="95" y2="55" stroke="#B45309" strokeWidth="1.5" opacity="0.5" />
+          <line x1="55" y1="60" x2="95" y2="68" stroke="#B45309" strokeWidth="1.5" opacity="0.5" />
+          <circle cx="25" cy="40" r="8" fill="#059669" />
+          <circle cx="55" cy="20" r="6" fill="#10B981" />
+          <circle cx="55" cy="40" r="6" fill="#10B981" />
+          <circle cx="55" cy="60" r="6" fill="#B45309" />
+          <circle cx="95" cy="12" r="5" fill="#D97706" />
+          <circle cx="95" cy="28" r="5" fill="#10B981" />
+          <circle cx="95" cy="40" r="5" fill="#D97706" />
+          <circle cx="95" cy="55" r="5" fill="#B45309" />
+          <circle cx="95" cy="68" r="5" fill="#F59E0B" />
         </svg>
       </div>
       {/* Explorer mockup */}
@@ -405,17 +405,17 @@ function VisualizeMockup() {
         <div className="text-[10px] text-warm-400 font-medium mb-2 uppercase tracking-wider">Explorer</div>
         <svg viewBox="0 0 120 120" className="w-full mx-auto">
           {/* Chord diagram arcs */}
-          <circle cx="60" cy="60" r="48" fill="none" stroke="#4a3f35" strokeWidth="0.5" opacity="0.3" />
+          <circle cx="60" cy="60" r="48" fill="none" stroke="#44403C" strokeWidth="0.5" opacity="0.3" />
           {[0,1,2,3,4,5].map(i => {
             const a = (i * 60 - 90) * Math.PI / 180
-            const colors = ['#d4856a','#c4956a','#e8a87c','#7fb589','#90c49a','#4f8460']
+            const colors = ['#B45309','#D97706','#F59E0B','#10B981','#34D399','#059669']
             return <circle key={i} cx={60 + 48 * Math.cos(a)} cy={60 + 48 * Math.sin(a)} r="6" fill={colors[i]} opacity="0.8" />
           })}
-          <path d="M60 12 Q30 40 12 60" fill="none" stroke="#7fb589" strokeWidth="1.5" opacity="0.4" />
-          <path d="M108 60 Q80 30 60 12" fill="none" stroke="#c4956a" strokeWidth="1.5" opacity="0.4" />
-          <path d="M90 102 Q60 70 12 60" fill="none" stroke="#d4856a" strokeWidth="1.5" opacity="0.4" />
-          <path d="M30 102 Q50 80 90 102" fill="none" stroke="#e8a87c" strokeWidth="1.5" opacity="0.3" />
-          <path d="M108 60 Q80 90 30 102" fill="none" stroke="#90c49a" strokeWidth="1.5" opacity="0.3" />
+          <path d="M60 12 Q30 40 12 60" fill="none" stroke="#10B981" strokeWidth="1.5" opacity="0.4" />
+          <path d="M108 60 Q80 30 60 12" fill="none" stroke="#D97706" strokeWidth="1.5" opacity="0.4" />
+          <path d="M90 102 Q60 70 12 60" fill="none" stroke="#B45309" strokeWidth="1.5" opacity="0.4" />
+          <path d="M30 102 Q50 80 90 102" fill="none" stroke="#F59E0B" strokeWidth="1.5" opacity="0.3" />
+          <path d="M108 60 Q80 90 30 102" fill="none" stroke="#34D399" strokeWidth="1.5" opacity="0.3" />
         </svg>
       </div>
     </div>
@@ -424,8 +424,8 @@ function VisualizeMockup() {
 
 function AssessMockup() {
   const skills = [
-    { name: 'Identifies own emotions', level: 2, color: '#c4956a' },
-    { name: 'Recognizes others\u2019 feelings', level: 1, color: '#d4856a' },
+    { name: 'Identifies own emotions', level: 2, color: '#D97706' },
+    { name: 'Recognizes others\u2019 feelings', level: 1, color: '#B45309' },
     { name: 'Labels emotional intensity', level: null, color: null },
   ]
   return (
@@ -463,7 +463,7 @@ function AssessMockup() {
           <div className="flex gap-1">
             {['Not Assessed','Not Present','Needs Work','Developing','Solid'].map((l, i) => (
               <div key={l} className="flex items-center gap-1">
-                <div className="w-2 h-2 rounded-full" style={{ backgroundColor: ['#9ca3af','#c47070','#e8928a','#e5b76a','#7fb589'][i] }} />
+                <div className="w-2 h-2 rounded-full" style={{ backgroundColor: ['#9ca3af','#DC2626','#F87171','#F59E0B','#10B981'][i] }} />
                 <span className="text-[9px] text-warm-500">{l}</span>
               </div>
             ))}
@@ -476,15 +476,15 @@ function AssessMockup() {
 
 function IntelligenceMockup() {
   const tiles = [
-    { label: 'REG', pct: 87, color: '#7fb589' },
-    { label: 'SA', pct: 78, color: '#c4956a' },
-    { label: 'EF', pct: 59, color: '#d4856a' },
-    { label: 'PS', pct: 61, color: '#d4856a' },
-    { label: 'COM', pct: 47, color: '#e8725c' },
-    { label: 'SU', pct: 53, color: '#d4856a' },
-    { label: 'ID', pct: 54, color: '#d4856a' },
-    { label: 'SAF', pct: 86, color: '#7fb589' },
-    { label: 'SS', pct: 75, color: '#c4956a' },
+    { label: 'REG', pct: 87, color: '#10B981' },
+    { label: 'SA', pct: 78, color: '#D97706' },
+    { label: 'EF', pct: 59, color: '#B45309' },
+    { label: 'PS', pct: 61, color: '#B45309' },
+    { label: 'COM', pct: 47, color: '#DC2626' },
+    { label: 'SU', pct: 53, color: '#B45309' },
+    { label: 'ID', pct: 54, color: '#B45309' },
+    { label: 'SAF', pct: 86, color: '#10B981' },
+    { label: 'SS', pct: 75, color: '#D97706' },
   ]
   return (
     <div className="bg-warm-700/50 rounded-xl p-4 border border-warm-600/30">
@@ -506,7 +506,7 @@ function IntelligenceMockup() {
       {/* Mini bottleneck bar */}
       <div className="bg-warm-800/40 rounded-lg p-2.5">
         <div className="text-[9px] text-warm-400 mb-1.5 font-medium">Top Leverage</div>
-        {[{ name: 'Executive Function', w: '85%', c: '#d4856a' }, { name: 'Communication', w: '72%', c: '#e8725c' }, { name: 'Self-Awareness', w: '55%', c: '#c4956a' }].map(b => (
+        {[{ name: 'Executive Function', w: '85%', c: '#B45309' }, { name: 'Communication', w: '72%', c: '#DC2626' }, { name: 'Self-Awareness', w: '55%', c: '#D97706' }].map(b => (
           <div key={b.name} className="flex items-center gap-2 mb-1">
             <span className="text-[9px] text-warm-300 w-24 truncate">{b.name}</span>
             <div className="flex-1 h-1.5 bg-warm-700/50 rounded-full overflow-hidden">
@@ -571,11 +571,11 @@ function ReportsMockup() {
         <div className="text-[9px] text-warm-400 font-medium mb-2 uppercase tracking-wider">Domain Score Profile</div>
         <div className="space-y-1 mb-3">
           {[
-            { name: 'Regulation', w: '87%', c: '#7fb589' },
-            { name: 'Self-Awareness', w: '78%', c: '#c4956a' },
-            { name: 'Exec Function', w: '59%', c: '#d4856a' },
-            { name: 'Problem Solving', w: '61%', c: '#d4856a' },
-            { name: 'Communication', w: '47%', c: '#e8725c' },
+            { name: 'Regulation', w: '87%', c: '#10B981' },
+            { name: 'Self-Awareness', w: '78%', c: '#D97706' },
+            { name: 'Exec Function', w: '59%', c: '#B45309' },
+            { name: 'Problem Solving', w: '61%', c: '#B45309' },
+            { name: 'Communication', w: '47%', c: '#DC2626' },
           ].map(d => (
             <div key={d.name} className="flex items-center gap-2">
               <span className="text-[9px] text-warm-400 w-20 truncate">{d.name}</span>
@@ -668,8 +668,9 @@ export default function Landing() {
         }`}
       >
         <div className="flex items-center justify-between px-6 lg:px-8 py-4 max-w-7xl mx-auto">
-          <div className="text-2xl font-bold text-warm-800 font-display">
-            Skill<span className="text-sage-500">Cascade</span>
+          <div className="flex items-center gap-2 text-2xl font-bold text-warm-800 font-display">
+            <img src="/brand/icon-mark.jpg" alt="" className="w-7 h-7 rounded" aria-hidden="true" />
+            Skill<span className="text-sage-600">Cascade</span>
           </div>
 
           {/* Desktop nav */}
@@ -686,7 +687,7 @@ export default function Landing() {
             ))}
             <Link
               to="/dashboard"
-              className="bg-sage-500 text-white px-5 py-2.5 rounded-lg hover:bg-sage-600 transition-colors font-medium text-sm"
+              className="bg-sage-600 text-white px-6 py-2.5 rounded-full hover:bg-sage-700 transition-all font-semibold text-sm shadow-sm hover:shadow-md"
             >
               Launch App
             </Link>
@@ -719,7 +720,7 @@ export default function Landing() {
               ))}
               <Link
                 to="/dashboard"
-                className="block w-full text-center bg-sage-500 text-white px-5 py-3 rounded-lg hover:bg-sage-600 transition-colors font-medium mt-2"
+                className="block w-full text-center bg-sage-600 text-white px-5 py-3 rounded-full hover:bg-sage-700 transition-colors font-medium mt-2"
                 onClick={() => setMobileMenuOpen(false)}
               >
                 Launch App
@@ -734,83 +735,66 @@ export default function Landing() {
           ──────────────────────────────────────────────────────── */}
       <section
         ref={heroRef}
-        className="relative pt-32 pb-20 lg:pt-44 lg:pb-28 overflow-hidden"
+        className="relative pt-32 pb-16 lg:pt-44 lg:pb-24"
       >
-        {/* Animated gradient background */}
-        <div
-          className="absolute inset-0 opacity-30"
-          style={{
-            background: 'radial-gradient(ellipse 80% 60% at 50% 40%, var(--color-sage-100) 0%, transparent 60%), radial-gradient(ellipse 60% 50% at 80% 20%, var(--color-coral-100) 0%, transparent 50%), radial-gradient(ellipse 50% 40% at 20% 60%, var(--color-sage-50) 0%, transparent 50%)',
-          }}
-        />
-        {/* Subtle dot grid pattern */}
-        <div
-          className="absolute inset-0 opacity-[0.04]"
-          style={{
-            backgroundImage: 'radial-gradient(circle, var(--color-warm-900) 1px, transparent 1px)',
-            backgroundSize: '24px 24px',
-          }}
-        />
+        <div className="max-w-7xl mx-auto px-6 lg:px-8">
+          <div className="grid lg:grid-cols-2 gap-12 lg:gap-16 items-center">
+            {/* Left: Text content */}
+            <div>
+              <h1 className="text-5xl sm:text-6xl lg:text-[3.5rem] xl:text-[3.75rem] font-extrabold text-warm-900 font-display leading-[1.1] mb-6 tracking-tight">
+                See the skills beneath{' '}
+                <span className="text-sage-600">the behavior</span>
+              </h1>
 
-        <div className="relative max-w-7xl mx-auto px-6 lg:px-8 text-center">
-          {/* Badge */}
-          <div className="inline-flex items-center gap-2 rounded-full bg-sage-50 border border-sage-200 px-4 py-1.5 text-xs font-semibold text-sage-700 uppercase tracking-wider mb-8">
-            <ShieldIcon className="w-4 h-4 text-sage-500" />
-            Secure Assessment Platform
-          </div>
+              <p className="text-lg text-warm-600 max-w-xl mb-10 leading-relaxed">
+                SkillCascade maps 260+ developmental-functional skills across 9 domains,
+                revealing why foundational gaps cascade into higher-level breakdowns.
+                Visualize, assess, and track — so you can intervene where it matters most.
+              </p>
 
-          <h1 className="text-5xl sm:text-6xl lg:text-7xl font-extrabold text-warm-900 font-display leading-[1.1] mb-6 tracking-tight">
-            See the skills beneath<br className="hidden sm:block" />
-            <span className="bg-gradient-to-r from-sage-600 via-sage-500 to-coral-500 bg-clip-text text-transparent">
-              the behavior
-            </span>
-          </h1>
+              {/* CTAs — pill shaped per Lovart */}
+              <div className="flex flex-col sm:flex-row gap-4 mb-10">
+                <Link
+                  to="/signup"
+                  className="bg-sage-600 text-white px-8 py-4 rounded-full hover:bg-sage-700 transition-all text-lg font-semibold shadow-lg shadow-sage-600/20 hover:shadow-xl hover:shadow-sage-600/25 text-center"
+                >
+                  Start Free Trial
+                </Link>
+                <button
+                  type="button"
+                  onClick={() => scrollToSection('#demo')}
+                  className="border-2 border-sage-600 text-sage-700 px-8 py-4 rounded-full hover:bg-sage-50 transition-all text-lg font-semibold flex items-center justify-center gap-2 text-center"
+                >
+                  See How It Works
+                </button>
+              </div>
 
-          <p className="text-lg sm:text-xl text-warm-600 max-w-2xl mx-auto mb-10 leading-relaxed">
-            SkillCascade maps 260+ developmental-functional skills across 9 domains,
-            revealing why foundational gaps cascade into higher-level breakdowns.
-            Visualize, assess, and track — so you can intervene where it matters most.
-          </p>
-
-          {/* CTAs */}
-          <div className="flex flex-col sm:flex-row gap-4 justify-center mb-12">
-            <Link
-              to="/signup"
-              className="bg-sage-500 text-white px-8 py-4 rounded-xl hover:bg-sage-600 transition-colors text-lg font-semibold shadow-lg shadow-sage-500/20"
-            >
-              Start Free Trial
-            </Link>
-            <button
-              type="button"
-              onClick={() => scrollToSection('#demo')}
-              className="border-2 border-warm-300 text-warm-700 px-8 py-4 rounded-xl hover:border-warm-400 hover:bg-warm-100/50 transition-colors text-lg font-semibold flex items-center justify-center gap-2"
-            >
-              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" aria-hidden="true">
-                <circle cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="2" />
-                <path d="M10 8l6 4-6 4V8z" fill="currentColor" />
-              </svg>
-              See How It Works
-            </button>
-          </div>
-
-          {/* Social proof */}
-          <p className="text-sm text-warm-500 mb-6">
-            Built for BCBAs &mdash; <span className="font-semibold text-warm-700">now in early access</span>
-          </p>
-
-          {/* Trust badges */}
-          <div className="flex flex-wrap justify-center gap-6">
-            <div className="flex items-center gap-2 text-warm-500 text-xs font-medium">
-              <ShieldIcon className="w-4 h-4 text-sage-500" />
-              <span>Enterprise-Grade Security</span>
+              <p className="text-sm text-warm-500">
+                Built for BCBAs, by a BCBA &mdash; <span className="font-semibold text-warm-700">now in early access</span>
+              </p>
+              <div className="flex flex-wrap gap-5 mt-4">
+                <div className="flex items-center gap-1.5 text-warm-500 text-xs font-medium">
+                  <ShieldIcon className="w-3.5 h-3.5 text-sage-500" />
+                  HIPAA Compliant
+                </div>
+                <div className="flex items-center gap-1.5 text-warm-500 text-xs font-medium">
+                  <CheckCircleIcon className="w-3.5 h-3.5 text-sage-500" />
+                  BACB Aligned
+                </div>
+                <div className="flex items-center gap-1.5 text-warm-500 text-xs font-medium">
+                  <LockIcon className="w-3.5 h-3.5 text-sage-500" />
+                  256-bit Encryption
+                </div>
+              </div>
             </div>
-            <div className="flex items-center gap-2 text-warm-500 text-xs font-medium">
-              <CheckCircleIcon className="w-4 h-4 text-sage-500" />
-              <span>BACB Aligned</span>
-            </div>
-            <div className="flex items-center gap-2 text-warm-500 text-xs font-medium">
-              <LockIcon className="w-4 h-4 text-sage-500" />
-              <span>256-bit Encryption</span>
+
+            {/* Right: Brand tree illustration */}
+            <div className="hidden lg:flex justify-center items-center">
+              <img
+                src="/brand/icon-mark.jpg"
+                alt="SkillCascade — developmental skills cascade like branches of a tree"
+                className="w-80 xl:w-96 drop-shadow-lg"
+              />
             </div>
           </div>
         </div>
@@ -839,37 +823,36 @@ export default function Landing() {
       {/* ────────────────────────────────────────────────────────
           4. Features Grid
           ──────────────────────────────────────────────────────── */}
-      <section id="features" className="max-w-7xl mx-auto px-6 lg:px-8 py-20 lg:py-28">
-        <div className="text-center mb-16">
-          <div className="inline-flex items-center gap-2 rounded-full bg-coral-50 border border-coral-200 px-4 py-1.5 text-xs font-semibold text-coral-600 uppercase tracking-wider mb-4">
-            Everything You Need
+      <section id="features" className="bg-warm-200/50">
+        <div className="max-w-7xl mx-auto px-6 lg:px-8 py-20 lg:py-28">
+          <div className="text-center mb-16">
+            <h2 className="text-3xl sm:text-4xl font-bold text-warm-900 font-display mb-4">
+              Everything you need in one platform
+            </h2>
+            <p className="text-warm-600 max-w-2xl mx-auto text-lg">
+              From initial screening to treatment planning, SkillCascade replaces scattered
+              spreadsheets and guesswork with a unified, intelligent platform.
+            </p>
           </div>
-          <h2 className="text-3xl sm:text-4xl font-bold text-warm-900 font-display mb-4">
-            Assessment tools that actually move the needle
-          </h2>
-          <p className="text-warm-600 max-w-2xl mx-auto text-lg">
-            From initial screening to treatment planning, SkillCascade replaces scattered
-            spreadsheets and guesswork with a unified, intelligent platform.
-          </p>
-        </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {FEATURES.map(({ icon: Icon, title, desc }) => (
-            <div
-              key={title}
-              className="bg-white border border-warm-100 rounded-2xl p-6 hover:shadow-lg hover:border-warm-200 transition-all duration-200 group"
-            >
-              <div className="w-12 h-12 rounded-xl bg-sage-50 border border-sage-100 flex items-center justify-center text-sage-600 mb-4 group-hover:bg-sage-100 transition-colors">
-                <Icon />
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            {FEATURES.map(({ icon: Icon, title, desc }) => (
+              <div
+                key={title}
+                className="bg-white rounded-[12px] p-8 shadow-sm hover:shadow-md transition-all duration-200"
+              >
+                <div className="text-sage-600 mb-5">
+                  <Icon />
+                </div>
+                <h3 className="text-lg font-bold text-warm-800 font-display mb-2">
+                  {title}
+                </h3>
+                <p className="text-warm-500 text-[15px] leading-relaxed">
+                  {desc}
+                </p>
               </div>
-              <h3 className="text-lg font-bold text-warm-800 font-display mb-2">
-                {title}
-              </h3>
-              <p className="text-warm-600 text-sm leading-relaxed">
-                {desc}
-              </p>
-            </div>
-          ))}
+            ))}
+          </div>
         </div>
       </section>
 
@@ -894,10 +877,10 @@ export default function Landing() {
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 max-w-5xl mx-auto">
             {STEPS.map((step, i) => (
               <div key={step.num} className="relative">
-                <div className="bg-white rounded-2xl p-8 border border-warm-200 h-full">
-                  <div className={`inline-flex items-center justify-center w-10 h-10 rounded-full border text-sm font-bold mb-5 ${step.color}`}>
+                <div className="bg-white rounded-[12px] p-8 shadow-sm h-full">
+                  <span className="text-2xl font-bold text-sage-600 mb-4 block">
                     {step.num}
-                  </div>
+                  </span>
                   <h3 className="text-xl font-bold text-warm-800 font-display mb-3">
                     {step.title}
                   </h3>
@@ -940,8 +923,8 @@ export default function Landing() {
         <div className="max-w-4xl mx-auto space-y-3">
           {/* Foundation tier label */}
           <div className="flex items-center gap-3 mb-1">
-            <span className="text-xs font-bold uppercase tracking-wider text-coral-500">Foundation</span>
-            <div className="flex-1 h-px bg-coral-200" />
+            <span className="text-xs font-bold uppercase tracking-wider text-sage-700">Foundation</span>
+            <div className="flex-1 h-px bg-warm-200" />
           </div>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
             {DOMAINS.filter((d) => d.tier === 'foundation').map((d) => (
@@ -960,7 +943,7 @@ export default function Landing() {
 
           {/* Middle tier label */}
           <div className="flex items-center gap-3 mb-1">
-            <span className="text-xs font-bold uppercase tracking-wider text-warm-500">Integration</span>
+            <span className="text-xs font-bold uppercase tracking-wider text-sage-700">Integration</span>
             <div className="flex-1 h-px bg-warm-200" />
           </div>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
@@ -1020,6 +1003,27 @@ export default function Landing() {
             </p>
           </div>
 
+          {/* Demo Video */}
+          <div className="max-w-4xl mx-auto mb-16">
+            <div className="rounded-xl overflow-hidden shadow-lg border border-warm-700">
+              <video
+                controls
+                preload="metadata"
+                poster=""
+                className="w-full"
+                playsInline
+              >
+                <source src="/demo.mp4" type="video/mp4" />
+                Your browser does not support the video tag.
+              </video>
+            </div>
+          </div>
+
+          <div className="text-center mb-10">
+            <h3 className="text-2xl font-bold text-white font-display mb-2">Explore the Features</h3>
+            <p className="text-warm-400">Or try the interactive demos below</p>
+          </div>
+
           {/* Tab bar */}
           <div className="flex justify-center mb-8">
             <div className="flex gap-1 overflow-x-auto pb-2 -mx-2 px-2 scrollbar-hide" role="tablist">
@@ -1032,13 +1036,13 @@ export default function Landing() {
                     role="tab"
                     aria-selected={isActive}
                     onClick={() => setActiveDemo(tab.id)}
-                    className={`flex items-center gap-2 px-4 py-2.5 rounded-lg text-sm font-medium whitespace-nowrap transition-all ${
+                    className={`flex items-center gap-2 px-4 py-2.5 text-sm font-medium whitespace-nowrap transition-all border-b-2 ${
                       isActive
-                        ? 'bg-white text-warm-800 shadow-lg'
-                        : 'text-warm-400 hover:text-warm-200 hover:bg-warm-700/50'
+                        ? 'border-sage-600 text-white'
+                        : 'border-transparent text-warm-500 hover:text-warm-300 hover:border-warm-500'
                     }`}
                   >
-                    <Icon className={isActive ? 'text-sage-600' : 'text-warm-500'} />
+                    <Icon className={isActive ? 'text-sage-400' : 'text-warm-500'} />
                     <span className="hidden sm:inline">{tab.label}</span>
                   </button>
                 )
@@ -1072,7 +1076,7 @@ export default function Landing() {
                   <div>
                     <Link
                       to="/signup"
-                      className="inline-flex items-center gap-2 bg-sage-500 text-white px-6 py-3 rounded-xl hover:bg-sage-600 transition-colors font-semibold text-sm shadow-lg shadow-sage-500/20"
+                      className="inline-flex items-center gap-2 bg-sage-600 text-white px-6 py-3 rounded-full hover:bg-sage-700 transition-colors font-semibold text-sm shadow-lg shadow-sage-600/20"
                     >
                       Try It Free
                       <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
@@ -1116,12 +1120,14 @@ export default function Landing() {
           {EARLY_ACCESS_FEATURES.map((f) => (
             <div
               key={f.title}
-              className="bg-white border border-warm-100 rounded-2xl p-8 shadow-sm hover:shadow-md transition-shadow text-center"
+              className="bg-white rounded-[12px] p-8 shadow-sm hover:shadow-md transition-shadow"
             >
-              <div className="w-14 h-14 rounded-2xl bg-sage-50 border border-sage-200 flex items-center justify-center mx-auto mb-5">
-                <span className="text-2xl font-bold text-sage-600">{f.icon}</span>
+              <div className="flex items-center gap-3 mb-4">
+                <svg className="w-5 h-5 text-sage-600 shrink-0" viewBox="0 0 20 20" fill="currentColor">
+                  <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+                </svg>
+                <h3 className="text-lg font-semibold text-warm-800">{f.title}</h3>
               </div>
-              <h3 className="text-lg font-semibold text-warm-800 mb-2">{f.title}</h3>
               <p className="text-sm text-warm-500 leading-relaxed">{f.description}</p>
             </div>
           ))}
@@ -1155,10 +1161,10 @@ export default function Landing() {
                   <div className="h-4 w-14 rounded bg-warm-200 animate-pulse" />
                 </div>
               </div>
-              {/* Skeleton: 3 pricing cards */}
-              <div className="mt-14 grid gap-8 lg:grid-cols-3 items-start">
-                {[1,2,3].map(i => (
-                  <div key={i} className={`rounded-2xl bg-white border p-7 ${i === 2 ? 'border-sage-300 border-2 shadow-lg' : 'border-warm-200 shadow-md'}`}>
+              {/* Skeleton: 2 pricing cards */}
+              <div className="mt-14 grid gap-8 lg:grid-cols-2 max-w-4xl mx-auto items-start">
+                {[1,2].map(i => (
+                  <div key={i} className={`rounded-xl bg-white border p-7 ${i === 2 ? 'border-sage-300 border-2 shadow-lg' : 'border-warm-200 shadow-md'}`}>
                     {/* Tier name */}
                     <div className="h-5 w-24 rounded bg-warm-200 animate-pulse mb-2" />
                     {/* Description */}
@@ -1198,14 +1204,15 @@ export default function Landing() {
       {/* ────────────────────────────────────────────────────────
           10. Footer
           ──────────────────────────────────────────────────────── */}
-      <footer className="bg-warm-900 text-warm-400">
+      <footer className="bg-warm-100 text-warm-600">
         <div className="max-w-7xl mx-auto px-6 lg:px-8 py-16">
           {/* Footer columns */}
           <div className="grid grid-cols-2 md:grid-cols-5 gap-8 mb-12">
             {/* Brand */}
             <div className="col-span-2 md:col-span-1 mb-4 md:mb-0">
-              <div className="text-xl font-bold text-white font-display mb-3">
-                Skill<span className="text-sage-400">Cascade</span>
+              <div className="flex items-center gap-2 text-xl font-bold text-warm-800 font-display mb-3">
+                <img src="/brand/icon-mark.jpg" alt="" className="w-6 h-6 rounded" aria-hidden="true" />
+                Skill<span className="text-sage-600">Cascade</span>
               </div>
               <p className="text-sm text-warm-500 leading-relaxed">
                 Developmental-functional assessment that reveals the skills beneath the behavior.
@@ -1215,7 +1222,7 @@ export default function Landing() {
             {/* Link columns */}
             {Object.entries(FOOTER_LINKS).map(([heading, links]) => (
               <div key={heading}>
-                <h4 className="text-xs font-bold text-warm-300 uppercase tracking-wider mb-4">
+                <h4 className="text-xs font-bold text-warm-700 uppercase tracking-wider mb-4">
                   {heading}
                 </h4>
                 <ul className="space-y-2.5">
@@ -1224,14 +1231,14 @@ export default function Landing() {
                       {link.href.startsWith('/') ? (
                         <Link
                           to={link.href}
-                          className="text-sm text-warm-500 hover:text-white transition-colors"
+                          className="text-sm text-warm-500 hover:text-warm-700 transition-colors"
                         >
                           {link.label}
                         </Link>
                       ) : (
                         <a
                           href={link.href}
-                          className="text-sm text-warm-500 hover:text-white transition-colors"
+                          className="text-sm text-warm-500 hover:text-warm-700 transition-colors"
                         >
                           {link.label}
                         </a>
@@ -1244,8 +1251,8 @@ export default function Landing() {
           </div>
 
           {/* Bottom bar */}
-          <div className="border-t border-warm-800 pt-8 flex flex-col sm:flex-row items-center justify-between gap-4">
-            <p className="text-sm text-warm-600">
+          <div className="border-t border-warm-200 pt-8 flex flex-col sm:flex-row items-center justify-between gap-4">
+            <p className="text-sm text-warm-500">
               &copy; {new Date().getFullYear()} SkillCascade. All rights reserved.
             </p>
           </div>

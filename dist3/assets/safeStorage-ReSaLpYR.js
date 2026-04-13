@@ -1,0 +1,1 @@
+function a(e,t=null){try{return localStorage.getItem(e)??t}catch{return t}}function o(e,t){try{return localStorage.setItem(e,t),!0}catch(r){return console.warn(`[safeStorage] Failed to save "${e}" (${Math.round(((t==null?void 0:t.length)||0)/1024)}KB):`,r.message),!1}}function n(e){try{localStorage.removeItem(e)}catch{}}export{a,n as b,o as s};

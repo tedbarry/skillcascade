@@ -32,7 +32,7 @@ function SkillRow({ skill }) {
 function SkillGroupSection({ skillGroup }) {
   return (
     <div>
-      <h4 className="text-[10px] font-semibold text-warm-400 uppercase tracking-wider mb-1">{skillGroup.name}</h4>
+      <h4 className="text-[10px] font-semibold text-warm-500 uppercase tracking-wider mb-1">{skillGroup.name}</h4>
       <div className="space-y-0.5">
         {skillGroup.skills.map(skill => (
           <SkillRow key={skill.id} skill={skill} />
@@ -71,7 +71,7 @@ function SubAreaRow({ subArea, isExpanded, onToggle }) {
           &#9654;
         </span>
         <span className="text-sm text-warm-700 flex-1 min-w-0">{subArea.name}</span>
-        <span className="text-[10px] text-warm-300 shrink-0 whitespace-nowrap">
+        <span className="text-[10px] text-warm-500 shrink-0 whitespace-nowrap">
           {subArea.skillGroups.length} group{subArea.skillGroups.length !== 1 ? 's' : ''} &middot; {skillCount} skill{skillCount !== 1 ? 's' : ''}
         </span>
         <Link
@@ -88,7 +88,7 @@ function SubAreaRow({ subArea, isExpanded, onToggle }) {
       {isExpanded && (
         <div className="pl-10 pr-5 pb-4">
           {depNames.length > 0 && (
-            <p className="text-[10px] text-warm-400 mb-3">
+            <p className="text-[10px] text-warm-500 mb-3">
               <span className="font-semibold uppercase tracking-wider">Prerequisites:</span>{' '}
               {depNames.join(', ')}
             </p>
@@ -134,12 +134,12 @@ function DomainExpansion({ domain, expandedSubAreas, setExpandedSubAreas }) {
           <p className="text-xs text-warm-500 italic mb-1">{domain.coreQuestion}</p>
         )}
         {domain.keyInsight && (
-          <p className="text-[11px] text-warm-400 mb-1">{domain.keyInsight}</p>
+          <p className="text-[11px] text-warm-500 mb-1">{domain.keyInsight}</p>
         )}
         {domain.coreCapacities?.length > 0 && (
           <div className="flex flex-wrap gap-1.5 mt-2">
             {domain.coreCapacities.map((cap, i) => (
-              <span key={i} className="text-[10px] px-2 py-0.5 rounded-full bg-warm-50 text-warm-400">{cap}</span>
+              <span key={i} className="text-[10px] px-2 py-0.5 rounded-full bg-warm-50 text-warm-500">{cap}</span>
             ))}
           </div>
         )}
@@ -179,8 +179,8 @@ function DomainCard({ domain, subAreaCount, skillCount, isExpanded, onToggle }) 
         </span>
         <div className="flex-1 min-w-0">
           <div className="text-sm font-semibold text-warm-800">{domain.name}</div>
-          <div className="text-xs text-warm-400 mt-0.5">{domain.subtitle}</div>
-          <div className="text-[10px] text-warm-300 mt-1.5">
+          <div className="text-xs text-warm-500 mt-0.5">{domain.subtitle}</div>
+          <div className="text-[10px] text-warm-500 mt-1.5">
             {subAreaCount} sub-area{subAreaCount !== 1 ? 's' : ''} &middot; {skillCount} skill{skillCount !== 1 ? 's' : ''}
           </div>
         </div>
@@ -273,7 +273,7 @@ function DependentSkillRow({ dep, parentDomainId }) {
       </span>
       <span className="text-xs text-warm-600 group-hover:text-sage-700 flex-1 min-w-0 truncate">{dep.name}</span>
       {dep.domainId !== parentDomainId && (
-        <span className="text-[9px] px-1.5 py-0.5 rounded-full bg-warm-100 text-warm-400 shrink-0">
+        <span className="text-[9px] px-1.5 py-0.5 rounded-full bg-warm-100 text-warm-500 shrink-0">
           D{dep.domainNumber}
         </span>
       )}
@@ -313,13 +313,13 @@ function PrerequisiteCard({ skill, isExpanded, onToggle }) {
         {isFoundation && (
           <span className="text-[9px] px-1.5 py-0.5 rounded-full bg-sage-50 text-sage-600 shrink-0">Foundation</span>
         )}
-        <span className="text-[10px] text-warm-400 bg-warm-50 px-2 py-0.5 rounded-full shrink-0 whitespace-nowrap">
+        <span className="text-[10px] text-warm-500 bg-warm-50 px-2 py-0.5 rounded-full shrink-0 whitespace-nowrap">
           Unlocks {skill.dependents.length}
         </span>
       </button>
       {isExpanded && (
         <div className="border-t border-warm-100 bg-warm-25 px-5 py-3">
-          <p className="text-[10px] font-semibold text-warm-400 mb-2 uppercase tracking-wider">Skills this enables:</p>
+          <p className="text-[10px] font-semibold text-warm-500 mb-2 uppercase tracking-wider">Skills this enables:</p>
           <div className="space-y-0.5">
             {skill.dependents.map(dep => (
               <DependentSkillRow key={dep.id} dep={dep} parentDomainId={skill.domainId} />
@@ -353,7 +353,7 @@ function DependencyDomainSection({ domain, expandedSkill, setExpandedSkill, isEx
           D{domain.domainNumber}
         </span>
         <span className="text-sm font-semibold text-warm-800 flex-1 min-w-0">{domain.domainName}</span>
-        <span className="text-[10px] text-warm-300 bg-warm-50 px-2 py-0.5 rounded-full shrink-0 whitespace-nowrap">
+        <span className="text-[10px] text-warm-500 bg-warm-50 px-2 py-0.5 rounded-full shrink-0 whitespace-nowrap">
           {domain.skills.length} prerequisite{domain.skills.length !== 1 ? 's' : ''}
         </span>
       </button>
@@ -451,7 +451,7 @@ function DependencyTab() {
 
   return (
     <div className="space-y-3">
-      <p className="text-xs text-warm-400 mb-4">
+      <p className="text-xs text-warm-500 mb-4">
         Skills organized by what they unlock. Expand a prerequisite skill to see the skills that depend on it.
       </p>
       {dependencyData.map(domain => (
@@ -507,7 +507,7 @@ function TabBar({ activeTab, onChange }) {
           className={`flex items-center gap-2 px-4 py-2.5 min-h-[44px] rounded-xl text-sm font-medium transition-all ${
             activeTab === tab.id
               ? 'bg-sage-50 text-sage-700 border border-sage-200'
-              : 'text-warm-400 hover:text-warm-600 hover:bg-warm-50 border border-transparent'
+              : 'text-warm-500 hover:text-warm-600 hover:bg-warm-50 border border-transparent'
           }`}
         >
           {tab.icon}

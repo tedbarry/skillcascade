@@ -69,7 +69,7 @@ function ShortcutGroup({ title, icon, children }) {
   return (
     <div className="mb-5 last:mb-0">
       <div className="flex items-center gap-2 mb-2">
-        <span className="text-warm-400">{icon}</span>
+        <span className="text-warm-500">{icon}</span>
         <h3 className="text-xs uppercase tracking-wider font-semibold text-warm-500">
           {title}
         </h3>
@@ -186,7 +186,7 @@ export default function KeyboardShortcuts({
       {/* Modal card */}
       <div
         ref={trapRef}
-        className={`relative w-full max-w-lg mx-4 bg-white rounded-xl shadow-2xl border border-warm-200 overflow-hidden transition-all duration-150 ${
+        className={`relative w-full max-w-lg mx-4 bg-white rounded-xl shadow-lg border border-warm-200 overflow-hidden transition-all duration-150 ${
           visible ? 'scale-100 opacity-100' : 'scale-95 opacity-0'
         }`}
         onClick={(e) => e.stopPropagation()}
@@ -220,7 +220,7 @@ export default function KeyboardShortcuts({
           {/* Close button */}
           <button
             onClick={handleClose}
-            className="p-1.5 rounded-lg text-warm-400 hover:text-warm-600 hover:bg-warm-100 transition-colors cursor-pointer"
+            className="p-1.5 rounded-lg text-warm-500 hover:text-warm-600 hover:bg-warm-100 transition-colors cursor-pointer"
             aria-label="Close shortcuts panel"
           >
             <svg
@@ -252,7 +252,7 @@ export default function KeyboardShortcuts({
             >
               <ShortcutRow keys={['1', '-', '9']} description="Switch views" />
               <div className="ml-2 mb-2">
-                <div className="grid grid-cols-3 gap-x-3 gap-y-0.5 text-[11px] text-warm-400">
+                <div className="grid grid-cols-3 gap-x-3 gap-y-0.5 text-[11px] text-warm-500">
                   {Object.entries(VIEW_LABELS).map(([num, label]) => (
                     <span key={num}>
                       <span className="font-mono text-warm-500">{num}</span>{' '}{label}
@@ -274,7 +274,7 @@ export default function KeyboardShortcuts({
               }
             >
               <ShortcutRow keys={['\u2190', '\u2192']} description="Previous / Next sub-area" />
-              <p className="text-[11px] text-warm-400 ml-1 mt-0.5">
+              <p className="text-[11px] text-warm-500 ml-1 mt-0.5">
                 Arrow keys work when in assessment view
               </p>
             </ShortcutGroup>
@@ -313,7 +313,7 @@ export default function KeyboardShortcuts({
 
         {/* Footer */}
         <div className="px-6 py-3 border-t border-warm-100 bg-warm-50/50 text-center">
-          <span className="text-xs text-warm-400">
+          <span className="text-xs text-warm-500">
             Press <Kbd>?</Kbd> to toggle this panel
           </span>
         </div>

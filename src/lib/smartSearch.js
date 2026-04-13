@@ -129,7 +129,7 @@ Rules:
  * @returns {Promise<{ answer: string, sources: Array<{ title: string, id: string }> }>}
  */
 export async function askSmartSearch(query, assessments = {}, clientName = '', signal) {
-  const supabaseUrl = import.meta.env.VITE_SUPABASE_URL
+  const apiUrl = import.meta.env.VITE_API_URL || 'https://skillcascade-api.teddybahary.workers.dev'
   const { data: { session } } = await supabase.auth.getSession()
 
   if (!supabaseUrl || !session?.access_token) {
@@ -157,7 +157,7 @@ export async function askSmartSearch(query, assessments = {}, clientName = '', s
     { role: 'user', content: `${contextBlock}\n\n--- USER QUESTION ---\n${query}` },
   ]
 
-  const res = await fetch(`${supabaseUrl}/functions/v1/ai-proxy`, {
+  const res = await fetch(`${apiUrl}/api/ai-proxy`, {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',

@@ -21,7 +21,7 @@ const GUIDE_KEY = 'skillcascade_explorer_coach_v2'
 function ViewLoader() {
   return (
     <div className="flex items-center justify-center py-12">
-      <div className="flex items-center gap-3 text-warm-400">
+      <div className="flex items-center gap-3 text-warm-500">
         <div className="w-4 h-4 border-2 border-warm-200 border-t-sage-500 rounded-full animate-spin" />
         <span className="text-sm">Loading...</span>
       </div>
@@ -336,7 +336,7 @@ export default memo(function DependencyExplorer({ assessments = {}, initialLevel
 
       {/* Contextual hint */}
       <ContextualHint show={hint.show} onDismiss={hint.dismiss} className="mb-0 mx-3 sm:mx-5 mt-3">
-        Arcs represent domains, ribbons show dependencies between them. Click any arc to zoom into sub-area dependencies, then click again for individual skills. <KBLink term="view-explorer" className="text-[#7fb589]">Learn more</KBLink>
+        Arcs represent domains, ribbons show dependencies between them. Click any arc to zoom into sub-area dependencies, then click again for individual skills. <KBLink term="view-explorer" className="text-[#10B981]">Learn more</KBLink>
       </ContextualHint>
 
       {/* Level content */}

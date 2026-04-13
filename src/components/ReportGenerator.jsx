@@ -1,6 +1,6 @@
-import { useState, useMemo, useEffect, useCallback } from 'react'
+import { useState, useMemo, useEffect, useCallback, lazy, Suspense } from 'react'
 import { framework, ASSESSMENT_LEVELS, ASSESSMENT_LABELS, getDomainScores, DOMAIN_DEPENDENCIES, isAssessed } from '../data/framework.js'
-import { downloadFile } from '../data/exportUtils.js'
+import { downloadFile } from '../lib/fileExports.js'
 import { computeDomainHealth, computeImpactRanking, detectCascadeRisks } from '../data/cascadeModel.js'
 import { computeConstrainedSkills, computeSkillInfluence } from '../data/skillInfluence.js'
 import { generateClinicalSummary } from '../lib/narratives.js'
@@ -10,19 +10,35 @@ import { escapeHTML } from '../lib/escapeHTML.js'
 import { track } from '../lib/analytics.js'
 import { safeGetItem, safeSetItem } from '../lib/safeStorage.js'
 import { saveReport, getReports, deleteReport } from '../data/storage.js'
+import { buildGeneratedReportWorkbench, buildReportLaunchWorkbench } from '../lib/reportWorkflow.js'
+import { buildReportAccessState } from '../lib/reportAccess.js'
 import useContextualHint from '../hooks/useContextualHint.js'
+import usePermissions from '../hooks/usePermissions.js'
 import ContextualHint from './ContextualHint.jsx'
+import { NoPermission } from './PermissionGate.jsx'
 import KBLink from './kb/KBLink.jsx'
 import KBHelpIcon from './kb/KBHelpIcon.jsx'
 
 const REPORT_TYPES = {
+  AUTHORIZATION: 'authorization',
   SCHOOL: 'school',
   MEDICAL: 'medical',
   PROGRESS: 'progress',
   INSURANCE: 'insurance',
 }
 
+const AuthReportForm = lazy(() => import('./authorization/AuthReportForm.jsx'))
+
 const REPORT_META = {
+  [REPORT_TYPES.AUTHORIZATION]: {
+    label: 'Authorization Report',
+    description: '6-month insurance authorization with all 26 sections — auto-generates deficit narratives, goals, and boilerplate from your assessment data. Import graphs from CentralReach/Passage.',
+    icon: (
+      <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
+        <path strokeLinecap="round" strokeLinejoin="round" d="M9 12h3.75M9 15h3.75M9 18h3.75m3 .75H18a2.25 2.25 0 0 0 2.25-2.25V6.108c0-1.135-.845-2.098-1.976-2.192a48.424 48.424 0 0 0-1.123-.08m-5.801 0c-.065.21-.1.433-.1.664 0 .414.336.75.75.75h4.5a.75.75 0 0 0 .75-.75 2.25 2.25 0 0 0-.1-.664m-5.8 0A2.251 2.251 0 0 1 13.5 2.25H15c1.012 0 1.867.668 2.15 1.586m-5.8 0c-.376.023-.75.05-1.124.08C9.095 4.01 8.25 4.973 8.25 6.108V8.25m0 0H4.875c-.621 0-1.125.504-1.125 1.125v11.25c0 .621.504 1.125 1.125 1.125h9.75c.621 0 1.125-.504 1.125-1.125V9.375c0-.621-.504-1.125-1.125-1.125H8.25ZM6.75 12h.008v.008H6.75V12Zm0 3h.008v.008H6.75V15Zm0 3h.008v.008H6.75V18Z" />
+      </svg>
+    ),
+  },
   [REPORT_TYPES.SCHOOL]: {
     label: 'School Report',
     description: 'Educational team summary — focuses on functional skills relevant to classroom success, uses school-friendly language, and includes accommodation suggestions.',
@@ -212,45 +228,45 @@ function generateReportHTML(type, clientName, assessments, analysis, snapshotCom
 
   const styles = `
     body { font-family: 'Segoe UI', system-ui, -apple-system, sans-serif; color: #2d2d2d; line-height: 1.5; max-width: 800px; margin: 0 auto; padding: 40px; }
-    h1 { font-size: 22px; color: #3d2a1c; margin: 0 0 4px; }
-    h2 { font-size: 16px; color: #5f3e2a; border-bottom: 2px solid #e8d5c0; padding-bottom: 6px; margin-top: 28px; }
-    h3 { font-size: 14px; color: #7d5235; margin: 16px 0 8px; }
+    h1 { font-size: 22px; color: #1C1917; margin: 0 0 4px; }
+    h2 { font-size: 16px; color: #292524; border-bottom: 2px solid #E7E5E4; padding-bottom: 6px; margin-top: 28px; }
+    h3 { font-size: 14px; color: #57534E; margin: 16px 0 8px; }
     p, li { font-size: 12px; }
-    .subtitle { font-size: 14px; color: #7d5235; margin: 0 0 24px; }
+    .subtitle { font-size: 14px; color: #57534E; margin: 0 0 24px; }
     .badge { display: inline-block; padding: 2px 10px; border-radius: 12px; font-size: 11px; font-weight: 600; }
     .badge-nw { background: #fce0dd; color: #b63a2e; }
     .badge-dev { background: #fef3c7; color: #92400e; }
     .badge-solid { background: #dce8de; color: #31543d; }
     .badge-na { background: #e5e7eb; color: #6b7280; }
     table { width: 100%; border-collapse: collapse; margin: 12px 0; }
-    th { text-align: left; padding: 8px 12px; font-size: 11px; font-weight: 600; color: #5f3e2a; border-bottom: 2px solid #e8d5c0; }
-    td { padding: 6px 12px; font-size: 11px; border-bottom: 1px solid #f5ebe0; }
+    th { text-align: left; padding: 8px 12px; font-size: 11px; font-weight: 600; color: #292524; border-bottom: 2px solid #E7E5E4; }
+    td { padding: 6px 12px; font-size: 11px; border-bottom: 1px solid #F5F5F4; }
     .bar-wrap { display: flex; align-items: center; gap: 8px; }
     .bar { height: 8px; border-radius: 4px; }
-    .bar-bg { flex: 1; background: #f5ebe0; border-radius: 4px; overflow: hidden; }
-    .callout { background: #fdf8f0; border-left: 3px solid #c49a6c; padding: 10px 14px; margin: 12px 0; font-size: 12px; }
+    .bar-bg { flex: 1; background: #F5F5F4; border-radius: 4px; overflow: hidden; }
+    .callout { background: #FAFAF9; border-left: 3px solid #D97706; padding: 10px 14px; margin: 12px 0; font-size: 12px; }
     .callout-alert { background: #fdf2f1; border-left-color: #d44d3f; }
-    .callout-good { background: #f0f5f1; border-left-color: #4f8460; }
-    .indicator { font-size: 10px; color: #5f3e2a; padding: 3px 0 3px 10px; border-left: 2px solid; margin: 2px 0; line-height: 1.5; }
-    .indicator-nw { border-left-color: #e8928a; }
-    .indicator-np { border-left-color: #c47070; }
+    .callout-good { background: #f0f5f1; border-left-color: #059669; }
+    .indicator { font-size: 10px; color: #292524; padding: 3px 0 3px 10px; border-left: 2px solid; margin: 2px 0; line-height: 1.5; }
+    .indicator-nw { border-left-color: #F59E0B; }
+    .indicator-np { border-left-color: #DC2626; }
     ul { padding-left: 20px; }
     li { margin-bottom: 4px; }
-    .footer { margin-top: 40px; padding-top: 12px; border-top: 1px solid #e8d5c0; font-size: 10px; color: #c49a6c; display: flex; justify-content: space-between; }
+    .footer { margin-top: 40px; padding-top: 12px; border-top: 1px solid #E7E5E4; font-size: 10px; color: #D97706; display: flex; justify-content: space-between; }
     .confidential { font-size: 10px; color: #d44d3f; font-weight: 600; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 16px; }
     .demographics-table { border: none; margin: 8px 0 16px; }
     .demographics-table td { border: none; padding: 4px 0; font-size: 12px; line-height: 1.8; }
-    .composite-score { text-align: center; margin: 16px 0; padding: 20px; background: #fdf8f0; border-radius: 8px; }
-    .composite-number { font-size: 36px; font-weight: 700; color: #3d2a1c; }
-    .composite-label { font-size: 11px; color: #7d5235; margin: 2px 0 8px; text-transform: uppercase; letter-spacing: 1px; }
+    .composite-score { text-align: center; margin: 16px 0; padding: 20px; background: #FAFAF9; border-radius: 8px; }
+    .composite-number { font-size: 36px; font-weight: 700; color: #1C1917; }
+    .composite-label { font-size: 11px; color: #57534E; margin: 2px 0 8px; text-transform: uppercase; letter-spacing: 1px; }
     .composite-badge { display: inline-block; padding: 4px 16px; border-radius: 12px; font-size: 12px; font-weight: 600; }
     .chart-container { margin: 12px 0 20px; }
     .chart-container svg { max-width: 100%; height: auto; }
     .score-profile-grid { display: grid; grid-template-columns: auto 1fr; gap: 12px; align-items: start; }
     @media (max-width: 700px) { .score-profile-grid { grid-template-columns: 1fr; } }
     .signature-block { margin-top: 40px; padding-top: 24px; }
-    .sig-line { width: 280px; border-top: 1px solid #3d2a1c; margin-bottom: 8px; }
-    .signature-block p { margin: 2px 0; font-size: 12px; color: #3d2a1c; }
+    .sig-line { width: 280px; border-top: 1px solid #1C1917; margin-bottom: 8px; }
+    .signature-block p { margin: 2px 0; font-size: 12px; color: #1C1917; }
     @media print {
       body { padding: 0; }
       h2 { page-break-before: auto; }
@@ -446,14 +462,14 @@ function generateProgressReport(clientName, date, analysis, snapshotComparison, 
   // Score distribution
   html += `<table><tr><th>Level</th><th>Count</th><th>Distribution</th></tr>`
   const dist = [
-    { label: 'Solid', count: solid, cls: 'badge-solid', color: '#7fb589' },
-    { label: 'Developing', count: developing, cls: 'badge-dev', color: '#e5b76a' },
-    { label: 'Needs Work', count: needsWork, cls: 'badge-nw', color: '#e8928a' },
+    { label: 'Solid', count: solid, cls: 'badge-solid', color: '#10B981' },
+    { label: 'Developing', count: developing, cls: 'badge-dev', color: '#F59E0B' },
+    { label: 'Needs Work', count: needsWork, cls: 'badge-nw', color: '#F59E0B' },
   ]
   for (const d of dist) {
     const pct = assessed > 0 ? (d.count / assessed) * 100 : 0
     html += `<tr><td><span class="badge ${d.cls}">${d.label}</span></td><td>${d.count}</td>`
-    html += `<td><div class="bar-wrap"><div class="bar-bg"><div class="bar" style="width:${pct}%;background:${d.color}"></div></div><span style="font-size:10px;color:#7d5235">${Math.round(pct)}%</span></div></td></tr>`
+    html += `<td><div class="bar-wrap"><div class="bar-bg"><div class="bar" style="width:${pct}%;background:${d.color}"></div></div><span style="font-size:10px;color:#57534E">${Math.round(pct)}%</span></div></td></tr>`
   }
   html += `</table>`
 
@@ -461,7 +477,7 @@ function generateProgressReport(clientName, date, analysis, snapshotComparison, 
   html += `<h2>Domain Scores</h2>`
   html += `<table><tr><th>Domain</th><th style="text-align:center">Score</th><th style="text-align:center">Assessed</th><th>Level</th></tr>`
   for (const s of scores) {
-    const barColor = s.score >= 2.5 ? '#7fb589' : s.score >= 1.5 ? '#e5b76a' : s.score > 0 ? '#e8928a' : '#d1d5db'
+    const barColor = s.score >= 2.5 ? '#10B981' : s.score >= 1.5 ? '#F59E0B' : s.score > 0 ? '#F59E0B' : '#d1d5db'
     const badgeClass = s.score >= 2.5 ? 'badge-solid' : s.score >= 1.5 ? 'badge-dev' : s.score > 0 ? 'badge-nw' : 'badge-na'
     const label = s.assessed === 0 ? 'N/A' : s.score >= 2.5 ? 'Solid' : s.score >= 1.5 ? 'Developing' : 'Needs Work'
     html += `<tr><td>${s.domain}</td><td style="text-align:center;font-weight:600">${s.assessed > 0 ? s.score.toFixed(2) : '—'}</td><td style="text-align:center">${s.assessed}/${s.total}</td><td><span class="badge ${badgeClass}">${label}</span></td></tr>`
@@ -477,7 +493,7 @@ function generateProgressReport(clientName, date, analysis, snapshotComparison, 
       const curr = scores[i]
       const prev = prevScores[i]
       const diff = curr.score - prev.score
-      const arrow = diff > 0.1 ? '<span style="color:#4f8460;font-weight:600">+' + diff.toFixed(2) + '</span>' : diff < -0.1 ? '<span style="color:#d44d3f;font-weight:600">' + diff.toFixed(2) + '</span>' : '<span style="color:#7d5235">—</span>'
+      const arrow = diff > 0.1 ? '<span style="color:#059669;font-weight:600">+' + diff.toFixed(2) + '</span>' : diff < -0.1 ? '<span style="color:#d44d3f;font-weight:600">' + diff.toFixed(2) + '</span>' : '<span style="color:#57534E">—</span>'
       html += `<tr><td>${escapeHTML(curr.domain)}</td><td style="text-align:center">${prev.assessed > 0 ? prev.score.toFixed(2) : '—'}</td><td style="text-align:center">${curr.assessed > 0 ? curr.score.toFixed(2) : '—'}</td><td style="text-align:center">${arrow}</td></tr>`
     }
     html += `</table>`
@@ -674,7 +690,7 @@ function generateInsuranceReport(clientName, date, analysis, assessments, clinic
             const indicator = getBehavioralIndicator(skill.id, lv)
             if (!indicator) continue
             if (!hasIndicators) {
-              html += `<p style="font-size:11px;font-weight:600;color:#5f3e2a;margin-top:8px;">Skill-Level Observations:</p>`
+              html += `<p style="font-size:11px;font-weight:600;color:#292524;margin-top:8px;">Skill-Level Observations:</p>`
               hasIndicators = true
             }
             const cls = lv === 0 ? 'indicator-np' : 'indicator-nw'
@@ -698,7 +714,7 @@ function generateInsuranceReport(clientName, date, analysis, assessments, clinic
   // ── Section 6: Mastery Grid ──
   if (showMasteryGrid) {
     html += `<h2>Skill Mastery Grid</h2>`
-    html += `<p style="font-size:11px;color:#7d5235;">Each cell represents one skill. Color indicates mastery level.</p>`
+    html += `<p style="font-size:11px;color:#57534E;">Each cell represents one skill. Color indicates mastery level.</p>`
     html += `<div class="chart-container">${generateMasteryGrid(assessments, framework)}</div>`
   }
 
@@ -806,8 +822,9 @@ function generateInsuranceReport(clientName, date, analysis, assessments, clinic
 /**
  * ReportGenerator component — full-page view for generating audience-specific reports
  */
-export default function ReportGenerator({ assessments, clientName, clientId, user, snapshots, onNavigateToAssess, branding }) {
+export default function ReportGenerator({ assessments, clientName, clientId, user, snapshots, onNavigateToAssess, onOpenAuthorizations = null, branding, initialType = null, launchContext = null }) {
   const hint = useContextualHint('hint-reports')
+  const { can, loading: permissionsLoading } = usePermissions()
   const [selectedType, setSelectedType] = useState(null)
   const [compareSnapshotId, setCompareSnapshotId] = useState('')
   const [generating, setGenerating] = useState(false)
@@ -824,19 +841,33 @@ export default function ReportGenerator({ assessments, clientName, clientId, use
   const [saving, setSaving] = useState(false)
   const [savedFlash, setSavedFlash] = useState(false)
   const [viewingReport, setViewingReport] = useState(null)
+  const launchRequestId = launchContext?.requestedAt || 0
+  const reportAccess = useMemo(() => buildReportAccessState({
+    canViewReports: can('reports', 'view'),
+    canEditReports: can('reports', 'edit'),
+    canFinalizeReports: can('reports', 'finalize'),
+  }), [can])
+
+  useEffect(() => {
+    if (initialType && REPORT_META[initialType]) {
+      setSelectedType(initialType)
+    }
+    setPreviewHTML(null)
+    setViewingReport(null)
+  }, [clientId, initialType, launchRequestId])
 
   // Load saved reports when client changes
   useEffect(() => {
-    if (!clientId) { setSavedReports([]); return }
+    if (!clientId || !reportAccess.canReviewGeneratedReports) { setSavedReports([]); return }
     setLoadingReports(true)
     getReports(clientId)
       .then(setSavedReports)
       .catch(() => {})
       .finally(() => setLoadingReports(false))
-  }, [clientId])
+  }, [clientId, reportAccess.canReviewGeneratedReports])
 
   const handleSaveReport = useCallback(async () => {
-    if (!clientId || !user || !selectedType || !previewHTML || saving) return
+    if (!reportAccess.canSaveGeneratedReports || !clientId || !user || !selectedType || !previewHTML || saving) return
     setSaving(true)
     try {
       const typeLabel = REPORT_META[selectedType]?.label || 'Report'
@@ -855,10 +886,10 @@ export default function ReportGenerator({ assessments, clientName, clientId, use
     } finally {
       setSaving(false)
     }
-  }, [clientId, user, selectedType, previewHTML, saving, assessments, clinicalFields, compareSnapshotId, branding])
+  }, [reportAccess.canSaveGeneratedReports, clientId, user, selectedType, previewHTML, saving, assessments, clinicalFields, compareSnapshotId, branding])
 
   const handleDeleteReport = useCallback(async (reportId) => {
-    if (!clientId) return
+    if (!reportAccess.canDeleteGeneratedReports || !clientId) return
     try {
       const reports = await deleteReport(clientId, reportId)
       setSavedReports(reports)
@@ -869,7 +900,7 @@ export default function ReportGenerator({ assessments, clientName, clientId, use
     } catch (e) {
       console.error('Failed to delete report:', e)
     }
-  }, [clientId, viewingReport])
+  }, [reportAccess.canDeleteGeneratedReports, clientId, viewingReport])
 
   const handleViewReport = useCallback((report) => {
     const reportAnalysis = analyzeForReport(report.assessments)
@@ -882,13 +913,58 @@ export default function ReportGenerator({ assessments, clientName, clientId, use
     setPreviewHTML(html)
   }, [clientName, branding])
 
+  const handleBackFromPreview = useCallback(() => {
+    const fallbackType = selectedType || viewingReport?.reportType || initialType || null
+    setPreviewHTML(null)
+    setViewingReport(null)
+    setSelectedType(fallbackType)
+  }, [initialType, selectedType, viewingReport])
+
   const analysis = useMemo(() => analyzeForReport(assessments), [assessments])
+  const reportWorkbench = useMemo(() => buildReportLaunchWorkbench({
+    launchContext,
+    clientName,
+    selectedType,
+  }), [clientName, launchContext, selectedType])
+  const savedReportWorkbench = useMemo(
+    () => buildGeneratedReportWorkbench(savedReports, selectedType),
+    [savedReports, selectedType]
+  )
+
+  const authorizationReturnTarget = useMemo(() => {
+    if (!launchContext || !onOpenAuthorizations) return null
+    if (!['authorization_manager', 'practice_intelligence'].includes(launchContext.source)) return null
+
+    const queueLabel = launchContext.queueLabel
+      || (launchContext.filter === 'renewal' ? 'Renewal Queue'
+      : launchContext.filter === 'coverage' ? 'Coverage Cleanup'
+      : launchContext.filter === 'report' ? 'Report Conversion'
+      : 'Authorization Workbench')
+
+    return {
+      label: queueLabel,
+      filter: launchContext.filter || launchContext.queue || 'all',
+      clientId: launchContext.clientId || clientId || null,
+    }
+  }, [clientId, launchContext, onOpenAuthorizations])
+
+  const handleReturnToAuthorizationWorkbench = useCallback(() => {
+    if (!authorizationReturnTarget || !onOpenAuthorizations) return
+
+    onOpenAuthorizations({
+      clientId: authorizationReturnTarget.clientId,
+      filter: authorizationReturnTarget.filter,
+    })
+  }, [authorizationReturnTarget, onOpenAuthorizations])
 
   const assessedCount = analysis.assessed
   const hasData = assessedCount > 0
+  const previewBackLabel = (selectedType || viewingReport?.reportType) === REPORT_TYPES.AUTHORIZATION
+    ? 'Back to Builder'
+    : 'Back'
 
   function handleGenerate() {
-    if (!selectedType || !hasData) return
+    if (!reportAccess.canGenerateReports || !selectedType || !hasData) return
     track('feature_use', 'report_generate', { type: selectedType })
     if (!safeGetItem('skillcascade_milestone_first_report')) {
       track('milestone', 'first_report')
@@ -923,11 +999,29 @@ export default function ReportGenerator({ assessments, clientName, clientId, use
     setTimeout(() => win.print(), 500)
   }
 
+  if (permissionsLoading) {
+    return (
+      <div className="max-w-4xl mx-auto px-4 py-6 sm:px-6">
+        <div className="rounded-xl border border-warm-200 bg-white px-4 py-6 text-sm text-warm-500">
+          Loading report permissions...
+        </div>
+      </div>
+    )
+  }
+
+  if (!reportAccess.canViewReports) {
+    return (
+      <div className="max-w-4xl mx-auto px-4 py-6 sm:px-6">
+        <NoPermission message="You do not have permission to view reports or authorization builders for this workspace." />
+      </div>
+    )
+  }
+
   return (
     <div className="max-w-4xl mx-auto px-4 py-6 sm:px-6">
       {/* Contextual hint */}
       <ContextualHint show={hint.show} onDismiss={hint.dismiss} className="mb-4">
-        Generate insurance-ready clinical reports, parent-friendly summaries, and progress reports. Reports pull directly from your assessment data and cascade analysis. <KBLink term="view-reports" className="text-[#7fb589]">Learn more</KBLink>
+        Generate insurance-ready clinical reports, parent-friendly summaries, and progress reports. Reports pull directly from your assessment data and cascade analysis. <KBLink term="view-reports" className="text-[#10B981]">Learn more</KBLink>
       </ContextualHint>
 
       <div className="mb-6">
@@ -937,37 +1031,105 @@ export default function ReportGenerator({ assessments, clientName, clientId, use
         </p>
       </div>
 
+      {reportAccess.isReadOnly ? (
+        <div className="mb-4 rounded-xl border border-amber-200 bg-amber-50 px-4 py-3">
+          <p className="text-sm font-semibold text-amber-800">Read-only report access</p>
+          <p className="mt-1 text-xs text-amber-700">{reportAccess.readOnlyLabel}</p>
+        </div>
+      ) : null}
+
+      {reportAccess.isFinalizeRestricted ? (
+        <div className="mb-4 rounded-xl border border-purple-200 bg-purple-50 px-4 py-3">
+          <p className="text-sm font-semibold text-purple-800">Finalize permission required</p>
+          <p className="mt-1 text-xs text-purple-700">{reportAccess.finalizeLabel}</p>
+        </div>
+      ) : null}
+
+      {reportWorkbench ? (
+        <div className="mb-4 rounded-xl border border-sage-200 bg-sage-50 px-4 py-3">
+          <p className="text-sm font-semibold text-sage-800">{reportWorkbench.title}</p>
+          <p className="mt-1 text-xs text-sage-700">{reportWorkbench.description}</p>
+          {reportWorkbench.steps?.length > 0 ? (
+            <ol className="mt-3 grid gap-2 text-xs text-sage-700 sm:grid-cols-3">
+              {reportWorkbench.steps.map((step, index) => (
+                <li key={step} className="rounded-lg border border-sage-200 bg-white/80 px-3 py-2">
+                  <span className="mr-1 font-semibold text-sage-800">{index + 1}.</span>
+                  {step}
+                </li>
+              ))}
+            </ol>
+          ) : null}
+          {authorizationReturnTarget ? (
+            <div className="mt-3">
+              <button
+                type="button"
+                onClick={handleReturnToAuthorizationWorkbench}
+                className="min-h-[44px] rounded-lg border border-sage-200 bg-white px-3 py-2 text-xs font-semibold text-sage-700 transition-colors hover:bg-sage-100"
+              >
+                Return to {authorizationReturnTarget.label}
+              </button>
+            </div>
+          ) : null}
+          {reportWorkbench.hideGeneratedReports && savedReports.length > 0 ? (
+            <p className="mt-3 text-[11px] text-sage-700">
+              The general saved-report archive is hidden during this workflow so the authorization builder stays front and center.
+              {' '}You still have {savedReports.length} generated report{savedReports.length !== 1 ? 's' : ''} in the archive outside this lane.
+            </p>
+          ) : null}
+        </div>
+      ) : null}
+
       {/* Saved Reports list */}
-      {savedReports.length > 0 && !previewHTML && (
+      {savedReports.length > 0 && !previewHTML && !reportWorkbench?.hideGeneratedReports && (
         <div className="mb-6 bg-white rounded-xl border border-warm-200 overflow-hidden">
-          <div className="px-4 py-3 border-b border-warm-100 bg-warm-50">
-            <h3 className="text-sm font-semibold text-warm-700">Saved Reports ({savedReports.length})</h3>
+          <div className="px-4 py-3 border-b border-warm-200 bg-warm-50">
+            <h3 className="text-sm font-semibold text-warm-700">
+              {selectedType && REPORT_META[selectedType]
+                ? `${REPORT_META[selectedType].label} Archive (${savedReports.length})`
+                : `Saved Reports (${savedReports.length})`}
+            </h3>
+            <p className="mt-1 text-xs text-warm-500">
+              Recent reports for the current flow are pinned first so operators can reopen the right artifact faster.
+            </p>
           </div>
-          <ul className="divide-y divide-warm-100">
-            {savedReports.map((report) => {
+          <ul className="divide-y divide-warm-200">
+            {savedReportWorkbench.map((report) => {
               const meta = REPORT_META[report.reportType]
               return (
                 <li key={report.id} className="flex items-center gap-3 px-4 py-3 hover:bg-warm-50 transition-colors">
-                  <div className="text-warm-400 shrink-0">{meta?.icon || null}</div>
+                  <div className="text-warm-500 shrink-0">{meta?.icon || null}</div>
                   <div className="flex-1 min-w-0">
-                    <div className="text-sm font-medium text-warm-800 truncate">{report.title}</div>
-                    <div className="text-xs text-warm-400">
+                    <div className="flex flex-wrap items-center gap-2">
+                      <div className="text-sm font-medium text-warm-800 truncate">{report.title}</div>
+                      {report.badgeLabel ? (
+                        <span className={`inline-flex items-center rounded-full border px-2 py-0.5 text-[10px] font-semibold ${
+                          report.badgeTone === 'sage'
+                            ? 'border-sage-200 bg-sage-50 text-sage-700'
+                            : 'border-purple-200 bg-purple-50 text-purple-700'
+                        }`}>
+                          {report.badgeLabel}
+                        </span>
+                      ) : null}
+                    </div>
+                    <div className="text-xs text-warm-500">
                       {meta?.label} · {new Date(report.createdAt).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
                     </div>
                   </div>
                   <div className="flex items-center gap-2 shrink-0">
                     <button
                       onClick={() => handleViewReport(report)}
-                      className="px-3 py-1.5 text-xs font-medium text-sage-600 bg-sage-50 rounded-lg hover:bg-sage-100 transition-colors min-h-[44px]"
+                      className="px-3 py-1.5 text-xs font-medium text-sage-600 bg-sage-50 rounded-full hover:bg-sage-100 transition-colors min-h-[44px]"
                     >
                       View
                     </button>
-                    <button
-                      onClick={() => handleDeleteReport(report.id)}
-                      className="px-3 py-1.5 text-xs font-medium text-warm-400 hover:text-red-500 rounded-lg hover:bg-red-50 transition-colors min-h-[44px]"
-                    >
-                      Delete
-                    </button>
+                    {reportAccess.canDeleteGeneratedReports ? (
+                      <button
+                        onClick={() => handleDeleteReport(report.id)}
+                        className="px-3 py-1.5 text-xs font-medium text-warm-500 hover:text-red-500 rounded-lg hover:bg-red-50 transition-colors min-h-[44px]"
+                      >
+                        Delete
+                      </button>
+                    ) : null}
                   </div>
                 </li>
               )
@@ -982,7 +1144,7 @@ export default function ReportGenerator({ assessments, clientName, clientId, use
           {onNavigateToAssess && (
             <button
               onClick={() => onNavigateToAssess(null)}
-              className="text-sm px-4 py-2 bg-sage-500 text-white rounded-lg hover:bg-sage-600 transition-colors"
+              className="text-sm px-4 py-2 bg-sage-600 text-white rounded-full hover:bg-sage-700 transition-colors"
             >
               Start Assessing
             </button>
@@ -997,14 +1159,17 @@ export default function ReportGenerator({ assessments, clientName, clientId, use
             {Object.entries(REPORT_META).map(([key, meta]) => (
               <button
                 key={key}
+                disabled={!reportAccess.canGenerateReports}
                 onClick={() => setSelectedType(key)}
                 className={`text-left p-4 rounded-xl border-2 transition-all ${
                   selectedType === key
                     ? 'border-sage-400 bg-sage-50 shadow-sm'
-                    : 'border-warm-200 bg-white hover:border-warm-300'
+                    : reportAccess.canGenerateReports
+                      ? 'border-warm-200 bg-white hover:border-warm-300'
+                      : 'border-warm-200 bg-warm-50 text-warm-400 cursor-not-allowed opacity-70'
                 }`}
               >
-                <div className={`mb-2 ${selectedType === key ? 'text-sage-600' : 'text-warm-400'}`}>
+                <div className={`mb-2 ${selectedType === key ? 'text-sage-600' : 'text-warm-500'}`}>
                   {meta.icon}
                 </div>
                 <div className="font-semibold text-warm-800 text-sm mb-1">{meta.label}</div>
@@ -1013,11 +1178,27 @@ export default function ReportGenerator({ assessments, clientName, clientId, use
             ))}
           </div>
 
-          {/* Quick stats */}
+          {/* Authorization Report Form (full-page takeover) */}
+          {selectedType === REPORT_TYPES.AUTHORIZATION && (
+            <Suspense fallback={<div className="text-center py-8 text-warm-500 text-sm">Loading report builder...</div>}>
+              <AuthReportForm
+                assessments={assessments}
+                clientName={clientName}
+                clientId={clientId}
+                examinerFields={clinicalFields}
+                reportAccess={reportAccess}
+                launchContext={launchContext}
+                onPreview={(html) => { setPreviewHTML(html); track('feature_use', 'auth_report_preview') }}
+              />
+            </Suspense>
+          )}
+
+          {/* Quick stats (not shown for authorization — it has its own UI) */}
+          {selectedType !== REPORT_TYPES.AUTHORIZATION && (<>
           <div className="flex flex-wrap items-center gap-x-6 gap-y-1 text-xs text-warm-500 mb-4 bg-warm-100 rounded-lg px-4 py-3">
             <span><strong className="text-warm-700">{analysis.assessed}</strong> skills assessed</span>
             <span><strong className="text-warm-700 text-sage-600">{analysis.solid}</strong> solid</span>
-            <span><strong className="text-warm-700" style={{ color: '#e5b76a' }}>{analysis.developing}</strong> developing</span>
+            <span><strong className="text-warm-700" style={{ color: '#F59E0B' }}>{analysis.developing}</strong> developing</span>
             <span><strong className="text-warm-700 text-coral-500">{analysis.needsWork}</strong> needs work</span>
             {analysis.cascadeIssues.length > 0 && (
               <span className="text-coral-500 font-medium">{analysis.cascadeIssues.length} cascade issue(s)</span>
@@ -1079,7 +1260,7 @@ export default function ReportGenerator({ assessments, clientName, clientId, use
                     className="w-full px-3 py-2 min-h-[44px] text-sm rounded-lg border border-warm-200 text-warm-700 focus:outline-none focus:border-sage-400" placeholder="Dr. Johnson, Pediatrician" />
                 </div>
               </div>
-              <div className="mt-4 pt-3 border-t border-warm-100">
+              <div className="mt-4 pt-3 border-t border-warm-200">
                 <p className="text-xs text-warm-500 mb-2 font-medium">Visualizations to Include</p>
                 <div className="flex flex-wrap gap-4">
                   {[
@@ -1102,10 +1283,10 @@ export default function ReportGenerator({ assessments, clientName, clientId, use
           {/* Generate button */}
           <button
             onClick={handleGenerate}
-            disabled={!selectedType || generating}
-            className={`px-6 py-2.5 rounded-lg text-sm font-semibold transition-all ${
-              selectedType
-                ? 'bg-sage-500 text-white hover:bg-sage-600 shadow-sm'
+            disabled={!selectedType || generating || !reportAccess.canGenerateReports}
+            className={`px-6 py-2.5 rounded-full text-sm font-semibold transition-all ${
+              selectedType && reportAccess.canGenerateReports
+                ? 'bg-sage-600 text-white hover:bg-sage-700 shadow-sm'
                 : 'bg-warm-200 text-warm-400 cursor-not-allowed'
             }`}
           >
@@ -1120,6 +1301,7 @@ export default function ReportGenerator({ assessments, clientName, clientId, use
               'Generate Report'
             )}
           </button>
+          </>)}
         </>
       )}
 
@@ -1130,7 +1312,7 @@ export default function ReportGenerator({ assessments, clientName, clientId, use
           <div className="flex flex-wrap items-center gap-3 mb-4">
             <button
               onClick={handleDownload}
-              className="flex items-center gap-2 px-4 py-2 bg-sage-500 text-white rounded-lg text-sm font-medium hover:bg-sage-600 transition-colors"
+              className="flex items-center gap-2 px-4 py-2 bg-sage-600 text-white rounded-full text-sm font-medium hover:bg-sage-700 transition-colors"
             >
               <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
                 <path strokeLinecap="round" strokeLinejoin="round" d="M3 16.5v2.25A2.25 2.25 0 0 0 5.25 21h13.5A2.25 2.25 0 0 0 21 18.75V16.5M16.5 12 12 16.5m0 0L7.5 12m4.5 4.5V3" />
@@ -1139,7 +1321,7 @@ export default function ReportGenerator({ assessments, clientName, clientId, use
             </button>
             <button
               onClick={handlePrint}
-              className="flex items-center gap-2 px-4 py-2 bg-white border border-warm-200 text-warm-700 rounded-lg text-sm font-medium hover:bg-warm-50 transition-colors"
+              className="flex items-center gap-2 px-4 py-2 bg-white border border-warm-200 text-warm-700 rounded-full text-sm font-medium hover:bg-warm-50 transition-colors"
             >
               <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
                 <path strokeLinecap="round" strokeLinejoin="round" d="M6.72 13.829c-.24.03-.48.062-.72.096m.72-.096a42.415 42.415 0 0 1 10.56 0m-10.56 0L6.34 18m10.94-4.171c.24.03.48.062.72.096m-.72-.096L17.66 18m0 0 .229 2.523a1.125 1.125 0 0 1-1.12 1.227H7.231c-.662 0-1.18-.568-1.12-1.227L6.34 18m11.318 0h1.091A2.25 2.25 0 0 0 21 15.75V9.456c0-1.081-.768-2.015-1.837-2.175a48.055 48.055 0 0 0-1.913-.247M6.34 18H5.25A2.25 2.25 0 0 1 3 15.75V9.456c0-1.081.768-2.015 1.837-2.175a48.041 48.041 0 0 1 1.913-.247m10.5 0a48.536 48.536 0 0 0-10.5 0m10.5 0V3.375c0-.621-.504-1.125-1.125-1.125h-8.25c-.621 0-1.125.504-1.125 1.125v3.659M18.75 12h.008v.008h-.008V12Zm-2.25 0h.008v.008H16.5V12Z" />
@@ -1147,7 +1329,7 @@ export default function ReportGenerator({ assessments, clientName, clientId, use
               Print
             </button>
             {/* Save button — only when generating new (not viewing saved) */}
-            {!viewingReport && clientId && user && (
+            {!viewingReport && clientId && user && reportAccess.canSaveGeneratedReports && (
               <button
                 onClick={handleSaveReport}
                 disabled={saving || savedFlash}
@@ -1177,15 +1359,10 @@ export default function ReportGenerator({ assessments, clientName, clientId, use
               </button>
             )}
             <button
-              onClick={() => {
-                setPreviewHTML(null)
-                setViewingReport(null)
-                setSelectedType(null)
-                setCompareSnapshotId('')
-              }}
+              onClick={handleBackFromPreview}
               className="px-4 py-2 text-warm-500 hover:text-warm-700 text-sm min-h-[44px]"
             >
-              Back
+              {previewBackLabel}
             </button>
           </div>
 

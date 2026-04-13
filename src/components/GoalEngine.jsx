@@ -1,4 +1,4 @@
-import { useState, useMemo, useCallback } from 'react'
+import { useState, useMemo, useCallback, lazy, Suspense } from 'react'
 import {
   framework,
   ASSESSMENT_LEVELS,
@@ -10,12 +10,13 @@ import {
 import { getSkillDescription } from '../data/skillDescriptions.js'
 import { getBehavioralIndicator } from '../data/behavioralIndicators.js'
 import { getTeachingPlaybook } from '../data/teachingPlaybook.js'
-import { downloadFile, csvEscape } from '../data/exportUtils.js'
+import { downloadFile, csvEscape } from '../lib/fileExports.js'
 import { track } from '../lib/analytics.js'
 import { getSkillCeiling, computeSkillInfluence } from '../data/skillInfluence.js'
 import { getSubAreaFromId, getSkillTier } from '../data/skillDependencies.js'
 import { TIER_LABELS, TIER_COLORS } from '../constants/tiers.js'
 import EmptyState from './EmptyState.jsx'
+const AddGoalDialog = lazy(() => import('./platform/AddGoalDialog.jsx'))
 import useResponsive from '../hooks/useResponsive.js'
 import useContextualHint from '../hooks/useContextualHint.js'
 import ContextualHint from './ContextualHint.jsx'
@@ -41,7 +42,7 @@ const PRIORITY_CONFIG = {
   1: {
     label: 'Foundation Gaps',
     subtitle: 'These skills block progress across multiple higher domains. Address first.',
-    color: '#e06b5f',        // coral-400
+    color: '#EF4444',        // coral-400
     bg: '#fdf2f1',           // coral-50
     border: '#f5b8b2',       // coral-200
     badgeBg: '#fce0dd',      // coral-100
@@ -50,10 +51,10 @@ const PRIORITY_CONFIG = {
   2: {
     label: 'Ready to Target',
     subtitle: 'Prerequisites are met. These skills can be effectively addressed now.',
-    color: '#c49a6c',        // warm-400 (gold-ish)
-    bg: '#fdf8f0',           // warm-50
-    border: '#e8d5c0',       // warm-200
-    badgeBg: '#f5ebe0',      // warm-100
+    color: '#D97706',        // warm-400 (gold-ish)
+    bg: '#FAFAF9',           // warm-50
+    border: '#E7E5E4',       // warm-200
+    badgeBg: '#F5F5F4',      // warm-100
     badgeText: '#9a6740',    // warm-600
   },
   3: {
@@ -187,7 +188,7 @@ function getRationale(domainId, priority, assessments) {
  * Core analysis: walk the entire framework and produce prioritized
  * skill-level recommendations.
  */
-function analyzeGaps(assessments) {
+export function analyzeGaps(assessments) {
   const recommendations = []
   const influence = computeSkillInfluence(assessments)
 
@@ -275,12 +276,9 @@ function SummaryCard({ label, count, color, bg, border, icon }) {
       style={{ backgroundColor: bg, borderColor: border }}
     >
       <div className="flex items-center gap-3">
-        <div
-          className="w-10 h-10 rounded-lg flex items-center justify-center text-lg font-bold shrink-0"
-          style={{ backgroundColor: color + '18', color }}
-        >
+        <span className="text-lg font-bold shrink-0" style={{ color }}>
           {icon}
-        </div>
+        </span>
         <div>
           <div className="text-2xl font-bold text-warm-800 font-display leading-none">
             {count}
@@ -320,7 +318,7 @@ function RatingBadge({ level }) {
   )
 }
 
-function SkillCard({ rec, onNavigateToAssess, isExpanded, onToggle, assessments }) {
+function SkillCard({ rec, onNavigateToAssess, isExpanded, onToggle, assessments, onSkillGoal, onAddToTree }) {
   const [showTeachingNotes, setShowTeachingNotes] = useState(false)
   const config = PRIORITY_CONFIG[rec.priority]
   const desc = isExpanded ? getSkillDescription(rec.skillId) : null
@@ -339,12 +337,12 @@ function SkillCard({ rec, onNavigateToAssess, isExpanded, onToggle, assessments 
     >
       {/* Top row: breadcrumb + tier + rating */}
       <div className="flex items-start justify-between gap-4 mb-2">
-        <div className="text-[11px] text-warm-400 leading-snug min-w-0 flex items-center gap-1.5 flex-wrap">
+        <div className="text-[11px] text-warm-500 leading-snug min-w-0 flex items-center gap-1.5 flex-wrap">
           <span className="font-medium text-warm-500">D{rec.domainNumber}</span>
           <span>{'\u203A'}</span>
           <span>{rec.subAreaName}</span>
           <span>{'\u203A'}</span>
-          <span className="text-warm-300">{rec.skillGroupName}</span>
+          <span className="text-warm-500">{rec.skillGroupName}</span>
           {(() => {
             const t = getSkillTier(rec.skillId)
             return t ? (
@@ -367,15 +365,43 @@ function SkillCard({ rec, onNavigateToAssess, isExpanded, onToggle, assessments 
         className="w-full text-left mb-2.5 flex items-center gap-2"
       >
         <span
-          className="text-[10px] transition-transform duration-200 shrink-0 text-warm-400"
+          className="text-[10px] transition-transform duration-200 shrink-0 text-warm-500"
           style={{ transform: isExpanded ? 'rotate(90deg)' : 'rotate(0deg)' }}
         >
           {'\u25B6'}
         </span>
-        <h4 className="text-sm font-semibold text-warm-800 leading-snug">
+        <h4 className="text-sm font-semibold text-warm-800 leading-snug flex-1">
           {rec.skillName}
         </h4>
       </button>
+      {(onSkillGoal || onAddToTree) && (
+        <div className="ml-5 mb-2.5 flex items-center gap-2">
+          {onSkillGoal && (
+            <button
+              onClick={(e) => { e.stopPropagation(); onSkillGoal(rec.skillId) }}
+              className="px-2.5 py-1.5 min-h-[44px] rounded-lg text-[11px] font-medium text-sage-600 bg-sage-50 border border-sage-200 hover:bg-sage-100 hover:border-sage-300 transition-colors flex items-center gap-1 shrink-0"
+              title="Generate goal for this skill"
+            >
+              <svg className="w-3 h-3" viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+                <circle cx="10" cy="10" r="7" />
+                <circle cx="10" cy="10" r="4" />
+                <circle cx="10" cy="10" r="1" fill="currentColor" />
+              </svg>
+              Goal
+            </button>
+          )}
+          {onAddToTree && (
+            <button
+              onClick={(e) => { e.stopPropagation(); onAddToTree({ name: rec.skillName, domain: rec.domainName, objective: `The client will demonstrate ${rec.skillName.toLowerCase()} skills as measured by ${rec.skillName.toLowerCase()} data collection.` }) }}
+              className="px-2.5 py-1.5 min-h-[44px] rounded-lg text-[11px] font-medium text-blue-600 bg-blue-50 border border-blue-200 hover:bg-blue-100 hover:border-blue-300 transition-colors flex items-center gap-1 shrink-0"
+              title="Add this skill as a goal to the Learning Tree"
+            >
+              <svg className="w-3 h-3" viewBox="0 0 20 20" fill="currentColor"><path fillRule="evenodd" d="M10 3a1 1 0 011 1v5h5a1 1 0 110 2h-5v5a1 1 0 11-2 0v-5H4a1 1 0 110-2h5V4a1 1 0 011-1z" clipRule="evenodd" /></svg>
+              Add to Tree
+            </button>
+          )}
+        </div>
+      )}
 
       {/* Expanded: operational definition */}
       {isExpanded && (
@@ -400,7 +426,7 @@ function SkillCard({ rec, onNavigateToAssess, isExpanded, onToggle, assessments 
               )}
             </>
           ) : (
-            <p className="text-[11px] text-warm-400 italic">No operational definition available for this skill.</p>
+            <p className="text-[11px] text-warm-500 italic">No operational definition available for this skill.</p>
           )}
           {/* Behavioral Indicators: current → target */}
           {(() => {
@@ -515,7 +541,7 @@ function SkillCard({ rec, onNavigateToAssess, isExpanded, onToggle, assessments 
           <div className="flex items-center gap-2 pt-1">
             <span className="text-[10px] font-semibold text-warm-500 uppercase tracking-wider">Baseline</span>
             <RatingBadge level={rec.level} />
-            <span className="text-warm-400">{'\u2192'}</span>
+            <span className="text-warm-500">{'\u2192'}</span>
             <span className="text-[10px] font-semibold text-warm-500 uppercase tracking-wider">Target</span>
             <RatingBadge level={targetLevel} />
           </div>
@@ -547,7 +573,7 @@ function SkillCard({ rec, onNavigateToAssess, isExpanded, onToggle, assessments 
 
           {/* Downstream count — show for all priorities with downstream impact */}
           {rec.downstreamSkills > 0 && !rec.capsDownstream && (
-            <span className="text-[10px] text-warm-400 whitespace-nowrap shrink-0">
+            <span className="text-[10px] text-warm-500 whitespace-nowrap shrink-0">
               Unlocks {rec.downstreamSkills} skill{rec.downstreamSkills !== 1 ? 's' : ''} <KBHelpIcon term="concept-cascade-effects" />
             </span>
           )}
@@ -581,7 +607,7 @@ function SkillCard({ rec, onNavigateToAssess, isExpanded, onToggle, assessments 
   )
 }
 
-function TierSection({ priority, recommendations, onNavigateToAssess, defaultExpanded, assessments }) {
+function TierSection({ priority, recommendations, onNavigateToAssess, defaultExpanded, assessments, onSkillGoal, onAddToTree }) {
   const [expanded, setExpanded] = useState(defaultExpanded)
   const [expandedSkillId, setExpandedSkillId] = useState(null)
   const config = PRIORITY_CONFIG[priority]
@@ -648,7 +674,7 @@ function TierSection({ priority, recommendations, onNavigateToAssess, defaultExp
               {count} skill{count !== 1 ? 's' : ''}
             </span>
           </div>
-          <p className="text-[11px] text-warm-400 mt-0.5 truncate">
+          <p className="text-[11px] text-warm-500 mt-0.5 truncate">
             {config.subtitle}
           </p>
         </div>
@@ -670,7 +696,7 @@ function TierSection({ priority, recommendations, onNavigateToAssess, defaultExp
                 <span className="text-xs font-semibold text-warm-600">
                   {group.domainName}
                 </span>
-                <span className="text-[10px] text-warm-300">
+                <span className="text-[10px] text-warm-500">
                   {group.skills.length} skill{group.skills.length !== 1 ? 's' : ''}
                 </span>
               </div>
@@ -685,6 +711,8 @@ function TierSection({ priority, recommendations, onNavigateToAssess, defaultExp
                     isExpanded={expandedSkillId === rec.skillId}
                     onToggle={() => setExpandedSkillId(prev => prev === rec.skillId ? null : rec.skillId)}
                     assessments={assessments}
+                    onSkillGoal={onSkillGoal}
+                    onAddToTree={onAddToTree}
                   />
                 ))}
               </div>
@@ -700,9 +728,10 @@ function TierSection({ priority, recommendations, onNavigateToAssess, defaultExp
    Main component
    ───────────────────────────────────────────── */
 
-export default function GoalEngine({ assessments = {}, onNavigateToAssess, focusDomain = null, onClearFocus, clientName = '' }) {
+export default function GoalEngine({ assessments = {}, onNavigateToAssess, focusDomain = null, onClearFocus, clientName = '', onGenerateGoals, onDeficitGoals, onLessonPlan, onSkillGoal, clientId }) {
   const { isPhone } = useResponsive()
   const hint = useContextualHint('hint-goals')
+  const [addToTreeGoal, setAddToTreeGoal] = useState(null)
   const allRecommendations = useMemo(() => analyzeGaps(assessments), [assessments])
 
   // Filter by focus domain if set
@@ -784,7 +813,7 @@ export default function GoalEngine({ assessments = {}, onNavigateToAssess, focus
       <div className="max-w-4xl mx-auto px-4 py-6 sm:px-6">
         {/* Contextual hint */}
         <ContextualHint show={hint.show} onDismiss={hint.dismiss} className="mb-4">
-          Goals are auto-prioritized by ceiling impact — foundation skills that cap the most developmental surface come first. Each goal shows exactly which skills depend on it. <KBLink term="view-goals" className="text-[#7fb589]">Learn more</KBLink>
+          Goals are auto-prioritized by ceiling impact — foundation skills that cap the most developmental surface come first. Each goal shows exactly which skills depend on it. <KBLink term="view-goals" className="text-[#10B981]">Learn more</KBLink>
         </ContextualHint>
 
         {/* Page header */}
@@ -799,15 +828,46 @@ export default function GoalEngine({ assessments = {}, onNavigateToAssess, focus
             </p>
           </div>
           {hasAssessments && totalGaps > 0 && (
-            <button
-              onClick={handleExportGoals}
-              className="text-xs font-semibold px-3 py-2 min-h-[44px] rounded-lg border border-warm-200 bg-white text-warm-600 hover:bg-warm-50 hover:border-warm-300 transition-all whitespace-nowrap shrink-0 flex items-center gap-1.5"
-            >
-              <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                <path strokeLinecap="round" strokeLinejoin="round" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-              </svg>
-              Export Goals
-            </button>
+            <div className="flex gap-2 shrink-0 flex-wrap justify-end">
+              {onGenerateGoals && (
+                <button
+                  onClick={onGenerateGoals}
+                  className="text-xs font-semibold px-3 py-2 min-h-[44px] rounded-full bg-sage-600 text-white hover:bg-sage-700 transition-all whitespace-nowrap flex items-center gap-1.5"
+                >
+                  <svg className="w-4 h-4" viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+                    <circle cx="10" cy="10" r="7" />
+                    <circle cx="10" cy="10" r="4" />
+                    <circle cx="10" cy="10" r="1" fill="currentColor" />
+                  </svg>
+                  Generate AI Goals
+                </button>
+              )}
+              {onDeficitGoals && (
+                <button
+                  onClick={onDeficitGoals}
+                  className="text-xs font-semibold px-3 py-2 min-h-[44px] rounded-full border border-sage-300 bg-sage-50 text-sage-700 hover:bg-sage-100 transition-all whitespace-nowrap flex items-center gap-1.5"
+                >
+                  Deficit Goals
+                </button>
+              )}
+              {onLessonPlan && (
+                <button
+                  onClick={onLessonPlan}
+                  className="text-xs font-semibold px-3 py-2 min-h-[44px] rounded-full border border-sage-300 bg-sage-50 text-sage-700 hover:bg-sage-100 transition-all whitespace-nowrap flex items-center gap-1.5"
+                >
+                  Lesson Plan
+                </button>
+              )}
+              <button
+                onClick={handleExportGoals}
+                className="text-xs font-semibold px-3 py-2 min-h-[44px] rounded-full border border-warm-200 bg-white text-warm-600 hover:bg-warm-50 hover:border-warm-300 transition-all whitespace-nowrap flex items-center gap-1.5"
+              >
+                <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                </svg>
+                Export CSV
+              </button>
+            </div>
           )}
         </div>
 
@@ -841,9 +901,9 @@ export default function GoalEngine({ assessments = {}, onNavigateToAssess, focus
               <SummaryCard
                 label="Total Gaps"
                 count={totalGaps}
-                color="#7d5235"
-                bg="#fdf8f0"
-                border="#e8d5c0"
+                color="#57534E"
+                bg="#FAFAF9"
+                border="#E7E5E4"
                 icon="#"
               />
               <SummaryCard
@@ -875,8 +935,8 @@ export default function GoalEngine({ assessments = {}, onNavigateToAssess, focus
             {/* All solid message */}
             {totalGaps === 0 && (
               <div className="text-center py-12 px-8">
-                <div className="w-16 h-16 rounded-2xl bg-sage-100 flex items-center justify-center mx-auto mb-4">
-                  <span className="text-2xl text-sage-500">{'\u2713'}</span>
+                <div className="text-sage-500 mx-auto mb-4 text-center">
+                  <span className="text-2xl">{'\u2713'}</span>
                 </div>
                 <h3 className="text-lg font-semibold text-warm-700 mb-2 font-display">
                   All Assessed Skills Are Solid
@@ -898,6 +958,8 @@ export default function GoalEngine({ assessments = {}, onNavigateToAssess, focus
                   onNavigateToAssess={handleNavigate}
                   defaultExpanded={isPhone ? false : true}
                   assessments={assessments}
+                  onSkillGoal={onSkillGoal}
+                  onAddToTree={clientId ? setAddToTreeGoal : undefined}
                 />
                 <TierSection
                   priority={2}
@@ -905,6 +967,8 @@ export default function GoalEngine({ assessments = {}, onNavigateToAssess, focus
                   onNavigateToAssess={handleNavigate}
                   defaultExpanded={isPhone ? false : tier1.length === 0}
                   assessments={assessments}
+                  onSkillGoal={onSkillGoal}
+                  onAddToTree={clientId ? setAddToTreeGoal : undefined}
                 />
                 <TierSection
                   priority={3}
@@ -912,10 +976,27 @@ export default function GoalEngine({ assessments = {}, onNavigateToAssess, focus
                   onNavigateToAssess={handleNavigate}
                   defaultExpanded={false}
                   assessments={assessments}
+                  onSkillGoal={onSkillGoal}
+                  onAddToTree={clientId ? setAddToTreeGoal : undefined}
                 />
               </div>
             )}
           </>
+        )}
+
+        {/* Add to Tree dialog — pre-filled from Goal Engine skill */}
+        {addToTreeGoal && (
+          <Suspense fallback={null}>
+            <AddGoalDialog
+              clientId={clientId}
+              mode="tree"
+              onClose={() => setAddToTreeGoal(null)}
+              onSaved={() => setAddToTreeGoal(null)}
+              initialName={addToTreeGoal.name}
+              initialObjective={addToTreeGoal.objective}
+              initialDomain={addToTreeGoal.domain}
+            />
+          </Suspense>
         )}
       </div>
     </div>

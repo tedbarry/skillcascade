@@ -7,27 +7,44 @@ export const gettingStartedEntries = [
     title: 'What is SkillCascade?',
     category: 'getting-started',
     tags: ['introduction', 'overview', 'what is', 'about', 'bcba', 'aba'],
-    summary: 'SkillCascade is a developmental assessment and visualization tool designed for BCBAs and ABA professionals.',
-    body: `SkillCascade is a clinical assessment platform built for Board Certified Behavior Analysts (BCBAs) and other ABA professionals. It helps you assess, visualize, and plan skill development across 9 developmental domains with 260 individual skills.
+    summary: 'SkillCascade is a clinical assessment and practice management platform designed for BCBAs and ABA professionals.',
+    body: `SkillCascade is a clinical assessment and practice management platform built for Board Certified Behavior Analysts (BCBAs) and ABA professionals. It combines developmental assessment across 9 domains with 260 skills, intelligent visualizations, AI-powered clinical tools, and full practice management — scheduling, session data collection, session notes, authorization reports, and more.
 
 ## What makes it different
 
-Unlike session-tracking or billing tools, SkillCascade focuses on the big picture: understanding where a learner is developmentally, identifying which skills are blocking progress, and generating data-driven treatment goals.
+Unlike traditional practice management systems, SkillCascade starts with the clinical picture: understanding where a learner is developmentally, identifying which skills are blocking progress, and generating data-driven treatment goals. It then connects that intelligence directly to your daily clinical workflow — from assessment to programs to session data to reports.
 
-## Key capabilities
+## Platform features (Platform plan)
 
 - Assess skills across 9 domains using a clear 0-3 rating scale
-- Visualize developmental patterns with interactive charts (Sunburst, Radar, Skill Tree, Explorer)
+- Visualize developmental patterns with interactive charts (Sunburst, Radar, Skill Tree, Cascade Intelligence, Explorer, Timeline, Comparison)
 - Detect bottlenecks — skills that are holding back progress across multiple domains
-- Generate clinical goals with operational definitions and teaching strategies
-- Track progress over time with snapshots and timeline views
-- Share parent-friendly progress reports
+- Goal Engine with pattern alerts, bottleneck detection, cascade risks, and regression alerts
+- Report Generator with 26-section authorization reports and AI-assisted refinement
+- AI Assistant with 14+ clinical tools (goal generation, skill analysis, lesson plans, narratives)
+- Clinical Intelligence with 6-tab analysis (Overview, Status Map, Bottleneck Finder, Planner, Risks, Story)
+- Progress predictions and data export (CSV, JSON, HTML reports)
+- Snapshots for tracking progress over time
+
+## Clinical features (Clinical plan)
+
+- Scheduling with weekly calendar view, daily agenda ("My Day"), and session management
+- Learning Tree for organizing client programs by domain with 4-tier hierarchy and 8 phase statuses
+- 4-domain Goal Library with Behavior, Communication, Social, and Parent Training goals — including operational definitions, strategies, and FERB
+- Session Data Collection with trial-by-trial recording, offline-first design, and haptic feedback
+- Graph Dashboard with per-program charts, mastery lines, and AI analysis
+- Session Notes with 5 CPT code templates (97153, 97155, H0032, 97156, 97151), AI narratives, and approval workflow
+- Client Files for uploading, categorizing, and downloading documents
+- Client Contacts for managing parents, physicians, and insurance reps
+- Auth Reports with 26-section builder, AI refinement, and image embedding
+- Report-to-Learning Tree sync and Session Data-to-Assessment sync
 
 ## Who is it for?
 
-- BCBAs conducting skill assessments
-- Clinical supervisors overseeing treatment programs
-- ABA organizations managing multiple clients
+- BCBAs conducting skill assessments and managing treatment programs
+- Clinical supervisors overseeing treatment programs and staff
+- RBTs collecting session data and running programs
+- ABA organizations managing multiple clients and staff
 - Parents and caregivers (via the Parent View)`,
     relatedIds: ['guide-assessment-scale', 'guide-quick-start', 'guide-dashboard'],
     source: 'manual',
@@ -59,7 +76,17 @@ The Intelligence view automatically analyzes your ratings and identifies bottlen
 
 ## Step 5: Generate goals
 
-Go to Goals to see prioritized skill targets with operational definitions, teaching strategies, and measurable objectives. Export them as CSV for your treatment planning system.`,
+Go to Goals to see prioritized skill targets with operational definitions, teaching strategies, and measurable objectives. Export them as CSV for your treatment planning system.
+
+## Clinical plan users: Next steps
+
+If you are on the Clinical plan, continue with practice management setup:
+
+6. **Build an Auth Report** — Use the 26-section report builder under Clinical > Auth Reports. AI helps refine each section.
+7. **Sync to Learning Tree** — Finalize your report to auto-create programs in the Learning Tree, organized by domain.
+8. **Set up the schedule** — Go to Schedule > Weekly Schedule to create recurring sessions for your clients.
+9. **Collect session data** — During sessions, use Clinical > Sessions for trial-by-trial data collection with offline support.
+10. **Write session notes** — After each session, create notes under Clinical > Session Notes using CPT code templates (97153, 97155, H0032, 97156, 97151) with AI-generated narratives.`,
     relatedIds: ['guide-what-is-skillcascade', 'guide-assessment-scale', 'view-start-here'],
     viewLink: 'home',
     source: 'manual',
@@ -122,11 +149,15 @@ Each skill has specific behavioral indicators for each level — descriptions of
 ## Navigation
 
 On desktop, the left sidebar shows all available views organized into groups:
-- Visualize — Charts and interactive data visualizations
-- Analyze — Clinical intelligence, timeline, alerts, predictions
+- Home — Overview dashboard
+- Visualize — Charts and interactive data visualizations (Sunburst, Radar, Skill Tree, Explorer)
+- Analyze — Clinical intelligence, AI Agent, timeline, alerts, predictions, comparison
 - Assess — Full assessment and Start Here adaptive assessment
-- Plan — Goals, reports, milestones, certifications
-- Team — Caseload management, parent view, messages
+- Plan — Goals, milestones, certifications, goal drafts, deficit goals, lesson plans
+- Schedule (Clinical plan) — My Day daily agenda and Weekly Schedule
+- Clinical (Clinical plan) — Auth Reports, Learning Tree, Goal Library, Graph Dashboard, Sessions, Session Notes, Files, Contacts
+- Team — Caseload, parent view, home practice, messages, org analytics, practice intelligence
+- Settings — Branding, data & export, accessibility, marketplace, pricing
 
 On phone, a bottom tab bar provides quick access to the most common views. Less-used views are under the "More" tab.
 

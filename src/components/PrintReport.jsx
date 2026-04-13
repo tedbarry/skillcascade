@@ -70,36 +70,36 @@ export default function PrintReport({ assessments, clientName, snapshots = [], b
       {/* ═══ PAGE 1: EXECUTIVE SUMMARY ═══ */}
       <div style={{ pageBreakAfter: 'always', padding: '0.25in 0' }}>
         {/* Header with branding */}
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '24px', paddingBottom: '16px', borderBottom: '3px solid #4f8460' }}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '24px', paddingBottom: '16px', borderBottom: '3px solid #059669' }}>
           <div>
-            <div style={{ fontSize: '22px', fontWeight: 700, fontFamily: 'Plus Jakarta Sans, Inter, sans-serif', color: '#3d2a1c' }}>
-              {orgName !== 'SkillCascade' ? orgName : <>Skill<span style={{ color: '#4f8460' }}>Cascade</span></>}
+            <div style={{ fontSize: '22px', fontWeight: 700, fontFamily: 'Plus Jakarta Sans, Inter, sans-serif', color: '#1C1917' }}>
+              {orgName !== 'SkillCascade' ? orgName : <>Skill<span style={{ color: '#059669' }}>Cascade</span></>}
             </div>
             {branding?.tagline && <div style={{ fontSize: '10px', color: '#9a6740', marginTop: '2px' }}>{branding.tagline}</div>}
           </div>
           <div style={{ textAlign: 'right' }}>
-            <div style={{ fontSize: '16px', fontWeight: 600, color: '#3d2a1c' }}>Developmental Skills Assessment</div>
-            <div style={{ fontSize: '11px', color: '#7d5235', marginTop: '2px' }}>{reportDate}</div>
+            <div style={{ fontSize: '16px', fontWeight: 600, color: '#1C1917' }}>Developmental Skills Assessment</div>
+            <div style={{ fontSize: '11px', color: '#57534E', marginTop: '2px' }}>{reportDate}</div>
           </div>
         </div>
 
         {/* Client info bar */}
-        <div style={{ backgroundColor: '#fdf8f0', borderRadius: '8px', padding: '12px 16px', marginBottom: '20px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', border: '1px solid #e8d5c0' }}>
+        <div style={{ backgroundColor: '#FAFAF9', borderRadius: '8px', padding: '12px 16px', marginBottom: '20px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', border: '1px solid #E7E5E4' }}>
           <div>
-            <div style={{ fontSize: '14px', fontWeight: 700, color: '#3d2a1c' }}>{data.clientName}</div>
+            <div style={{ fontSize: '14px', fontWeight: 700, color: '#1C1917' }}>{data.clientName}</div>
             <div style={{ fontSize: '10px', color: '#9a6740', marginTop: '2px' }}>Comprehensive Skills Profile</div>
           </div>
           <div style={{ display: 'flex', gap: '24px' }}>
             <div style={{ textAlign: 'center' }}>
-              <div style={{ fontSize: '20px', fontWeight: 700, color: '#4f8460' }}>{stats.pct}%</div>
+              <div style={{ fontSize: '20px', fontWeight: 700, color: '#059669' }}>{stats.pct}%</div>
               <div style={{ fontSize: '9px', color: '#9a6740' }}>Assessed</div>
             </div>
             <div style={{ textAlign: 'center' }}>
-              <div style={{ fontSize: '20px', fontWeight: 700, color: '#4f8460' }}>{stats.solidCount}</div>
+              <div style={{ fontSize: '20px', fontWeight: 700, color: '#059669' }}>{stats.solidCount}</div>
               <div style={{ fontSize: '9px', color: '#9a6740' }}>Solid Skills</div>
             </div>
             <div style={{ textAlign: 'center' }}>
-              <div style={{ fontSize: '20px', fontWeight: 700, color: risks.length > 0 ? '#d44d3f' : '#4f8460' }}>{risks.length}</div>
+              <div style={{ fontSize: '20px', fontWeight: 700, color: risks.length > 0 ? '#d44d3f' : '#059669' }}>{risks.length}</div>
               <div style={{ fontSize: '9px', color: '#9a6740' }}>Active Alerts</div>
             </div>
             {constrainedSkills.length > 0 && (
@@ -113,25 +113,25 @@ export default function PrintReport({ assessments, clientName, snapshots = [], b
 
         {/* Domain Scores Summary Table */}
         <div style={{ marginBottom: '20px' }}>
-          <div style={{ fontSize: '12px', fontWeight: 700, color: '#3d2a1c', marginBottom: '8px', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Domain Overview</div>
+          <div style={{ fontSize: '12px', fontWeight: 700, color: '#1C1917', marginBottom: '8px', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Domain Overview</div>
           <table style={{ width: '100%', borderCollapse: 'collapse' }}>
             <thead>
               <tr style={{ borderBottom: '2px solid #d4b896' }}>
-                <th style={{ textAlign: 'left', padding: '6px 10px', fontSize: '10px', fontWeight: 700, color: '#5f3e2a', textTransform: 'uppercase', letterSpacing: '0.3px' }}>Domain</th>
-                <th style={{ textAlign: 'center', padding: '6px 10px', fontSize: '10px', fontWeight: 700, color: '#5f3e2a', width: '60px' }}>Score</th>
-                <th style={{ textAlign: 'center', padding: '6px 10px', fontSize: '10px', fontWeight: 700, color: '#5f3e2a', width: '70px' }}>Status</th>
-                <th style={{ textAlign: 'center', padding: '6px 10px', fontSize: '10px', fontWeight: 700, color: '#5f3e2a', width: '80px' }}>Coverage</th>
-                <th style={{ textAlign: 'left', padding: '6px 10px', fontSize: '10px', fontWeight: 700, color: '#5f3e2a', width: '35%' }}>Progress</th>
+                <th style={{ textAlign: 'left', padding: '6px 10px', fontSize: '10px', fontWeight: 700, color: '#292524', textTransform: 'uppercase', letterSpacing: '0.3px' }}>Domain</th>
+                <th style={{ textAlign: 'center', padding: '6px 10px', fontSize: '10px', fontWeight: 700, color: '#292524', width: '60px' }}>Score</th>
+                <th style={{ textAlign: 'center', padding: '6px 10px', fontSize: '10px', fontWeight: 700, color: '#292524', width: '70px' }}>Status</th>
+                <th style={{ textAlign: 'center', padding: '6px 10px', fontSize: '10px', fontWeight: 700, color: '#292524', width: '80px' }}>Coverage</th>
+                <th style={{ textAlign: 'left', padding: '6px 10px', fontSize: '10px', fontWeight: 700, color: '#292524', width: '35%' }}>Progress</th>
               </tr>
             </thead>
             <tbody>
               {data.domains.map((d, i) => {
                 const health = domainHealth[d.id] || {}
-                const barColor = health.state === 'mastered' ? '#7fb589' : health.state === 'developing' ? '#e5b76a' : health.state === 'needs-work' || health.state === 'blocked' ? '#e8928a' : '#d1d5db'
+                const barColor = health.state === 'mastered' ? '#10B981' : health.state === 'developing' ? '#F59E0B' : health.state === 'needs-work' || health.state === 'blocked' ? '#F59E0B' : '#d1d5db'
                 const statusColor = health.state === 'mastered' ? '#31543d' : health.state === 'developing' ? '#92400e' : health.state === 'needs-work' || health.state === 'blocked' ? '#b63a2e' : '#6b7280'
                 const statusBg = health.state === 'mastered' ? '#dce8de' : health.state === 'developing' ? '#fef3c7' : health.state === 'needs-work' || health.state === 'blocked' ? '#fce0dd' : '#f3f4f6'
                 return (
-                  <tr key={d.id} style={{ borderBottom: '1px solid #f5ebe0', backgroundColor: i % 2 === 0 ? '#fff' : '#fdfaf7' }}>
+                  <tr key={d.id} style={{ borderBottom: '1px solid #F5F5F4', backgroundColor: i % 2 === 0 ? '#fff' : '#fdfaf7' }}>
                     <td style={{ padding: '7px 10px', fontWeight: 500, fontSize: '11px' }}>
                       <span style={{ color: '#9a6740', fontWeight: 600, marginRight: '4px' }}>D{d.domain}.</span>
                       {d.name}
@@ -144,7 +144,7 @@ export default function PrintReport({ assessments, clientName, snapshots = [], b
                         {STATE_LABELS[health.state] || 'N/A'}
                       </span>
                     </td>
-                    <td style={{ padding: '7px 10px', textAlign: 'center', fontSize: '10px', color: '#7d5235' }}>
+                    <td style={{ padding: '7px 10px', textAlign: 'center', fontSize: '10px', color: '#57534E' }}>
                       {d.assessed}/{d.total}
                     </td>
                     <td style={{ padding: '7px 10px' }}>
@@ -161,20 +161,20 @@ export default function PrintReport({ assessments, clientName, snapshots = [], b
         {clinicalSummary && (
           <div style={{ marginBottom: '16px', padding: '12px 14px', backgroundColor: '#f0f5f1', borderRadius: '6px', border: '1px solid #b8d1bd' }}>
             <div style={{ fontSize: '10px', fontWeight: 700, color: '#31543d', marginBottom: '4px', textTransform: 'uppercase', letterSpacing: '0.3px' }}>Clinical Summary</div>
-            <div style={{ fontSize: '10px', color: '#3d2a1c', lineHeight: '1.6' }}>{clinicalSummary}</div>
+            <div style={{ fontSize: '10px', color: '#1C1917', lineHeight: '1.6' }}>{clinicalSummary}</div>
           </div>
         )}
 
         {/* Parent-Friendly Summary */}
         {parentSummary && (
-          <div style={{ padding: '12px 14px', backgroundColor: '#fdf8f0', borderRadius: '6px', border: '1px solid #e8d5c0' }}>
-            <div style={{ fontSize: '10px', fontWeight: 700, color: '#7d5235', marginBottom: '4px', textTransform: 'uppercase', letterSpacing: '0.3px' }}>Caregiver Summary</div>
-            <div style={{ fontSize: '10px', color: '#3d2a1c', lineHeight: '1.6' }}>{parentSummary}</div>
+          <div style={{ padding: '12px 14px', backgroundColor: '#FAFAF9', borderRadius: '6px', border: '1px solid #E7E5E4' }}>
+            <div style={{ fontSize: '10px', fontWeight: 700, color: '#57534E', marginBottom: '4px', textTransform: 'uppercase', letterSpacing: '0.3px' }}>Caregiver Summary</div>
+            <div style={{ fontSize: '10px', color: '#1C1917', lineHeight: '1.6' }}>{parentSummary}</div>
           </div>
         )}
 
         {/* Legend */}
-        <div style={{ display: 'flex', justifyContent: 'center', gap: '20px', marginTop: '20px', paddingTop: '12px', borderTop: '1px solid #e8d5c0' }}>
+        <div style={{ display: 'flex', justifyContent: 'center', gap: '20px', marginTop: '20px', paddingTop: '12px', borderTop: '1px solid #E7E5E4' }}>
           {[
             { label: 'Not Assessed', color: '#9ca3af' },
             { label: 'Not Present (0)', color: ASSESSMENT_COLORS[0] },
@@ -184,13 +184,13 @@ export default function PrintReport({ assessments, clientName, snapshots = [], b
           ].map((item) => (
             <div key={item.label} style={{ display: 'flex', alignItems: 'center', gap: '5px' }}>
               <div style={{ width: '10px', height: '10px', borderRadius: '2px', backgroundColor: item.color }} />
-              <span style={{ fontSize: '9px', color: '#7d5235' }}>{item.label}</span>
+              <span style={{ fontSize: '9px', color: '#57534E' }}>{item.label}</span>
             </div>
           ))}
         </div>
 
         {/* Page footer */}
-        <div style={{ marginTop: '16px', paddingTop: '8px', borderTop: '1px solid #e8d5c0', display: 'flex', justifyContent: 'space-between', fontSize: '8px', color: '#c49a6c' }}>
+        <div style={{ marginTop: '16px', paddingTop: '8px', borderTop: '1px solid #E7E5E4', display: 'flex', justifyContent: 'space-between', fontSize: '8px', color: '#D97706' }}>
           <span>{orgName} — Developmental Skills Assessment</span>
           <span>Page 1 of {data.domains.length + 1} | {reportDate}</span>
         </div>
@@ -202,10 +202,10 @@ export default function PrintReport({ assessments, clientName, snapshots = [], b
         return (
           <div key={domain.id} style={{ pageBreakBefore: 'always', padding: '0.25in 0' }}>
             {/* Domain header */}
-            <div style={{ marginBottom: '14px', paddingBottom: '10px', borderBottom: '3px solid #4f8460' }}>
+            <div style={{ marginBottom: '14px', paddingBottom: '10px', borderBottom: '3px solid #059669' }}>
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
                 <div>
-                  <div style={{ fontSize: '15px', fontWeight: 700, color: '#3d2a1c', fontFamily: 'Plus Jakarta Sans, Inter, sans-serif' }}>
+                  <div style={{ fontSize: '15px', fontWeight: 700, color: '#1C1917', fontFamily: 'Plus Jakarta Sans, Inter, sans-serif' }}>
                     <span style={{ color: '#9a6740' }}>D{domain.domain}.</span> {domain.name}
                   </div>
                   <div style={{ fontSize: '10px', color: '#9a6740', fontStyle: 'italic', marginTop: '2px' }}>
@@ -213,7 +213,7 @@ export default function PrintReport({ assessments, clientName, snapshots = [], b
                   </div>
                 </div>
                 <div style={{ textAlign: 'right', minWidth: '120px' }}>
-                  <div style={{ fontSize: '20px', fontWeight: 700, color: health.state === 'mastered' ? '#4f8460' : health.state === 'developing' ? '#b07d4f' : '#d44d3f' }}>
+                  <div style={{ fontSize: '20px', fontWeight: 700, color: health.state === 'mastered' ? '#059669' : health.state === 'developing' ? '#B45309' : '#d44d3f' }}>
                     {domain.assessed > 0 ? domain.score.toFixed(1) : '—'}
                     <span style={{ fontSize: '11px', fontWeight: 400, color: '#9a6740' }}>/3</span>
                   </div>
@@ -225,12 +225,12 @@ export default function PrintReport({ assessments, clientName, snapshots = [], b
             {/* Sub-areas */}
             {domain.subAreas.map((sa) => (
               <div key={sa.id} style={{ marginBottom: '12px', pageBreakInside: 'avoid' }}>
-                <div style={{ fontSize: '11px', fontWeight: 700, color: '#5f3e2a', marginBottom: '5px', backgroundColor: '#fdf8f0', padding: '4px 10px', borderRadius: '4px', borderLeft: '3px solid #d4b896' }}>
+                <div style={{ fontSize: '11px', fontWeight: 700, color: '#292524', marginBottom: '5px', backgroundColor: '#FAFAF9', padding: '4px 10px', borderRadius: '4px', borderLeft: '3px solid #d4b896' }}>
                   {sa.name}
                 </div>
                 {sa.skillGroups.map((sg) => (
                   <div key={sg.id} style={{ marginLeft: '14px', marginBottom: '7px' }}>
-                    <div style={{ fontSize: '9px', fontWeight: 700, color: '#7d5235', marginBottom: '3px', textTransform: 'uppercase', letterSpacing: '0.2px' }}>
+                    <div style={{ fontSize: '9px', fontWeight: 700, color: '#57534E', marginBottom: '3px', textTransform: 'uppercase', letterSpacing: '0.2px' }}>
                       {sg.name}
                     </div>
                     <div style={{ display: 'flex', flexWrap: 'wrap', gap: '3px', marginLeft: '4px' }}>
@@ -264,7 +264,7 @@ export default function PrintReport({ assessments, clientName, snapshots = [], b
                       if (!indicator) return null
                       const pill = PILL_COLORS[skill.level]
                       return (
-                        <div key={`${skill.id}-ind`} style={{ marginLeft: '4px', marginTop: '2px', fontSize: '8px', lineHeight: '1.4', color: '#5f3e2a', paddingLeft: '8px', borderLeft: `2px solid ${ASSESSMENT_COLORS[skill.level]}` }}>
+                        <div key={`${skill.id}-ind`} style={{ marginLeft: '4px', marginTop: '2px', fontSize: '8px', lineHeight: '1.4', color: '#292524', paddingLeft: '8px', borderLeft: `2px solid ${ASSESSMENT_COLORS[skill.level]}` }}>
                           <span style={{ fontWeight: 600, color: pill.color }}>{skill.name}:</span> {indicator}
                         </div>
                       )
@@ -275,7 +275,7 @@ export default function PrintReport({ assessments, clientName, snapshots = [], b
             ))}
 
             {/* Page footer */}
-            <div style={{ position: 'relative', marginTop: '12px', paddingTop: '8px', borderTop: '1px solid #e8d5c0', display: 'flex', justifyContent: 'space-between', fontSize: '8px', color: '#c49a6c' }}>
+            <div style={{ position: 'relative', marginTop: '12px', paddingTop: '8px', borderTop: '1px solid #E7E5E4', display: 'flex', justifyContent: 'space-between', fontSize: '8px', color: '#D97706' }}>
               <span>{orgName} — {data.clientName}</span>
               <span>Page {pageIdx + 2} of {data.domains.length + 1} | {reportDate}</span>
             </div>

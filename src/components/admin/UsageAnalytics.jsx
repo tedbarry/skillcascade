@@ -13,14 +13,14 @@ import useResponsive from '../../hooks/useResponsive.js'
 const RANGES = ['7d', '30d', '90d']
 
 const COLORS = {
-  sage: '#4f8460',
-  sageLt: '#7fb589',
-  warm: '#c49a6c',
-  warmLt: '#e5b76a',
-  pink: '#e8928a',
+  sage: '#059669',
+  sageLt: '#10B981',
+  warm: '#D97706',
+  warmLt: '#F59E0B',
+  pink: '#F59E0B',
   gray: '#9ca3af',
-  blue: '#6b9bd2',
-  purple: '#9b8ec4',
+  blue: '#3B82F6',
+  purple: '#8B5CF6',
 }
 
 const PIE_COLORS = [COLORS.sage, COLORS.warm, COLORS.blue, COLORS.purple, COLORS.pink, COLORS.gray]
@@ -73,12 +73,12 @@ function KpiCard({ label, value, delta, icon }) {
   return (
     <div className="rounded-xl border border-warm-200 bg-white px-4 py-3">
       <div className="flex items-center justify-between mb-1">
-        <span className="text-[10px] text-warm-400 uppercase tracking-wider font-medium">{label}</span>
+        <span className="text-[10px] text-warm-500 uppercase tracking-wider font-medium">{label}</span>
         {icon && <span className="text-warm-300">{icon}</span>}
       </div>
       <div className="text-xl font-bold text-warm-800 leading-tight">{value}</div>
       {delta !== undefined && delta !== null && (
-        <div className={`text-xs mt-1 font-medium ${isUp ? 'text-green-600' : isDown ? 'text-red-500' : 'text-warm-400'}`}>
+        <div className={`text-xs mt-1 font-medium ${isUp ? 'text-green-600' : isDown ? 'text-red-500' : 'text-warm-500'}`}>
           {isUp ? '+' : ''}{delta}% vs prev period
         </div>
       )}
@@ -128,7 +128,7 @@ function SortableTable({ columns, data, defaultSort, defaultDir = 'desc' }) {
               <th
                 key={col.key}
                 onClick={() => handleSort(col.key)}
-                className="text-left px-3 py-2 text-[10px] uppercase tracking-wider text-warm-400 font-medium cursor-pointer hover:text-warm-600 select-none whitespace-nowrap"
+                className="text-left px-3 py-2 text-[10px] uppercase tracking-wider text-warm-500 font-medium cursor-pointer hover:text-warm-600 select-none whitespace-nowrap"
               >
                 {col.label}
                 {sortKey === col.key && (
@@ -150,7 +150,7 @@ function SortableTable({ columns, data, defaultSort, defaultDir = 'desc' }) {
           ))}
           {sorted.length === 0 && (
             <tr>
-              <td colSpan={columns.length} className="px-3 py-8 text-center text-warm-400">
+              <td colSpan={columns.length} className="px-3 py-8 text-center text-warm-500">
                 No data for this period
               </td>
             </tr>
@@ -185,7 +185,7 @@ function OverviewTab({ data, isPhone }) {
           <h3 className="text-sm font-semibold text-warm-700 mb-3">Sessions Over Time</h3>
           <ResponsiveContainer width="100%" height={200}>
             <LineChart data={dailySessions}>
-              <CartesianGrid strokeDasharray="3 3" stroke="#f0e8df" />
+              <CartesianGrid strokeDasharray="3 3" stroke="#F5F5F4" />
               <XAxis dataKey="date" tick={{ fontSize: 10 }} tickFormatter={formatShortDate} interval={isPhone ? 'preserveStartEnd' : Math.max(0, Math.floor(dailySessions.length / 8))} />
               <YAxis tick={{ fontSize: 10 }} allowDecimals={false} />
               <Tooltip content={<ChartTooltip />} />
@@ -202,7 +202,7 @@ function OverviewTab({ data, isPhone }) {
             <h3 className="text-sm font-semibold text-warm-700 mb-3">Top Views</h3>
             <ResponsiveContainer width="100%" height={Math.max(150, topViews.length * 28)}>
               <BarChart data={topViews} layout="vertical" margin={{ left: 0 }}>
-                <CartesianGrid strokeDasharray="3 3" stroke="#f0e8df" horizontal={false} />
+                <CartesianGrid strokeDasharray="3 3" stroke="#F5F5F4" horizontal={false} />
                 <XAxis type="number" tick={{ fontSize: 10 }} allowDecimals={false} />
                 <YAxis type="category" dataKey="name" tick={{ fontSize: 10 }} width={90} tickFormatter={prettyName} />
                 <Tooltip content={<ChartTooltip />} />
@@ -216,7 +216,7 @@ function OverviewTab({ data, isPhone }) {
             <h3 className="text-sm font-semibold text-warm-700 mb-3">Top Features</h3>
             <ResponsiveContainer width="100%" height={Math.max(150, topFeatures.length * 28)}>
               <BarChart data={topFeatures} layout="vertical" margin={{ left: 0 }}>
-                <CartesianGrid strokeDasharray="3 3" stroke="#f0e8df" horizontal={false} />
+                <CartesianGrid strokeDasharray="3 3" stroke="#F5F5F4" horizontal={false} />
                 <XAxis type="number" tick={{ fontSize: 10 }} allowDecimals={false} />
                 <YAxis type="category" dataKey="name" tick={{ fontSize: 10 }} width={100} tickFormatter={prettyName} />
                 <Tooltip content={<ChartTooltip />} />
@@ -330,7 +330,7 @@ function HealthTab({ data, isPhone }) {
           <h3 className="text-sm font-semibold text-warm-700 mb-3">Session Duration</h3>
           <ResponsiveContainer width="100%" height={180}>
             <BarChart data={durationDistribution}>
-              <CartesianGrid strokeDasharray="3 3" stroke="#f0e8df" />
+              <CartesianGrid strokeDasharray="3 3" stroke="#F5F5F4" />
               <XAxis dataKey="bucket" tick={{ fontSize: 10 }} />
               <YAxis tick={{ fontSize: 10 }} allowDecimals={false} />
               <Tooltip content={<ChartTooltip />} />
@@ -354,7 +354,7 @@ function HealthTab({ data, isPhone }) {
           <h3 className="text-sm font-semibold text-warm-700 mb-3">Onboarding Funnel</h3>
           <ResponsiveContainer width="100%" height={120}>
             <BarChart data={onboardingFunnel} layout="vertical">
-              <CartesianGrid strokeDasharray="3 3" stroke="#f0e8df" horizontal={false} />
+              <CartesianGrid strokeDasharray="3 3" stroke="#F5F5F4" horizontal={false} />
               <XAxis type="number" tick={{ fontSize: 10 }} allowDecimals={false} />
               <YAxis type="category" dataKey="step" tick={{ fontSize: 10 }} width={90} tickFormatter={prettyName} />
               <Tooltip content={<ChartTooltip />} />
@@ -386,7 +386,7 @@ function PieChartWidget({ data }) {
           <div key={i} className="flex items-center gap-2">
             <div className="w-2.5 h-2.5 rounded-sm flex-shrink-0" style={{ backgroundColor: PIE_COLORS[i % PIE_COLORS.length] }} />
             <span className="text-warm-600">{prettyName(d.name)}</span>
-            <span className="text-warm-400 ml-auto">{total > 0 ? Math.round((d.value / total) * 100) : 0}%</span>
+            <span className="text-warm-500 ml-auto">{total > 0 ? Math.round((d.value / total) * 100) : 0}%</span>
           </div>
         ))}
       </div>
@@ -400,7 +400,7 @@ function EmptyState({ message }) {
       <svg className="w-10 h-10 text-warm-300 mx-auto mb-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
         <path strokeLinecap="round" strokeLinejoin="round" d="M3 13.125C3 12.504 3.504 12 4.125 12h2.25c.621 0 1.125.504 1.125 1.125v6.75C7.5 20.496 6.996 21 6.375 21h-2.25A1.125 1.125 0 013 19.875v-6.75zM9.75 8.625c0-.621.504-1.125 1.125-1.125h2.25c.621 0 1.125.504 1.125 1.125v11.25c0 .621-.504 1.125-1.125 1.125h-2.25a1.125 1.125 0 01-1.125-1.125V8.625zM16.5 4.125c0-.621.504-1.125 1.125-1.125h2.25C20.496 3 21 3.504 21 4.125v15.75c0 .621-.504 1.125-1.125 1.125h-2.25a1.125 1.125 0 01-1.125-1.125V4.125z" />
       </svg>
-      <p className="text-sm text-warm-400">{message}</p>
+      <p className="text-sm text-warm-500">{message}</p>
     </div>
   )
 }
@@ -469,7 +469,7 @@ export default function UsageAnalytics() {
           ))}
           <button
             onClick={data.refresh}
-            className="px-2 py-1.5 min-h-[36px] text-warm-400 hover:text-warm-600 transition-colors rounded-md"
+            className="px-2 py-1.5 min-h-[36px] text-warm-500 hover:text-warm-600 transition-colors rounded-md"
             title="Refresh"
           >
             <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>

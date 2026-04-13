@@ -120,7 +120,7 @@ export default memo(function InterventionPlannerView({
         <h2 className="text-[10px] font-mono tracking-widest text-gray-600 uppercase">
           Intervention Planner <KBHelpIcon term="view-intervention-planner" />
         </h2>
-        <p className={`text-xs mt-0.5 ${recommendedId ? 'text-[#ffd700]' : 'text-gray-500'}`}>
+        <p className={`text-xs mt-0.5 ${recommendedId ? 'text-[#FBBF24]' : 'text-gray-500'}`}>
           {summaryText}
         </p>
       </div>

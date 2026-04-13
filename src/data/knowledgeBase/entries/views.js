@@ -368,22 +368,51 @@ Alerts are automatically generated each time you update assessments or load a cl
     title: 'Reports',
     category: 'views',
     tags: ['reports', 'generate', 'clinical', 'parent', 'print', 'pdf', 'summary'],
-    summary: 'Generate clinical and parent-friendly reports from your assessment data.',
-    body: `The Reports view generates formatted reports suitable for clinical documentation and parent communication.
+    summary: 'Generate 26-section authorization reports with AI-assisted refinement, image embedding, and Learning Tree sync.',
+    body: `The Auth Reports view (under Clinical) is a comprehensive 26-section report builder designed for insurance authorization submissions, treatment plan documentation, and clinical records.
+
+## 26-section report builder
+
+The report builder covers all sections required for authorization reports:
+- Client demographics and diagnosis
+- Assessment summary and developmental profile
+- Maladaptive behavior analysis
+- Skill deficit areas (separated by type: adaptive vs maladaptive)
+- Treatment goals with operational definitions
+- Intervention strategies and modalities
+- Medical necessity justification
+- Progress summaries (for reassessments)
+- Titration/discharge planning
+- And more — following CASP/APBA guidelines
+
+## AI-assisted refinement
+
+Each section can be refined using AI. The AI analyzes your client's assessment data, session history, and existing content to generate clinically appropriate text. You can iterate on the AI output, accept changes, or write manually.
+
+## Image embedding
+
+Embed charts and visualizations directly into report sections. Insert Sunburst charts, Radar charts, or Graph Dashboard screenshots to support clinical narratives with visual data.
+
+## Report-to-Learning Tree sync
+
+When you finalize an authorization report, the system can automatically create programs in the Learning Tree based on the report's goals. Each goal becomes a program organized by domain, with phase status set to "baseline." This eliminates double-entry between reports and daily programming.
 
 ## Report types
 
-- Clinical Summary: Comprehensive report for clinical records including domain scores, bottleneck analysis, and recommended targets
-- Parent Summary: Accessible, jargon-free summary suitable for sharing with families
-- Domain Narrative: Detailed narrative for a specific domain
-- Progress Report: Comparison between snapshots with trend analysis
+Reports support multiple authorization types:
+- Initial authorization
+- Reassessment / continued authorization
+- Discharge summary
 
-## Features
+For reassessments, progress sentences are auto-generated from session data comparisons.
 
-- Reports use template-based narratives that adapt to the actual data
-- Print-friendly formatting
-- Includes charts and visualizations
-- Rationale section explains why specific goals were selected`,
+## Additional features
+
+- **BIP sections** now include examples and non-examples for each behavior
+- **Preference Assessment** renders as a structured table
+- **Progress/Mastered Goals** section auto-populates with graphs from uploaded data
+- **Hours statement** field for insurance-required language about recommended hours
+- **HTML formatting** (bold, italic) renders properly in exports — no literal tags`,
     relatedIds: ['view-goals', 'guide-snapshots'],
     viewLink: 'reports',
     source: 'manual',
@@ -443,11 +472,27 @@ The Parent View is designed with sensitivity in mind — emphasizing growth and 
     category: 'views',
     tags: ['ai', 'assistant', 'chat', 'brain', 'clinical questions', 'guidance', 'personalized', 'panel'],
     summary: 'An AI-powered clinical assistant that answers questions using your client\'s assessment data and the knowledge base.',
-    body: `The AI Assistant is accessed via the brain icon in the toolbar. It opens a side panel where you can ask clinical questions and receive answers grounded in your client's actual assessment data.
+    body: `The AI Assistant is accessed via the brain icon in the toolbar. It opens a side panel with 14+ specialized clinical tools powered by Claude via AWS Bedrock (HIPAA-eligible).
 
 ## How it works
 
-The assistant combines your client's current assessment scores, snapshot history, and the SkillCascade knowledge base to provide personalized clinical guidance. It does not use generic responses — every answer is contextualized to the learner's developmental profile.
+The assistant combines your client's current assessment scores, snapshot history, session data, program information, and the SkillCascade knowledge base to provide personalized clinical guidance. Every response is contextualized to the specific learner's developmental profile.
+
+## 14+ specialized tools
+
+The AI Assistant includes specialized tools:
+- **Goal Generation** — Create measurable goals from assessment data
+- **Skill Analysis** — Deep analysis of a skill's status, prerequisites, and next steps
+- **Lesson Plan Generator** — Session-ready lesson plans with activities
+- **Clinical Narratives** — Generate narratives for reports and notes
+- **Treatment Planning** — AI-guided planning from bottleneck analysis
+- **Progress Summaries** — Plain-language updates for parents
+- **Behavioral Analysis** — Pattern analysis across domains
+- **Teaching Strategies** — Evidence-based recommendations
+- **Deficit Analysis** — Explain skill deficits with clinical context
+- **Report Refinement** — Polish authorization report sections
+- **Graph Analysis** — Interpret session data trends
+- And more context-aware tools
 
 ## What you can ask
 
@@ -455,14 +500,15 @@ The assistant combines your client's current assessment scores, snapshot history
 - "Why is Domain 3 behind?" — Analyzes upstream dependencies and bottleneck patterns to explain developmental gaps.
 - "How do I teach joint attention?" — Pulls teaching strategies, barriers, and measurement tips from the Teaching Playbook.
 - "Summarize this client's progress" — Generates a narrative overview based on snapshots and current scores.
+- "Write a session note for today's 97153 session" — Drafts a note using session data and CPT template.
 
 ## Context awareness
 
-The AI panel automatically includes your current view context. If you are looking at the Bottleneck Finder and ask a question, the assistant knows which domain you are focused on and tailors its response accordingly.
+The AI panel automatically includes your current view context. If you are looking at the Bottleneck Finder, the assistant knows which domain you are focused on. In the Graph Dashboard, it can analyze the visible chart data.
 
 ## Privacy
 
-All AI queries are routed through a server-side proxy (Supabase Edge Function). Your API key is never exposed to the browser. Requests are rate-limited to 10 per minute with a 4,000-token cap per response.
+All AI queries route through AWS Bedrock (HIPAA-eligible with BAA). Your API key is never exposed to the browser. Requests are rate-limited to 10 per minute. AI-generated content is NOT used to train AI models.
 
 ## Tips
 
@@ -582,7 +628,7 @@ Milestones are derived from assessment ratings and snapshot comparisons. No manu
     category: 'views',
     tags: ['organization', 'analytics', 'aggregate', 'caseload', 'trends', 'team', 'professional'],
     summary: 'Aggregate analytics across all clients in your organization — caseload trends, domain distributions, and team performance.',
-    body: `Organization Analytics provides a bird's-eye view of developmental data across your entire caseload. It is available on the Practice plan and above.
+    body: `Organization Analytics provides a bird's-eye view of developmental data across your entire caseload. It is available on the Clinical plan.
 
 ## Caseload overview
 
@@ -590,7 +636,7 @@ The top section shows aggregate statistics: total clients, average assessment co
 
 ## Domain distributions
 
-A series of charts show how domain scores are distributed across all clients. For each domain, you can see the percentage of clients in each health state. This reveals organization-wide patterns — for example, if D1 (Attending) is consistently low across clients, it may indicate a systemic gap in programming.
+A series of charts show how domain scores are distributed across all clients. For each domain, you can see the percentage of clients in each health state. This reveals organization-wide patterns — for example, if D1 (Regulation) is consistently low across clients, it may indicate a systemic gap in programming.
 
 ## Trend analysis
 
@@ -937,27 +983,51 @@ Practitioners can submit their own templates and tools for review. Approved cont
     title: 'Pricing & Plans',
     category: 'views',
     tags: ['pricing', 'plans', 'subscription', 'billing', 'free', 'solo', 'practice', 'enterprise', 'stripe'],
-    summary: 'Compare subscription tiers and choose the plan that fits your practice — from a free trial to enterprise plans for large clinics.',
-    body: `The Pricing page shows available subscription tiers and helps you choose the right plan for your practice. All paid plans include ALL features — tiers differ by number of users and clients.
+    summary: 'Compare the Platform and Clinical plans — simple, transparent pricing with a 14-day free trial.',
+    body: `The Pricing page shows SkillCascade's two subscription tiers. Both plans include enterprise-grade security and a 14-day free trial.
 
-## Plans overview
+## Platform plan — for individual BCBAs
 
-- **Free Trial**: 14 days of full access with up to 5 clients. No credit card required. Data saved for 90 days after trial ends.
-- **Solo** ($29/mo): For individual BCBAs. 1 user, 15 clients, all features unlocked.
-- **Practice** ($19/user/mo, min 3 users): For small-to-mid practices. 3-9 users, 30 clients per user, plus org analytics and team management.
-- **Enterprise** ($14/user/mo, min 10 users): For large clinics. 10-49 users, unlimited clients, plus branding, marketplace, and dedicated support.
+- **$29/mo monthly** or **$19.99/mo annual** (save 31%)
+- All assessment tools (full framework, guided assessment)
+- All visualizations (Sunburst, Radar, Skill Tree, Cascade Intelligence, Explorer, Timeline)
+- AI Assistant with 14+ clinical tools
+- Goal engine and pattern alerts
+- Report generator (all types)
+- Progress prediction
+- Clinical intelligence and dependency explorer
+- Data export (CSV, JSON, HTML reports)
+- Secure, encrypted data storage
+- Email support
 
-## Feature comparison
+## Clinical plan — for clinics and practices
 
-The pricing page includes a detailed feature comparison table. All paid plans include every clinical feature (AI, reports, goals, all visualizations). The main differentiators are user seats, client limits, and organization-level features like team management and branding.
+- **$19/active client/mo monthly** or **$15/active client/mo annual** (save 21%)
+- **$99/mo minimum**
+- **Unlimited staff included**
+- Everything in Platform, plus:
+- Scheduling (weekly calendar, My Day daily agenda, session creation, exceptions)
+- Learning Tree (client programs by domain, 4-tier hierarchy, 8 phase statuses, Smart Goal Router, Add Goal dialog, PDF import)
+- 4-domain Goal Library with Behavior, Communication, Social, and Parent Training
+- Session Data Collection (trial-by-trial recording, offline-first, haptic feedback)
+- Graph Dashboard (per-program charts with mastery lines, AI analysis)
+- Session Notes (5 CPT code templates, AI narratives, approval workflow)
+- Client Files and Contacts management
+- Auth Reports (26-section builder with AI refinement)
+- Organization analytics and Practice Intelligence
+- Team management and invites
+- Parent portal access and messaging
+- Priority support
+
+Example: A 30-client clinic pays $570/mo with unlimited staff included.
 
 ## Billing
 
-Subscriptions are managed through Stripe. You can upgrade, downgrade, or cancel at any time from your Profile page under the Billing section. Changes take effect at the start of the next billing cycle.
-
-## Early access
-
-During the early access period, additional features may be available at discounted rates. Check the pricing page for current promotions and early-adopter benefits.`,
+- 14-day free trial on all plans
+- No long-term contracts — cancel anytime
+- Subscriptions managed through Stripe
+- Upgrade or downgrade at any time
+- Data retained for 90 days after cancellation`,
     relatedIds: ['guide-quick-start', 'view-settings', 'guide-data-privacy'],
     source: 'manual',
   },

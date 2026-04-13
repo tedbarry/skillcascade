@@ -10,9 +10,9 @@ import { DOMAIN_COLORS } from '../constants/colors.js'
 const STATE_COLORS = {
   locked: '#444444',
   blocked: '#8b4444',
-  'needs-work': '#e8928a',
-  developing: '#e5b76a',
-  mastered: '#7fb589',
+  'needs-work': '#F59E0B',
+  developing: '#F59E0B',
+  mastered: '#10B981',
 }
 
 const EDGES_DEF = [
@@ -224,7 +224,7 @@ export default memo(function CascadeNeuralCanvas({
           radius: 0,
           maxRadius: 200,
           alpha: 0.8,
-          color: isMasteryCascade ? '#ffd700' : '#ff4444',
+          color: isMasteryCascade ? '#FBBF24' : '#EF4444',
           startTime: performance.now(),
           duration: 800,
         })
@@ -305,7 +305,7 @@ export default memo(function CascadeNeuralCanvas({
       let lineWidth = 1.5
 
       if (isActiveEdge) {
-        lineColor = isMasteryCascade ? '#ffd700' : '#ff4444'
+        lineColor = isMasteryCascade ? '#FBBF24' : '#EF4444'
         lineAlpha = 0.8
         lineWidth = 2.5
       } else if (isPathEdge) {
@@ -358,7 +358,7 @@ export default memo(function CascadeNeuralCanvas({
       let pAlpha = 0.3
 
       if (isActiveEdge) {
-        pColor = isMasteryCascade ? '#ffd700' : '#ff4444'
+        pColor = isMasteryCascade ? '#FBBF24' : '#EF4444'
         pAlpha = 0.8
       } else if (isPathEdge) {
         pColor = '#6889b5'
@@ -393,11 +393,11 @@ export default memo(function CascadeNeuralCanvas({
 
       if (cascadeState.active) {
         if (node.id === cascadeState.source) {
-          glowColor = isMasteryCascade ? '#ffd700' : '#ff4444'
+          glowColor = isMasteryCascade ? '#FBBF24' : '#EF4444'
           glowIntensity = 40
         } else if (cascadeState.affected?.[node.id]) {
           const impact = cascadeState.affected[node.id].impactStrength
-          glowColor = isMasteryCascade ? '#ffd700' : '#ff4444'
+          glowColor = isMasteryCascade ? '#FBBF24' : '#EF4444'
           glowIntensity = 15 + impact * 30
         } else {
           glowIntensity = 3
@@ -431,12 +431,12 @@ export default memo(function CascadeNeuralCanvas({
       // Mode-specific styling
       if (cascadeState.active) {
         if (node.id === cascadeState.source) {
-          ringColor = isMasteryCascade ? '#ffd700' : '#ff4444'
+          ringColor = isMasteryCascade ? '#FBBF24' : '#EF4444'
         } else if (cascadeState.affected?.[node.id]) {
           const impact = cascadeState.affected[node.id].impactStrength
           ringColor = isMasteryCascade
-            ? interpolateRgb(domainColor, '#ffd700')(impact)
-            : interpolateRgb(domainColor, '#ff4444')(impact)
+            ? interpolateRgb(domainColor, '#FBBF24')(impact)
+            : interpolateRgb(domainColor, '#EF4444')(impact)
         } else {
           fillAlpha = 0.3
           labelAlpha = 0.3
@@ -794,7 +794,7 @@ export default memo(function CascadeNeuralCanvas({
       {/* Tooltip overlay */}
       {tooltip && (
         <div
-          className="absolute pointer-events-none bg-[#1e1e24]/95 border border-[#444] rounded-lg px-3 py-2 text-xs z-10 shadow-xl backdrop-blur-sm"
+          className="absolute pointer-events-none bg-[#1e1e24]/95 border border-[#444] rounded-lg px-3 py-2 text-xs z-10 shadow-lg backdrop-blur-sm"
           style={{
             left: Math.min(tooltip.x, containerSize.width - 180),
             top: tooltip.y - 70,

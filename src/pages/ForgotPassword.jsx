@@ -32,8 +32,8 @@ export default function ForgotPassword() {
       <div className="min-h-screen flex items-center justify-center bg-warm-50 px-4">
         <div className="w-full max-w-sm text-center">
           <div className="bg-white rounded-xl border border-warm-200 shadow-sm p-8">
-            <div className="w-12 h-12 mx-auto mb-4 rounded-full bg-sage-100 flex items-center justify-center">
-              <svg className="w-6 h-6 text-sage-600" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+            <div className="text-sage-600 mx-auto mb-4">
+              <svg className="w-6 h-6 mx-auto" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
                 <path strokeLinecap="round" strokeLinejoin="round" d="M21.75 6.75v10.5a2.25 2.25 0 01-2.25 2.25h-15a2.25 2.25 0 01-2.25-2.25V6.75m19.5 0A2.25 2.25 0 0019.5 4.5h-15a2.25 2.25 0 00-2.25 2.25m19.5 0v.243a2.25 2.25 0 01-1.07 1.916l-7.5 4.615a2.25 2.25 0 01-2.36 0L3.32 8.91a2.25 2.25 0 01-1.07-1.916V6.75" />
               </svg>
             </div>
@@ -43,7 +43,7 @@ export default function ForgotPassword() {
             </p>
             <Link
               to="/login"
-              className="inline-block px-6 py-2.5 rounded-lg bg-sage-500 text-white text-sm font-semibold hover:bg-sage-600 transition-colors"
+              className="inline-block px-6 py-2.5 rounded-lg bg-sage-600 text-white text-sm font-semibold hover:bg-sage-700 transition-colors"
             >
               Back to Sign In
             </Link>
@@ -94,7 +94,7 @@ export default function ForgotPassword() {
           <button
             type="submit"
             disabled={loading}
-            className="w-full py-2.5 rounded-lg bg-sage-500 text-white text-sm font-semibold hover:bg-sage-600 transition-colors disabled:opacity-50 disabled:cursor-not-allowed min-h-[44px]"
+            className="w-full py-2.5 rounded-lg bg-sage-600 text-white text-sm font-semibold hover:bg-sage-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed min-h-[44px]"
           >
             {loading ? 'Sending...' : 'Send Reset Link'}
           </button>

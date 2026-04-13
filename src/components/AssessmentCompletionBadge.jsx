@@ -20,7 +20,7 @@ export default function AssessmentCompletionBadge({ assessments = {}, onClick })
   const r = 10
   const c = 2 * Math.PI * r
   const offset = c - (stats.pct / 100) * c
-  const color = stats.pct >= 80 ? '#4f8460' : stats.pct >= 40 ? '#e5b76a' : '#e8928a'
+  const color = stats.pct >= 80 ? '#059669' : stats.pct >= 40 ? '#F59E0B' : '#F59E0B'
 
   return (
     <button
@@ -31,7 +31,7 @@ export default function AssessmentCompletionBadge({ assessments = {}, onClick })
       role="status"
     >
       <svg width="24" height="24" viewBox="0 0 24 24" className="shrink-0">
-        <circle cx="12" cy="12" r={r} fill="none" stroke="#e8d5c0" strokeWidth="2.5" />
+        <circle cx="12" cy="12" r={r} fill="none" stroke="#E7E5E4" strokeWidth="2.5" />
         <motion.circle
           cx="12" cy="12" r={r} fill="none"
           stroke={color} strokeWidth="2.5" strokeLinecap="round"
@@ -55,7 +55,7 @@ export default function AssessmentCompletionBadge({ assessments = {}, onClick })
  */
 export function FreshnessBadge({ lastAssessedDate, className = '' }) {
   const freshness = useMemo(() => {
-    if (!lastAssessedDate) return { label: 'No data', color: 'text-warm-400', dot: 'bg-warm-300' }
+    if (!lastAssessedDate) return { label: 'No data', color: 'text-warm-500', dot: 'bg-warm-300' }
     const days = Math.floor((Date.now() - new Date(lastAssessedDate).getTime()) / (1000 * 60 * 60 * 24))
     if (days <= 7) return { label: 'Fresh', color: 'text-sage-600', dot: 'bg-sage-500', days }
     if (days <= 30) return { label: `${days}d ago`, color: 'text-warm-500', dot: 'bg-warm-400', days }

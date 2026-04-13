@@ -46,6 +46,7 @@ export default function MobileFAB({ onStartAssessment, onSaveSnapshot, onSearch,
         <AnimatePresence>
           {open && actions.map((action, i) => {
             if (action.needsClient && !hasClient) return null
+            if (action.id === 'ai' && !onAITools) return null
             const angle = (arcAngles[i] * Math.PI) / 180
             const x = Math.sin(angle) * arcRadius
             const y = -Math.cos(angle) * arcRadius
@@ -80,7 +81,7 @@ export default function MobileFAB({ onStartAssessment, onSaveSnapshot, onSearch,
 
         {/* Main FAB */}
         <motion.button
-          className="w-14 h-14 rounded-full bg-sage-500 text-white shadow-xl flex items-center justify-center"
+          className="w-14 h-14 rounded-full bg-sage-600 text-white shadow-lg flex items-center justify-center"
           animate={{ rotate: open ? 45 : 0 }}
           transition={{ type: 'spring', stiffness: 300, damping: 20 }}
           onClick={toggle}

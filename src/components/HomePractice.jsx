@@ -20,11 +20,11 @@ const DOMAIN_LABELS = {
 }
 
 const DOMAIN_ACCENTS = {
-  d1: { border: '#e06b5f', bg: '#fdf2f1', text: '#b63a2e' },
+  d1: { border: '#EF4444', bg: '#fdf2f1', text: '#b63a2e' },
   d2: { border: '#d4884e', bg: '#fdf5ef', text: '#9a5c2e' },
-  d3: { border: '#c49a6c', bg: '#fdf8f0', text: '#9a6740' },
+  d3: { border: '#D97706', bg: '#FAFAF9', text: '#9a6740' },
   d4: { border: '#b5a354', bg: '#fbf9ee', text: '#7a6e34' },
-  d5: { border: '#7fb589', bg: '#f2f9f3', text: '#3d7a49' },
+  d5: { border: '#10B981', bg: '#f2f9f3', text: '#3d7a49' },
   d6: { border: '#5ea8a0', bg: '#eef7f6', text: '#367a73' },
   d7: { border: '#6a9ec0', bg: '#eff6fb', text: '#3a6d8c' },
   d8: { border: '#8b8ec4', bg: '#f2f2fa', text: '#55588a' },
@@ -683,7 +683,7 @@ export default function HomePractice({ assessments = {}, clientName = 'your chil
       {hasPriority && scopeFilter !== 'priority' && (
         <div className="bg-warm-50 rounded-xl border border-warm-200 p-5">
           <div className="flex items-start gap-3">
-            <div className="text-warm-400 mt-0.5">{ICONS.sparkle}</div>
+            <div className="text-warm-500 mt-0.5">{ICONS.sparkle}</div>
             <div>
               <p className="text-sm font-semibold text-warm-700">Suggested starting points</p>
               <p className="text-sm text-warm-500 mt-1 leading-relaxed">
@@ -705,7 +705,7 @@ export default function HomePractice({ assessments = {}, clientName = 'your chil
 
           {/* Scope */}
           <div className="flex flex-col gap-1">
-            <label className="text-xs text-warm-400 font-medium">Show</label>
+            <label className="text-xs text-warm-500 font-medium">Show</label>
             <div className="flex gap-1">
               {SCOPE_OPTIONS.map((opt) => (
                 <button
@@ -714,7 +714,7 @@ export default function HomePractice({ assessments = {}, clientName = 'your chil
                   aria-pressed={scopeFilter === opt.value}
                   className={`text-xs px-3 py-1.5 min-h-[44px] rounded-md transition-colors inline-flex items-center ${
                     scopeFilter === opt.value
-                      ? 'bg-sage-500 text-white'
+                      ? 'bg-sage-600 text-white'
                       : 'bg-warm-100 text-warm-600 hover:bg-warm-200'
                   }`}
                 >
@@ -726,7 +726,7 @@ export default function HomePractice({ assessments = {}, clientName = 'your chil
 
           {/* Difficulty */}
           <div className="flex flex-col gap-1">
-            <label className="text-xs text-warm-400 font-medium">Difficulty</label>
+            <label className="text-xs text-warm-500 font-medium">Difficulty</label>
             <div className="flex gap-1">
               {DIFFICULTY_OPTIONS.map((opt) => (
                 <button
@@ -735,7 +735,7 @@ export default function HomePractice({ assessments = {}, clientName = 'your chil
                   aria-pressed={difficultyFilter === opt.value}
                   className={`text-xs px-3 py-1.5 min-h-[44px] rounded-md transition-colors inline-flex items-center ${
                     difficultyFilter === opt.value
-                      ? 'bg-sage-500 text-white'
+                      ? 'bg-sage-600 text-white'
                       : 'bg-warm-100 text-warm-600 hover:bg-warm-200'
                   }`}
                 >
@@ -747,7 +747,7 @@ export default function HomePractice({ assessments = {}, clientName = 'your chil
 
           {/* Time */}
           <div className="flex flex-col gap-1">
-            <label className="text-xs text-warm-400 font-medium">Time</label>
+            <label className="text-xs text-warm-500 font-medium">Time</label>
             <div className="flex gap-1">
               {TIME_OPTIONS.map((opt) => (
                 <button
@@ -756,7 +756,7 @@ export default function HomePractice({ assessments = {}, clientName = 'your chil
                   aria-pressed={timeFilter === opt.value}
                   className={`text-xs px-3 py-1.5 min-h-[44px] rounded-md transition-colors inline-flex items-center ${
                     timeFilter === opt.value
-                      ? 'bg-sage-500 text-white'
+                      ? 'bg-sage-600 text-white'
                       : 'bg-warm-100 text-warm-600 hover:bg-warm-200'
                   }`}
                 >
@@ -822,7 +822,7 @@ export default function HomePractice({ assessments = {}, clientName = 'your chil
                   </p>
 
                   {/* Target skills */}
-                  <p className="text-xs text-warm-400 mb-3">
+                  <p className="text-xs text-warm-500 mb-3">
                     <span className="font-medium text-warm-500">Supports:</span>{' '}
                     {activity.targetSkills}
                   </p>

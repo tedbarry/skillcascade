@@ -14,8 +14,8 @@ import { computeDomainHealth } from '../data/cascadeModel.js'
 
 const STATE_INDICATORS = {
   blocked: { symbol: '\u25BC', color: '#8b4444', label: 'Blocked' },
-  'needs-work': { symbol: '\u25CF', color: '#e8928a', label: 'Needs Work' },
-  mastered: { symbol: '\u2713', color: '#7fb589', label: 'Mastered' },
+  'needs-work': { symbol: '\u25CF', color: '#F59E0B', label: 'Needs Work' },
+  mastered: { symbol: '\u2713', color: '#10B981', label: 'Mastered' },
 }
 
 /**
@@ -54,7 +54,7 @@ function CustomTooltip({ active, payload }) {
           </div>
         )}
         {completionPct === 0 && (
-          <div className="text-warm-400 italic">No skills assessed yet</div>
+          <div className="text-warm-500 italic">No skills assessed yet</div>
         )}
       </div>
     </div>
@@ -76,7 +76,7 @@ function CustomTick({ payload, x, y, textAnchor, stateMap }) {
         x={x}
         y={y}
         textAnchor={textAnchor}
-        fill="#5f3e2a"
+        fill="#292524"
         fontSize={11}
         fontWeight={500}
         fontFamily="Plus Jakarta Sans, Inter, sans-serif"
@@ -164,21 +164,21 @@ export default memo(function RadarChart({
       {/* Summary bar */}
       <div className="flex items-center justify-between mb-4 px-2">
         <div>
-          <div className="text-xs text-warm-400 uppercase tracking-wider font-semibold">
+          <div className="text-xs text-warm-500 uppercase tracking-wider font-semibold">
             Overall Score
           </div>
           <div className="flex items-baseline gap-2 mt-0.5">
             <span className="text-2xl font-bold font-display" style={{ color: overallColor }}>
               {totalAssessed > 0 ? overallAvg.toFixed(1) : '—'}
             </span>
-            <span className="text-sm text-warm-400">/ 3.0</span>
+            <span className="text-sm text-warm-500">/ 3.0</span>
           </div>
         </div>
         <div className="text-right">
           <div className="text-xs text-warm-500">
             <span className="font-semibold text-warm-700">{totalAssessed}</span> of {totalSkills} skills assessed
           </div>
-          <div className="text-[10px] text-warm-400 mt-0.5">
+          <div className="text-[10px] text-warm-500 mt-0.5">
             {overallCompletion}% complete
           </div>
           <div className="w-32 h-1.5 bg-warm-200 rounded-full mt-1 overflow-hidden">
@@ -194,7 +194,7 @@ export default memo(function RadarChart({
       </div>
 
       {/* Note about scoring */}
-      <div className="text-[10px] text-warm-400 px-2 mb-3 italic">
+      <div className="text-[10px] text-warm-500 px-2 mb-3 italic">
         Scores reflect the average of assessed skills only. Unassessed skills are excluded, not counted as zero.
         Check completion % per domain to gauge reliability.
       </div>
@@ -203,7 +203,7 @@ export default memo(function RadarChart({
       <ResponsiveContainer width="100%" height={height}>
         <RechartsRadarChart data={chartData} cx="50%" cy="50%" outerRadius="65%">
           <PolarGrid
-            stroke="#e8d5c0"
+            stroke="#E7E5E4"
             strokeWidth={0.5}
             gridType="polygon"
           />
@@ -216,7 +216,7 @@ export default memo(function RadarChart({
             angle={90}
             domain={[0, 3]}
             tickCount={4}
-            tick={{ fontSize: 9, fill: '#b07d4f' }}
+            tick={{ fontSize: 9, fill: '#B45309' }}
             axisLine={false}
           />
 
@@ -224,8 +224,8 @@ export default memo(function RadarChart({
             <Radar
               name={compareLabel}
               dataKey="compareScore"
-              stroke="#c49a6c"
-              fill="#c49a6c"
+              stroke="#D97706"
+              fill="#D97706"
               fillOpacity={0.15}
               strokeWidth={1.5}
               strokeDasharray="4 3"
@@ -236,19 +236,19 @@ export default memo(function RadarChart({
           <Radar
             name="Current"
             dataKey="score"
-            stroke="#4f8460"
-            fill="#4f8460"
+            stroke="#059669"
+            fill="#059669"
             fillOpacity={0.2}
             strokeWidth={2.5}
             dot={{
               r: 4,
-              fill: '#4f8460',
+              fill: '#059669',
               stroke: '#fff',
               strokeWidth: 2,
             }}
             activeDot={{
               r: 6,
-              fill: '#4f8460',
+              fill: '#059669',
               stroke: '#fff',
               strokeWidth: 2,
             }}
@@ -275,7 +275,7 @@ export default memo(function RadarChart({
                   : 'border border-warm-200'
               }`}
             >
-              <div className="text-[10px] text-warm-400 truncate">{s.domain}</div>
+              <div className="text-[10px] text-warm-500 truncate">{s.domain}</div>
               <div className="flex items-baseline gap-1 mt-0.5">
                 <span
                   className="text-sm font-bold"

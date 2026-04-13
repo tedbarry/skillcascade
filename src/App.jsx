@@ -6,6 +6,7 @@ import { ToastProvider } from './components/Toast.jsx'
 import ProtectedRoute from './components/ProtectedRoute.jsx'
 import ErrorBoundary from './components/ErrorBoundary.jsx'
 import OfflineBanner from './components/OfflineBanner.jsx'
+import LoadingScreen from './components/LoadingScreen.jsx'
 
 const Landing = lazy(() => import('./pages/Landing.jsx'))
 const Login = lazy(() => import('./pages/Login.jsx'))
@@ -23,12 +24,17 @@ function NotFound() {
   return (
     <div className="min-h-screen flex items-center justify-center bg-warm-50">
       <div className="text-center px-6">
+        <img
+          src="/brand/404-page.jpg"
+          alt="Page not found"
+          className="w-48 max-w-[200px] h-auto rounded-xl mx-auto mb-4"
+        />
         <h1 className="text-6xl font-bold text-warm-300 font-display">404</h1>
         <p className="mt-3 text-lg text-warm-600">Page not found</p>
-        <p className="mt-1 text-sm text-warm-400">The page you're looking for doesn't exist.</p>
+        <p className="mt-1 text-sm text-warm-500">The page you're looking for doesn't exist.</p>
         <Link
           to="/"
-          className="inline-block mt-6 px-5 py-2.5 rounded-lg bg-sage-500 text-white text-sm font-medium hover:bg-sage-600 transition-colors"
+          className="inline-block mt-6 px-5 py-2.5 rounded-lg bg-sage-600 text-white text-sm font-medium hover:bg-sage-700 transition-colors"
         >
           Back to Home
         </Link>
@@ -88,7 +94,7 @@ export default function App() {
     <ToastProvider>
       <OfflineBanner />
       <main id="main-content">
-      <Suspense fallback={<LoadingSpinner />}>
+      <Suspense fallback={<LoadingScreen />}>
         <AnimatePresence mode="wait">
           <Routes location={location} key={location.pathname}>
             <Route path="/" element={<motion.div {...pageFade}><Landing /></motion.div>} />

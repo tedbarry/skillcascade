@@ -2,9 +2,9 @@ import { memo } from 'react'
 import { motion } from 'framer-motion'
 
 const RISK_CONFIG = {
-  inversion: { icon: '\u26A0', label: 'Inversion', bg: '#3a2525', border: '#e8928a', text: '#f5c4c0' },
+  inversion: { icon: '\u26A0', label: 'Inversion', bg: '#3a2525', border: '#F59E0B', text: '#f5c4c0' },
   regression: { icon: '\u2193', label: 'Regression', bg: '#3a2020', border: '#ff6666', text: '#ffaaaa' },
-  bottleneck: { icon: '\u29B8', label: 'Bottleneck', bg: '#3a3520', border: '#e5b76a', text: '#f5e0b0' },
+  bottleneck: { icon: '\u29B8', label: 'Bottleneck', bg: '#3a3520', border: '#F59E0B', text: '#f5e0b0' },
   stalling: { icon: '\u23F8', label: 'Stalling', bg: '#2a2a30', border: '#aaa', text: '#ccc' },
 }
 

@@ -114,7 +114,7 @@ function ProgressBar({ value, max = 3, label }) {
       {label && (
         <div className="flex justify-between items-center mb-1.5">
           <span className="text-xs text-warm-600">{label}</span>
-          <span className="text-xs text-warm-400">{FRIENDLY_LEVELS[Math.round(value)] || ''}</span>
+          <span className="text-xs text-warm-500">{FRIENDLY_LEVELS[Math.round(value)] || ''}</span>
         </div>
       )}
       <div className="w-full h-2.5 bg-warm-100 rounded-full overflow-hidden">
@@ -154,7 +154,7 @@ function ProgressArrow({ direction }) {
   }
   // "steady" for same or regression — always gentle
   return (
-    <svg width="16" height="16" viewBox="0 0 16 16" fill="none" className="text-warm-400">
+    <svg width="16" height="16" viewBox="0 0 16 16" fill="none" className="text-warm-500">
       <path d="M3 8H13M13 8L10 5M13 8L10 11" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
     </svg>
   )
@@ -210,7 +210,7 @@ function HomeIcon() {
  */
 function SnapshotIcon() {
   return (
-    <svg width="18" height="18" viewBox="0 0 20 20" fill="none" className="text-warm-400">
+    <svg width="18" height="18" viewBox="0 0 20 20" fill="none" className="text-warm-500">
       <rect x="2" y="5" width="16" height="12" rx="2" stroke="currentColor" strokeWidth="1.5" />
       <circle cx="10" cy="11" r="3" stroke="currentColor" strokeWidth="1.5" />
       <path d="M7 5L8 3H12L13 5" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
@@ -351,14 +351,14 @@ export default function ParentDashboard({
     <div className="max-w-4xl mx-auto px-4 py-6 sm:py-8">
 
       {/* ─── Welcome Banner ─────────────────────────────────── */}
-      <div className="bg-white rounded-2xl shadow-sm border border-warm-200 p-6 sm:p-8 mb-6">
+      <div className="bg-white rounded-xl shadow-sm border border-warm-200 p-6 sm:p-8 mb-6">
         <div className="flex flex-col sm:flex-row items-center gap-6">
           {/* Progress ring */}
           <div className="relative shrink-0">
             <ProgressRing percent={overallProgress} size={96} strokeWidth={8} />
             <div className="absolute inset-0 flex flex-col items-center justify-center">
               <span className="text-xl font-bold font-display text-warm-800">{overallProgress}%</span>
-              <span className="text-[9px] text-warm-400 leading-tight">on track</span>
+              <span className="text-[9px] text-warm-500 leading-tight">on track</span>
             </div>
           </div>
 
@@ -370,7 +370,7 @@ export default function ParentDashboard({
               {getWelcomeMessage()}
             </p>
             {totalAssessed > 0 && (
-              <p className="text-warm-400 text-xs mt-2">
+              <p className="text-warm-500 text-xs mt-2">
                 {totalAssessed} skills explored so far
               </p>
             )}
@@ -393,7 +393,7 @@ export default function ParentDashboard({
               <button
                 key={ds.domainId}
                 onClick={() => onNavigateToAssess?.(getFirstSubAreaId(ds.domainId))}
-                className="bg-white rounded-2xl shadow-sm border border-sage-200 p-5 text-left hover:shadow-md hover:border-sage-300 transition-all group"
+                className="bg-white rounded-xl shadow-sm border border-sage-200 p-5 text-left hover:shadow-md hover:border-sage-300 transition-all group"
               >
                 <div className="flex items-start gap-3">
                   <DomainIcon domainId={ds.domainId} variant="strength" />
@@ -432,7 +432,7 @@ export default function ParentDashboard({
               Building New Skills
             </h2>
           </div>
-          <p className="text-xs text-warm-400 mb-4 ml-7">
+          <p className="text-xs text-warm-500 mb-4 ml-7">
             Areas where {clientName} is growing and building new abilities
           </p>
 
@@ -441,7 +441,7 @@ export default function ParentDashboard({
               <button
                 key={ds.domainId}
                 onClick={() => onNavigateToAssess?.(getFirstSubAreaId(ds.domainId))}
-                className="bg-white rounded-2xl shadow-sm border border-warm-200 p-5 text-left hover:shadow-md hover:border-warm-300 transition-all group"
+                className="bg-white rounded-xl shadow-sm border border-warm-200 p-5 text-left hover:shadow-md hover:border-warm-300 transition-all group"
               >
                 <div className="flex items-start gap-3">
                   <DomainIcon domainId={ds.domainId} variant="growing" />
@@ -453,7 +453,7 @@ export default function ParentDashboard({
                       {GROWING_BLURBS[ds.domainId]}
                     </p>
                     {ds.growingSkills?.length > 0 && (
-                      <p className="text-[10px] text-warm-400 mt-1 italic">
+                      <p className="text-[10px] text-warm-500 mt-1 italic">
                         Currently building: {ds.growingSkills.join(', ')}
                       </p>
                     )}
@@ -461,7 +461,7 @@ export default function ParentDashboard({
                       <ProgressBar value={ds.score} max={3} />
                     </div>
                     <div className="flex items-center justify-between mt-2">
-                      <span className="text-[10px] text-warm-400 font-medium">
+                      <span className="text-[10px] text-warm-500 font-medium">
                         {ds.assessed} of {ds.total} skills explored
                       </span>
                       <span className="text-[10px] text-warm-300 group-hover:text-warm-500 transition-colors">
@@ -478,7 +478,7 @@ export default function ParentDashboard({
 
       {/* ─── No Assessments Yet ──────────────────────────────── */}
       {totalAssessed === 0 && (
-        <div className="bg-white rounded-2xl shadow-sm border border-warm-200 p-8 text-center mb-6">
+        <div className="bg-white rounded-xl shadow-sm border border-warm-200 p-8 text-center mb-6">
           <div className="mb-4">
             <svg width="48" height="48" viewBox="0 0 48 48" fill="none" className="mx-auto text-warm-300">
               <circle cx="24" cy="24" r="20" stroke="currentColor" strokeWidth="2" strokeDasharray="4 4" />
@@ -506,11 +506,11 @@ export default function ParentDashboard({
         </div>
 
         {progressComparisons && progressComparisons.length > 0 ? (
-          <div className="bg-white rounded-2xl shadow-sm border border-warm-200 p-5">
+          <div className="bg-white rounded-xl shadow-sm border border-warm-200 p-5">
             <p className="text-xs text-warm-500 mb-4">
               Compared to the last saved snapshot
               {snapshots.length > 0 && (
-                <span className="text-warm-400">
+                <span className="text-warm-500">
                   {' '}({snapshots[snapshots.length - 1].label || 'previous'})
                 </span>
               )}
@@ -534,7 +534,7 @@ export default function ParentDashboard({
                   <div className="flex items-center gap-1 shrink-0 w-20 justify-end">
                     <ProgressArrow direction={comp.direction} />
                     <span className={`text-xs font-medium ${
-                      comp.direction === 'up' ? 'text-sage-600' : 'text-warm-400'
+                      comp.direction === 'up' ? 'text-sage-600' : 'text-warm-500'
                     }`}>
                       {comp.direction === 'up' ? 'Great!' : 'Steady'}
                     </span>
@@ -543,13 +543,13 @@ export default function ParentDashboard({
               ))}
             </div>
             {snapshots.length > 1 && (
-              <p className="text-[10px] text-warm-400 mt-4 text-center">
+              <p className="text-[10px] text-warm-500 mt-4 text-center">
                 {snapshots.length} snapshots saved — keep going to see the bigger picture
               </p>
             )}
           </div>
         ) : (
-          <div className="bg-white rounded-2xl shadow-sm border border-warm-200 p-6 text-center">
+          <div className="bg-white rounded-xl shadow-sm border border-warm-200 p-6 text-center">
             <p className="text-sm text-warm-500 leading-relaxed max-w-md mx-auto">
               Save a progress snapshot to start tracking how {clientName}&apos;s skills change over time.
               Snapshots let you look back and see how far they&apos;ve come — it&apos;s a wonderful
@@ -561,7 +561,7 @@ export default function ParentDashboard({
 
       {/* ─── What You Can Do At Home ─────────────────────────── */}
       <section>
-        <div className="bg-warm-100 rounded-2xl border border-warm-200 p-5 sm:p-6">
+        <div className="bg-warm-100 rounded-xl border border-warm-200 p-5 sm:p-6">
           <div className="flex items-start gap-4">
             <div className="w-10 h-10 rounded-full bg-warm-200 flex items-center justify-center shrink-0">
               <HomeIcon />
@@ -576,7 +576,7 @@ export default function ParentDashboard({
                 routine — no special materials needed.
               </p>
               <span
-                className="inline-block text-xs font-medium text-warm-400 bg-warm-50 rounded-lg px-4 py-2 border border-warm-200 cursor-default"
+                className="inline-block text-xs font-medium text-warm-500 bg-warm-50 rounded-lg px-4 py-2 border border-warm-200 cursor-default"
               >
                 Coming Soon
               </span>

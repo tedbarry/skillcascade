@@ -85,6 +85,14 @@ Deno.serve(async (req) => {
       .eq('user_id', user.id)
       .single()
 
+    // Domain-restricted promo: auto-apply for @supportiveaba.com users
+    const DOMAIN_RESTRICTED_PROMOS: Record<string, string> = {
+      'supportiveaba.com': 'promo_1TCjfs9AlHJ9GZF5xkIcoYwv', // SUPPORTIVEABA — 50% off forever
+    }
+
+    const userDomain = user.email?.split('@')[1]?.toLowerCase()
+    const domainPromo = userDomain ? DOMAIN_RESTRICTED_PROMOS[userDomain] : undefined
+
     const sessionParams: Stripe.Checkout.SessionCreateParams = {
       mode: 'subscription',
       payment_method_types: ['card'],
@@ -93,7 +101,11 @@ Deno.serve(async (req) => {
       cancel_url: `${appUrl}/dashboard?checkout=cancelled`,
       client_reference_id: user.id,
       customer_email: existingSub?.stripe_customer_id ? undefined : user.email,
-      allow_promotion_codes: true,
+      // If user's email domain has a restricted promo, apply it directly and hide the promo field
+      // Otherwise, allow manual promo code entry
+      ...(domainPromo
+        ? { discounts: [{ promotion_code: domainPromo }] }
+        : { allow_promotion_codes: true }),
       subscription_data: {
         trial_period_days: 14,
         metadata: { user_id: user.id, plan, seats: String(seats) },

@@ -22,9 +22,12 @@ export const KB_CATEGORIES = {
   'getting-started': { label: 'Getting Started', icon: 'rocket', order: 0, description: 'Learn the basics of SkillCascade' },
   'views': { label: 'Views & Features', icon: 'chart', order: 1, description: 'How to use each view and tool' },
   'clinical': { label: 'Clinical Concepts', icon: 'brain', order: 2, description: 'Health states, bottlenecks, ceilings, and more' },
-  'assessment': { label: 'Assessment Guide', icon: 'clipboard', order: 3, description: 'Rating scales, adaptive mode, and snapshots' },
-  'domains': { label: 'Domains & Skills', icon: 'tree', order: 4, description: 'All 9 domains, 49 sub-areas, and 260 skills' },
-  'data': { label: 'Data & Export', icon: 'save', order: 5, description: 'Import, export, and manage your data' },
+  'clinical-tools': { label: 'Clinical Tools', icon: 'stethoscope', order: 3, description: 'Practice management — scheduling, sessions, notes, files, and more' },
+  'assessment': { label: 'Assessment Guide', icon: 'clipboard', order: 4, description: 'Rating scales, adaptive mode, and snapshots' },
+  'domains': { label: 'Domains & Skills', icon: 'tree', order: 5, description: 'All 9 domains, 49 sub-areas, and 260 skills' },
+  'ai-tools': { label: 'AI Tools', icon: 'sparkle', order: 6, description: 'AI assistant, clinical intelligence, and automated analysis' },
+  'roles-permissions': { label: 'Roles & Permissions', icon: 'shield', order: 7, description: 'User roles, access control, and team management' },
+  'data': { label: 'Data & Export', icon: 'save', order: 8, description: 'Import, export, security, and manage your data' },
 }
 
 export const CATEGORY_ORDER = Object.entries(KB_CATEGORIES)

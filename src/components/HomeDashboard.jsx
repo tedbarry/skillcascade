@@ -9,6 +9,7 @@ import { framework, ASSESSMENT_LEVELS, isAssessed } from '../data/framework.js'
 import { computeDomainHealth, detectCascadeRisks, computeImpactRanking } from '../data/cascadeModel.js'
 import { DOMAIN_COLORS } from '../constants/colors.js'
 import { safeGetItem, safeSetItem } from '../lib/safeStorage.js'
+import { buildHomeQuickActionVisibility } from '../lib/homeDashboardAccess.js'
 
 /** Animated counter — counts from 0 to target over duration ms */
 function AnimatedNumber({ value, duration = 800 }) {
@@ -38,7 +39,7 @@ function AnimatedNumber({ value, duration = 800 }) {
 }
 
 /** Tiny sparkline SVG — shows trend from snapshot data */
-function Sparkline({ points, width = 60, height = 16, color = '#7fb589' }) {
+function Sparkline({ points, width = 60, height = 16, color = '#10B981' }) {
   if (!points || points.length < 2) return null
   const max = Math.max(...points, 1)
   const min = Math.min(...points, 0)
@@ -79,7 +80,7 @@ function CompletionRing({ percent, size = 120, strokeWidth = 8 }) {
   const offset = c - (percent / 100) * c
   return (
     <svg width={size} height={size} viewBox={`0 0 ${size} ${size}`} className="block">
-      <circle cx={size / 2} cy={size / 2} r={r} fill="none" stroke="currentColor" strokeWidth={strokeWidth} className="text-warm-200" />
+      <circle cx={size / 2} cy={size / 2} r={r} fill="none" stroke="currentColor" strokeWidth={strokeWidth} className="text-warm-300" />
       <motion.circle
         cx={size / 2} cy={size / 2} r={r} fill="none"
         stroke="url(#ringGrad)" strokeWidth={strokeWidth} strokeLinecap="round"
@@ -91,8 +92,8 @@ function CompletionRing({ percent, size = 120, strokeWidth = 8 }) {
       />
       <defs>
         <linearGradient id="ringGrad" x1="0" y1="0" x2="1" y2="1">
-          <stop offset="0%" stopColor="#4f8460" />
-          <stop offset="100%" stopColor="#7fb589" />
+          <stop offset="0%" stopColor="#059669" />
+          <stop offset="100%" stopColor="#10B981" />
         </linearGradient>
       </defs>
       <text x="50%" y="50%" dominantBaseline="central" textAnchor="middle" className="text-2xl font-bold fill-warm-800">
@@ -124,7 +125,7 @@ const DomainMiniCard = memo(function DomainMiniCard({ domainId, health, sparklin
       whileHover={{ y: -2, boxShadow: '0 4px 12px rgba(0,0,0,0.08)' }}
       whileTap={{ scale: 0.98 }}
       onClick={onClick}
-      className="bg-white rounded-xl border border-warm-200 p-3 sm:p-4 text-left transition-colors hover:border-warm-300 min-h-[44px] h-full w-full"
+      className="bg-white rounded-xl border border-warm-200 shadow-[0_1px_3px_rgba(0,0,0,0.04)] p-3 sm:p-4 text-left transition-all hover:border-warm-300 min-h-[44px] h-full w-full"
     >
       <div className="flex items-center justify-between gap-2 mb-2">
         <div className="flex items-center gap-2 min-w-0">
@@ -155,7 +156,7 @@ const DomainMiniCard = memo(function DomainMiniCard({ domainId, health, sparklin
         />
       </div>
       <div className="flex items-center justify-between mt-1.5">
-        <span className="text-[10px] text-warm-400">{health.assessed}/{health.total} skills</span>
+        <span className="text-[10px] text-warm-500">{health.assessed}/{health.total} skills</span>
         <div className="flex items-center gap-1.5">
           {sparklineData && <Sparkline points={sparklineData} color={color} />}
           <span className="text-xs font-semibold" style={{ color }}>{pct}%</span>
@@ -197,9 +198,9 @@ function AlertCard({ risk }) {
 function QuickActionButton({ icon, label, sublabel, onClick, variant = 'default' }) {
   const base = 'flex items-center gap-3 px-4 py-3 rounded-xl border transition-all text-left min-h-[44px]'
   const variants = {
-    default: 'bg-white border-warm-200 hover:border-sage-300 hover:shadow-sm',
-    primary: 'bg-sage-500 border-sage-500 text-white hover:bg-sage-600 hover:shadow-md',
-    warning: 'bg-warm-50 border-warm-300 hover:border-warm-400 hover:shadow-sm',
+    default: 'bg-white border-warm-200 hover:border-warm-300 hover:shadow-[0_4px_12px_rgba(0,0,0,0.08)] shadow-[0_1px_3px_rgba(0,0,0,0.04)]',
+    primary: 'bg-white border-sage-300 hover:border-sage-400 hover:shadow-[0_4px_12px_rgba(0,0,0,0.08)] shadow-[0_1px_3px_rgba(0,0,0,0.04)]',
+    warning: 'bg-white border-warm-300 hover:border-warm-400 hover:shadow-[0_4px_12px_rgba(0,0,0,0.08)] shadow-[0_1px_3px_rgba(0,0,0,0.04)]',
   }
   return (
     <motion.button
@@ -208,14 +209,12 @@ function QuickActionButton({ icon, label, sublabel, onClick, variant = 'default'
       onClick={onClick}
       className={`${base} ${variants[variant]}`}
     >
-      <div className={`w-8 h-8 rounded-lg flex items-center justify-center shrink-0 ${
-        variant === 'primary' ? 'bg-white/20' : 'bg-sage-50'
-      }`}>
+      <div className="shrink-0">
         {icon}
       </div>
       <div className="min-w-0">
-        <div className={`text-sm font-medium ${variant === 'primary' ? 'text-white' : 'text-warm-700'}`}>{label}</div>
-        {sublabel && <div className={`text-[11px] ${variant === 'primary' ? 'text-white/70' : 'text-warm-400'}`}>{sublabel}</div>}
+        <div className={`text-sm font-medium ${variant === 'primary' ? 'text-sage-700' : 'text-warm-700'}`}>{label}</div>
+        {sublabel && <div className={`text-[11px] ${variant === 'primary' ? 'text-sage-500' : 'text-warm-500'}`}>{sublabel}</div>}
       </div>
     </motion.button>
   )
@@ -223,7 +222,20 @@ function QuickActionButton({ icon, label, sublabel, onClick, variant = 'default'
 
 const STORAGE_KEY = 'skillcascade_kbd_hint_seen'
 
-export default function HomeDashboard({ assessments = {}, snapshots = [], clientName, onChangeView, onNavigateToAssess, isSampleMode = false, hasClient = false, viewsVisited = new Set(), reportsVisited = false, snapshotCount = 0 }) {
+export default function HomeDashboard({
+  assessments = {},
+  snapshots = [],
+  clientName,
+  onChangeView,
+  onNavigateToAssess,
+  isSampleMode = false,
+  hasClient = false,
+  viewsVisited = new Set(),
+  reportsVisited = false,
+  snapshotCount = 0,
+  canAccessView = () => true,
+  canCreateClients = true,
+}) {
   const { isPhone, isTablet } = useResponsive()
   const homeHint = useContextualHint('hint-home-sample')
 
@@ -309,6 +321,13 @@ export default function HomeDashboard({ assessments = {}, snapshots = [], client
   }, [snapshots, domainHealth])
 
   const topRisks = risks.slice(0, 3)
+  const quickActionVisibility = useMemo(() => buildHomeQuickActionVisibility({
+    canAccessReports: canAccessView('reports'),
+  }), [canAccessView])
+  const clientActionLabel = canCreateClients ? 'Create Client' : 'Open Clients'
+  const clientActionDescription = canCreateClients
+    ? 'Create a client to start your own assessments.'
+    : 'Open the client workspace to select a learner profile you can work with.'
 
   return (
     <div className="w-full max-w-6xl mx-auto px-3 sm:px-6 py-4 sm:py-8">
@@ -330,12 +349,12 @@ export default function HomeDashboard({ assessments = {}, snapshots = [], client
       {isSampleMode && (
         <div className="mb-4 px-4 py-2.5 bg-amber-50 border border-amber-200 rounded-lg flex items-center gap-2">
           <span className="text-amber-600 text-sm">Exploring Sample Data</span>
-          <span className="text-xs text-amber-500 flex-1">All views are live. Create a client to start your own assessments.</span>
+          <span className="text-xs text-amber-500 flex-1">All views are live. {clientActionDescription}</span>
           <button
             onClick={() => onChangeView('clients')}
             className="text-xs font-medium text-amber-700 hover:text-amber-800 bg-amber-100 hover:bg-amber-200 rounded px-3 py-1.5 min-h-[44px] flex items-center transition-colors"
           >
-            Create Client
+            {clientActionLabel}
           </button>
         </div>
       )}
@@ -343,7 +362,7 @@ export default function HomeDashboard({ assessments = {}, snapshots = [], client
       {/* First-visit contextual hint */}
       {isSampleMode && (
         <ContextualHint show={homeHint.show} onDismiss={homeHint.dismiss} className="mb-4">
-          This is sample data showing a realistic learner profile. Every view, chart, and analysis is fully interactive. Create a client when you're ready to start your own assessments. <KBLink term="guide-quick-start" className="text-[#7fb589]">Learn more</KBLink>
+          This is sample data showing a realistic learner profile. Every view, chart, and analysis is fully interactive. Create a client when you're ready to start your own assessments. <KBLink term="guide-quick-start" className="text-[#10B981]">Learn more</KBLink>
         </ContextualHint>
       )}
 
@@ -354,6 +373,8 @@ export default function HomeDashboard({ assessments = {}, snapshots = [], client
         viewsVisited={viewsVisited}
         reportsVisited={reportsVisited}
         snapshotCount={snapshotCount}
+        canCreateClients={canCreateClients}
+        canAccessReports={canAccessView('reports')}
         onNavigate={onChangeView}
       />
 
@@ -369,7 +390,7 @@ export default function HomeDashboard({ assessments = {}, snapshots = [], client
             <p className="text-xs text-sage-600 mt-0.5">Run an assessment to populate this dashboard with insights across all 9 domains.</p>
           </div>
           <div className="flex gap-2 shrink-0">
-            <button onClick={() => onChangeView('quick-assess')} className="px-4 py-2 min-h-[44px] bg-sage-500 text-white rounded-lg text-sm font-medium hover:bg-sage-600 transition-colors">
+            <button onClick={() => onChangeView('quick-assess')} className="px-4 py-2 min-h-[44px] bg-sage-600 text-white rounded-lg text-sm font-medium hover:bg-sage-700 transition-colors">
               Start Here
             </button>
             <button onClick={() => onChangeView('assess')} className="px-4 py-2 min-h-[44px] border border-sage-300 text-sage-700 rounded-lg text-sm font-medium hover:bg-sage-100 transition-colors">
@@ -408,7 +429,7 @@ export default function HomeDashboard({ assessments = {}, snapshots = [], client
           initial={{ opacity: 0, scale: 0.95 }}
           animate={{ opacity: 1, scale: 1 }}
           transition={{ delay: 0.1 }}
-          className="bg-white rounded-2xl border border-warm-200 p-5 sm:p-6 flex flex-col items-center justify-center"
+          className="bg-white rounded-xl border border-warm-200 shadow-[0_1px_3px_rgba(0,0,0,0.04)] p-5 sm:p-6 flex flex-col items-center justify-center"
         >
           <CompletionRing percent={stats.completionPct} size={isPhone ? 100 : 120} />
           <div className="text-xs text-warm-500 mt-3 text-center">
@@ -419,10 +440,10 @@ export default function HomeDashboard({ assessments = {}, snapshots = [], client
         {/* Stat cards */}
         <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
           {[
-            { label: 'Solid', value: stats.solidCount, color: 'text-sage-600', bg: 'bg-sage-50', icon: '3' },
-            { label: 'Needs Work', value: stats.needsWorkCount, color: 'text-coral-600', bg: 'bg-coral-50', icon: '1' },
-            { label: 'Domains Mastered', value: stats.mastered, color: 'text-sage-600', bg: 'bg-sage-50', icon: 'D' },
-            { label: 'Active Alerts', value: risks.length, color: risks.length > 0 ? 'text-coral-600' : 'text-sage-600', bg: risks.length > 0 ? 'bg-coral-50' : 'bg-sage-50', icon: '!' },
+            { label: 'Solid', value: stats.solidCount, color: 'text-sage-600', icon: '3' },
+            { label: 'Needs Work', value: stats.needsWorkCount, color: 'text-coral-600', icon: '1' },
+            { label: 'Domains Mastered', value: stats.mastered, color: 'text-sage-600', icon: 'D' },
+            { label: 'Active Alerts', value: risks.length, color: risks.length > 0 ? 'text-coral-600' : 'text-sage-600', icon: '!' },
           ].map((stat, i) => (
             <motion.div
               key={stat.label}
@@ -430,7 +451,7 @@ export default function HomeDashboard({ assessments = {}, snapshots = [], client
               animate={{ opacity: 1, y: 0 }}
               whileHover={{ scale: 1.02 }}
               transition={{ delay: 0.15 + i * 0.05 }}
-              className={`${stat.bg} rounded-xl p-3 sm:p-4`}
+              className="bg-white rounded-xl border border-warm-200 shadow-[0_1px_3px_rgba(0,0,0,0.04)] p-3 sm:p-4"
             >
               <div className={`text-2xl sm:text-3xl font-bold ${stat.color}`}><AnimatedNumber value={stat.value} duration={900 + i * 100} /></div>
               <div className="text-[11px] sm:text-xs text-warm-500 mt-0.5">{stat.label}</div>
@@ -482,7 +503,7 @@ export default function HomeDashboard({ assessments = {}, snapshots = [], client
             {topPriority && (
               <QuickActionButton
                 variant="primary"
-                icon={<svg className="w-4 h-4 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M13 10V3L4 14h7v7l9-11h-7z" /></svg>}
+                icon={<svg className="w-4 h-4 text-sage-600" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M13 10V3L4 14h7v7l9-11h-7z" /></svg>}
                 label={`Focus: ${FRIENDLY_NAMES[topPriority.domainId]}`}
                 sublabel={`Highest leverage — affects ${topPriority.downstreamDomains} domains`}
                 onClick={() => onNavigateToAssess(null)}
@@ -500,12 +521,14 @@ export default function HomeDashboard({ assessments = {}, snapshots = [], client
               sublabel="Rate high-impact skills first"
               onClick={() => onChangeView('quick-assess')}
             />
-            <QuickActionButton
-              icon={<svg className="w-4 h-4 text-sage-600" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M19.5 14.25v-2.625a3.375 3.375 0 00-3.375-3.375h-1.5A1.125 1.125 0 0113.5 7.125v-1.5a3.375 3.375 0 00-3.375-3.375H8.25m0 12.75h7.5m-7.5 3H12M10.5 2.25H5.625c-.621 0-1.125.504-1.125 1.125v17.25c0 .621.504 1.125 1.125 1.125h12.75c.621 0 1.125-.504 1.125-1.125V11.25a9 9 0 00-9-9z" /></svg>}
-              label="Generate Report"
-              sublabel="Clinical summary for stakeholders"
-              onClick={() => onChangeView('reports')}
-            />
+            {quickActionVisibility.showGenerateReport && (
+              <QuickActionButton
+                icon={<svg className="w-4 h-4 text-sage-600" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M19.5 14.25v-2.625a3.375 3.375 0 00-3.375-3.375h-1.5A1.125 1.125 0 0113.5 7.125v-1.5a3.375 3.375 0 00-3.375-3.375H8.25m0 12.75h7.5m-7.5 3H12M10.5 2.25H5.625c-.621 0-1.125.504-1.125 1.125v17.25c0 .621.504 1.125 1.125 1.125h12.75c.621 0 1.125-.504 1.125-1.125V11.25a9 9 0 00-9-9z" /></svg>}
+                label="Generate Report"
+                sublabel="Clinical summary for stakeholders"
+                onClick={() => onChangeView('reports')}
+              />
+            )}
           </div>
         </div>
 
@@ -527,7 +550,7 @@ export default function HomeDashboard({ assessments = {}, snapshots = [], client
               {topRisks.map((risk) => <AlertCard key={`${risk.type}-${risk.actionDomainId || ''}-${risk.affectedDomains?.[0] || ''}`} risk={risk} />)}
             </div>
           ) : (
-            <div className="bg-sage-50 rounded-xl border border-sage-200 p-6 text-center">
+            <div className="bg-white rounded-xl border border-warm-200 shadow-[0_1px_3px_rgba(0,0,0,0.04)] p-6 text-center">
               <div className="text-sage-600 text-2xl mb-2">All Clear</div>
               <p className="text-xs text-sage-500">No cascade risks or learning barriers detected.</p>
             </div>
@@ -546,7 +569,7 @@ export default function HomeDashboard({ assessments = {}, snapshots = [], client
                 {snapshots.slice(0, 3).map((snap) => (
                   <div key={snap.id} className="flex items-center justify-between bg-white rounded-lg border border-warm-200 px-3 py-2">
                     <span className="text-xs text-warm-700 font-medium truncate">{snap.label || 'Snapshot'}</span>
-                    <span className="text-[10px] text-warm-400 shrink-0 ml-2">
+                    <span className="text-[10px] text-warm-500 shrink-0 ml-2">
                       {new Date(snap.timestamp).toLocaleDateString()}
                     </span>
                   </div>
@@ -565,7 +588,7 @@ export default function HomeDashboard({ assessments = {}, snapshots = [], client
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: 8 }}
             transition={{ duration: 0.2 }}
-            className="mt-6 flex items-center justify-center gap-2 text-warm-400 text-xs"
+            className="mt-6 flex items-center justify-center gap-2 text-warm-500 text-xs"
           >
             <span>
               Press{' '}

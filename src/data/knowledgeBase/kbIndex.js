@@ -12,6 +12,9 @@ import { clinicalEntries } from './entries/clinical.js'
 import { assessmentEntries } from './entries/assessment.js'
 import { viewsEntries } from './entries/views.js'
 import { dataExportEntries } from './entries/dataExport.js'
+import { clinicalToolsEntries } from './entries/clinicalTools.js'
+import { aiToolsEntries } from './entries/aiTools.js'
+import { rolesPermissionsEntries } from './entries/rolesPermissions.js'
 
 const MANUAL_ENTRIES = [
   ...gettingStartedEntries,
@@ -19,6 +22,9 @@ const MANUAL_ENTRIES = [
   ...assessmentEntries,
   ...viewsEntries,
   ...dataExportEntries,
+  ...clinicalToolsEntries,
+  ...aiToolsEntries,
+  ...rolesPermissionsEntries,
 ]
 
 // Lazy-cached merged list

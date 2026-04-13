@@ -1,0 +1,21 @@
+import{callAI as C}from"./aiClient-CJQaTMvJ.js";function w(r){const a=r.length;if(a<2)return{slope:0,intercept:0,r2:0};let i=0,n=0,e=0,o=0,f=0;for(const t of r)i+=t.x,n+=t.y,e+=t.x*t.y,o+=t.x*t.x,f+=t.y*t.y;const l=a*o-i*i;if(l===0)return{slope:0,intercept:n/a,r2:0};const c=(a*e-i*n)/l,u=(n-c*i)/a,d=r.reduce((t,p)=>t+Math.pow(p.y-(c*p.x+u),2),0),v=n/a,b=r.reduce((t,p)=>t+Math.pow(p.y-v,2),0),m=b===0?0:1-d/b;return{slope:c,intercept:u,r2:m}}function A(r,a={}){const{masteryCriteria:i=80,masteryConsecutive:n=3}=a;if(!r||r.length===0)return{trend:"insufficient",slope:0,variability:0,mean:0,lastValue:null,masteryPrediction:null,consecutiveAboveCriteria:0,dataCount:0,narrative:"Insufficient data for analysis."};const e=r.map(s=>s.value).filter(s=>s!=null),o=e.length;if(o<2)return{trend:"insufficient",slope:0,variability:0,mean:e[0]||0,lastValue:e[0]||null,masteryPrediction:null,consecutiveAboveCriteria:e[0]>=i?1:0,dataCount:o,narrative:"Only one data point — more sessions needed to establish a trend."};const f=e.map((s,$)=>({x:$,y:s})),{slope:l,intercept:c,r2:u}=w(f),d=e.reduce((s,$)=>s+$,0)/o,v=e.reduce((s,$)=>s+Math.pow($-d,2),0)/o,b=Math.sqrt(v),m=e[e.length-1];let t="stable";const p=l;Math.abs(p)<1.5?t="stable":p>0?t="improving":t="declining";let h=0;for(let s=e.length-1;s>=0&&e[s]>=i;s--)h++;let y=null;if(m<i&&l>.5){const s=Math.ceil((i-m)/l);y=Math.max(1,s)+n}else h>=n&&(y=0);let g=`Data shows ${t==="improving"?"an upward":t==="declining"?"a downward":"a stable"} trend across ${o} sessions (slope: ${l.toFixed(1)}%/session, R²: ${u.toFixed(2)}). `;return g+=`Current level: ${m}%, average: ${d.toFixed(0)}%, variability: ${b.toFixed(1)}. `,h>=n?g+=`Mastery criteria met — ${h} consecutive sessions at/above ${i}%.`:y!=null&&y>0?g+=`At current trajectory, mastery criteria may be met in approximately ${y} sessions.`:t==="declining"?g+="Declining performance suggests intervention review may be warranted.":t==="stable"&&m<i&&(g+="Performance is stable but below criteria — consider modifying the teaching procedure."),{trend:t,slope:parseFloat(l.toFixed(2)),variability:parseFloat(b.toFixed(1)),mean:parseFloat(d.toFixed(1)),lastValue:m,masteryPrediction:y,consecutiveAboveCriteria:h,dataCount:o,r2:parseFloat(u.toFixed(3)),narrative:g}}function M(r){const a={improving:[],stable:[],declining:[],insufficient:[],readyForAdvancement:[],needsReview:[]};for(const i of r){const n=A(i.dataPoints),e={...i,analysis:n};n.trend==="insufficient"?a.insufficient.push(e):n.trend==="improving"?a.improving.push(e):n.trend==="declining"?(a.declining.push(e),a.needsReview.push(e)):a.stable.push(e),(n.consecutiveAboveCriteria>=3||n.masteryPrediction===0)&&a.readyForAdvancement.push(e),n.dataCount<3&&a.needsReview.push(e)}return a}async function P(r,a,i={},n){const e=A(a),{domain:o,status:f,criteria:l,clientName:c}=i,u=a.slice(-20).map(v=>`${v.date}: ${v.value}%`).join(`
+`),d=[{role:"system",content:"You are a clinical data analyst for a BCBA (Board Certified Behavior Analyst). Write concise, professional clinical narratives about ABA program data. Use clinical terminology appropriate for authorization reports and progress notes. Be specific about numbers and trends. Do not use markdown formatting — write in plain prose paragraphs."},{role:"user",content:`Analyze this ABA program data and write a clinical narrative (2-3 sentences):
+
+Program: ${r}
+${o?`Domain: ${o}`:""}
+${f?`Phase: ${f}`:""}
+${l?`Mastery Criteria: ${l}`:"Mastery Criteria: 80% across 3 consecutive sessions"}
+${c?`Client: ${c}`:""}
+
+Statistical Analysis:
+- Trend: ${e.trend} (slope: ${e.slope}%/session)
+- Mean: ${e.mean}%, Last value: ${e.lastValue}%
+- Variability: ${e.variability}
+- Data points: ${e.dataCount}
+- Consecutive above criteria: ${e.consecutiveAboveCriteria}
+${e.masteryPrediction!=null?`- Estimated sessions to mastery: ${e.masteryPrediction}`:""}
+
+Raw Data (recent):
+${u}
+
+Write a clinical narrative suitable for an authorization report. Include specific percentages and session counts. If mastery criteria are met, recommend phase advancement. If declining, suggest intervention review.`}];return C({messages:d,model:"gpt-4o-mini",maxTokens:500,temperature:.4,signal:n})}export{A as a,M as b,P as g};

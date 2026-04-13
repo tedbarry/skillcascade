@@ -1,14 +1,32 @@
 import { useState, useEffect, useCallback, useRef } from 'react'
-import { getClients, saveClient, deleteClient, getAssessments, saveAssessment, getLastAssessedDates } from '../data/storage.js'
+import { getClients, saveClient, getAssessments, saveAssessment, getLastAssessedDates } from '../data/storage.js'
 import { useAuth } from '../contexts/AuthContext.jsx'
 import { useToast } from './Toast.jsx'
 import { userErrorMessage } from '../lib/errorUtils.js'
 import { track } from '../lib/analytics.js'
 import { safeGetItem, safeSetItem } from '../lib/safeStorage.js'
 import useSubscription from '../hooks/useSubscription.js'
+import { api } from '../lib/api.js'
+import usePermissions from '../hooks/usePermissions.js'
 
-export default function ClientManager({ currentClientId, onSelectClient, assessments, onSaveSuccess }) {
+export default function ClientManager({
+  currentClientId,
+  currentClientName,
+  onSelectClient,
+  assessments,
+  onSaveSuccess,
+  externalOpen,
+  onExternalOpenHandled,
+}) {
   const [isOpen, setIsOpen] = useState(false)
+
+  // Allow parent to programmatically open the dropdown
+  useEffect(() => {
+    if (externalOpen) {
+      setIsOpen(true)
+      onExternalOpenHandled?.()
+    }
+  }, [externalOpen, onExternalOpenHandled])
   const [clients, setClients] = useState([])
   const [newName, setNewName] = useState('')
   const [confirmDelete, setConfirmDelete] = useState(null)
@@ -19,10 +37,14 @@ export default function ClientManager({ currentClientId, onSelectClient, assessm
   const { profile, user } = useAuth()
   const { showToast } = useToast()
   const { canAddClient } = useSubscription()
+  const { can } = usePermissions()
   const triggerRef = useRef(null)
   const [dropdownPos, setDropdownPos] = useState({ top: 0, left: 0 })
 
   const orgId = profile?.org_id
+  const canCreateClients = can('clients', 'create')
+  const canEditClients = can('clients', 'edit')
+  const canDeleteClients = can('clients', 'delete')
 
   const refreshClients = useCallback(async () => {
     if (!orgId) { setLoading(false); return }
@@ -52,16 +74,33 @@ export default function ClientManager({ currentClientId, onSelectClient, assessm
   }, [refreshClients])
 
   async function handleCreate() {
-    if (!newName.trim() || !orgId) return
+    if (!canCreateClients) {
+      showToast('You do not have permission to create clients.', 'error')
+      return
+    }
+    if (!newName.trim()) return
+    let needsOrgProvision = !orgId
+    if (needsOrgProvision) {
+      // Auto-provision an org for users who signed up without one
+      try {
+        const { data: newOrgId, error: rpcErr } = await api.rpc('ensure_user_org')
+        if (rpcErr) throw rpcErr
+      } catch (err) {
+        console.error('Failed to create organization:', err.message)
+        showToast('Could not set up your account. Please try again or contact support.', 'error')
+        return
+      }
+    }
     try {
       const allowed = await canAddClient()
       if (!allowed) {
         showToast('Client limit reached for your plan. Upgrade to add more clients.', 'error')
         return
       }
-      const client = await saveClient({ name: newName.trim() }, orgId)
+      // Use SECURITY DEFINER RPC to create client (bypasses RLS edge cases)
+      const { data: client, error: createErr } = await api.rpc('create_client_for_user', { client_name: newName.trim() })
+      if (createErr) throw createErr
       track('feature_use', 'client_create')
-      // Track first client milestone (clients list was empty before this create)
       if (clients.length === 0) {
         track('milestone', 'first_client')
       }
@@ -105,8 +144,13 @@ export default function ClientManager({ currentClientId, onSelectClient, assessm
   }
 
   async function handleDelete(clientId) {
+    if (!canDeleteClients) {
+      showToast('You do not have permission to delete clients.', 'error')
+      return
+    }
     try {
-      await deleteClient(clientId)
+      const { error: delErr } = await api.rpc('delete_client_for_user', { client_id: clientId })
+      if (delErr) throw delErr
       track('feature_use', 'client_delete')
       setConfirmDelete(null)
       await refreshClients()
@@ -120,6 +164,10 @@ export default function ClientManager({ currentClientId, onSelectClient, assessm
   }
 
   function startEdit(client) {
+    if (!canEditClients) {
+      showToast('You do not have permission to edit clients.', 'error')
+      return
+    }
     setEditingClient(client.id)
     setEditForm({
       name: client.name || '',
@@ -129,6 +177,10 @@ export default function ClientManager({ currentClientId, onSelectClient, assessm
   }
 
   async function handleEditSave() {
+    if (!canEditClients) {
+      showToast('You do not have permission to edit clients.', 'error')
+      return
+    }
     if (!editingClient || !editForm.name.trim()) return
     try {
       await saveClient({
@@ -194,6 +246,7 @@ export default function ClientManager({ currentClientId, onSelectClient, assessm
   }
 
   const currentClient = clients.find((c) => c.id === currentClientId)
+  const activeClientName = currentClient?.name || currentClientName || 'Sample Client'
 
   return (
     <div className="relative">
@@ -207,19 +260,19 @@ export default function ClientManager({ currentClientId, onSelectClient, assessm
           aria-label="Switch client"
         >
           <span className="w-6 h-6 rounded-full bg-sage-100 text-sage-700 flex items-center justify-center text-xs font-bold shrink-0">
-            {(currentClient?.name || 'S')[0].toUpperCase()}
+            {activeClientName[0]?.toUpperCase() || 'S'}
           </span>
           <span className="text-warm-700 font-medium max-w-[80px] sm:max-w-[140px] truncate">
-            {currentClient?.name || 'Sample Client'}
+            {activeClientName}
           </span>
-          <span className="text-warm-400 text-xs shrink-0">{'▾'}</span>
+          <span className="text-warm-500 text-xs shrink-0">{'▾'}</span>
         </button>
 
         {/* Save button */}
         {currentClientId && (
           <button
             onClick={handleSave}
-            className="text-xs px-2.5 py-1.5 rounded-md bg-sage-500 text-white hover:bg-sage-600 transition-colors font-medium shrink-0"
+            className="text-xs px-2.5 py-1.5 rounded-md bg-sage-600 text-white hover:bg-sage-700 transition-colors font-medium shrink-0"
           >
             Save
           </button>
@@ -233,36 +286,49 @@ export default function ClientManager({ currentClientId, onSelectClient, assessm
           <div className="fixed inset-0 z-20" onClick={() => setIsOpen(false)} />
 
           <div
-            className="fixed w-72 bg-white border border-warm-200 rounded-xl shadow-xl z-50 overflow-hidden"
+            className="fixed w-72 bg-white border border-warm-200 rounded-xl shadow-lg z-50 overflow-hidden"
             style={{ top: dropdownPos.top, left: dropdownPos.left }}
           >
             {/* New client */}
             <div className="p-3 border-b border-warm-100">
-              <div className="text-[10px] uppercase tracking-wider text-warm-400 font-semibold mb-2">
-                New Client
-              </div>
-              <form
-                onSubmit={(e) => {
-                  e.preventDefault()
-                  handleCreate()
-                }}
-                className="flex gap-2"
-              >
-                <input
-                  type="text"
-                  value={newName}
-                  onChange={(e) => setNewName(e.target.value)}
-                  placeholder="Client name..."
-                  className="flex-1 text-sm px-3 py-1.5 rounded-md border border-warm-200 focus:outline-none focus:border-sage-400 focus:ring-1 focus:ring-sage-400 text-warm-800 placeholder-warm-300"
-                />
-                <button
-                  type="submit"
-                  disabled={!newName.trim()}
-                  className="text-xs px-3 py-1.5 rounded-md bg-sage-500 text-white hover:bg-sage-600 transition-colors font-medium disabled:opacity-40 disabled:cursor-not-allowed"
-                >
-                  Create
-                </button>
-              </form>
+              {canCreateClients ? (
+                <>
+                  <div className="text-[10px] uppercase tracking-wider text-warm-500 font-semibold mb-2">
+                    New Client
+                  </div>
+                  <form
+                    onSubmit={(e) => {
+                      e.preventDefault()
+                      handleCreate()
+                    }}
+                    className="flex gap-2"
+                  >
+                    <input
+                      type="text"
+                      value={newName}
+                      onChange={(e) => setNewName(e.target.value)}
+                      placeholder="Client name..."
+                      className="flex-1 text-sm px-3 py-1.5 rounded-md border border-warm-200 focus:outline-none focus:border-sage-400 focus:ring-1 focus:ring-sage-400 text-warm-800 placeholder-warm-300"
+                    />
+                    <button
+                      type="submit"
+                      disabled={!newName.trim()}
+                      className="text-xs px-3 py-1.5 rounded-md bg-sage-600 text-white hover:bg-sage-700 transition-colors font-medium disabled:opacity-40 disabled:cursor-not-allowed"
+                    >
+                      Create
+                    </button>
+                  </form>
+                </>
+              ) : (
+                <>
+                  <div className="text-[10px] uppercase tracking-wider text-warm-500 font-semibold mb-1">
+                    Client List
+                  </div>
+                  <p className="text-xs text-warm-500">
+                    You have view-only access to clients in this workspace.
+                  </p>
+                </>
+              )}
             </div>
 
             {/* Client list */}
@@ -281,17 +347,17 @@ export default function ClientManager({ currentClientId, onSelectClient, assessm
                   S
                 </span>
                 <span className="flex-1">Sample Client</span>
-                <span className="text-[10px] text-warm-400">demo</span>
+                <span className="text-[10px] text-warm-500">demo</span>
               </button>
 
               {loading ? (
-                <div className="px-4 py-4 text-xs text-warm-400 text-center">
+                <div className="px-4 py-4 text-xs text-warm-500 text-center">
                   <div className="w-4 h-4 border-2 border-warm-200 border-t-sage-500 rounded-full animate-spin mx-auto mb-1" />
                   Loading...
                 </div>
               ) : clients.length > 0 ? (
                 <div className="border-t border-warm-100">
-                  <div className="text-[10px] uppercase tracking-wider text-warm-400 font-semibold px-4 pt-2 pb-1">
+                  <div className="text-[10px] uppercase tracking-wider text-warm-500 font-semibold px-4 pt-2 pb-1">
                     Saved Clients
                   </div>
                   {clients.map((client) => (
@@ -324,7 +390,7 @@ export default function ClientManager({ currentClientId, onSelectClient, assessm
                             <button
                               onClick={handleEditSave}
                               disabled={!editForm.name.trim()}
-                              className="text-[10px] px-3 py-1 rounded bg-sage-500 text-white hover:bg-sage-600 disabled:opacity-40"
+                              className="text-[10px] px-3 py-1 rounded bg-sage-600 text-white hover:bg-sage-700 disabled:opacity-40"
                             >
                               Save
                             </button>
@@ -354,7 +420,7 @@ export default function ClientManager({ currentClientId, onSelectClient, assessm
                             </span>
                             <div className="flex-1 min-w-0">
                               <div className="font-medium truncate">{client.name}</div>
-                              <div className="text-[10px] text-warm-400">
+                              <div className="text-[10px] text-warm-500">
                                 {lastAssessed[client.id]
                                   ? formatRelativeTime(lastAssessed[client.id])
                                   : <span className="italic">Not assessed</span>
@@ -364,50 +430,54 @@ export default function ClientManager({ currentClientId, onSelectClient, assessm
                           </button>
 
                           {/* Edit */}
-                          <button
-                            onClick={() => startEdit(client)}
-                            className="text-warm-300 hover:text-sage-500 transition-colors text-xs p-1"
-                            title="Edit client"
-                          >
-                            <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                              <path strokeLinecap="round" strokeLinejoin="round" d="M16.862 4.487l1.687-1.688a1.875 1.875 0 112.652 2.652L6.832 19.82a4.5 4.5 0 01-1.897 1.13l-2.685.8.8-2.685a4.5 4.5 0 011.13-1.897L16.863 4.487z" />
-                            </svg>
-                          </button>
-
-                          {/* Delete */}
-                          {confirmDelete === client.id ? (
-                            <div className="flex gap-1">
-                              <button
-                                onClick={() => handleDelete(client.id)}
-                                className="text-[10px] px-2.5 py-1.5 rounded bg-red-500 text-white hover:bg-red-600 min-h-[44px]"
-                              >
-                                Delete
-                              </button>
-                              <button
-                                onClick={() => setConfirmDelete(null)}
-                                className="text-[10px] px-2.5 py-1.5 rounded bg-warm-200 text-warm-600 hover:bg-warm-300 min-h-[44px]"
-                              >
-                                Cancel
-                              </button>
-                            </div>
-                          ) : (
+                          {canEditClients ? (
                             <button
-                              onClick={() => setConfirmDelete(client.id)}
-                              className="text-warm-300 hover:text-red-400 transition-colors p-2 min-h-[44px] min-w-[36px] flex items-center justify-center"
-                              title="Delete client"
+                              onClick={() => startEdit(client)}
+                              className="text-warm-300 hover:text-sage-500 transition-colors text-xs p-1"
+                              title="Edit client"
                             >
-                              <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                                <path strokeLinecap="round" strokeLinejoin="round" d="M14.74 9l-.346 9m-4.788 0L9.26 9m9.968-3.21c.342.052.682.107 1.022.166m-1.022-.165L18.16 19.673a2.25 2.25 0 01-2.244 2.077H8.084a2.25 2.25 0 01-2.244-2.077L4.772 5.79m14.456 0a48.108 48.108 0 00-3.478-.397m-12 .562c.34-.059.68-.114 1.022-.165m0 0a48.11 48.11 0 013.478-.397m7.5 0v-.916c0-1.18-.91-2.164-2.09-2.201a51.964 51.964 0 00-3.32 0c-1.18.037-2.09 1.022-2.09 2.201v.916m7.5 0a48.667 48.667 0 00-7.5 0" />
+                              <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                                <path strokeLinecap="round" strokeLinejoin="round" d="M16.862 4.487l1.687-1.688a1.875 1.875 0 112.652 2.652L6.832 19.82a4.5 4.5 0 01-1.897 1.13l-2.685.8.8-2.685a4.5 4.5 0 011.13-1.897L16.863 4.487z" />
                               </svg>
                             </button>
-                          )}
+                          ) : null}
+
+                          {/* Delete */}
+                          {canDeleteClients ? (
+                            confirmDelete === client.id ? (
+                              <div className="flex gap-1">
+                                <button
+                                  onClick={() => handleDelete(client.id)}
+                                  className="text-[10px] px-2.5 py-1.5 rounded bg-red-500 text-white hover:bg-red-600 min-h-[44px]"
+                                >
+                                  Delete
+                                </button>
+                                <button
+                                  onClick={() => setConfirmDelete(null)}
+                                  className="text-[10px] px-2.5 py-1.5 rounded bg-warm-200 text-warm-600 hover:bg-warm-300 min-h-[44px]"
+                                >
+                                  Cancel
+                                </button>
+                              </div>
+                            ) : (
+                              <button
+                                onClick={() => setConfirmDelete(client.id)}
+                                className="text-warm-300 hover:text-red-400 transition-colors p-2 min-h-[44px] min-w-[36px] flex items-center justify-center"
+                                title="Delete client"
+                              >
+                                <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                                  <path strokeLinecap="round" strokeLinejoin="round" d="M14.74 9l-.346 9m-4.788 0L9.26 9m9.968-3.21c.342.052.682.107 1.022.166m-1.022-.165L18.16 19.673a2.25 2.25 0 01-2.244 2.077H8.084a2.25 2.25 0 01-2.244-2.077L4.772 5.79m14.456 0a48.108 48.108 0 00-3.478-.397m-12 .562c.34-.059.68-.114 1.022-.165m0 0a48.11 48.11 0 013.478-.397m7.5 0v-.916c0-1.18-.91-2.164-2.09-2.201a51.964 51.964 0 00-3.32 0c-1.18.037-2.09 1.022-2.09 2.201v.916m7.5 0a48.667 48.667 0 00-7.5 0" />
+                                </svg>
+                              </button>
+                            )
+                          ) : null}
                         </div>
                       )}
                     </div>
                   ))}
                 </div>
               ) : (
-                <div className="px-4 py-4 text-xs text-warm-400 text-center italic">
+                <div className="px-4 py-4 text-xs text-warm-500 text-center italic">
                   No saved clients yet. Create one above.
                 </div>
               )}

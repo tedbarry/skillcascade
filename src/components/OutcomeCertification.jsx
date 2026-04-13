@@ -1,6 +1,6 @@
 import { useState, useMemo } from 'react'
 import { framework, ASSESSMENT_LEVELS, getDomainScores, isAssessed } from '../data/framework.js'
-import { downloadFile } from '../data/exportUtils.js'
+import { downloadFile } from '../lib/fileExports.js'
 import { escapeHTML } from '../lib/escapeHTML.js'
 import KBHelpIcon from './kb/KBHelpIcon.jsx'
 
@@ -96,7 +96,7 @@ const MILESTONE_DEFS = [
     description: 'Communication domain at Solid level',
     requiredDomains: ['d5'],
     icon: ICONS.chat,
-    color: '#4a8a8a',
+    color: '#14B8A6',
   },
   {
     id: 'social-skills-star',
@@ -112,7 +112,7 @@ const MILESTONE_DEFS = [
     description: 'Executive Function and Identity both at Solid level',
     requiredDomains: ['d3', 'd7'],
     icon: ICONS.brain,
-    color: '#c49a6c',
+    color: '#D97706',
   },
 ]
 
@@ -153,7 +153,7 @@ function getSubAreaScores(domain, assessments) {
    Certificate HTML generation
    ───────────────────────────────────────────── */
 
-const CERT_STYLES = `*{margin:0;padding:0;box-sizing:border-box}body{font-family:'Segoe UI',system-ui,-apple-system,sans-serif;color:#2d2d2d;display:flex;justify-content:center;padding:32px;background:#f5f5f0}.cert{width:700px;background:white;padding:48px}.cert-border{border:3px double #7fb589;padding:40px;position:relative}.cert-border::before,.cert-border::after,.corner-bl::before,.corner-br::before{content:'';position:absolute;width:24px;height:24px;border-color:#5a9465;border-style:solid}.cert-border::before{top:8px;left:8px;border-width:2px 0 0 2px}.cert-border::after{top:8px;right:8px;border-width:2px 2px 0 0}.corner-bl::before{bottom:8px;left:8px;border-width:0 0 2px 2px;position:absolute}.corner-br::before{bottom:8px;right:8px;border-width:0 2px 2px 0;position:absolute}.corner-bl,.corner-br{position:absolute;bottom:0;width:100%;height:100%;pointer-events:none}.corner-bl{left:0}.corner-br{right:0}.logo{text-align:center;font-size:13px;letter-spacing:3px;text-transform:uppercase;color:#7fb589;font-weight:600;margin-bottom:6px}.heading{text-align:center;font-family:Georgia,'Times New Roman',serif;font-size:28px;color:#3d5a40;margin-bottom:8px;letter-spacing:1px}.divider{width:80px;height:2px;background:#7fb589;margin:16px auto}.label{text-align:center;font-size:12px;color:#8a8a7a;text-transform:uppercase;letter-spacing:2px;margin-bottom:4px}.client-name{text-align:center;font-family:Georgia,'Times New Roman',serif;font-size:24px;color:#2d2d2d;margin-bottom:20px}.cert-type{text-align:center;font-size:15px;color:#5a9465;font-weight:600;margin-bottom:6px}.cert-desc{text-align:center;font-size:12px;color:#6b6b5a;line-height:1.5;max-width:480px;margin:0 auto 24px}table{width:100%;border-collapse:collapse;margin:16px 0}th{text-align:left;padding:6px 12px;font-size:10px;font-weight:600;color:#5a9465;border-bottom:2px solid #dce8de;text-transform:uppercase;letter-spacing:1px}td{padding:5px 12px;font-size:11px;border-bottom:1px solid #f0f0ea;color:#4a4a3a}.score-bar{display:inline-block;height:6px;border-radius:3px}.score-track{display:inline-block;width:80px;height:6px;border-radius:3px;background:#eeeee6;margin-right:6px}.date{text-align:center;font-size:11px;color:#8a8a7a;margin-top:24px}.sig-line{margin-top:32px;text-align:center}.sig-dash{width:240px;border-top:1px solid #c0c0b0;margin:0 auto 6px}.sig-text{font-size:10px;color:#8a8a7a}.cert-id{text-align:center;font-size:9px;color:#b0b0a0;margin-top:12px;letter-spacing:1px}.growth-positive{color:#4f8460;font-weight:600}.growth-section{margin:16px 0}.overall-growth{text-align:center;font-family:Georgia,serif;font-size:32px;color:#5a9465;margin:12px 0 4px}.overall-label{text-align:center;font-size:11px;color:#8a8a7a;margin-bottom:16px}@media print{body{background:white;padding:0}.cert{box-shadow:none}}`
+const CERT_STYLES = `*{margin:0;padding:0;box-sizing:border-box}body{font-family:'Segoe UI',system-ui,-apple-system,sans-serif;color:#2d2d2d;display:flex;justify-content:center;padding:32px;background:#f5f5f0}.cert{width:700px;background:white;padding:48px}.cert-border{border:3px double #10B981;padding:40px;position:relative}.cert-border::before,.cert-border::after,.corner-bl::before,.corner-br::before{content:'';position:absolute;width:24px;height:24px;border-color:#059669;border-style:solid}.cert-border::before{top:8px;left:8px;border-width:2px 0 0 2px}.cert-border::after{top:8px;right:8px;border-width:2px 2px 0 0}.corner-bl::before{bottom:8px;left:8px;border-width:0 0 2px 2px;position:absolute}.corner-br::before{bottom:8px;right:8px;border-width:0 2px 2px 0;position:absolute}.corner-bl,.corner-br{position:absolute;bottom:0;width:100%;height:100%;pointer-events:none}.corner-bl{left:0}.corner-br{right:0}.logo{text-align:center;font-size:13px;letter-spacing:3px;text-transform:uppercase;color:#10B981;font-weight:600;margin-bottom:6px}.heading{text-align:center;font-family:Georgia,'Times New Roman',serif;font-size:28px;color:#3d5a40;margin-bottom:8px;letter-spacing:1px}.divider{width:80px;height:2px;background:#10B981;margin:16px auto}.label{text-align:center;font-size:12px;color:#8a8a7a;text-transform:uppercase;letter-spacing:2px;margin-bottom:4px}.client-name{text-align:center;font-family:Georgia,'Times New Roman',serif;font-size:24px;color:#2d2d2d;margin-bottom:20px}.cert-type{text-align:center;font-size:15px;color:#059669;font-weight:600;margin-bottom:6px}.cert-desc{text-align:center;font-size:12px;color:#6b6b5a;line-height:1.5;max-width:480px;margin:0 auto 24px}table{width:100%;border-collapse:collapse;margin:16px 0}th{text-align:left;padding:6px 12px;font-size:10px;font-weight:600;color:#059669;border-bottom:2px solid #dce8de;text-transform:uppercase;letter-spacing:1px}td{padding:5px 12px;font-size:11px;border-bottom:1px solid #f0f0ea;color:#4a4a3a}.score-bar{display:inline-block;height:6px;border-radius:3px}.score-track{display:inline-block;width:80px;height:6px;border-radius:3px;background:#eeeee6;margin-right:6px}.date{text-align:center;font-size:11px;color:#8a8a7a;margin-top:24px}.sig-line{margin-top:32px;text-align:center}.sig-dash{width:240px;border-top:1px solid #c0c0b0;margin:0 auto 6px}.sig-text{font-size:10px;color:#8a8a7a}.cert-id{text-align:center;font-size:9px;color:#b0b0a0;margin-top:12px;letter-spacing:1px}.growth-positive{color:#059669;font-weight:600}.growth-section{margin:16px 0}.overall-growth{text-align:center;font-family:Georgia,serif;font-size:32px;color:#059669;margin:12px 0 4px}.overall-label{text-align:center;font-size:11px;color:#8a8a7a;margin-bottom:16px}@media print{body{background:white;padding:0}.cert{box-shadow:none}}`
 
 function buildCertHTML(clientName, certType, title, description, bodyHTML, dateStr) {
   const certId = generateCertId(clientName, certType, dateStr)
@@ -179,7 +179,7 @@ function buildScoreTable(rows) {
   for (const r of rows) {
     const pct = Math.round((r.score / 3) * 100)
     const levelLabel = r.score >= 2.5 ? 'Solid' : r.score >= 1.5 ? 'Developing' : r.score > 0 ? 'Needs Work' : 'N/A'
-    const barColor = r.score >= 2.5 ? '#7fb589' : r.score >= 1.5 ? '#e5b76a' : r.score > 0 ? '#e8928a' : '#d1d5db'
+    const barColor = r.score >= 2.5 ? '#10B981' : r.score >= 1.5 ? '#F59E0B' : r.score > 0 ? '#F59E0B' : '#d1d5db'
     html += `<tr><td>${r.name}</td><td><span class="score-track"><span class="score-bar" style="width:${pct}%;background:${barColor}"></span></span>${r.score.toFixed(2)}/3</td><td>${levelLabel}</td></tr>`
   }
   return html + '</table>'
@@ -388,7 +388,7 @@ export default function OutcomeCertification({ assessments, clientName, snapshot
           <div className="flex items-center gap-3 mb-4">
             <button
               onClick={handleDownload}
-              className="flex items-center gap-2 px-4 py-2 bg-sage-500 text-white rounded-lg text-sm font-medium hover:bg-sage-600 transition-colors"
+              className="flex items-center gap-2 px-4 py-2 bg-sage-600 text-white rounded-lg text-sm font-medium hover:bg-sage-700 transition-colors"
             >
               {ICONS.download}
               Download HTML
@@ -510,7 +510,7 @@ function CertCard({ cert, onGenerate }) {
           }`}>
             {cert.title}
           </div>
-          <div className="text-[11px] text-warm-400 leading-snug mt-0.5">
+          <div className="text-[11px] text-warm-500 leading-snug mt-0.5">
             {cert.subtitle}
           </div>
         </div>
@@ -525,7 +525,7 @@ function CertCard({ cert, onGenerate }) {
           </span>
           <button
             onClick={() => onGenerate(cert)}
-            className="text-[11px] font-semibold px-3 py-1 rounded-md bg-sage-500 text-white hover:bg-sage-600 transition-colors"
+            className="text-[11px] font-semibold px-3 py-1 rounded-md bg-sage-600 text-white hover:bg-sage-700 transition-colors"
           >
             Generate
           </button>
@@ -534,11 +534,11 @@ function CertCard({ cert, onGenerate }) {
         /* Locked state — progress bar toward earning */
         <div className="mt-3">
           <div className="flex items-center justify-between mb-1.5">
-            <span className="text-[10px] text-warm-400 flex items-center gap-1">
+            <span className="text-[10px] text-warm-500 flex items-center gap-1">
               {ICONS.lock}
               Locked
             </span>
-            <span className="text-[10px] text-warm-400">
+            <span className="text-[10px] text-warm-500">
               {cert.progressLabel}
             </span>
           </div>

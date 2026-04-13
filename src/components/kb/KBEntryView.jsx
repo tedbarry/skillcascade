@@ -84,7 +84,7 @@ export default function KBEntryView({ entryId }) {
     return (
       <div className="max-w-2xl mx-auto py-12 text-center">
         <h2 className="text-lg font-semibold text-warm-700">Article Not Found</h2>
-        <p className="text-sm text-warm-400 mt-2">This knowledge base article hasn't been written yet.</p>
+        <p className="text-sm text-warm-500 mt-2">This knowledge base article hasn't been written yet.</p>
         <Link to="/kb" className="inline-block mt-4 text-sm text-sage-600 hover:text-sage-700 underline">
           Back to Knowledge Base
         </Link>
@@ -97,7 +97,7 @@ export default function KBEntryView({ entryId }) {
   return (
     <article className="max-w-2xl mx-auto">
       {/* Breadcrumb */}
-      <nav className="flex items-center gap-1.5 text-xs text-warm-400 mb-6">
+      <nav className="flex items-center gap-1.5 text-xs text-warm-500 mb-6">
         <Link to="/kb" className="hover:text-warm-600 transition-colors">Knowledge Base</Link>
         <span className="text-warm-300">/</span>
         <Link to={`/kb?category=${entry.category}`} className="hover:text-warm-600 transition-colors">
@@ -160,7 +160,7 @@ export default function KBEntryView({ entryId }) {
  * Supports newline-separated paragraphs and basic formatting.
  */
 function ManualContent({ body }) {
-  if (!body) return <p className="text-sm text-warm-400 italic">Content coming soon.</p>
+  if (!body) return <p className="text-sm text-warm-500 italic">Content coming soon.</p>
 
   return (
     <div className="space-y-3 text-sm text-warm-700 leading-relaxed">
@@ -211,7 +211,7 @@ function SkillContent({ skillId, meta }) {
   return (
     <div className="space-y-6">
       {/* Location + Tier */}
-      <div className="flex items-center gap-2 flex-wrap text-xs text-warm-400">
+      <div className="flex items-center gap-2 flex-wrap text-xs text-warm-500">
         {location && (
           <span>
             D{location.domain.domain}: {location.domain.name} &rsaquo; {location.subArea.name} &rsaquo; {location.skillGroup.name}
@@ -255,7 +255,7 @@ function SkillContent({ skillId, meta }) {
             return (
               <div key={level} className="flex gap-3 items-start">
                 <span className="text-[10px] font-medium px-2 py-0.5 rounded shrink-0 min-w-[70px] text-center"
-                  style={{ backgroundColor: ['#c47070', '#e8928a', '#e5b76a', '#7fb589'][level] + '20', color: ['#c47070', '#e8928a', '#e5b76a', '#7fb589'][level] }}
+                  style={{ backgroundColor: ['#DC2626', '#F59E0B', '#F59E0B', '#10B981'][level] + '20', color: ['#DC2626', '#F59E0B', '#F59E0B', '#10B981'][level] }}
                 >
                   {ASSESSMENT_LABELS[level]}
                 </span>
@@ -373,7 +373,7 @@ function PrevNextNav({ prevEntry, nextEntry, currentIndex, totalCount }) {
         )}
 
         {/* Counter */}
-        <span className="text-[10px] text-warm-400 whitespace-nowrap">
+        <span className="text-[10px] text-warm-500 whitespace-nowrap">
           {currentIndex + 1}/{totalCount}
         </span>
 
@@ -381,7 +381,7 @@ function PrevNextNav({ prevEntry, nextEntry, currentIndex, totalCount }) {
         {nextEntry ? (
           <Link
             to={`/kb/${nextEntry.id}`}
-            className="flex-1 flex items-center justify-center gap-1 py-2.5 rounded-lg text-sm font-semibold min-h-[44px] transition-colors bg-sage-500 text-white hover:bg-sage-600"
+            className="flex-1 flex items-center justify-center gap-1 py-2.5 rounded-lg text-sm font-semibold min-h-[44px] transition-colors bg-sage-600 text-white hover:bg-sage-700"
           >
             Next →
           </Link>

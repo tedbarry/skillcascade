@@ -1,0 +1,248 @@
+[
+  {
+    "name": "Behavior",
+    "ltgs": [
+      {
+        "name": "Maladaptive Behavior",
+        "stgs": [
+          "Aggression",
+          "Compliance",
+          "Impolite Behavior",
+          "Elopement",
+          "Silly Behaviors",
+          "Tantrums",
+          "Off Task Behaviors",
+          "Property Destruction",
+          "Unsafe Behaviors"
+        ]
+      },
+      {
+        "name": "Compliance",
+        "stgs": [
+          "Compliance"
+        ]
+      },
+      {
+        "name": "Attention",
+        "stgs": [
+          "Attention"
+        ]
+      },
+      {
+        "name": "Self-Regulation & Adaptive Behavior",
+        "stgs": [
+          "Task Persistence",
+          "Delayed Gratification",
+          "Effort Over Time",
+          "Staying Within Boundaries",
+          "Resilience",
+          "Flexibility"
+        ]
+      },
+      {
+        "name": "Replacement Behaviors",
+        "stgs": [
+          "Tantrum Replacement Behaviors"
+        ]
+      }
+    ]
+  },
+  {
+    "name": "Communication",
+    "ltgs": [
+      {
+        "name": "Comprehension",
+        "stgs": [
+          "Group Instruction",
+          "Functional Instructions",
+          "Temporal Directions"
+        ]
+      },
+      {
+        "name": "Language",
+        "stgs": [
+          "Categorization",
+          "Compare and Contrast"
+        ]
+      },
+      {
+        "name": "Functional Communication",
+        "stgs": [
+          "Self Advocacy",
+          "Manding",
+          "Asking for Help"
+        ]
+      },
+      {
+        "name": "Conversational Skills",
+        "stgs": [
+          "Conversation Skills",
+          "Asking Questions",
+          "Answering Questions",
+          "Initiating Conversations",
+          "Wait Time and Turn-Taking"
+        ]
+      },
+      {
+        "name": "Social-Pragmatic Communication",
+        "stgs": [
+          "Using Proper Tone and Volume",
+          "Manners and Politeness",
+          "Responding Appropriately",
+          "Accepting Feedback",
+          "Role-Playing Social Skills",
+          "Honesty",
+          "Conflict Resolution"
+        ]
+      },
+      {
+        "name": "Receptive Language & Comprehension",
+        "stgs": [
+          "Following Directions",
+          "Retelling Information",
+          "Inferencing"
+        ]
+      },
+      {
+        "name": "Emotional Expression",
+        "stgs": [
+          "Tacting Emotions"
+        ]
+      }
+    ]
+  },
+  {
+    "name": "Social",
+    "ltgs": [
+      {
+        "name": "Perspective Taking",
+        "stgs": [
+          "Emotion Recognition",
+          "Understanding Others"
+        ]
+      },
+      {
+        "name": "Problem Solving",
+        "stgs": [
+          "Size of Problem",
+          "Solutions"
+        ]
+      },
+      {
+        "name": "Self Image",
+        "stgs": [
+          "Positive Self-Statements"
+        ]
+      },
+      {
+        "name": "Peer Interaction",
+        "stgs": [
+          "Initiating with Others",
+          "Interacting with Peers",
+          "Joining Peers",
+          "Sharing Personal Information",
+          "Group Skills"
+        ]
+      },
+      {
+        "name": "Social Awareness & Expectations",
+        "stgs": [
+          "Social Cues",
+          "Following Environmental Expectations",
+          "Personal Space",
+          "Respecting Boundaries and Property",
+          "Following Single-Step Directions",
+          "Appropriate Alternatives",
+          "Understanding Authority and Roles"
+        ]
+      },
+      {
+        "name": "Daily Living & Functional Skills",
+        "stgs": [
+          "Leisure Skills",
+          "Personal Hygiene",
+          "Organizational Skills",
+          "Understanding Item Function",
+          "Cause and Effect"
+        ]
+      },
+      {
+        "name": "Task Engagement & Independence",
+        "stgs": [
+          "Transitions",
+          "Completing Non-Preferred Tasks",
+          "Staying on Task"
+        ]
+      },
+      {
+        "name": "Self-Concept & Identity",
+        "stgs": [
+          "Self Image and Achievement",
+          "Self Monitoring",
+          "Responsibility for Actions"
+        ]
+      },
+      {
+        "name": "Emotional Regulation & Coping",
+        "stgs": [
+          "Flexibility and Tolerance",
+          "Coping Skills",
+          "Waiting and Impulse Control"
+        ]
+      }
+    ]
+  },
+  {
+    "name": "Parent Training",
+    "ltgs": [
+      {
+        "name": "Implementation of Behavior Plans",
+        "stgs": [
+          "Following the BIP"
+        ]
+      },
+      {
+        "name": "Data Collection & Monitoring",
+        "stgs": [
+          "Recording & Tracking"
+        ]
+      },
+      {
+        "name": "Reinforcement & Motivation",
+        "stgs": [
+          "Delivering Reinforcement"
+        ]
+      },
+      {
+        "name": "Skill Generalization at Home",
+        "stgs": [
+          "Supporting Generalization"
+        ]
+      },
+      {
+        "name": "Behavior Management",
+        "stgs": [
+          "Proactive & Reactive Strategies"
+        ]
+      },
+      {
+        "name": "Communication with Child",
+        "stgs": [
+          "Prompting & Modeling"
+        ]
+      },
+      {
+        "name": "Coping & Emotional Support",
+        "stgs": [
+          "Supporting Regulation"
+        ]
+      },
+      {
+        "name": "Parent Collaboration with Team",
+        "stgs": [
+          "Training & Follow-Through"
+        ]
+      }
+    ]
+  }
+]
