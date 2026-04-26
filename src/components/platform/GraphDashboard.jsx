@@ -514,7 +514,7 @@ export default function GraphDashboard({ clientId, clientName }) {
           </svg>
           <p className="text-warm-500 text-sm">
             {programs.length === 0
-              ? 'No programs yet. Add goals from the Goal Library.'
+              ? 'No programs yet. Start from the Medically Necessary Library or assessment recommendations.'
               : 'No programs match the current filters.'}
           </p>
         </div>

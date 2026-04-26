@@ -11,9 +11,11 @@ import { getSkillDescription } from '../data/skillDescriptions.js'
 import { getBehavioralIndicator } from '../data/behavioralIndicators.js'
 import { getTeachingPlaybook } from '../data/teachingPlaybook.js'
 import { downloadFile, csvEscape } from '../lib/fileExports.js'
+import { buildAssessmentRecommendations } from '../lib/assessmentRecommendationEngine.js'
 import { track } from '../lib/analytics.js'
 import { getSkillCeiling, computeSkillInfluence } from '../data/skillInfluence.js'
 import { getSubAreaFromId, getSkillTier } from '../data/skillDependencies.js'
+import { buildLearningTreeDraftFromRecommendation } from '../lib/recommendationDraftAdapters.js'
 import { TIER_LABELS, TIER_COLORS } from '../constants/tiers.js'
 import EmptyState from './EmptyState.jsx'
 const AddGoalDialog = lazy(() => import('./platform/AddGoalDialog.jsx'))
@@ -724,6 +726,77 @@ function TierSection({ priority, recommendations, onNavigateToAssess, defaultExp
   )
 }
 
+function RecommendationCard({ recommendation, onDraftToTree, onNavigateToAssess, canDraft }) {
+  const topSubArea = recommendation.supportingSubAreas[0]
+
+  return (
+    <div className="rounded-xl border border-blue-200 bg-white px-5 py-4 shadow-sm">
+      <div className="flex items-start justify-between gap-3 mb-2">
+        <div>
+          <p className="text-[10px] font-semibold uppercase tracking-wider text-blue-600">
+            {CANONICAL_DOMAIN_LABELS[recommendation.domainSlug] || recommendation.domainSlug}
+          </p>
+          <h3 className="text-sm font-semibold text-warm-800 mt-0.5">{recommendation.goalFamilyTitle}</h3>
+        </div>
+        <span className={`px-2.5 py-1 rounded-full text-[10px] font-semibold ${
+          recommendation.recommendationStrength === 'high'
+            ? 'bg-red-50 text-red-600'
+            : recommendation.recommendationStrength === 'medium'
+              ? 'bg-amber-50 text-amber-600'
+              : 'bg-warm-100 text-warm-600'
+        }`}>
+          {recommendation.recommendationStrength} priority
+        </span>
+      </div>
+
+      <p className="text-[11px] text-warm-700 leading-relaxed mb-2">{recommendation.recommendedObjectiveSeed}</p>
+      <p className="text-[11px] text-warm-600 leading-relaxed mb-3">{recommendation.medicalNecessityRationale}</p>
+
+      <div className="flex flex-wrap gap-1.5 mb-3">
+        {recommendation.medicalNecessityTags.map((tag) => (
+          <span key={tag} className="px-2 py-0.5 rounded-full bg-blue-50 text-blue-700 text-[10px] font-medium">
+            {tag.replaceAll('_', ' ')}
+          </span>
+        ))}
+      </div>
+
+      <div className="grid gap-2 text-[11px] text-warm-600 mb-3">
+        <div>
+          <span className="font-semibold text-warm-700">Evidence:</span> {recommendation.evidenceSummary}
+        </div>
+        <div>
+          <span className="font-semibold text-warm-700">Support:</span>{' '}
+          {recommendation.supportingSubAreas.map((item) => item.subAreaName).join(', ')}
+        </div>
+        <div>
+          <span className="font-semibold text-warm-700">Default measurement:</span> {recommendation.defaultMeasurementType}
+          {' · '}
+          <span className="font-semibold text-warm-700">Criteria:</span> {recommendation.defaultCriteria}
+        </div>
+      </div>
+
+      <div className="flex flex-wrap gap-2">
+        {canDraft && (
+          <button
+            onClick={() => onDraftToTree(recommendation)}
+            className="px-3 py-2 min-h-[44px] rounded-full bg-blue-600 text-white text-xs font-semibold hover:bg-blue-700 transition-colors"
+          >
+            Draft In Learning Tree
+          </button>
+        )}
+        {topSubArea && (
+          <button
+            onClick={() => onNavigateToAssess(topSubArea.subAreaId)}
+            className="px-3 py-2 min-h-[44px] rounded-full border border-blue-200 bg-blue-50 text-blue-700 text-xs font-medium hover:bg-blue-100 transition-colors"
+          >
+            Review Assessment Evidence
+          </button>
+        )}
+      </div>
+    </div>
+  )
+}
+
 /* ─────────────────────────────────────────────
    Main component
    ───────────────────────────────────────────── */
@@ -733,6 +806,7 @@ export default function GoalEngine({ assessments = {}, onNavigateToAssess, focus
   const hint = useContextualHint('hint-goals')
   const [addToTreeGoal, setAddToTreeGoal] = useState(null)
   const allRecommendations = useMemo(() => analyzeGaps(assessments), [assessments])
+  const allMedicalRecommendations = useMemo(() => buildAssessmentRecommendations(assessments), [assessments])
 
   // Filter by focus domain if set
   const recommendations = useMemo(() => {
@@ -745,6 +819,13 @@ export default function GoalEngine({ assessments = {}, onNavigateToAssess, focus
     const d = framework.find(f => f.id === focusDomain)
     return d?.name || focusDomain
   }, [focusDomain])
+
+  const medicalRecommendations = useMemo(() => {
+    if (!focusDomain) return allMedicalRecommendations
+    return allMedicalRecommendations.filter((recommendation) =>
+      recommendation.supportingSubAreas.some((item) => item.subAreaId.startsWith(focusDomain))
+    )
+  }, [allMedicalRecommendations, focusDomain])
 
   // Split into tiers
   const tier1 = useMemo(() => recommendations.filter((r) => r.priority === 1), [recommendations])
@@ -807,6 +888,10 @@ export default function GoalEngine({ assessments = {}, onNavigateToAssess, focus
       : 'goals_export.csv'
     downloadFile(csv, filename, 'text/csv;charset=utf-8')
   }, [recommendations, clientName])
+
+  const handleDraftRecommendation = useCallback((recommendation) => {
+    setAddToTreeGoal(buildLearningTreeDraftFromRecommendation(recommendation))
+  }, [])
 
   return (
     <div className="flex-1 overflow-y-auto">
@@ -932,6 +1017,28 @@ export default function GoalEngine({ assessments = {}, onNavigateToAssess, focus
               />
             </div>
 
+            {medicalRecommendations.length > 0 && (
+              <div className="mb-8">
+                <div className="mb-3">
+                  <h3 className="text-lg font-semibold text-warm-800 font-display">Medically Necessary Goal Families</h3>
+                  <p className="text-sm text-warm-500 mt-1">
+                    Canonical recommendations generated from low-scored assessment clusters. These are the best bridge from assessment findings into the client&apos;s Learning Tree.
+                  </p>
+                </div>
+                <div className="space-y-3">
+                  {medicalRecommendations.map((recommendation) => (
+                    <RecommendationCard
+                      key={recommendation.deficitSlug}
+                      recommendation={recommendation}
+                      onDraftToTree={handleDraftRecommendation}
+                      onNavigateToAssess={handleNavigate}
+                      canDraft={!!clientId}
+                    />
+                  ))}
+                </div>
+              </div>
+            )}
+
             {/* All solid message */}
             {totalGaps === 0 && (
               <div className="text-center py-12 px-8">
@@ -995,6 +1102,11 @@ export default function GoalEngine({ assessments = {}, onNavigateToAssess, focus
               initialName={addToTreeGoal.name}
               initialObjective={addToTreeGoal.objective}
               initialDomain={addToTreeGoal.domain}
+              initialLtg={addToTreeGoal.ltgName}
+              initialCriteria={addToTreeGoal.criteria}
+              initialGoalType={addToTreeGoal.goalType}
+              initialProgramType={addToTreeGoal.programType}
+              initialDataMethod={addToTreeGoal.dataMethod}
             />
           </Suspense>
         )}

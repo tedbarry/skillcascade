@@ -241,6 +241,7 @@ export const DEFAULT_AUTH_FIELDS = {
   // Goals (pulled from SkillCascade or entered manually)
   goals: [],
   goalGraphs: {},  // { goalId: base64DataUri }
+  assessmentRecommendationReview: null,
 
   // Parent Goals
   parentGoals: [],

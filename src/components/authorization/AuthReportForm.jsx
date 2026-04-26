@@ -1,9 +1,9 @@
 import { useState, useEffect, useCallback, useMemo, useRef, lazy, Suspense } from 'react'
 import { DEFAULT_AUTH_FIELDS, CPT_CODES, SERVICE_LEVELS, EDUCATION_TYPES, getFERBForFunction } from '../../data/authorizationBoilerplate.js'
+import { CANONICAL_DOMAIN_LABELS } from '../../data/canonicalRecommendationProfiles.js'
 import { generateAllProblemAreas, computeFunctionalImpairment, generateTransitionCriteria } from '../../data/authorizationMappings.js'
 import { generateAuthorizationReportHTML } from '../../lib/authorizationReport.js'
-import { analyzeGaps } from '../GoalEngine.jsx'
-import { generateGoalTemplates } from '../../lib/goalTemplates.js'
+import { buildAssessmentRecommendations } from '../../lib/assessmentRecommendationEngine.js'
 import { callAI } from '../../lib/aiClient.js'
 import { DEFICIT_EXAMPLES, OBSERVATION_EXAMPLES, OP_DEF_EXAMPLES, TITRATION_EXAMPLES, WRITING_RULES } from '../../data/authorizationStyleGuide.js'
 import useGoalPreferences from '../../hooks/useGoalPreferences.js'
@@ -14,7 +14,17 @@ import { buildReportAccessState } from '../../lib/reportAccess.js'
 import { safeGetItem, safeRemoveItem } from '../../lib/safeStorage.js'
 import { saveDraft, loadDraft, saveReport, loadReport, listReports, deleteReport } from '../../lib/reportStorage.js'
 import { syncReportToLearningTree } from '../../data/storage.js'
+import { api } from '../../lib/api.js'
 import { track } from '../../lib/analytics.js'
+import {
+  AUTH_REPORT_DOMAIN_CONFIG,
+  buildAuthReportGoalFromRecommendation,
+  createAssessmentRecommendationReviewState,
+  getAssessmentRecommendationStatus,
+  getAuthReportDomainLabel,
+  mapLearningTreeDomainToAuthGoalDomain,
+  summarizeAssessmentRecommendationReview,
+} from '../../lib/recommendationDraftAdapters.js'
 import { NoPermission } from '../PermissionGate.jsx'
 import ImageUpload, { compressImage } from './ImageUpload.jsx'
 import GoalReviewPanel from './GoalReviewPanel.jsx'
@@ -154,6 +164,39 @@ const PERSISTENT_FIELDS = [
   'serviceLevel',
 ]
 
+function getGoalIdentityKey(goal) {
+  return `${(goal.program || goal.skillName || goal.id || '').toLowerCase().trim()}::${(goal.objective || goal.goalText || '').toLowerCase().trim()}`
+}
+
+function appendUniqueGoals(existingGoals = [], incomingGoals = []) {
+  const nextGoals = [...existingGoals]
+  const seen = new Set(existingGoals.map(getGoalIdentityKey))
+
+  for (const goal of incomingGoals) {
+    const key = getGoalIdentityKey(goal)
+    if (seen.has(key)) continue
+    seen.add(key)
+    nextGoals.push(goal)
+  }
+
+  return nextGoals
+}
+
+const RECOMMENDATION_STATUS_CONFIG = {
+  pending: {
+    label: 'Pending review',
+    tone: 'border-amber-200 bg-amber-50 text-amber-700',
+  },
+  imported: {
+    label: 'In report',
+    tone: 'border-sage-200 bg-sage-50 text-sage-700',
+  },
+  excluded: {
+    label: 'Excluded',
+    tone: 'border-warm-200 bg-warm-100 text-warm-600',
+  },
+}
+
 export default function AuthReportForm({ assessments, clientName, clientId, onPreview, examinerFields, launchContext = null, reportAccess = null }) {
   const { isPhone } = useResponsive()
   const { goalPrefs } = useGoalPreferences()
@@ -193,6 +236,18 @@ export default function AuthReportForm({ assessments, clientName, clientId, onPr
     canEditReports: can('reports', 'edit'),
     canFinalizeReports: can('reports', 'finalize'),
   }), [reportAccess, can])
+  const assessmentRecommendations = useMemo(
+    () => buildAssessmentRecommendations(assessments),
+    [assessments]
+  )
+  const assessmentRecommendationReviewSummary = useMemo(
+    () => summarizeAssessmentRecommendationReview(
+      assessmentRecommendations,
+      fields.assessmentRecommendationReview,
+      fields.goals || []
+    ),
+    [assessmentRecommendations, fields.assessmentRecommendationReview, fields.goals]
+  )
 
   const workflowLaunch = useMemo(() => {
     if (!launchContext) return null
@@ -212,8 +267,8 @@ export default function AuthReportForm({ assessments, clientName, clientId, onPr
         title: 'Report conversion handoff',
         description: `Opened from ${sourceLabel} for ${clientLabel}. Review the latest authorization report before converting it into live coverage.`,
         hint: savedReports.length > 0
-          ? `${savedCountLabel} are ready in this workspace. Load the best match, confirm the payer dates and CPT hours, then convert it into live authorization coverage.`
-          : 'No saved authorization report snapshots are available yet. Start a fresh report from current client data before converting coverage.',
+          ? `${savedCountLabel} are ready in this workspace. Load the best match, confirm payer dates and CPT hours, then review the medically necessary goal families before converting coverage.`
+          : 'No saved authorization report snapshots are available yet. Start a fresh report from current client data, review the goal families, and then convert coverage.',
         tone: 'border-purple-200 bg-purple-50 text-purple-900',
         titleTone: 'text-purple-800',
         bodyTone: 'text-purple-700',
@@ -228,7 +283,7 @@ export default function AuthReportForm({ assessments, clientName, clientId, onPr
       return {
         title: 'Renewal queue handoff',
         description: `Opened from ${sourceLabel} for ${clientLabel}. Build the next authorization period without losing the client details that should carry forward.`,
-        hint: 'Best next check: confirm the new date range, requested CPT hours, updated progress goals, and any mastered goals before previewing.',
+        hint: 'Best next check: confirm the new date range, requested CPT hours, updated progress goals, medically necessary goal families, and any mastered goals before previewing.',
         tone: 'border-sage-200 bg-sage-50 text-sage-900',
         titleTone: 'text-sage-800',
         bodyTone: 'text-sage-700',
@@ -243,7 +298,7 @@ export default function AuthReportForm({ assessments, clientName, clientId, onPr
       return {
         title: 'Coverage cleanup handoff',
         description: `Opened from ${sourceLabel} for ${clientLabel}. Use this report to close coverage gaps and make the authorization record match the real clinical plan.`,
-        hint: 'Best next check: payer dates, CPT-hour mapping, and whether the report still supports the services currently being scheduled and delivered.',
+        hint: 'Best next check: payer dates, CPT-hour mapping, medically necessary goals, and whether the report still supports the services currently being scheduled and delivered.',
         tone: 'border-amber-200 bg-amber-50 text-amber-900',
         titleTone: 'text-amber-800',
         bodyTone: 'text-amber-700',
@@ -791,29 +846,94 @@ SOCIALIZATION GOALS: ${socialGoals.join('; ') || 'Not specified'}` },
     }
   }, [fields.goals, clientName])
 
-  // Import goals from Goal Engine
+  // Import canonical recommendation-based goals from the assessment
   const handleImportGoals = useCallback(() => {
-    const gaps = analyzeGaps(assessments)
-    const topSkills = gaps.filter(g => g.priority <= 2).slice(0, 12)
-    const templates = generateGoalTemplates(topSkills.map(s => s.skillId), assessments, goalPrefs)
+    const recommendations = assessmentRecommendations.slice(0, 12)
+    if (recommendations.length === 0) return
 
-    const goals = templates.map(t => ({
-      id: t.skillId,
-      skillId: t.skillId,
-      skillName: t.skillName,
-      domain: getDomainCategory(t.domainName),
-      program: t.skillName,
-      objective: t.goalText,
-      goalText: t.goalText,
-      baseline: '0%',
-      currentLevel: 'New',
-      criteria: goalPrefs.masteryCriteria,
-      targetDate: getSixMonthsOut(),
+    const targetDate = getSixMonthsOut()
+    const importedGoals = recommendations.map((recommendation) =>
+      buildAuthReportGoalFromRecommendation(recommendation, targetDate)
+    )
+    const importedDeficitSlugs = importedGoals.map((goal) => goal.canonical_deficit_slug || goal.skillId).filter(Boolean)
+    const timestamp = new Date().toISOString()
+
+    setFields((prev) => {
+      const nextGoals = appendUniqueGoals(prev.goals || [], importedGoals)
+      return {
+        ...prev,
+        goals: nextGoals,
+        assessmentRecommendationReview: createAssessmentRecommendationReviewState(
+          prev.assessmentRecommendationReview,
+          assessmentRecommendations,
+          {
+            removeExcludedDeficitSlugs: importedDeficitSlugs,
+            touchReview: true,
+            touchImport: true,
+            timestamp,
+          }
+        ),
+      }
+    })
+    track('feature_use', 'import_assessment_recommendations_to_auth_report')
+  }, [assessmentRecommendations])
+
+  const handleImportSingleRecommendation = useCallback((recommendation) => {
+    const importedGoal = buildAuthReportGoalFromRecommendation(recommendation, getSixMonthsOut())
+    const timestamp = new Date().toISOString()
+
+    setFields((prev) => ({
+      ...prev,
+      goals: appendUniqueGoals(prev.goals || [], [importedGoal]),
+      assessmentRecommendationReview: createAssessmentRecommendationReviewState(
+        prev.assessmentRecommendationReview,
+        assessmentRecommendations,
+        {
+          removeExcludedDeficitSlugs: [recommendation.deficitSlug],
+          touchReview: true,
+          touchImport: true,
+          timestamp,
+        }
+      ),
     }))
+    track('feature_use', 'import_single_assessment_recommendation_to_auth_report')
+  }, [assessmentRecommendations])
 
-    update('goals', goals)
-    track('feature_use', 'import_goals_to_auth_report')
-  }, [assessments, goalPrefs, update])
+  const handleExcludeRecommendation = useCallback((recommendation) => {
+    const timestamp = new Date().toISOString()
+
+    setFields((prev) => ({
+      ...prev,
+      assessmentRecommendationReview: createAssessmentRecommendationReviewState(
+        prev.assessmentRecommendationReview,
+        assessmentRecommendations,
+        {
+          addExcludedDeficitSlugs: [recommendation.deficitSlug],
+          touchReview: true,
+          timestamp,
+        }
+      ),
+    }))
+    track('feature_use', 'exclude_assessment_recommendation_from_auth_report')
+  }, [assessmentRecommendations])
+
+  const handleReconsiderRecommendation = useCallback((recommendation) => {
+    const timestamp = new Date().toISOString()
+
+    setFields((prev) => ({
+      ...prev,
+      assessmentRecommendationReview: createAssessmentRecommendationReviewState(
+        prev.assessmentRecommendationReview,
+        assessmentRecommendations,
+        {
+          removeExcludedDeficitSlugs: [recommendation.deficitSlug],
+          touchReview: true,
+          timestamp,
+        }
+      ),
+    }))
+    track('feature_use', 'reconsider_assessment_recommendation_for_auth_report')
+  }, [assessmentRecommendations])
 
   // Import goals from the client's Learning Tree
   const handleImportFromTree = useCallback(async () => {
@@ -835,11 +955,7 @@ SOCIALIZATION GOALS: ${socialGoals.join('; ') || 'Not specified'}` },
       .map(p => ({
         id: p.id,
         skillId: p.stg_id,
-        domain: p.domain === 'Behavior' ? 'maladaptive'
-          : p.domain === 'Communication' ? 'communication'
-          : p.domain === 'Social' ? 'socialization'
-          : p.domain === 'Parent Training' ? 'parent'
-          : 'communication',
+        domain: mapLearningTreeDomainToAuthGoalDomain(p.domain),
         program: p.name,
         objective: p.objective || p.name,
         goalText: p.objective || p.name,
@@ -854,9 +970,9 @@ SOCIALIZATION GOALS: ${socialGoals.join('; ') || 'Not specified'}` },
 
     if (newGoals.length === 0) return
 
-    setFields(prev => ({ ...prev, goals: [...prev.goals, ...newGoals] }))
+    setFields(prev => ({ ...prev, goals: appendUniqueGoals(prev.goals || [], newGoals) }))
     track('feature_use', 'import_goals_from_tree')
-  }, [clientId, fields.goals])
+  }, [clientId, fields.goals, goalPrefs.masteryCriteria])
 
   // Goal count warning: need 1 active goal per hour of 97153 requested per week
   // Goal count summary — excludes socialGroup and parent from the required count
@@ -1516,6 +1632,49 @@ RULES:
         </div>
       ) : null}
 
+      {assessmentRecommendations.length > 0 ? (
+        <div className="mb-4 rounded-xl border border-sage-200 bg-sage-50/70 px-4 py-3">
+          <div className={`flex ${isPhone ? 'flex-col gap-3' : 'items-start justify-between gap-4'}`}>
+            <div>
+              <div className="text-[11px] font-semibold uppercase tracking-wider text-sage-700">
+                Assessment Recommendation Review
+              </div>
+              <div className="mt-1 text-sm font-semibold text-sage-900">
+                {assessmentRecommendationReviewSummary.pending > 0
+                  ? `${assessmentRecommendationReviewSummary.pending} medically necessary goal famil${assessmentRecommendationReviewSummary.pending === 1 ? 'y still needs' : 'ies still need'} BCBA review.`
+                  : `${assessmentRecommendationReviewSummary.imported} goal famil${assessmentRecommendationReviewSummary.imported === 1 ? 'y is' : 'ies are'} already in this report.`}
+              </div>
+              <p className="mt-1 text-xs leading-relaxed text-sage-700">
+                {assessmentRecommendationReviewSummary.total} surfaced from the current assessment
+                {assessmentRecommendationReviewSummary.imported > 0 ? ` · ${assessmentRecommendationReviewSummary.imported} imported` : ''}
+                {assessmentRecommendationReviewSummary.excluded > 0 ? ` · ${assessmentRecommendationReviewSummary.excluded} excluded` : ''}
+                {fields.assessmentRecommendationReview?.lastReviewedAt
+                  ? ` · reviewed ${new Date(fields.assessmentRecommendationReview.lastReviewedAt).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}`
+                  : ''}
+              </p>
+            </div>
+            <div className={`flex ${isPhone ? 'flex-col' : 'flex-wrap justify-end'} gap-2`}>
+              <button
+                type="button"
+                onClick={() => setOpenSections(prev => new Set([...prev, '17']))}
+                className="min-h-[44px] rounded-lg border border-sage-200 bg-white px-3 py-2 text-xs font-semibold text-sage-700 transition-colors hover:bg-sage-100"
+              >
+                Review in Goals
+              </button>
+              {assessmentRecommendationReviewSummary.pending > 0 && resolvedReportAccess.canEditAuthorizationFields ? (
+                <button
+                  type="button"
+                  onClick={handleImportGoals}
+                  className="min-h-[44px] rounded-lg bg-sage-600 px-3 py-2 text-xs font-semibold text-white transition-colors hover:bg-sage-700"
+                >
+                  Import Pending
+                </button>
+              ) : null}
+            </div>
+          </div>
+        </div>
+      ) : null}
+
       {/* Save / Load / New buttons */}
       <div className="flex items-center gap-2 mb-4 flex-wrap">
         <button onClick={handleSaveReport} disabled={saveStatus === 'saving' || !resolvedReportAccess.canSaveAuthorizationReports} className="text-[11px] text-sage-600 hover:text-sage-700 font-medium px-3 py-1.5 min-h-[44px] rounded-lg border border-sage-200 hover:bg-sage-50 transition-colors flex items-center gap-1 disabled:opacity-50 disabled:cursor-not-allowed">
@@ -2016,6 +2175,92 @@ RULES:
       {/* ── Section 17: Goals ── */}
       <AccordionSection title="Goals" sectionNumber="17" isOpen={openSections.has('17')} onToggle={() => toggleSection('17')} {...doneProps('17')}>
 
+        {assessmentRecommendations.length > 0 ? (
+          <div className="mb-4 rounded-xl border border-sage-200 bg-white p-3">
+            <div className={`flex ${isPhone ? 'flex-col gap-2' : 'items-start justify-between gap-3'} mb-3`}>
+              <div>
+                <p className="text-[10px] font-semibold uppercase tracking-wider text-sage-700">Assessment Recommendation Review</p>
+                <p className="mt-1 text-[12px] font-semibold text-warm-800">Review the medically necessary goal families surfaced from the current assessment.</p>
+                <p className="mt-1 text-[10px] text-warm-500">Import what belongs in this report and explicitly exclude anything you do not want to carry forward.</p>
+              </div>
+              {assessmentRecommendationReviewSummary.pending > 0 && resolvedReportAccess.canEditAuthorizationFields ? (
+                <button
+                  type="button"
+                  onClick={handleImportGoals}
+                  className="min-h-[44px] rounded-lg border border-sage-200 bg-sage-50 px-3 py-2 text-[11px] font-semibold text-sage-700 transition-colors hover:bg-sage-100"
+                >
+                  Import All Pending
+                </button>
+              ) : null}
+            </div>
+
+            <div className="mb-3 flex flex-wrap gap-2">
+              {Object.entries(assessmentRecommendationReviewSummary).map(([key, count]) => (
+                <span key={key} className="rounded-full border border-warm-200 bg-warm-50 px-2 py-0.5 text-[10px] font-medium text-warm-600">
+                  {key === 'total' ? 'Surfaced' : key === 'imported' ? 'Imported' : key === 'excluded' ? 'Excluded' : 'Pending'}: {count}
+                </span>
+              ))}
+            </div>
+
+            <div className="space-y-2">
+              {assessmentRecommendations.map((recommendation) => {
+                const status = getAssessmentRecommendationStatus(
+                  recommendation,
+                  fields.assessmentRecommendationReview,
+                  fields.goals || []
+                )
+                const statusConfig = RECOMMENDATION_STATUS_CONFIG[status] || RECOMMENDATION_STATUS_CONFIG.pending
+                const domainLabel = CANONICAL_DOMAIN_LABELS[recommendation.domainSlug] || 'Communication'
+
+                return (
+                  <div key={recommendation.deficitSlug} className="rounded-lg border border-warm-200 bg-warm-50/40 p-3">
+                    <div className={`flex ${isPhone ? 'flex-col gap-2' : 'items-start justify-between gap-3'}`}>
+                      <div className="min-w-0">
+                        <div className="flex flex-wrap items-center gap-2">
+                          <span className="rounded-full border border-sage-200 bg-sage-50 px-2 py-0.5 text-[10px] font-semibold text-sage-700">{domainLabel}</span>
+                          <span className={`rounded-full border px-2 py-0.5 text-[10px] font-semibold ${statusConfig.tone}`}>{statusConfig.label}</span>
+                          <span className="text-[10px] font-medium text-warm-500">{recommendation.recommendationStrength} strength</span>
+                        </div>
+                        <p className="mt-2 text-[12px] font-semibold text-warm-800">{recommendation.goalFamilyTitle}</p>
+                        <p className="mt-1 text-[11px] leading-relaxed text-warm-600">{recommendation.evidenceSummary}</p>
+                      </div>
+                      {resolvedReportAccess.canEditAuthorizationFields ? (
+                        <div className={`flex ${isPhone ? 'flex-wrap' : 'flex-col'} gap-2`}>
+                          {status !== 'imported' ? (
+                            <button
+                              type="button"
+                              onClick={() => handleImportSingleRecommendation(recommendation)}
+                              className="min-h-[44px] rounded-lg border border-sage-200 bg-white px-3 py-2 text-[11px] font-semibold text-sage-700 transition-colors hover:bg-sage-50"
+                            >
+                              Add To Report
+                            </button>
+                          ) : null}
+                          {status === 'excluded' ? (
+                            <button
+                              type="button"
+                              onClick={() => handleReconsiderRecommendation(recommendation)}
+                              className="min-h-[44px] rounded-lg border border-warm-200 bg-white px-3 py-2 text-[11px] font-semibold text-warm-600 transition-colors hover:bg-warm-50"
+                            >
+                              Reconsider
+                            </button>
+                          ) : status !== 'imported' ? (
+                            <button
+                              type="button"
+                              onClick={() => handleExcludeRecommendation(recommendation)}
+                              className="min-h-[44px] rounded-lg border border-warm-200 bg-white px-3 py-2 text-[11px] font-semibold text-warm-600 transition-colors hover:bg-warm-50"
+                            >
+                              Exclude
+                            </button>
+                          ) : null}
+                        </div>
+                      ) : null}
+                    </div>
+                  </div>
+                )
+              })}
+            </div>
+          </div>
+        ) : null}
 
         {/* Upload goals from doc */}
         <div className="mb-3 space-y-2">
@@ -2074,14 +2319,23 @@ RULES:
           )}
 
           {/* Import buttons */}
-          <div className="flex gap-2">
-            <button onClick={handleImportFromTree} className="flex-1 py-2 min-h-[44px] rounded-lg border border-sage-200 text-sage-600 text-[11px] font-semibold hover:bg-sage-50 transition-colors flex items-center justify-center gap-1.5">
-              <svg className="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><path d="M12 5v14M5 12h14" /></svg>
-              From Learning Tree
+          <div className="mb-3 rounded-lg border border-sage-200 bg-sage-50 px-3 py-2">
+            <p className="text-[11px] font-semibold text-sage-700">Default workflow: use Assessment Recommendations or the built-in Medically Necessary Library first.</p>
+            <p className="mt-1 text-[10px] text-sage-700">Use Learning Tree or manual entry when you need client-specific carryover, mastered goals, or a true edge case.</p>
+          </div>
+
+          <div className="grid gap-2 sm:grid-cols-3">
+            <button onClick={handleImportGoals} className="flex-1 py-2 min-h-[44px] rounded-lg border border-sage-200 text-sage-600 text-[11px] font-semibold hover:bg-sage-50 transition-colors flex items-center justify-center gap-1.5">
+              <svg className="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><path d="M12 3v18M3 12h18" /><path d="M7 7l10 10" /></svg>
+              From Assessment Recommendations
             </button>
             <button onClick={() => setShowGoalLibrary(true)} className="flex-1 py-2 min-h-[44px] rounded-lg border border-sage-200 text-sage-600 text-[11px] font-semibold hover:bg-sage-50 transition-colors flex items-center justify-center gap-1.5">
               <svg className="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><path d="M4 19.5A2.5 2.5 0 016.5 17H20" /><path d="M6.5 2H20v20H6.5A2.5 2.5 0 014 19.5v-15A2.5 2.5 0 016.5 2z" /></svg>
-              From Goal Library
+              From Medically Necessary Library
+            </button>
+            <button onClick={handleImportFromTree} className="flex-1 py-2 min-h-[44px] rounded-lg border border-sage-200 text-sage-600 text-[11px] font-semibold hover:bg-sage-50 transition-colors flex items-center justify-center gap-1.5">
+              <svg className="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><path d="M12 5v14M5 12h14" /></svg>
+              From Learning Tree
             </button>
           </div>
         </div>
@@ -2095,9 +2349,9 @@ RULES:
           <div className="flex flex-wrap gap-2">
             {Object.entries(goalCounts.byDomain).map(([domain, count]) => (
               <span key={domain} className={`text-[10px] font-medium px-2 py-0.5 rounded-full ${
-                domain === 'socialGroup' || domain === 'parent' ? 'bg-warm-100 text-warm-500' : 'bg-sage-50 text-sage-700 border border-sage-200'
+                AUTH_REPORT_DOMAIN_CONFIG[domain]?.counted === false ? 'bg-warm-100 text-warm-500' : 'bg-sage-50 text-sage-700 border border-sage-200'
               }`}>
-                {domain === 'maladaptive' ? 'Maladaptive' : domain === 'replacement' ? 'Replacement' : domain === 'communication' ? 'Communication' : domain === 'socialization' ? 'Social' : domain === 'socialGroup' ? 'Social Group (not counted)' : domain === 'parent' ? 'Parent (not counted)' : domain}: {count}
+                {getAuthReportDomainLabel(domain)}{AUTH_REPORT_DOMAIN_CONFIG[domain]?.counted === false ? ' (not counted)' : ''}: {count}
               </span>
             ))}
           </div>
@@ -2115,14 +2369,14 @@ RULES:
         )}
 
         {fields.goals.length === 0 ? (
-          <p className="text-[10px] text-warm-500 text-center py-4">No goals yet. Upload a goals document, or add manually below.</p>
+          <p className="text-[10px] text-warm-500 text-center py-4">No goals yet. Start with Assessment Recommendations or the built-in Medically Necessary Library, then add manual goals only if needed.</p>
         ) : (
           <div className="space-y-3">
             {fields.goals.map((goal, i) => (
               <div key={goal.id || i} className="p-3 bg-white rounded-lg border border-warm-200">
                 <div className="flex items-start justify-between gap-2 mb-2">
                   <div>
-                    <span className="text-[10px] px-2 py-0.5 rounded-full bg-warm-100 text-warm-500">{goal.domain || 'Other'}</span>
+                    <span className="text-[10px] px-2 py-0.5 rounded-full bg-warm-100 text-warm-500">{goal.domain ? getAuthReportDomainLabel(goal.domain) : 'Other'}</span>
                     <span className="text-[11px] font-medium text-warm-700 ml-2">{goal.program || goal.skillName}</span>
                   </div>
                   <button onClick={() => setFields(prev => ({ ...prev, goals: prev.goals.filter((_, j) => j !== i) }))}
@@ -2286,10 +2540,7 @@ RULES:
               <GoalLibrary
                 clientId={clientId}
                 onSelectGoal={(goal) => {
-                  const domain = goal.domain_name === 'Behavior' ? 'maladaptive'
-                    : goal.domain_name === 'Communication' ? 'communication'
-                    : goal.domain_name === 'Social' ? 'socialization'
-                    : 'communication'
+                  const domain = mapLearningTreeDomainToAuthGoalDomain(goal.domain_name)
                   const newGoal = {
                     id: `lib-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`,
                     skillId: goal.stg_id,
@@ -2304,13 +2555,12 @@ RULES:
                     goal_type: goal.goal_type,
                     measurement_type: goal.measurement_type,
                     type: goal.goal_type,
+                    source_type: goal.source_type || 'legacy',
+                    source_label: goal.source_label || 'Legacy & Custom Library',
+                    canonical_deficit_slug: goal.canonical_deficit_slug || null,
+                    canonical_domain_slug: goal.canonical_domain_slug || null,
                   }
-                  // Append without duplicates
-                  const key = (newGoal.program || '').toLowerCase().trim()
-                  const exists = fields.goals.some(g => (g.program || '').toLowerCase().trim() === key)
-                  if (!exists) {
-                    setFields(prev => ({ ...prev, goals: [...prev.goals, newGoal] }))
-                  }
+                  setFields(prev => ({ ...prev, goals: appendUniqueGoals(prev.goals || [], [newGoal]) }))
                 }}
                 onClose={() => setShowGoalLibrary(false)}
               />
@@ -2323,13 +2573,6 @@ RULES:
 }
 
 // ─── Helpers ────────────────────────────────────────────────────
-
-function getDomainCategory(domainName) {
-  if (/communication/i.test(domainName)) return 'communication'
-  if (/social|perspective/i.test(domainName)) return 'socialization'
-  if (/regulation|safety|executive/i.test(domainName)) return 'maladaptive'
-  return 'communication'
-}
 
 function getSixMonthsOut() {
   const d = new Date()

@@ -1,21 +1,13 @@
 import { useState, useCallback, useMemo } from 'react'
 import useResponsive from '../../hooks/useResponsive.js'
+import { AUTH_REPORT_DOMAIN_CONFIG } from '../../lib/recommendationDraftAdapters.js'
 
 /**
  * Goal Review Panel — the "magic moment" between upload and auto-populate.
  * Shows parsed goals organized by domain, lets BCBA reclassify, edit, and confirm.
  */
 
-const DOMAIN_CONFIG = {
-  maladaptive: { label: 'Maladaptive', color: '#EF4444', bg: '#FEF2F2', border: '#FECACA' },
-  replacement: { label: 'Replacement (FERB)', color: '#D97706', bg: '#FFFBEB', border: '#FDE68A' },
-  communication: { label: 'Communication', color: '#3B82F6', bg: '#EFF6FF', border: '#BFDBFE' },
-  socialization: { label: 'Socialization', color: '#10B981', bg: '#ECFDF5', border: '#A7F3D0' },
-  socialGroup: { label: 'Social Skills Group', color: '#14B8A6', bg: '#F0FDFA', border: '#99F6E4' },
-  parent: { label: 'Parent Goals', color: '#8B5CF6', bg: '#F5F3FF', border: '#DDD6FE' },
-}
-
-const DOMAIN_OPTIONS = Object.entries(DOMAIN_CONFIG).map(([value, cfg]) => ({ value, label: cfg.label }))
+const DOMAIN_OPTIONS = Object.entries(AUTH_REPORT_DOMAIN_CONFIG).map(([value, cfg]) => ({ value, label: cfg.label }))
 
 const STATUS_OPTIONS = [
   { value: 'active', label: 'Active', color: '#3B82F6' },
@@ -24,7 +16,7 @@ const STATUS_OPTIONS = [
 ]
 
 function DomainTag({ domain, onChange }) {
-  const cfg = DOMAIN_CONFIG[domain] || DOMAIN_CONFIG.communication
+  const cfg = AUTH_REPORT_DOMAIN_CONFIG[domain] || AUTH_REPORT_DOMAIN_CONFIG.communication
   return (
     <select
       value={domain}
@@ -53,7 +45,7 @@ function StatusBadge({ status, onChange }) {
 
 function GoalCard({ goal, index, onUpdate, onDelete, graphImage, onGraphRemove, onGraphAssign, isPhone }) {
   const [editing, setEditing] = useState(false)
-  const cfg = DOMAIN_CONFIG[goal.domain] || DOMAIN_CONFIG.communication
+  const cfg = AUTH_REPORT_DOMAIN_CONFIG[goal.domain] || AUTH_REPORT_DOMAIN_CONFIG.communication
 
   return (
     <div
@@ -207,9 +199,13 @@ export default function GoalReviewPanel({ goals, goalGraphs, onConfirm, onCancel
       if (!groups[domain]) groups[domain] = []
       groups[domain].push(goal)
     }
-    // Sort by domain order
-    const order = ['maladaptive', 'replacement', 'communication', 'socialization', 'socialGroup', 'parent']
-    return order.filter(d => groups[d]).map(d => ({ domain: d, goals: groups[d], config: DOMAIN_CONFIG[d] }))
+    const order = ['maladaptive', 'replacement', 'communication', 'socialization', 'adaptive_daily_living', 'coping_self_regulation', 'socialGroup', 'parent']
+    const extraDomains = Object.keys(groups).filter((domain) => !order.includes(domain)).sort()
+    return [...order.filter(d => groups[d]), ...extraDomains].map(d => ({
+      domain: d,
+      goals: groups[d],
+      config: AUTH_REPORT_DOMAIN_CONFIG[d] || AUTH_REPORT_DOMAIN_CONFIG.communication,
+    }))
   }, [activeGoals])
 
   const handleConfirm = useCallback(() => {

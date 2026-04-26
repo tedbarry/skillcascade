@@ -36,10 +36,12 @@ const DOMAIN_COLORS = {
   Behavior: '#EF4444',
   Communication: '#3B82F6',
   Social: '#10B981',
+  'Adaptive Daily Living': '#0891b2',
+  'Coping & Self-Regulation': '#8b5cf6',
   'Parent Training': '#9b6fb5',
 }
 
-const DOMAIN_ORDER = ['Behavior', 'Communication', 'Social', 'Parent Training']
+const DOMAIN_ORDER = ['Behavior', 'Communication', 'Social', 'Adaptive Daily Living', 'Coping & Self-Regulation', 'Parent Training']
 
 function FolderIcon({ open }) {
   return open ? (
@@ -137,17 +139,21 @@ export default function LearningTree({ clientId, clientName, assessments, onStar
       if (!domainMap[d][ltg][stg]) domainMap[d][ltg][stg] = []
       domainMap[d][ltg][stg].push(prog)
     }
-    return DOMAIN_ORDER.map(d => ({
+    const extraDomains = Object.keys(domainMap)
+      .filter((domain) => !DOMAIN_ORDER.includes(domain))
+      .sort((a, b) => a.localeCompare(b))
+
+    return [...DOMAIN_ORDER, ...extraDomains].map(d => ({
       domain: d,
       count: filteredPrograms.filter(p => (p.domain || 'Other') === d).length,
       ltgs: Object.entries(domainMap[d] || {}).map(([ltgName, stgMap]) => ({
         name: ltgName,
         stgs: Object.entries(stgMap).map(([stgName, progs]) => ({ name: stgName, programs: progs })),
       })),
-    }))
+    })).filter((entry) => entry.count > 0 || DOMAIN_ORDER.includes(entry.domain))
   }, [filteredPrograms])
 
-  // Add program from Goal Library
+  // Add program from the built-in or preserved goal library
   const handleAddFromLibrary = useCallback(async (goal) => {
     if (!clientId) return
     track('feature_use', 'add_program_from_library')
@@ -329,17 +335,22 @@ export default function LearningTree({ clientId, clientName, assessments, onStar
           )}
           <button onClick={() => setShowLibrary(true)} className="px-4 py-2 min-h-[44px] rounded-full bg-sage-600 text-white text-xs font-semibold hover:bg-sage-700 transition-colors flex items-center gap-1.5">
             <svg className="w-3.5 h-3.5" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><path d="M8 3v10M3 8h10" /></svg>
-            Add from Library
+            Add from Medically Necessary Library
           </button>
           <button onClick={handleAddCustom} className="px-4 py-2 min-h-[44px] rounded-full border border-sage-300 text-sage-700 text-xs font-medium hover:bg-sage-50 transition-colors flex items-center gap-1.5">
             <svg className="w-3.5 h-3.5" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><path d="M12 8H4M8 4v8" /></svg>
-            Add Goal
+            Add Custom Goal
           </button>
           <button onClick={() => setShowGoalImporter(true)} className="px-4 py-2 min-h-[44px] rounded-full border border-warm-200 text-warm-600 text-xs font-medium hover:bg-warm-50 transition-colors flex items-center gap-1.5">
             <svg className="w-3.5 h-3.5" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><path d="M3 12v1a2 2 0 002 2h6a2 2 0 002-2v-1M8 3v9M12 7l-4 4-4-4" /></svg>
             Import PDF
           </button>
         </div>
+      </div>
+
+      <div className="mb-4 rounded-xl border border-sage-200 bg-sage-50 px-3 py-2.5">
+        <p className="text-[11px] font-semibold text-sage-700">Default workflow: start from the SkillCascade Medically Necessary Library.</p>
+        <p className="mt-1 text-[10px] text-sage-700">Use custom goals only when the built-in clinically necessary library or assessment recommendations do not already fit the client.</p>
       </div>
 
       {/* Goal count summary bar */}
@@ -420,9 +431,12 @@ export default function LearningTree({ clientId, clientName, assessments, onStar
                 <div className="ml-5 border-l border-warm-200">
                   {domainLTGs.length === 0 && (
                     <div className="pl-3 py-2 flex items-center gap-2">
-                      <p className="text-[11px] text-warm-500">No programs yet.</p>
+                      <p className="text-[11px] text-warm-500">No programs yet in this domain.</p>
+                      <button onClick={() => setShowLibrary(true)} className="text-[10px] text-sage-600 hover:text-sage-700 font-medium px-2 py-1 min-h-[32px]">
+                        + Add from Medically Necessary Library
+                      </button>
                       {domain === 'Parent Training' && (
-                        <button onClick={handleAddParentGoal} className="text-[10px] text-purple-600 hover:text-purple-700 font-medium">+ Add Parent Goal</button>
+                        <button onClick={handleAddParentGoal} className="text-[10px] text-purple-600 hover:text-purple-700 font-medium">+ Add Custom Parent Goal</button>
                       )}
                     </div>
                   )}
@@ -603,11 +617,11 @@ export default function LearningTree({ clientId, clientName, assessments, onStar
                   {/* Add buttons at domain level */}
                   <div className="pl-3 flex gap-2 py-1">
                     <button onClick={() => setShowLibrary(true)} className="text-[10px] text-sage-600 hover:text-sage-700 font-medium px-2 py-1 min-h-[32px]">
-                      + Add from Library
+                      + Add from Medically Necessary Library
                     </button>
                     {domain === 'Parent Training' && (
                       <button onClick={handleAddParentGoal} className="text-[10px] text-purple-600 hover:text-purple-700 font-medium px-2 py-1 min-h-[32px]">
-                        + Add Parent Goal
+                        + Add Custom Parent Goal
                       </button>
                     )}
                   </div>

@@ -13,6 +13,7 @@ import useResponsive from '../../hooks/useResponsive.js'
 import usePermissions from '../../hooks/usePermissions.js'
 
 const HIERARCHY = GOAL_HIERARCHY_TEXT
+const TREE_ONLY_DOMAINS = ['Adaptive Daily Living', 'Coping & Self-Regulation']
 
 const MEASUREMENT_TYPES = [
   { value: 'percentage', label: 'Percentage (%)' },
@@ -48,19 +49,32 @@ function getSixMonthsOut() {
   return d.toLocaleDateString('en-US', { month: 'long', year: 'numeric' })
 }
 
-export default function AddGoalDialog({ clientId, onClose, onSaved, mode = 'tree', initialName = '', initialObjective = '', initialDomain = '' }) {
+export default function AddGoalDialog({
+  clientId,
+  onClose,
+  onSaved,
+  mode = 'tree',
+  initialName = '',
+  initialObjective = '',
+  initialDomain = '',
+  initialLtg = '',
+  initialCriteria = '',
+  initialGoalType = '',
+  initialProgramType = '',
+  initialDataMethod = '',
+}) {
   const { isPhone } = useResponsive()
   const { can } = usePermissions()
   const canEditGoalLibrary = can('goals', 'edit')
   const [name, setName] = useState(initialName)
   const [objective, setObjective] = useState(initialObjective)
   const [baseline, setBaseline] = useState('')
-  const [criteria, setCriteria] = useState('80% accuracy across 3 consecutive sessions')
+  const [criteria, setCriteria] = useState(initialCriteria || '80% accuracy across 3 consecutive sessions')
   const [targetDate, setTargetDate] = useState(getSixMonthsOut())
   const [measurementType, setMeasurementType] = useState('percentage')
-  const [goalType, setGoalType] = useState('increase')
-  const [programType, setProgramType] = useState('skill_acquisition')
-  const [dataMethod, setDataMethod] = useState('trial')
+  const [goalType, setGoalType] = useState(initialGoalType || 'increase')
+  const [programType, setProgramType] = useState(initialProgramType || 'skill_acquisition')
+  const [dataMethod, setDataMethod] = useState(initialDataMethod || 'trial')
   const [ratingScaleMax, setRatingScaleMax] = useState(5)
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState(null)
@@ -70,9 +84,13 @@ export default function AddGoalDialog({ clientId, onClose, onSaved, mode = 'tree
   // Auto-routing
   const [routing, setRouting] = useState(null)
   const [domainOverride, setDomainOverride] = useState(initialDomain || '')
-  const [ltgOverride, setLtgOverride] = useState('')
+  const [ltgOverride, setLtgOverride] = useState(initialLtg || '')
 
-  const domains = useMemo(() => getDomains(), [])
+  const domains = useMemo(() => {
+    const base = getDomains()
+    if (mode !== 'tree') return base
+    return [...base, ...TREE_ONLY_DOMAINS.filter((domain) => !base.includes(domain))]
+  }, [mode])
 
   // Debounced auto-route as user types
   useEffect(() => {
@@ -100,9 +118,13 @@ export default function AddGoalDialog({ clientId, onClose, onSaved, mode = 'tree
     return () => clearTimeout(timer)
   }, [name, objective])
 
-  const effectiveDomain = domainOverride || routing?.domain || 'Communication'
-  const effectiveLtg = ltgOverride || routing?.ltgName || 'General'
-  const availableLtgs = useMemo(() => getLtgsForDomain(effectiveDomain), [effectiveDomain])
+  const effectiveDomain = domainOverride || routing?.domain || initialDomain || 'Communication'
+  const effectiveLtg = ltgOverride || routing?.ltgName || initialLtg || 'General'
+  const availableLtgs = useMemo(() => {
+    const base = getLtgsForDomain(effectiveDomain)
+    const fallbacks = [ltgOverride, initialLtg, 'Assessment Recommendations', 'General'].filter(Boolean)
+    return [...new Set([...base, ...fallbacks])]
+  }, [effectiveDomain, ltgOverride, initialLtg])
 
   const confidenceLabel = routing ? (
     routing.confidence >= 0.8 ? 'High confidence' :
@@ -119,7 +141,7 @@ export default function AddGoalDialog({ clientId, onClose, onSaved, mode = 'tree
   const handleSave = useCallback(async () => {
     if (!name.trim()) { setError('Goal name is required'); return }
     if ((mode === 'library' || saveToLibrary) && !canEditGoalLibrary) {
-      setError('Only clinicians with goal authoring access can save to the Goal Library.')
+      setError('Only clinicians with goal authoring access can save to the Legacy & Custom Library.')
       return
     }
     setSaving(true)
@@ -225,7 +247,7 @@ export default function AddGoalDialog({ clientId, onClose, onSaved, mode = 'tree
         {/* Header */}
         <div className="flex items-center justify-between px-6 py-4 border-b border-warm-200">
           <h2 className="text-lg font-bold text-warm-800 font-display">
-            {mode === 'library' ? 'Add to Goal Library' : 'Add Goal to Learning Tree'}
+            {mode === 'library' ? 'Add to Legacy & Custom Library' : 'Add Custom Goal to Learning Tree'}
           </h2>
           <button onClick={onClose} className="text-warm-400 hover:text-warm-600 transition-colors p-1" aria-label="Close">
             <svg className="w-5 h-5" viewBox="0 0 20 20" fill="currentColor"><path fillRule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clipRule="evenodd" /></svg>
@@ -233,6 +255,13 @@ export default function AddGoalDialog({ clientId, onClose, onSaved, mode = 'tree
         </div>
 
         <div className="px-6 py-5 space-y-4">
+          {mode === 'tree' && (
+            <div className="rounded-lg border border-sage-200 bg-sage-50 px-3 py-2">
+              <p className="text-[11px] font-semibold text-sage-700">Use this only when the built-in Medically Necessary Library does not already cover the goal.</p>
+              <p className="mt-1 text-[10px] text-sage-700">The default path is to import a medically necessary goal first, then customize or add an edge-case goal here.</p>
+            </div>
+          )}
+
           {/* Goal name */}
           <div>
             <label className="block text-sm font-medium text-warm-700 mb-1">Goal / Program Name *</label>
@@ -403,7 +432,7 @@ export default function AddGoalDialog({ clientId, onClose, onSaved, mode = 'tree
             />
           </div>
 
-          {/* Save to Library toggle (only in tree mode) */}
+          {/* Save to legacy/custom library toggle (only in tree mode) */}
           {mode === 'tree' && canEditGoalLibrary && (
             <div className="flex items-center gap-3 pt-1">
               <button
@@ -413,7 +442,7 @@ export default function AddGoalDialog({ clientId, onClose, onSaved, mode = 'tree
               >
                 <span className={`absolute top-0.5 w-4 h-4 rounded-full bg-white shadow-sm transition-transform ${saveToLibrary ? 'translate-x-5' : 'translate-x-0.5'}`} />
               </button>
-              <span className="text-sm text-warm-600">Also save to Goal Library</span>
+              <span className="text-sm text-warm-600">Also save to Legacy &amp; Custom Library</span>
               {saveToLibrary && (
                 <select
                   value={libraryScope}
@@ -429,7 +458,7 @@ export default function AddGoalDialog({ clientId, onClose, onSaved, mode = 'tree
 
           {mode === 'library' && !canEditGoalLibrary && (
             <div className="px-3 py-2 rounded-lg bg-warm-50 border border-warm-200 text-sm text-warm-700">
-              Only users with goal authoring access can add shared Goal Library entries.
+              Only users with goal authoring access can add shared Legacy &amp; Custom Library entries.
             </div>
           )}
 
@@ -454,7 +483,7 @@ export default function AddGoalDialog({ clientId, onClose, onSaved, mode = 'tree
             disabled={saving || !name.trim() || (mode === 'library' && !canEditGoalLibrary)}
             className="px-6 py-2.5 rounded-full bg-sage-600 text-white text-sm font-semibold hover:bg-sage-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed min-h-[44px]"
           >
-            {saving ? 'Saving...' : mode === 'library' ? 'Add to Library' : 'Add to Tree'}
+            {saving ? 'Saving...' : mode === 'library' ? 'Add to Legacy & Custom Library' : 'Add Custom Goal'}
           </button>
         </div>
       </div>

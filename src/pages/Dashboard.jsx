@@ -1636,6 +1636,7 @@ export default function Dashboard() {
                   focusDomain={goalFocusDomain}
                   onClearFocus={() => setGoalFocusDomain(null)}
                   clientName={clientName}
+                  clientId={clientId}
                   onGenerateGoals={handleGenerateGoals}
                   onDeficitGoals={() => guardedSetActiveView(VIEWS.DEFICIT_GOALS)}
                   onLessonPlan={() => guardedSetActiveView(VIEWS.LESSON_PLAN)}

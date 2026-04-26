@@ -425,6 +425,8 @@ export async function syncReportToLearningTree(clientId, reportFields) {
     replacement: 'Behavior',
     communication: 'Communication',
     socialization: 'Social',
+    adaptive_daily_living: 'Adaptive Daily Living',
+    coping_self_regulation: 'Coping & Self-Regulation',
     socialGroup: 'Social',
     parent: 'Parent Training',
   }

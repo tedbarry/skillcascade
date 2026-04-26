@@ -3,7 +3,7 @@ import { api } from '../../lib/api.js'
 import { callAI } from '../../lib/aiClient.js'
 
 /**
- * Admin button that batch-maps Goal Library STGs to SkillCascade skills.
+ * Admin button that batch-maps legacy/custom library STGs to SkillCascade skills.
  * Must be logged in (uses AI proxy through auth session).
  */
 
@@ -100,8 +100,8 @@ Return JSON array only.` },
 
   return (
     <div className="p-4 bg-white rounded-lg border border-warm-200">
-      <h3 className="text-sm font-bold text-warm-800 mb-2">Map Goals to Cascade Model</h3>
-      <p className="text-[11px] text-warm-500 mb-3">AI maps each Goal Library goal to 1-3 skills in the 260-skill framework. This enables cascade analysis.</p>
+      <h3 className="text-sm font-bold text-warm-800 mb-2">Map Legacy &amp; Custom Library Goals to Cascade Model</h3>
+      <p className="text-[11px] text-warm-500 mb-3">AI maps each legacy/custom library goal to 1-3 skills in the 260-skill framework. Built-in medically necessary goals already use the new canonical structure.</p>
       <button
         onClick={handleMap}
         disabled={running}

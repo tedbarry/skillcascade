@@ -1,3 +1,5 @@
+import { summarizeAssessmentRecommendationReview } from './recommendationDraftAdapters.js'
+
 function getTimestamp(value) {
   const parsed = value ? Date.parse(value) : NaN
   return Number.isNaN(parsed) ? 0 : parsed
@@ -39,22 +41,38 @@ function resolveLaunchQueueLabel(launchContext) {
 
 export function buildReportWorkbenchItems(actionQueue = {}) {
   return [...(actionQueue.reportOnly || [])]
-    .map((summary) => ({
-      id: summary.id,
-      clientId: summary.client_id,
-      clientName: summary.clientName || 'Unknown Client',
-      isDraftReport: summary.isDraftReport === true,
-      badgeLabel: summary.isDraftReport ? 'Draft' : 'Ready',
-      badgeTone: summary.isDraftReport ? 'amber' : 'purple',
-      primaryActionLabel: summary.isDraftReport ? 'Review Draft' : 'Open Report',
-      secondaryActionLabel: summary.isDraftReport ? 'Use Draft' : 'Create Auth',
-      description: summary.isDraftReport
-        ? 'Draft authorization report is saved but still needs final review before coverage can be trusted.'
-        : 'Saved authorization report is ready to convert into tracked coverage before scheduling or utilization drifts.',
-      dateRangeLabel: formatDateRange(summary.startDate, summary.endDate),
-      updatedAt: summary.reportUpdatedAt || null,
-      sourceSummary: summary,
-    }))
+    .map((summary) => {
+      const reviewSummary = summarizeAssessmentRecommendationReview(
+        summary.reportFields?.assessmentRecommendationReview?.snapshot || [],
+        summary.reportFields?.assessmentRecommendationReview || null,
+        summary.reportFields?.goals || []
+      )
+
+      const reviewSuffix = reviewSummary.total > 0
+        ? reviewSummary.pending > 0
+          ? ` ${reviewSummary.pending} goal famil${reviewSummary.pending === 1 ? 'y still needs' : 'ies still need'} BCBA review.`
+          : reviewSummary.imported > 0
+            ? ` ${reviewSummary.imported} goal famil${reviewSummary.imported === 1 ? 'y is' : 'ies are'} already pulled into the report.`
+            : ''
+        : ''
+
+      return {
+        id: summary.id,
+        clientId: summary.client_id,
+        clientName: summary.clientName || 'Unknown Client',
+        isDraftReport: summary.isDraftReport === true,
+        badgeLabel: summary.isDraftReport ? 'Draft' : 'Ready',
+        badgeTone: summary.isDraftReport ? 'amber' : 'purple',
+        primaryActionLabel: summary.isDraftReport ? 'Review Draft' : 'Open Report',
+        secondaryActionLabel: summary.isDraftReport ? 'Use Draft' : 'Create Auth',
+        description: summary.isDraftReport
+          ? `Draft authorization report is saved but still needs final review before coverage can be trusted.${reviewSuffix}`
+          : `Saved authorization report is ready to convert into tracked coverage before scheduling or utilization drifts.${reviewSuffix}`,
+        dateRangeLabel: formatDateRange(summary.startDate, summary.endDate),
+        updatedAt: summary.reportUpdatedAt || null,
+        sourceSummary: summary,
+      }
+    })
     .sort((a, b) => {
       if (a.isDraftReport !== b.isDraftReport) return Number(b.isDraftReport) - Number(a.isDraftReport)
       return getTimestamp(b.updatedAt) - getTimestamp(a.updatedAt)
@@ -123,7 +141,7 @@ export function buildReportLaunchWorkbench({ launchContext = null, clientName = 
       hideGeneratedReports: true,
       steps: [
         'Review current client context and payer details.',
-        'Complete the authorization builder below.',
+        'Review medically necessary goal families and import what belongs in the report.',
         'Preview or finalize, then return to the ops queue.',
       ],
     }

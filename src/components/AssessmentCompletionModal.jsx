@@ -1,5 +1,6 @@
 import { useMemo } from 'react'
 import { framework, isAssessed, ASSESSMENT_LEVELS, ASSESSMENT_LABELS } from '../data/framework.js'
+import { buildAssessmentRecommendations } from '../lib/assessmentRecommendationEngine.js'
 import useResponsive from '../hooks/useResponsive.js'
 
 /**
@@ -47,6 +48,14 @@ export default function AssessmentCompletionModal({ assessments, onGenerateGoals
     .filter(d => d.assessed > 0 && d.needsWork > 0)
     .sort((a, b) => b.needsWork - a.needsWork)
     .slice(0, 3)
+
+  const recommendationSummary = useMemo(() => {
+    const recommendations = buildAssessmentRecommendations(assessments)
+    return {
+      total: recommendations.length,
+      topTitles: recommendations.slice(0, 3).map((recommendation) => recommendation.goalFamilyTitle),
+    }
+  }, [assessments])
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm p-4">
@@ -103,17 +112,27 @@ export default function AssessmentCompletionModal({ assessments, onGenerateGoals
 
           {/* What's next prompt */}
           <div className="bg-sage-50 rounded-lg px-4 py-3 border border-sage-100 mb-4">
-            <p className="text-sm text-sage-800 font-medium">Ready to turn this into goals?</p>
+            <p className="text-sm text-sage-800 font-medium">Ready to turn this into medically necessary goals?</p>
             <p className="text-xs text-sage-600 mt-0.5">
-              AI can draft {stats.needsWork + stats.developing > 10 ? '8-10' : `${Math.min(stats.needsWork + stats.developing, 10)}`} prioritized,
-              editable goals based on this assessment.
+              {recommendationSummary.total > 0
+                ? `This assessment surfaced ${recommendationSummary.total} canonical goal famil${recommendationSummary.total === 1 ? 'y' : 'ies'} for BCBA review.`
+                : `AI can draft ${stats.needsWork + stats.developing > 10 ? '8-10' : `${Math.min(stats.needsWork + stats.developing, 10)}`} prioritized, editable goals based on this assessment.`}
             </p>
+            {recommendationSummary.topTitles.length > 0 && (
+              <div className="mt-2 flex flex-wrap gap-1.5">
+                {recommendationSummary.topTitles.map((title) => (
+                  <span key={title} className="text-[10px] font-medium px-2 py-1 rounded-full bg-white text-sage-700 border border-sage-200">
+                    {title}
+                  </span>
+                ))}
+              </div>
+            )}
           </div>
 
           {/* CTAs */}
           <div className="space-y-2">
             <button
-              onClick={onGenerateGoals}
+              onClick={onViewGoals}
               className="w-full py-3 min-h-[44px] rounded-full bg-sage-600 text-white text-sm font-semibold hover:bg-sage-700 transition-colors flex items-center justify-center gap-2"
             >
               <svg className="w-4 h-4" viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
@@ -121,13 +140,13 @@ export default function AssessmentCompletionModal({ assessments, onGenerateGoals
                 <circle cx="10" cy="10" r="4" />
                 <circle cx="10" cy="10" r="1" fill="currentColor" />
               </svg>
-              Generate AI Goals
+              Review Goal Families
             </button>
             <button
-              onClick={onViewGoals}
+              onClick={onGenerateGoals}
               className="w-full py-3 min-h-[44px] rounded-lg bg-warm-100 text-warm-700 text-sm font-semibold hover:bg-warm-200 transition-colors"
             >
-              View Goal Engine
+              Generate AI Drafts
             </button>
             <button
               onClick={onDismiss}

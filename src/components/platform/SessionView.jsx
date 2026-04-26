@@ -679,7 +679,7 @@ export default function SessionView({
     return (
       <div className="flex flex-col items-center justify-center h-screen bg-warm-50 px-4">
         <p className="text-warm-500 text-sm mb-4">No active programs for {clientName}.</p>
-        <p className="text-warm-500 text-xs mb-4">Add programs from the Goal Library first.</p>
+        <p className="text-warm-500 text-xs mb-4">Start in the Learning Tree with the Medically Necessary Library, then come back once active goals are assigned.</p>
         <button onClick={onEndSession} className="px-4 py-2 min-h-[44px] rounded-lg bg-warm-200 text-warm-600 text-sm font-medium">
           Go Back
         </button>
