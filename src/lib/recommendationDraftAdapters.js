@@ -1,4 +1,5 @@
 import { CANONICAL_DOMAIN_LABELS } from '../data/canonicalRecommendationProfiles.js'
+import { CORE_GOAL_LIBRARY, CORE_GOAL_LIBRARY_NAME } from '../data/canonicalGoalLibrary.js'
 
 export const AUTH_REPORT_DOMAIN_CONFIG = {
   maladaptive: { label: 'Maladaptive', color: '#EF4444', bg: '#FEF2F2', border: '#FECACA', counted: true },
@@ -17,6 +18,8 @@ export function getAuthReportDomainLabel(domain) {
 
 export function mapCanonicalDomainToAuthGoalDomain(domainSlug) {
   switch (domainSlug) {
+    case 'behavior':
+      return 'maladaptive'
     case 'communication':
       return 'communication'
     case 'social':
@@ -29,6 +32,64 @@ export function mapCanonicalDomainToAuthGoalDomain(domainSlug) {
       return 'parent'
     default:
       return 'communication'
+  }
+}
+
+function parseCoreTargetDetail(target) {
+  if (!target?.description) return {}
+  try {
+    return JSON.parse(target.description)
+  } catch {
+    return {}
+  }
+}
+
+function getProgramTypeForCoreTarget(target) {
+  if (target?.canonical_domain_slug === 'caregiver_support') return 'parent_training'
+  if (target?.goal_type === 'decrease') return 'behavior_reduction'
+  return 'skill_acquisition'
+}
+
+function getAuthDomainForCoreTarget(target) {
+  if (target?.canonical_domain_slug === 'behavior') {
+    return target?.goal_type === 'decrease' ? 'maladaptive' : 'replacement'
+  }
+  return mapCanonicalDomainToAuthGoalDomain(target?.canonical_domain_slug)
+}
+
+export function getCoreLibraryTargetsForRecommendation(recommendation, options = {}) {
+  const deficitSlug = recommendation?.deficitSlug || recommendation?.canonical_deficit_slug
+  if (!deficitSlug) return []
+
+  const matches = CORE_GOAL_LIBRARY.targets
+    .filter((target) => target.canonical_deficit_slug === deficitSlug)
+    .sort((a, b) => (a.display_order ?? 99) - (b.display_order ?? 99) || a.name.localeCompare(b.name))
+
+  if (Number.isFinite(options.limit)) return matches.slice(0, options.limit)
+  return matches
+}
+
+export function getPrimaryCoreLibraryTargetForRecommendation(recommendation) {
+  return getCoreLibraryTargetsForRecommendation(recommendation, { limit: 1 })[0] || null
+}
+
+export function buildLearningTreeDraftFromCoreTarget(target, recommendation = null) {
+  const detail = parseCoreTargetDetail(target)
+
+  return {
+    name: target.name,
+    objective: detail.objective || target.objective || recommendation?.recommendedObjectiveSeed || target.name,
+    domain: target.domain_name || CANONICAL_DOMAIN_LABELS[target.canonical_domain_slug] || 'Communication',
+    ltgName: target.ltg_name || recommendation?.goalFamilyTitle || 'Assessment Recommendations',
+    criteria: detail.default_criteria || target.default_criteria || recommendation?.defaultCriteria,
+    goalType: detail.goal_type || target.goal_type || 'increase',
+    programType: getProgramTypeForCoreTarget(target),
+    dataMethod: detail.measurement_type || target.measurement_type || recommendation?.defaultMeasurementType || 'percentage',
+    sourceType: target.source_type || 'core',
+    sourceLabel: target.source_label || CORE_GOAL_LIBRARY_NAME,
+    canonicalDeficitSlug: target.canonical_deficit_slug || recommendation?.deficitSlug || null,
+    canonicalDomainSlug: target.canonical_domain_slug || recommendation?.domainSlug || null,
+    libraryTargetId: target.id,
   }
 }
 
@@ -60,6 +121,9 @@ export function mapLearningTreeDomainToAuthGoalDomain(domainName) {
 }
 
 export function buildLearningTreeDraftFromRecommendation(recommendation) {
+  const libraryTarget = getPrimaryCoreLibraryTargetForRecommendation(recommendation)
+  if (libraryTarget) return buildLearningTreeDraftFromCoreTarget(libraryTarget, recommendation)
+
   return {
     name: recommendation.goalFamilyTitle,
     objective: recommendation.recommendedObjectiveSeed,
@@ -72,7 +136,47 @@ export function buildLearningTreeDraftFromRecommendation(recommendation) {
   }
 }
 
+export function buildAuthReportGoalFromCoreTarget(target, recommendation = null, targetDate) {
+  const detail = parseCoreTargetDetail(target)
+  const goalType = detail.goal_type || target.goal_type || 'increase'
+  const measurementType = detail.measurement_type || target.measurement_type || recommendation?.defaultMeasurementType || 'percentage'
+
+  return {
+    id: `recommendation-${target.id}`,
+    skillId: target.id,
+    domain: getAuthDomainForCoreTarget({ ...target, goal_type: goalType }),
+    canonical_domain_slug: target.canonical_domain_slug || recommendation?.domainSlug || null,
+    canonical_deficit_slug: target.canonical_deficit_slug || recommendation?.deficitSlug || null,
+    library_target_id: target.id,
+    ltg_name: target.ltg_name || recommendation?.goalFamilyTitle || 'Assessment Recommendations',
+    ltgName: target.ltg_name || recommendation?.goalFamilyTitle || 'Assessment Recommendations',
+    stg_name: target.stg_name || recommendation?.goalFamilyTitle || '',
+    program: target.name,
+    objective: detail.objective || target.objective || recommendation?.recommendedObjectiveSeed || target.name,
+    goalText: detail.objective || target.objective || recommendation?.recommendedObjectiveSeed || target.name,
+    baseline: '0%',
+    currentLevel: 'New',
+    criteria: detail.default_criteria || target.default_criteria || recommendation?.defaultCriteria,
+    targetDate,
+    goal_type: goalType,
+    measurement_type: measurementType,
+    type: goalType,
+    recommendation_strength: recommendation?.recommendationStrength || 'medium',
+    medical_necessity_tags: detail.medical_necessity_tags || recommendation?.medicalNecessityTags || [],
+    medical_necessity_rationale: detail.medical_necessity || recommendation?.medicalNecessityRationale || '',
+    sourceRefs: recommendation?.sourceRefs || [],
+    verification_summary: detail.verification_summary || '',
+    verification_sources: detail.verification_sources || [],
+    source_type: target.source_type || 'core',
+    source_label: target.source_label || CORE_GOAL_LIBRARY_NAME,
+    requires_bcba_review: recommendation?.requiresBcbaReview ?? true,
+  }
+}
+
 export function buildAuthReportGoalFromRecommendation(recommendation, targetDate) {
+  const libraryTarget = getPrimaryCoreLibraryTargetForRecommendation(recommendation)
+  if (libraryTarget) return buildAuthReportGoalFromCoreTarget(libraryTarget, recommendation, targetDate)
+
   const authDomain = mapCanonicalDomainToAuthGoalDomain(recommendation.domainSlug)
 
   return {
@@ -102,15 +206,20 @@ export function buildAuthReportGoalFromRecommendation(recommendation, targetDate
 }
 
 export function buildAssessmentRecommendationSnapshot(recommendations = []) {
-  return recommendations.map((recommendation) => ({
-    deficitSlug: recommendation.deficitSlug,
-    domainSlug: recommendation.domainSlug,
-    goalFamilyTitle: recommendation.goalFamilyTitle,
-    recommendationStrength: recommendation.recommendationStrength || 'medium',
-    priorityScore: recommendation.priorityScore ?? null,
-    medicalNecessityTags: recommendation.medicalNecessityTags || [],
-    supportingSubAreas: (recommendation.supportingSubAreas || []).map((item) => item.subAreaName || item.subAreaId).filter(Boolean),
-  }))
+  return recommendations.map((recommendation) => {
+    const matchedTargets = getCoreLibraryTargetsForRecommendation(recommendation)
+    return {
+      deficitSlug: recommendation.deficitSlug,
+      domainSlug: recommendation.domainSlug,
+      goalFamilyTitle: recommendation.goalFamilyTitle,
+      recommendationStrength: recommendation.recommendationStrength || 'medium',
+      priorityScore: recommendation.priorityScore ?? null,
+      medicalNecessityTags: recommendation.medicalNecessityTags || [],
+      supportingSubAreas: (recommendation.supportingSubAreas || []).map((item) => item.subAreaName || item.subAreaId).filter(Boolean),
+      matchedLibraryGoalCount: matchedTargets.length,
+      primaryLibraryGoalName: matchedTargets[0]?.name || null,
+    }
+  })
 }
 
 function hasImportedGoalForRecommendation(recommendation, goals = []) {

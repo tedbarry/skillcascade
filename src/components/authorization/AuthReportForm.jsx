@@ -20,6 +20,7 @@ import {
   AUTH_REPORT_DOMAIN_CONFIG,
   buildAuthReportGoalFromRecommendation,
   createAssessmentRecommendationReviewState,
+  getCoreLibraryTargetsForRecommendation,
   getAssessmentRecommendationStatus,
   getAuthReportDomainLabel,
   mapLearningTreeDomainToAuthGoalDomain,
@@ -246,6 +247,16 @@ export default function AuthReportForm({ assessments, clientName, clientId, onPr
       fields.assessmentRecommendationReview,
       fields.goals || []
     ),
+    [assessmentRecommendations, fields.assessmentRecommendationReview, fields.goals]
+  )
+  const pendingAssessmentRecommendations = useMemo(
+    () => assessmentRecommendations.filter((recommendation) => (
+      getAssessmentRecommendationStatus(
+        recommendation,
+        fields.assessmentRecommendationReview,
+        fields.goals || []
+      ) === 'pending'
+    )),
     [assessmentRecommendations, fields.assessmentRecommendationReview, fields.goals]
   )
 
@@ -848,7 +859,7 @@ SOCIALIZATION GOALS: ${socialGoals.join('; ') || 'Not specified'}` },
 
   // Import canonical recommendation-based goals from the assessment
   const handleImportGoals = useCallback(() => {
-    const recommendations = assessmentRecommendations.slice(0, 12)
+    const recommendations = pendingAssessmentRecommendations.slice(0, 12)
     if (recommendations.length === 0) return
 
     const targetDate = getSixMonthsOut()
@@ -876,7 +887,7 @@ SOCIALIZATION GOALS: ${socialGoals.join('; ') || 'Not specified'}` },
       }
     })
     track('feature_use', 'import_assessment_recommendations_to_auth_report')
-  }, [assessmentRecommendations])
+  }, [assessmentRecommendations, pendingAssessmentRecommendations])
 
   const handleImportSingleRecommendation = useCallback((recommendation) => {
     const importedGoal = buildAuthReportGoalFromRecommendation(recommendation, getSixMonthsOut())
@@ -1667,7 +1678,7 @@ RULES:
                   onClick={handleImportGoals}
                   className="min-h-[44px] rounded-lg bg-sage-600 px-3 py-2 text-xs font-semibold text-white transition-colors hover:bg-sage-700"
                 >
-                  Import Pending
+                  {pendingAssessmentRecommendations.length > 12 ? 'Import Top 12 Pending' : 'Import Pending'}
                 </button>
               ) : null}
             </div>
@@ -2189,7 +2200,7 @@ RULES:
                   onClick={handleImportGoals}
                   className="min-h-[44px] rounded-lg border border-sage-200 bg-sage-50 px-3 py-2 text-[11px] font-semibold text-sage-700 transition-colors hover:bg-sage-100"
                 >
-                  Import All Pending
+                  {pendingAssessmentRecommendations.length > 12 ? 'Import Top 12 Pending' : 'Import All Pending'}
                 </button>
               ) : null}
             </div>
@@ -2211,6 +2222,8 @@ RULES:
                 )
                 const statusConfig = RECOMMENDATION_STATUS_CONFIG[status] || RECOMMENDATION_STATUS_CONFIG.pending
                 const domainLabel = CANONICAL_DOMAIN_LABELS[recommendation.domainSlug] || 'Communication'
+                const matchedLibraryTargets = getCoreLibraryTargetsForRecommendation(recommendation, { limit: 3 })
+                const matchedLibraryTargetCount = getCoreLibraryTargetsForRecommendation(recommendation).length
 
                 return (
                   <div key={recommendation.deficitSlug} className="rounded-lg border border-warm-200 bg-warm-50/40 p-3">
@@ -2222,6 +2235,18 @@ RULES:
                           <span className="text-[10px] font-medium text-warm-500">{recommendation.recommendationStrength} strength</span>
                         </div>
                         <p className="mt-2 text-[12px] font-semibold text-warm-800">{recommendation.goalFamilyTitle}</p>
+                        {matchedLibraryTargets.length > 0 ? (
+                          <div className="mt-2 rounded-lg border border-sage-100 bg-white px-2.5 py-2">
+                            <p className="text-[10px] font-semibold text-sage-700">
+                              Best built-in goal: {matchedLibraryTargets[0].name}
+                            </p>
+                            {matchedLibraryTargetCount > 1 ? (
+                              <p className="mt-1 text-[10px] text-sage-600">
+                                {matchedLibraryTargetCount - 1} more medically necessary library option{matchedLibraryTargetCount === 2 ? '' : 's'} available in this family.
+                              </p>
+                            ) : null}
+                          </div>
+                        ) : null}
                         <p className="mt-1 text-[11px] leading-relaxed text-warm-600">{recommendation.evidenceSummary}</p>
                       </div>
                       {resolvedReportAccess.canEditAuthorizationFields ? (
@@ -2232,7 +2257,7 @@ RULES:
                               onClick={() => handleImportSingleRecommendation(recommendation)}
                               className="min-h-[44px] rounded-lg border border-sage-200 bg-white px-3 py-2 text-[11px] font-semibold text-sage-700 transition-colors hover:bg-sage-50"
                             >
-                              Add To Report
+                              {matchedLibraryTargets.length > 0 ? 'Add Best Goal' : 'Add To Report'}
                             </button>
                           ) : null}
                           {status === 'excluded' ? (

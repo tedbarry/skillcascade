@@ -98,25 +98,25 @@ export default function AddGoalDialog({
     const timer = setTimeout(() => {
       const result = routeGoal(name, objective)
       setRouting(result)
-      // Pre-fill goal type, measurement, program type from router
-      if (result.goalType) {
+      // Pre-fill from the router only when a library/recommendation draft did not already set these values.
+      if (result.goalType && !initialGoalType) {
         setGoalType(result.goalType)
         if (result.goalType === 'decrease') {
-          setProgramType('behavior_reduction')
-          setDataMethod('frequency')
+          if (!initialProgramType) setProgramType('behavior_reduction')
+          if (!initialDataMethod) setDataMethod('frequency')
         } else if (result.domain === 'Parent Training') {
-          setProgramType('parent_training')
-          setDataMethod('rating')
+          if (!initialProgramType) setProgramType('parent_training')
+          if (!initialDataMethod) setDataMethod('rating')
         } else {
-          setProgramType('skill_acquisition')
-          setDataMethod('trial')
+          if (!initialProgramType) setProgramType('skill_acquisition')
+          if (!initialDataMethod) setDataMethod('trial')
         }
       }
-      if (result.measurementType) setMeasurementType(result.measurementType)
-      if (result.criteria) setCriteria(result.criteria)
+      if (result.measurementType && !initialDataMethod) setMeasurementType(result.measurementType)
+      if (result.criteria && !initialCriteria) setCriteria(result.criteria)
     }, 300)
     return () => clearTimeout(timer)
-  }, [name, objective])
+  }, [name, objective, initialCriteria, initialDataMethod, initialGoalType, initialProgramType])
 
   const effectiveDomain = domainOverride || routing?.domain || initialDomain || 'Communication'
   const effectiveLtg = ltgOverride || routing?.ltgName || initialLtg || 'General'

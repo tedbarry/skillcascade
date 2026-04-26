@@ -15,7 +15,10 @@ import { buildAssessmentRecommendations } from '../lib/assessmentRecommendationE
 import { track } from '../lib/analytics.js'
 import { getSkillCeiling, computeSkillInfluence } from '../data/skillInfluence.js'
 import { getSubAreaFromId, getSkillTier } from '../data/skillDependencies.js'
-import { buildLearningTreeDraftFromRecommendation } from '../lib/recommendationDraftAdapters.js'
+import {
+  buildLearningTreeDraftFromRecommendation,
+  getCoreLibraryTargetsForRecommendation,
+} from '../lib/recommendationDraftAdapters.js'
 import { TIER_LABELS, TIER_COLORS } from '../constants/tiers.js'
 import EmptyState from './EmptyState.jsx'
 const AddGoalDialog = lazy(() => import('./platform/AddGoalDialog.jsx'))
@@ -728,6 +731,8 @@ function TierSection({ priority, recommendations, onNavigateToAssess, defaultExp
 
 function RecommendationCard({ recommendation, onDraftToTree, onNavigateToAssess, canDraft }) {
   const topSubArea = recommendation.supportingSubAreas[0]
+  const matchedLibraryTargets = getCoreLibraryTargetsForRecommendation(recommendation, { limit: 4 })
+  const extraLibraryTargetCount = Math.max(0, getCoreLibraryTargetsForRecommendation(recommendation).length - matchedLibraryTargets.length)
 
   return (
     <div className="rounded-xl border border-blue-200 bg-white px-5 py-4 shadow-sm">
@@ -760,6 +765,26 @@ function RecommendationCard({ recommendation, onDraftToTree, onNavigateToAssess,
         ))}
       </div>
 
+      {matchedLibraryTargets.length > 0 && (
+        <div className="mb-3 rounded-lg border border-sage-100 bg-sage-50/70 px-3 py-2">
+          <p className="text-[10px] font-semibold uppercase tracking-wider text-sage-700">
+            Built-in library matches
+          </p>
+          <div className="mt-1 flex flex-wrap gap-1.5">
+            {matchedLibraryTargets.map((target) => (
+              <span key={target.id} className="rounded-full border border-sage-200 bg-white px-2 py-1 text-[10px] font-medium text-sage-700">
+                {target.name}
+              </span>
+            ))}
+            {extraLibraryTargetCount > 0 && (
+              <span className="rounded-full border border-sage-200 bg-white px-2 py-1 text-[10px] font-medium text-sage-700">
+                +{extraLibraryTargetCount} more
+              </span>
+            )}
+          </div>
+        </div>
+      )}
+
       <div className="grid gap-2 text-[11px] text-warm-600 mb-3">
         <div>
           <span className="font-semibold text-warm-700">Evidence:</span> {recommendation.evidenceSummary}
@@ -781,7 +806,7 @@ function RecommendationCard({ recommendation, onDraftToTree, onNavigateToAssess,
             onClick={() => onDraftToTree(recommendation)}
             className="px-3 py-2 min-h-[44px] rounded-full bg-blue-600 text-white text-xs font-semibold hover:bg-blue-700 transition-colors"
           >
-            Draft In Learning Tree
+            {matchedLibraryTargets.length > 0 ? 'Draft Best Library Goal' : 'Draft In Learning Tree'}
           </button>
         )}
         {topSubArea && (

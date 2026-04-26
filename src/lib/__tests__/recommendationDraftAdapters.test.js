@@ -4,6 +4,7 @@ import {
   buildAuthReportGoalFromRecommendation,
   buildLearningTreeDraftFromRecommendation,
   createAssessmentRecommendationReviewState,
+  getCoreLibraryTargetsForRecommendation,
   getAssessmentRecommendationStatus,
   getAuthReportDomainLabel,
   mapLearningTreeDomainToAuthGoalDomain,
@@ -27,9 +28,12 @@ describe('recommendationDraftAdapters', () => {
   it('builds a learning-tree draft with the canonical domain label', () => {
     const draft = buildLearningTreeDraftFromRecommendation(adaptiveRecommendation)
 
+    expect(draft.name).toBe('Follow emergency or safety directives immediately')
     expect(draft.domain).toBe('Adaptive Daily Living')
-    expect(draft.ltgName).toBe('Assessment Recommendations')
+    expect(draft.ltgName).toBe('Safety and Community Functioning')
     expect(draft.dataMethod).toBe('percentage')
+    expect(draft.sourceLabel).toBe('SkillCascade Medically Necessary Library')
+    expect(draft.canonicalDeficitSlug).toBe('safety_awareness_emergency_response')
   })
 
   it('builds an auth-report goal that preserves canonical recommendation context', () => {
@@ -38,8 +42,21 @@ describe('recommendationDraftAdapters', () => {
     expect(goal.domain).toBe('adaptive_daily_living')
     expect(goal.canonical_domain_slug).toBe('adaptive_daily_living')
     expect(goal.canonical_deficit_slug).toBe('safety_awareness_emergency_response')
-    expect(goal.program).toBe('Safety Awareness and Emergency Response')
+    expect(goal.program).toBe('Follow emergency or safety directives immediately')
+    expect(goal.source_label).toBe('SkillCascade Medically Necessary Library')
+    expect(goal.verification_sources.length).toBeGreaterThan(3)
     expect(goal.targetDate).toBe('October 2026')
+  })
+
+  it('finds exact built-in library targets for a recommendation family', () => {
+    const matches = getCoreLibraryTargetsForRecommendation(adaptiveRecommendation)
+
+    expect(matches.length).toBeGreaterThan(1)
+    expect(matches[0]).toMatchObject({
+      name: 'Follow emergency or safety directives immediately',
+      canonical_deficit_slug: 'safety_awareness_emergency_response',
+      source_type: 'core',
+    })
   })
 
   it('maps new learning-tree domains into auth-report domains', () => {
@@ -106,6 +123,8 @@ describe('recommendationDraftAdapters', () => {
     expect(snapshot[0]).toMatchObject({
       deficitSlug: 'safety_awareness_emergency_response',
       domainSlug: 'adaptive_daily_living',
+      matchedLibraryGoalCount: expect.any(Number),
+      primaryLibraryGoalName: 'Follow emergency or safety directives immediately',
     })
 
     const reviewState = createAssessmentRecommendationReviewState({
