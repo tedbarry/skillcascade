@@ -1,8 +1,10 @@
-import { useMemo } from 'react'
+import { lazy, Suspense, useMemo, useState } from 'react'
 import { framework, isAssessed, ASSESSMENT_LEVELS, ASSESSMENT_LABELS } from '../data/framework.js'
 import { buildAssessmentRecommendations } from '../lib/assessmentRecommendationEngine.js'
 import { getCoreLibraryTargetsForRecommendation } from '../lib/recommendationDraftAdapters.js'
 import useResponsive from '../hooks/useResponsive.js'
+
+const GoalLibrary = lazy(() => import('./platform/GoalLibrary.jsx'))
 
 /**
  * Modal shown when assessment reaches 100% or a domain is fully assessed.
@@ -10,6 +12,7 @@ import useResponsive from '../hooks/useResponsive.js'
  */
 export default function AssessmentCompletionModal({ assessments, onGenerateGoals, onViewGoals, onDismiss }) {
   const { isPhone } = useResponsive()
+  const [libraryTarget, setLibraryTarget] = useState(null)
 
   const stats = useMemo(() => {
     let total = 0, assessed = 0, needsWork = 0, developing = 0, solid = 0
@@ -63,6 +66,7 @@ export default function AssessmentCompletionModal({ assessments, onGenerateGoals
         return {
           familyTitle: recommendation.goalFamilyTitle,
           primaryGoalName: matches[0]?.name || null,
+          primaryTarget: matches[0] || null,
         }
       }),
     }
@@ -132,9 +136,14 @@ export default function AssessmentCompletionModal({ assessments, onGenerateGoals
             {recommendationSummary.topMatches.length > 0 && (
               <div className="mt-2 flex flex-wrap gap-1.5">
                 {recommendationSummary.topMatches.map((match) => (
-                  <span key={match.familyTitle} className="text-[10px] font-medium px-2 py-1 rounded-full bg-white text-sage-700 border border-sage-200">
+                  <button
+                    key={match.familyTitle}
+                    type="button"
+                    onClick={() => match.primaryTarget && setLibraryTarget(match.primaryTarget)}
+                    className="text-left text-[10px] font-medium px-2 py-1 rounded-full bg-white text-sage-700 border border-sage-200 hover:bg-sage-100 transition-colors"
+                  >
                     {match.primaryGoalName || match.familyTitle}
-                  </span>
+                  </button>
                 ))}
               </div>
             )}
@@ -168,6 +177,19 @@ export default function AssessmentCompletionModal({ assessments, onGenerateGoals
           </div>
         </div>
       </div>
+      {libraryTarget && (
+        <div className="fixed inset-0 z-[60] bg-black/50 backdrop-blur-sm flex items-start justify-center overflow-y-auto p-4">
+          <div className="bg-white rounded-xl shadow-lg my-4 w-full max-w-3xl max-h-[90vh] overflow-y-auto p-4">
+            <Suspense fallback={<div className="py-8 text-center text-warm-500">Loading library...</div>}>
+              <GoalLibrary
+                initialTargetId={libraryTarget.id}
+                initialSearch={libraryTarget.name}
+                onClose={() => setLibraryTarget(null)}
+              />
+            </Suspense>
+          </div>
+        </div>
+      )}
     </div>
   )
 }

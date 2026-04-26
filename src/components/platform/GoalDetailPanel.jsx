@@ -7,6 +7,7 @@ import { calculateCurrentLevel, autoSetBaseline } from '../../lib/goalCalculatio
 import { findCoreLibraryTargetForGoal, getCoreLibraryTargetDetail } from '../../lib/recommendationDraftAdapters.js'
 
 const ProgramGraph = lazy(() => import('./ProgramGraph.jsx'))
+const GoalLibrary = lazy(() => import('./GoalLibrary.jsx'))
 
 const STATUS_CONFIG = {
   inactive: { label: 'Inactive', color: '#9ca3af', bg: '#f3f4f6' },
@@ -62,6 +63,7 @@ export default function GoalDetailPanel({
   const [newTargetName, setNewTargetName] = useState('')
   const [showAddTarget, setShowAddTarget] = useState(false)
   const [collapsedSections, setCollapsedSections] = useState({})
+  const [showLibraryGoal, setShowLibraryGoal] = useState(false)
   const [misplacementSuggestion, setMisplacementSuggestion] = useState(null)
   const [calculatedLevel, setCalculatedLevel] = useState(null)
   const panelRef = useRef(null)
@@ -321,6 +323,13 @@ export default function GoalDetailPanel({
                   ))}
                 </div>
               )}
+              <button
+                type="button"
+                onClick={() => setShowLibraryGoal(true)}
+                className="mt-3 min-h-[40px] rounded-full border border-blue-200 bg-white px-3 py-2 text-[11px] font-semibold text-blue-700 hover:bg-blue-100 transition-colors"
+              >
+                View Full Goal in Library
+              </button>
             </div>
           )}
 
@@ -666,6 +675,19 @@ export default function GoalDetailPanel({
           <div className="h-6" />
         </div>
       </div>
+      {showLibraryGoal && coreLibraryTarget && (
+        <div className="fixed inset-0 z-[60] bg-black/50 backdrop-blur-sm flex items-start justify-center overflow-y-auto p-4">
+          <div className="bg-white rounded-xl shadow-lg my-4 w-full max-w-3xl max-h-[90vh] overflow-y-auto p-4">
+            <Suspense fallback={<div className="py-8 text-center text-warm-500">Loading library...</div>}>
+              <GoalLibrary
+                initialTargetId={coreLibraryTarget.id}
+                initialSearch={coreLibraryTarget.name}
+                onClose={() => setShowLibraryGoal(false)}
+              />
+            </Suspense>
+          </div>
+        </div>
+      )}
     </>
   )
 }

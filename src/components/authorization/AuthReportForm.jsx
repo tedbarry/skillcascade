@@ -20,6 +20,7 @@ import {
   AUTH_REPORT_DOMAIN_CONFIG,
   buildAuthReportGoalFromRecommendation,
   createAssessmentRecommendationReviewState,
+  findCoreLibraryTargetForGoal,
   getCoreLibraryTargetsForRecommendation,
   getAssessmentRecommendationStatus,
   getAuthReportDomainLabel,
@@ -208,6 +209,7 @@ export default function AuthReportForm({ assessments, clientName, clientId, onPr
   const [uploadedFiles, setUploadedFiles] = useState({ goals: null, graphs: null, vineland: null })
   const [showReviewPanel, setShowReviewPanel] = useState(false)
   const [showGoalLibrary, setShowGoalLibrary] = useState(false)
+  const [libraryTarget, setLibraryTarget] = useState(null)
   const [doneSections, setDoneSections] = useState(new Set())
   const doneProps = (sn) => ({
     done: doneSections.has(sn),
@@ -2237,9 +2239,13 @@ RULES:
                         <p className="mt-2 text-[12px] font-semibold text-warm-800">{recommendation.goalFamilyTitle}</p>
                         {matchedLibraryTargets.length > 0 ? (
                           <div className="mt-2 rounded-lg border border-sage-100 bg-white px-2.5 py-2">
-                            <p className="text-[10px] font-semibold text-sage-700">
+                            <button
+                              type="button"
+                              onClick={() => setLibraryTarget(matchedLibraryTargets[0])}
+                              className="text-left text-[10px] font-semibold text-sage-700 underline-offset-2 hover:underline"
+                            >
                               Best built-in goal: {matchedLibraryTargets[0].name}
-                            </p>
+                            </button>
                             {matchedLibraryTargetCount > 1 ? (
                               <p className="mt-1 text-[10px] text-sage-600">
                                 {matchedLibraryTargetCount - 1} more medically necessary library option{matchedLibraryTargetCount === 2 ? '' : 's'} available in this family.
@@ -2258,6 +2264,15 @@ RULES:
                               className="min-h-[44px] rounded-lg border border-sage-200 bg-white px-3 py-2 text-[11px] font-semibold text-sage-700 transition-colors hover:bg-sage-50"
                             >
                               {matchedLibraryTargets.length > 0 ? 'Add Best Goal' : 'Add To Report'}
+                            </button>
+                          ) : null}
+                          {matchedLibraryTargets[0] ? (
+                            <button
+                              type="button"
+                              onClick={() => setLibraryTarget(matchedLibraryTargets[0])}
+                              className="min-h-[44px] rounded-lg border border-blue-200 bg-blue-50 px-3 py-2 text-[11px] font-semibold text-blue-700 transition-colors hover:bg-blue-100"
+                            >
+                              View in Library
                             </button>
                           ) : null}
                           {status === 'excluded' ? (
@@ -2397,15 +2412,28 @@ RULES:
           <p className="text-[10px] text-warm-500 text-center py-4">No goals yet. Start with Assessment Recommendations or the built-in Medically Necessary Library, then add manual goals only if needed.</p>
         ) : (
           <div className="space-y-3">
-            {fields.goals.map((goal, i) => (
+            {fields.goals.map((goal, i) => {
+              const coreTarget = findCoreLibraryTargetForGoal(goal)
+              return (
               <div key={goal.id || i} className="p-3 bg-white rounded-lg border border-warm-200">
                 <div className="flex items-start justify-between gap-2 mb-2">
                   <div>
                     <span className="text-[10px] px-2 py-0.5 rounded-full bg-warm-100 text-warm-500">{goal.domain ? getAuthReportDomainLabel(goal.domain) : 'Other'}</span>
                     <span className="text-[11px] font-medium text-warm-700 ml-2">{goal.program || goal.skillName}</span>
                   </div>
-                  <button onClick={() => setFields(prev => ({ ...prev, goals: prev.goals.filter((_, j) => j !== i) }))}
-                    className="text-warm-300 hover:text-red-500 p-1 min-h-[44px] min-w-[44px] flex items-center justify-center">x</button>
+                  <div className="flex items-center gap-1.5">
+                    {coreTarget ? (
+                      <button
+                        type="button"
+                        onClick={() => setLibraryTarget(coreTarget)}
+                        className="min-h-[32px] rounded-full border border-blue-200 bg-blue-50 px-2 py-1 text-[10px] font-semibold text-blue-700 hover:bg-blue-100"
+                      >
+                        View in Library
+                      </button>
+                    ) : null}
+                    <button onClick={() => setFields(prev => ({ ...prev, goals: prev.goals.filter((_, j) => j !== i) }))}
+                      className="text-warm-300 hover:text-red-500 p-1 min-h-[44px] min-w-[44px] flex items-center justify-center">x</button>
+                  </div>
                 </div>
                 <Field label="Objective"><TextArea value={goal.objective || goal.goalText} onChange={v => updateNested('goals', i, 'objective', v)} rows={2} /></Field>
                 <div className={`grid ${isPhone ? 'grid-cols-2' : 'grid-cols-4'} gap-2`}>
@@ -2422,7 +2450,8 @@ RULES:
                   />
                 </Field>
               </div>
-            ))}
+              )
+            })}
           </div>
         )}
         <button onClick={() => setFields(prev => ({ ...prev, goals: [...prev.goals, { id: `manual-${Date.now()}`, domain: '', program: '', objective: '', baseline: '', currentLevel: 'New', criteria: goalPrefs.masteryCriteria, targetDate: getSixMonthsOut() }] }))}
@@ -2588,6 +2617,20 @@ RULES:
                   setFields(prev => ({ ...prev, goals: appendUniqueGoals(prev.goals || [], [newGoal]) }))
                 }}
                 onClose={() => setShowGoalLibrary(false)}
+              />
+            </Suspense>
+          </div>
+        </div>
+      )}
+      {libraryTarget && (
+        <div className="fixed inset-0 z-50 bg-black/50 backdrop-blur-sm flex items-start justify-center overflow-y-auto p-4">
+          <div className="bg-white rounded-xl shadow-lg my-4 w-full max-w-3xl max-h-[90vh] overflow-y-auto p-4">
+            <Suspense fallback={<div className="py-8 text-center text-warm-500">Loading library...</div>}>
+              <GoalLibrary
+                clientId={clientId}
+                initialTargetId={libraryTarget.id}
+                initialSearch={libraryTarget.name}
+                onClose={() => setLibraryTarget(null)}
               />
             </Suspense>
           </div>

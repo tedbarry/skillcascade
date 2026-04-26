@@ -81,7 +81,7 @@ function FolderIcon({ open }) {
   )
 }
 
-export default function GoalLibrary({ onSelectGoal, onClose, clientId }) {
+export default function GoalLibrary({ onSelectGoal, onClose, clientId, initialTargetId = null, initialSearch = '' }) {
   const { isPhone } = useResponsive()
   const { can } = usePermissions()
   const canEditGoalLibrary = can('goals', 'edit')
@@ -93,7 +93,7 @@ export default function GoalLibrary({ onSelectGoal, onClose, clientId }) {
   const [stgs, setStgs] = useState([])
   const [targets, setTargets] = useState([])
   const [loading, setLoading] = useState(true)
-  const [search, setSearch] = useState('')
+  const [search, setSearch] = useState(initialSearch)
   const coreDomains = CORE_GOAL_LIBRARY.domains
   const coreLtgs = CORE_GOAL_LIBRARY.ltgs
   const coreStgs = CORE_GOAL_LIBRARY.stgs
@@ -151,6 +151,25 @@ export default function GoalLibrary({ onSelectGoal, onClose, clientId }) {
     }
     load()
   }, [canEditGoalLibrary, clientId, coreTargets])
+
+  useEffect(() => {
+    if (!initialTargetId && !initialSearch) return
+
+    const target = initialTargetId
+      ? visibleTargets.find((item) => item.id === initialTargetId)
+      : null
+
+    if (target) {
+      setSearch(target.name)
+      setExpandedTarget(target.id)
+      if (target.domain_id) setOpenDomains((prev) => new Set(prev).add(target.domain_id))
+      if (target.ltg_id) setOpenLTGs((prev) => new Set(prev).add(target.ltg_id))
+      if (target.stg_id) setOpenSTGs((prev) => new Set(prev).add(target.stg_id))
+      return
+    }
+
+    if (initialSearch) setSearch(initialSearch)
+  }, [initialSearch, initialTargetId, visibleTargets])
 
   // Search across all targets
   const searchResults = useMemo(() => {

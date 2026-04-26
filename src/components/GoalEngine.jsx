@@ -22,6 +22,7 @@ import {
 import { TIER_LABELS, TIER_COLORS } from '../constants/tiers.js'
 import EmptyState from './EmptyState.jsx'
 const AddGoalDialog = lazy(() => import('./platform/AddGoalDialog.jsx'))
+const GoalLibrary = lazy(() => import('./platform/GoalLibrary.jsx'))
 import useResponsive from '../hooks/useResponsive.js'
 import useContextualHint from '../hooks/useContextualHint.js'
 import ContextualHint from './ContextualHint.jsx'
@@ -729,7 +730,7 @@ function TierSection({ priority, recommendations, onNavigateToAssess, defaultExp
   )
 }
 
-function RecommendationCard({ recommendation, onDraftToTree, onNavigateToAssess, canDraft }) {
+function RecommendationCard({ recommendation, onDraftToTree, onNavigateToAssess, onViewLibraryGoal, canDraft }) {
   const topSubArea = recommendation.supportingSubAreas[0]
   const matchedLibraryTargets = getCoreLibraryTargetsForRecommendation(recommendation, { limit: 4 })
   const extraLibraryTargetCount = Math.max(0, getCoreLibraryTargetsForRecommendation(recommendation).length - matchedLibraryTargets.length)
@@ -772,9 +773,14 @@ function RecommendationCard({ recommendation, onDraftToTree, onNavigateToAssess,
           </p>
           <div className="mt-1 flex flex-wrap gap-1.5">
             {matchedLibraryTargets.map((target) => (
-              <span key={target.id} className="rounded-full border border-sage-200 bg-white px-2 py-1 text-[10px] font-medium text-sage-700">
+              <button
+                key={target.id}
+                type="button"
+                onClick={() => onViewLibraryGoal?.(target)}
+                className="rounded-full border border-sage-200 bg-white px-2 py-1 text-left text-[10px] font-medium text-sage-700 hover:bg-sage-100 transition-colors"
+              >
                 {target.name}
-              </span>
+              </button>
             ))}
             {extraLibraryTargetCount > 0 && (
               <span className="rounded-full border border-sage-200 bg-white px-2 py-1 text-[10px] font-medium text-sage-700">
@@ -809,6 +815,14 @@ function RecommendationCard({ recommendation, onDraftToTree, onNavigateToAssess,
             {matchedLibraryTargets.length > 0 ? 'Draft Best Library Goal' : 'Draft In Learning Tree'}
           </button>
         )}
+        {matchedLibraryTargets[0] && (
+          <button
+            onClick={() => onViewLibraryGoal?.(matchedLibraryTargets[0])}
+            className="px-3 py-2 min-h-[44px] rounded-full border border-blue-200 bg-white text-blue-700 text-xs font-medium hover:bg-blue-50 transition-colors"
+          >
+            View in Library
+          </button>
+        )}
         {topSubArea && (
           <button
             onClick={() => onNavigateToAssess(topSubArea.subAreaId)}
@@ -830,6 +844,7 @@ export default function GoalEngine({ assessments = {}, onNavigateToAssess, focus
   const { isPhone } = useResponsive()
   const hint = useContextualHint('hint-goals')
   const [addToTreeGoal, setAddToTreeGoal] = useState(null)
+  const [libraryTarget, setLibraryTarget] = useState(null)
   const allRecommendations = useMemo(() => analyzeGaps(assessments), [assessments])
   const allMedicalRecommendations = useMemo(() => buildAssessmentRecommendations(assessments), [assessments])
 
@@ -1056,6 +1071,7 @@ export default function GoalEngine({ assessments = {}, onNavigateToAssess, focus
                       key={recommendation.deficitSlug}
                       recommendation={recommendation}
                       onDraftToTree={handleDraftRecommendation}
+                      onViewLibraryGoal={setLibraryTarget}
                       onNavigateToAssess={handleNavigate}
                       canDraft={!!clientId}
                     />
@@ -1134,6 +1150,20 @@ export default function GoalEngine({ assessments = {}, onNavigateToAssess, focus
               initialDataMethod={addToTreeGoal.dataMethod}
             />
           </Suspense>
+        )}
+        {libraryTarget && (
+          <div className="fixed inset-0 z-50 bg-black/50 backdrop-blur-sm flex items-start justify-center overflow-y-auto p-4">
+            <div className="bg-white rounded-xl shadow-lg my-4 w-full max-w-3xl max-h-[90vh] overflow-y-auto p-4">
+              <Suspense fallback={<div className="py-8 text-center text-warm-500">Loading library...</div>}>
+                <GoalLibrary
+                  clientId={clientId}
+                  initialTargetId={libraryTarget.id}
+                  initialSearch={libraryTarget.name}
+                  onClose={() => setLibraryTarget(null)}
+                />
+              </Suspense>
+            </div>
+          </div>
         )}
       </div>
     </div>
