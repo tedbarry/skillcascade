@@ -48,6 +48,22 @@ describe('canonicalGoalLibrary', () => {
 
     const detail = JSON.parse(target.description)
     expect(detail.family_title).toBe('Aggression Risk Reduction')
-    expect(detail.medical_necessity).toContain('safety')
+    expect(detail.medical_necessity).toContain('risk of harm')
+    expect(detail.ferb).toContain('functionally equivalent replacement behaviors')
+    expect(detail.linked_ferb_names).toContain('Use safe hands and request space instead of aggression')
+  })
+
+  it('cross-links maladaptive behavior goals and FERBs in both directions', () => {
+    const maladaptive = CORE_GOAL_LIBRARY.targets.find((item) => item.name === 'Decrease elopement or leaving without permission')
+    const ferb = CORE_GOAL_LIBRARY.targets.find((item) => item.name === 'Stop, return, and request movement or a break instead of eloping')
+
+    expect(maladaptive).toBeTruthy()
+    expect(ferb).toBeTruthy()
+
+    const maladaptiveDetail = JSON.parse(maladaptive.description)
+    const ferbDetail = JSON.parse(ferb.description)
+
+    expect(maladaptiveDetail.linked_ferb_names).toContain(ferb.name)
+    expect(ferbDetail.linked_maladaptive_names).toContain(maladaptive.name)
   })
 })

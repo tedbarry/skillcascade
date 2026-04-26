@@ -49,6 +49,10 @@ function getVerificationSearchText(sources = []) {
     .toLowerCase()
 }
 
+function getLinkedNameSearchText(names = []) {
+  return names.join(' ').toLowerCase()
+}
+
 function findAddedTargetIds(existingPrograms, libraryTargets) {
   if (!Array.isArray(existingPrograms) || existingPrograms.length === 0) return new Set()
 
@@ -153,6 +157,8 @@ export default function GoalLibrary({ onSelectGoal, onClose, clientId }) {
         (detail.medical_necessity && detail.medical_necessity.toLowerCase().includes(q)) ||
         (detail.verification_summary && detail.verification_summary.toLowerCase().includes(q)) ||
         (Array.isArray(detail.verification_sources) && getVerificationSearchText(detail.verification_sources).includes(q)) ||
+        (Array.isArray(detail.linked_ferb_names) && getLinkedNameSearchText(detail.linked_ferb_names).includes(q)) ||
+        (Array.isArray(detail.linked_maladaptive_names) && getLinkedNameSearchText(detail.linked_maladaptive_names).includes(q)) ||
         getLibrarySourceLabel(t).toLowerCase().includes(q)
     })
   }, [allTargets, search])
@@ -209,6 +215,13 @@ export default function GoalLibrary({ onSelectGoal, onClose, clientId }) {
     const isExpanded = expandedTarget === target.id
     const detail = parseGoalDetail(target)
     const sourceLabel = getLibrarySourceLabel(target)
+    const openLinkedGoal = (goalName) => {
+      const linkedTarget = allTargets.find((item) => (item.name || '').toLowerCase().trim() === goalName.toLowerCase().trim())
+      setSearch(goalName)
+      if (linkedTarget) {
+        setExpandedTarget(linkedTarget.id)
+      }
+    }
 
     return (
       <div key={target.id} className="hover:bg-warm-50/50 transition-colors">
@@ -364,6 +377,38 @@ export default function GoalLibrary({ onSelectGoal, onClose, clientId }) {
                     <span key={tag} className="text-[10px] px-2 py-0.5 rounded-full bg-white text-blue-700 border border-blue-200">
                       {tag.replaceAll('_', ' ')}
                     </span>
+                  ))}
+                </div>
+              </div>
+            )}
+            {Array.isArray(detail.linked_ferb_names) && detail.linked_ferb_names.length > 0 && (
+              <div>
+                <p className="text-[10px] font-semibold text-sage-600 uppercase tracking-wider">Linked FERBs</p>
+                <div className="flex flex-wrap gap-1.5 mt-1">
+                  {detail.linked_ferb_names.map((name) => (
+                    <button
+                      key={name}
+                      onClick={() => openLinkedGoal(name)}
+                      className="text-[10px] px-2 py-1 rounded-full bg-sage-50 text-sage-700 border border-sage-200 hover:bg-sage-100 transition-colors"
+                    >
+                      {name}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            )}
+            {Array.isArray(detail.linked_maladaptive_names) && detail.linked_maladaptive_names.length > 0 && (
+              <div>
+                <p className="text-[10px] font-semibold text-red-600 uppercase tracking-wider">Linked Maladaptive Behaviors</p>
+                <div className="flex flex-wrap gap-1.5 mt-1">
+                  {detail.linked_maladaptive_names.map((name) => (
+                    <button
+                      key={name}
+                      onClick={() => openLinkedGoal(name)}
+                      className="text-[10px] px-2 py-1 rounded-full bg-red-50 text-red-700 border border-red-200 hover:bg-red-100 transition-colors"
+                    >
+                      {name}
+                    </button>
                   ))}
                 </div>
               </div>

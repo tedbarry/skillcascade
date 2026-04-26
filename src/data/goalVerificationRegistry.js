@@ -51,6 +51,16 @@ export const OFFICIAL_REFERENCE_CATALOG = {
     recognized_by: ['commercial health plans', 'utilization reviewers'],
     note: 'Representative payer document requiring time-limited, individualized treatment plans with defined target behaviors and quantifiable criteria.',
   },
+  aetna_aba_clinical_bulletin: {
+    id: 'aetna_aba_clinical_bulletin',
+    category: 'payer_criteria',
+    label: 'Aetna ABA Clinical Policy Bulletin',
+    authority: 'Aetna',
+    url: 'https://www.aetna.com/cpb/medical/data/500_599/0554.html',
+    access: 'public',
+    recognized_by: ['commercial health plans', 'utilization reviewers'],
+    note: 'Official Aetna policy bulletin describing ABA as increasing adaptive behaviors while reducing interfering maladaptive or harmful behaviors.',
+  },
   uhc_aba_level_of_care: {
     id: 'uhc_aba_level_of_care',
     category: 'payer_criteria',
@@ -277,6 +287,7 @@ const DEFAULT_PAYER_SOURCE_IDS = [
   'medicaid_epsdt',
   'tricare_aba_goals',
   'aetna_aba_medical_necessity',
+  'aetna_aba_clinical_bulletin',
   'uhc_aba_level_of_care',
   'evernorth_aba_prior_auth',
 ]
@@ -396,6 +407,18 @@ const FAMILY_REFERENCE_PROFILES = {
   aggression_risk_reduction: {
     icfCodes: ['d240', 'd570'],
     assessmentSourceIds: ['vineland_3', 'abas_3', 'basc_3'],
+  },
+  self_injury_risk_reduction: {
+    icfCodes: ['d240', 'd570'],
+    assessmentSourceIds: ['vineland_3', 'abas_3', 'basc_3'],
+  },
+  property_destruction_reduction: {
+    icfCodes: ['d240', 'd570'],
+    assessmentSourceIds: ['vineland_3', 'abas_3', 'basc_3'],
+  },
+  elopement_wandering_reduction: {
+    icfCodes: ['d230', 'd570'],
+    assessmentSourceIds: ['vineland_3', 'abas_3', 'basc_3', 'afls'],
   },
   tantrum_escalation_reduction: {
     icfCodes: ['d240', 'd570'],
