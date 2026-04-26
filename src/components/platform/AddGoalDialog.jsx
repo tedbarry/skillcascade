@@ -9,6 +9,7 @@ import { routeGoal, getDomains, getLtgsForDomain, getStgsForLtg } from '../../li
 import { callAI } from '../../lib/aiClient.js'
 import { api } from '../../lib/api.js'
 import { GOAL_HIERARCHY_TEXT } from '../../lib/goalLibraryArtifacts.js'
+import { getGoalProvenanceFields } from '../../lib/recommendationDraftAdapters.js'
 import useResponsive from '../../hooks/useResponsive.js'
 import usePermissions from '../../hooks/usePermissions.js'
 
@@ -62,6 +63,7 @@ export default function AddGoalDialog({
   initialGoalType = '',
   initialProgramType = '',
   initialDataMethod = '',
+  initialProvenance = null,
 }) {
   const { isPhone } = useResponsive()
   const { can } = usePermissions()
@@ -173,6 +175,15 @@ export default function AddGoalDialog({
       }
 
       if (mode === 'tree' && clientId) {
+        const provenanceFields = initialProvenance
+          ? getGoalProvenanceFields(initialProvenance)
+          : {
+              source_type: 'custom',
+              source_label: 'Custom or fallback draft',
+              medical_necessity_tags: [],
+              verification_sources: [],
+            }
+
         // Create client_program
         await api.from('client_programs').insert({
           client_id: clientId,
@@ -189,6 +200,7 @@ export default function AddGoalDialog({
           rating_scale_max: dataMethod === 'rating' ? ratingScaleMax : null,
           status: 'acquisition',
           skill_mappings: null,
+          ...provenanceFields,
         })
       }
 

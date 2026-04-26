@@ -94,7 +94,7 @@ import { generateSampleAssessments, generateSampleSnapshots } from '../data/samp
 import { saveSnapshot, getSnapshots, deleteSnapshot, getAssessments, saveAssessment } from '../data/storage.js'
 import { useAuth } from '../contexts/AuthContext.jsx'
 import { api } from '../lib/api.js'
-import { getDatabaseStgId } from '../lib/recommendationDraftAdapters.js'
+import { buildClientProgramInsertFromLibraryGoal } from '../lib/recommendationDraftAdapters.js'
 
 /** Shallow equality for flat assessment objects (key→number|null). */
 function shallowEqual(a, b) {
@@ -1925,21 +1925,7 @@ export default function Dashboard() {
                     if (!clientId) return
                     const { data: newProgData, error } = await api
                       .from('client_programs')
-                      .insert({
-                        client_id: clientId,
-                        stg_id: getDatabaseStgId(goal.stg_id),
-                        domain: goal.domain_name || 'Communication',
-                        ltg_name: goal.ltg_name || '',
-                        stg_name: goal.stg_name || '',
-                        name: goal.name,
-                        objective: goal.objective,
-                        criteria: goal.default_criteria || '80% accuracy across 5 consecutive sessions',
-                        measurement_type: goal.measurement_type || 'percentage',
-                        goal_type: goal.goal_type || 'increase',
-                        skill_mappings: goal.skill_mappings || [],
-                        status: 'acquisition',
-                        display_order: 0,
-                      })
+                      .insert(buildClientProgramInsertFromLibraryGoal(goal, clientId))
                     const newProg = Array.isArray(newProgData) ? newProgData[0] : newProgData
                     if (error) {
                       console.error('Failed to add goal:', error.message)

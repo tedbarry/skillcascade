@@ -7,7 +7,7 @@ import { getSkillCeiling } from '../data/skillInfluence.js'
 import { SKILL_PREREQUISITES, buildReversePrereqMap, getSkillTier } from '../data/skillDependencies.js'
 import { TIER_LABELS, TIER_COLORS } from '../constants/tiers.js'
 import { buildAssessmentRecommendations } from '../lib/assessmentRecommendationEngine.js'
-import { getCoreLibraryTargetsForRecommendation, getDatabaseStgId } from '../lib/recommendationDraftAdapters.js'
+import { buildClientProgramInsertFromLibraryGoal, getCoreLibraryTargetsForRecommendation } from '../lib/recommendationDraftAdapters.js'
 import { api } from '../lib/api.js'
 const GoalLibrary = lazy(() => import('./platform/GoalLibrary.jsx'))
 
@@ -376,21 +376,7 @@ export default function AssessmentPanel({ assessments, onAssess, clientId, initi
 
     const { error } = await api
       .from('client_programs')
-      .insert({
-        client_id: clientId,
-        stg_id: getDatabaseStgId(goal.stg_id),
-        domain: goal.domain_name || 'Communication',
-        ltg_name: goal.ltg_name || '',
-        stg_name: goal.stg_name || '',
-        name: goal.name,
-        objective: goal.objective,
-        criteria: goal.default_criteria || '80% accuracy across 5 consecutive sessions',
-        measurement_type: goal.measurement_type || 'percentage',
-        goal_type: goal.goal_type || 'increase',
-        skill_mappings: goal.skill_mappings || [],
-        status: 'acquisition',
-        display_order: 0,
-      })
+      .insert(buildClientProgramInsertFromLibraryGoal(goal, clientId))
 
     if (error) {
       setLibraryAddMessage({ type: 'error', text: `Could not add goal: ${error.message}` })

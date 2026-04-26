@@ -58,10 +58,14 @@ function findAddedTargetIds(existingPrograms, libraryTargets) {
   if (!Array.isArray(existingPrograms) || existingPrograms.length === 0) return new Set()
 
   const existingNames = new Set(existingPrograms.map((program) => (program.name || '').toLowerCase().trim()))
+  const existingLibraryTargetIds = new Set(existingPrograms.map((program) => program.library_target_id).filter(Boolean))
   const addedTargetIds = new Set()
 
   for (const target of libraryTargets) {
-    if (existingNames.has((target.name || '').toLowerCase().trim())) {
+    if (
+      existingLibraryTargetIds.has(target.id) ||
+      existingNames.has((target.name || '').toLowerCase().trim())
+    ) {
       addedTargetIds.add(target.id)
     }
   }
@@ -133,7 +137,7 @@ export default function GoalLibrary({ onSelectGoal, onClose, clientId, initialTa
         : []
       // Load client's existing programs to detect duplicates
       if (clientId) {
-        queries.push(api.from('client_programs').select('stg_id, name').eq('client_id', clientId))
+        queries.push(api.from('client_programs').select('library_target_id, stg_id, name').eq('client_id', clientId))
       }
       const results = await Promise.all(queries)
       const legacyOffset = canEditGoalLibrary ? 4 : 0
@@ -225,6 +229,10 @@ export default function GoalLibrary({ onSelectGoal, onClose, clientId, initialTa
       source_label: getLibrarySourceLabel(target),
       canonical_deficit_slug: target.canonical_deficit_slug || null,
       canonical_domain_slug: target.canonical_domain_slug || null,
+      medical_necessity_tags: detail.medical_necessity_tags || [],
+      medical_necessity_rationale: detail.medical_necessity || null,
+      verification_summary: detail.verification_summary || null,
+      verification_sources: detail.verification_sources || [],
     })
   }, [domains, ltgs, onSelectGoal, stgs])
 
@@ -583,7 +591,7 @@ export default function GoalLibrary({ onSelectGoal, onClose, clientId, initialTa
           ]
         : []
       if (clientId) {
-        queries.push(api.from('client_programs').select('stg_id, name').eq('client_id', clientId))
+        queries.push(api.from('client_programs').select('library_target_id, stg_id, name').eq('client_id', clientId))
       }
       const results = await Promise.all(queries)
       const legacyOffset = canEditGoalLibrary ? 4 : 0

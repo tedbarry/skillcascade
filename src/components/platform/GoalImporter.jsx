@@ -233,6 +233,10 @@ export default function GoalImporter({ clientId, onClose, onImported }) {
           status: goal.mastered ? 'mastered' : 'acquisition',
           display_order: (existing?.length || 0) + i,
           skill_mappings: null,
+          source_type: 'imported',
+          source_label: 'Imported goal file',
+          medical_necessity_tags: [],
+          verification_sources: [],
         })
       }
 

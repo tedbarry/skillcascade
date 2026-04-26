@@ -2602,8 +2602,9 @@ RULES:
                   const domain = mapLearningTreeDomainToAuthGoalDomain(goal.domain_name)
                   const newGoal = {
                     id: `lib-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`,
-                    skillId: goal.stg_id,
+                    skillId: goal.library_target_id || goal.stg_id,
                     domain,
+                    library_target_id: goal.library_target_id || null,
                     program: goal.name,
                     objective: goal.objective || goal.name,
                     goalText: goal.objective || goal.name,
@@ -2618,6 +2619,10 @@ RULES:
                     source_label: goal.source_label || 'Legacy & Custom Library',
                     canonical_deficit_slug: goal.canonical_deficit_slug || null,
                     canonical_domain_slug: goal.canonical_domain_slug || null,
+                    medical_necessity_tags: goal.medical_necessity_tags || [],
+                    medical_necessity_rationale: goal.medical_necessity_rationale || '',
+                    verification_summary: goal.verification_summary || '',
+                    verification_sources: goal.verification_sources || [],
                   }
                   setFields(prev => ({ ...prev, goals: appendUniqueGoals(prev.goals || [], [newGoal]) }))
                 }}

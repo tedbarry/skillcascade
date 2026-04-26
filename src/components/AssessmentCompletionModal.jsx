@@ -1,7 +1,7 @@
 import { lazy, Suspense, useMemo, useState } from 'react'
 import { framework, isAssessed, ASSESSMENT_LEVELS, ASSESSMENT_LABELS } from '../data/framework.js'
 import { buildAssessmentRecommendations } from '../lib/assessmentRecommendationEngine.js'
-import { getCoreLibraryTargetsForRecommendation, getDatabaseStgId } from '../lib/recommendationDraftAdapters.js'
+import { buildClientProgramInsertFromLibraryGoal, getCoreLibraryTargetsForRecommendation } from '../lib/recommendationDraftAdapters.js'
 import { api } from '../lib/api.js'
 import useResponsive from '../hooks/useResponsive.js'
 
@@ -80,21 +80,7 @@ export default function AssessmentCompletionModal({ assessments, clientId, onGen
 
     const { error } = await api
       .from('client_programs')
-      .insert({
-        client_id: clientId,
-        stg_id: getDatabaseStgId(goal.stg_id),
-        domain: goal.domain_name || 'Communication',
-        ltg_name: goal.ltg_name || '',
-        stg_name: goal.stg_name || '',
-        name: goal.name,
-        objective: goal.objective,
-        criteria: goal.default_criteria || '80% accuracy across 5 consecutive sessions',
-        measurement_type: goal.measurement_type || 'percentage',
-        goal_type: goal.goal_type || 'increase',
-        skill_mappings: goal.skill_mappings || [],
-        status: 'acquisition',
-        display_order: 0,
-      })
+      .insert(buildClientProgramInsertFromLibraryGoal(goal, clientId))
 
     if (error) {
       setLibraryAddMessage({ type: 'error', text: `Could not add goal: ${error.message}` })

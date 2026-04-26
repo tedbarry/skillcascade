@@ -4,7 +4,7 @@ import { syncSessionDataToAssessment } from '../../data/storage.js'
 import { useAuth } from '../../contexts/AuthContext.jsx'
 import useResponsive from '../../hooks/useResponsive.js'
 import { track } from '../../lib/analytics.js'
-import { getDatabaseStgId } from '../../lib/recommendationDraftAdapters.js'
+import { buildClientProgramInsertFromLibraryGoal } from '../../lib/recommendationDraftAdapters.js'
 
 const GoalLibrary = lazy(() => import('./GoalLibrary.jsx'))
 const ProgramGraph = lazy(() => import('./ProgramGraph.jsx'))
@@ -160,21 +160,7 @@ export default function LearningTree({ clientId, clientName, assessments, onStar
     track('feature_use', 'add_program_from_library')
     const { data: newProgData, error } = await api
       .from('client_programs')
-      .insert({
-        client_id: clientId,
-        stg_id: getDatabaseStgId(goal.stg_id),
-        domain: goal.domain_name || 'Communication',
-        ltg_name: goal.ltg_name || '',
-        stg_name: goal.stg_name || '',
-        name: goal.name,
-        objective: goal.objective,
-        criteria: goal.default_criteria || '80% accuracy across 5 consecutive sessions',
-        measurement_type: goal.measurement_type || 'percentage',
-        goal_type: goal.goal_type || 'increase',
-        skill_mappings: goal.skill_mappings || [],
-        status: 'acquisition',
-        display_order: programs.length,
-      })
+      .insert(buildClientProgramInsertFromLibraryGoal(goal, clientId, { display_order: programs.length }))
     const newProg = Array.isArray(newProgData) ? newProgData[0] : newProgData
 
     if (error) {

@@ -19,7 +19,7 @@ import { getSkillCeiling, computeSkillInfluence } from '../data/skillInfluence.j
 import { getSubAreaFromId, getSkillTier } from '../data/skillDependencies.js'
 import {
   buildLearningTreeDraftFromRecommendation,
-  getDatabaseStgId,
+  buildClientProgramInsertFromLibraryGoal,
   getCoreLibraryTargetsForRecommendation,
 } from '../lib/recommendationDraftAdapters.js'
 import { TIER_LABELS, TIER_COLORS } from '../constants/tiers.js'
@@ -943,21 +943,7 @@ export default function GoalEngine({ assessments = {}, onNavigateToAssess, focus
 
     const { error } = await api
       .from('client_programs')
-      .insert({
-        client_id: clientId,
-        stg_id: getDatabaseStgId(goal.stg_id),
-        domain: goal.domain_name || 'Communication',
-        ltg_name: goal.ltg_name || '',
-        stg_name: goal.stg_name || '',
-        name: goal.name,
-        objective: goal.objective,
-        criteria: goal.default_criteria || '80% accuracy across 5 consecutive sessions',
-        measurement_type: goal.measurement_type || 'percentage',
-        goal_type: goal.goal_type || 'increase',
-        skill_mappings: goal.skill_mappings || [],
-        status: 'acquisition',
-        display_order: 0,
-      })
+      .insert(buildClientProgramInsertFromLibraryGoal(goal, clientId))
 
     if (error) {
       setLibraryAddMessage({ type: 'error', text: `Could not add goal: ${error.message}` })
@@ -1154,6 +1140,7 @@ export default function GoalEngine({ assessments = {}, onNavigateToAssess, focus
               initialGoalType={addToTreeGoal.goalType}
               initialProgramType={addToTreeGoal.programType}
               initialDataMethod={addToTreeGoal.dataMethod}
+              initialProvenance={addToTreeGoal}
             />
           </Suspense>
         )}

@@ -256,7 +256,11 @@ export default function GoalDetailPanel({
               <div className="mt-2">
                 {coreLibraryTarget ? (
                   <span className="inline-flex items-center rounded-full border border-blue-200 bg-blue-50 px-2 py-1 text-[10px] font-semibold text-blue-700">
-                    Medically Necessary Library
+                    {program.source_label || 'Medically Necessary Library'}
+                  </span>
+                ) : program.source_label ? (
+                  <span className="inline-flex items-center rounded-full border border-warm-200 bg-warm-50 px-2 py-1 text-[10px] font-semibold text-warm-600">
+                    {program.source_label}
                   </span>
                 ) : (
                   <button className="text-xs text-warm-500 hover:text-warm-600 transition-colors min-h-[28px]">

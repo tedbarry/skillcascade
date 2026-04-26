@@ -58,6 +58,40 @@ export function getDatabaseStgId(value) {
   return isDatabaseUuid(value) ? value : null
 }
 
+export function getGoalProvenanceFields(goal = {}) {
+  return {
+    library_target_id: goal.library_target_id || goal.libraryTargetId || null,
+    canonical_domain_slug: goal.canonical_domain_slug || goal.canonicalDomainSlug || null,
+    canonical_deficit_slug: goal.canonical_deficit_slug || goal.canonicalDeficitSlug || null,
+    source_type: goal.source_type || goal.sourceType || null,
+    source_label: goal.source_label || goal.sourceLabel || null,
+    medical_necessity_tags: Array.isArray(goal.medical_necessity_tags) ? goal.medical_necessity_tags : [],
+    medical_necessity_rationale: goal.medical_necessity_rationale || goal.medicalNecessityRationale || goal.medical_necessity || null,
+    verification_summary: goal.verification_summary || goal.verificationSummary || null,
+    verification_sources: Array.isArray(goal.verification_sources) ? goal.verification_sources : [],
+  }
+}
+
+export function buildClientProgramInsertFromLibraryGoal(goal = {}, clientId, overrides = {}) {
+  return {
+    client_id: clientId,
+    stg_id: getDatabaseStgId(goal.stg_id || goal.skillId),
+    domain: goal.domain_name || goal.domain || 'Communication',
+    ltg_name: goal.ltg_name || goal.ltgName || '',
+    stg_name: goal.stg_name || goal.stgName || '',
+    name: goal.name || goal.program || goal.skillName || 'Unnamed Goal',
+    objective: goal.objective || goal.goalText || goal.name || '',
+    criteria: goal.default_criteria || goal.criteria || '80% accuracy across 5 consecutive sessions',
+    measurement_type: goal.measurement_type || goal.dataMethod || 'percentage',
+    goal_type: goal.goal_type || goal.goalType || goal.type || 'increase',
+    skill_mappings: goal.skill_mappings || null,
+    status: goal.status || 'acquisition',
+    display_order: goal.display_order ?? 0,
+    ...getGoalProvenanceFields(goal),
+    ...overrides,
+  }
+}
+
 export function getCoreLibraryTargetDetail(target) {
   return parseCoreTargetDetail(target)
 }
@@ -132,6 +166,15 @@ export function buildLearningTreeDraftFromCoreTarget(target, recommendation = nu
     canonicalDeficitSlug: target.canonical_deficit_slug || recommendation?.deficitSlug || null,
     canonicalDomainSlug: target.canonical_domain_slug || recommendation?.domainSlug || null,
     libraryTargetId: target.id,
+    source_type: target.source_type || 'core',
+    source_label: target.source_label || CORE_GOAL_LIBRARY_NAME,
+    canonical_deficit_slug: target.canonical_deficit_slug || recommendation?.deficitSlug || null,
+    canonical_domain_slug: target.canonical_domain_slug || recommendation?.domainSlug || null,
+    library_target_id: target.id,
+    medical_necessity_tags: detail.medical_necessity_tags || recommendation?.medicalNecessityTags || [],
+    medical_necessity_rationale: detail.medical_necessity || recommendation?.medicalNecessityRationale || '',
+    verification_summary: detail.verification_summary || '',
+    verification_sources: detail.verification_sources || [],
   }
 }
 

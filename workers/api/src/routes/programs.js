@@ -65,12 +65,16 @@ app.post('/', async (c) => {
       measurement_type, goal_type, skill_mappings, status, baseline, baseline_date,
       display_order, program_type, data_method, phase_criteria, min_trials, max_trials,
       mastery_window, mastery_criteria_text, ltg_mastery_criteria, maintenance_frequency,
+      library_target_id, canonical_domain_slug, canonical_deficit_slug, source_type, source_label,
+      medical_necessity_tags, medical_necessity_rationale, verification_summary, verification_sources,
       created_by
     ) VALUES (
       $1, $2, $3, $4, $5, $6, $7, $8,
       $9, $10, $11, $12, $13, $14,
       $15, $16, $17, $18, $19, $20,
-      $21, $22, $23, $24, $25
+      $21, $22, $23, $24, $25,
+      $26, $27, $28, $29, $30,
+      $31, $32, $33, $34
     ) RETURNING *`,
     [
       body.client_id, body.stg_id || null, body.domain || '', body.ltg_name || null,
@@ -83,6 +87,11 @@ app.post('/', async (c) => {
       body.min_trials || null, body.max_trials || null,
       body.mastery_window || 3, body.mastery_criteria_text || null,
       body.ltg_mastery_criteria || null, body.maintenance_frequency || null,
+      body.library_target_id || null, body.canonical_domain_slug || null,
+      body.canonical_deficit_slug || null, body.source_type || null, body.source_label || null,
+      body.medical_necessity_tags ? JSON.stringify(body.medical_necessity_tags) : '[]',
+      body.medical_necessity_rationale || null, body.verification_summary || null,
+      body.verification_sources ? JSON.stringify(body.verification_sources) : '[]',
       profile.id,
     ]
   )

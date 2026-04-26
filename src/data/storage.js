@@ -8,7 +8,7 @@
  */
 
 import { api } from '../lib/api.js'
-import { getDatabaseStgId } from '../lib/recommendationDraftAdapters.js'
+import { getDatabaseStgId, getGoalProvenanceFields } from '../lib/recommendationDraftAdapters.js'
 import { getSessionKey, encryptFields, decryptFields, PHI_FIELDS, logEncryption, restoreSessionKey } from '../lib/crypto.js'
 import { getLinkedSessionStatusForNoteStatus } from '../lib/sessionNoteWorkflow.js'
 
@@ -439,8 +439,14 @@ export async function syncReportToLearningTree(clientId, reportFields) {
     // Parent goals now sync like all others (domain = 'Parent Training')
 
     const stgId = getDatabaseStgId(goal.stg_id || goal.skillId)
+    const provenanceFields = {
+      ...getGoalProvenanceFields(goal),
+      source_type: goal.source_type || goal.sourceType || 'auth_report',
+      source_label: goal.source_label || goal.sourceLabel || 'Authorization Report',
+    }
     let match = null
     if (stgId) match = existing.find(p => p.stg_id === stgId)
+    if (!match && provenanceFields.library_target_id) match = existing.find(p => p.library_target_id === provenanceFields.library_target_id)
     if (!match && goal.program) match = existing.find(p => (p.name || '').toLowerCase().trim() === (goal.program || '').toLowerCase().trim())
 
     const programDomain = domainMap[goal.domain] || 'Communication'
@@ -450,6 +456,15 @@ export async function syncReportToLearningTree(clientId, reportFields) {
       if (goal.objective && goal.objective !== match.objective) updates.objective = goal.objective
       if (goal.criteria && goal.criteria !== match.criteria) updates.criteria = goal.criteria
       if (goal.baseline && !match.baseline) updates.baseline = goal.baseline
+      for (const [key, value] of Object.entries(provenanceFields)) {
+        const hasValue = Array.isArray(value) ? value.length > 0 : value != null && value !== ''
+        if (!hasValue) continue
+        const current = match[key]
+        const changed = Array.isArray(value) || typeof value === 'object'
+          ? JSON.stringify(current || []) !== JSON.stringify(value)
+          : current !== value
+        if (changed) updates[key] = value
+      }
       if (goal.mastered || goal.currentLevel === 'Mastered') {
         if (match.status !== 'mastered') {
           updates.status = 'mastered'
@@ -481,6 +496,7 @@ export async function syncReportToLearningTree(clientId, reportFields) {
         skill_mappings: null,
         status: (goal.mastered || goal.currentLevel === 'Mastered') ? 'mastered' : 'acquisition',
         display_order: existing.length + toCreate.length,
+        ...provenanceFields,
       })
     }
   }

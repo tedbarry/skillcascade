@@ -3,9 +3,11 @@ import {
   buildAssessmentRecommendationSnapshot,
   buildAuthReportGoalFromRecommendation,
   buildLearningTreeDraftFromRecommendation,
+  buildClientProgramInsertFromLibraryGoal,
   createAssessmentRecommendationReviewState,
   findCoreLibraryTargetForGoal,
   getDatabaseStgId,
+  getGoalProvenanceFields,
   getCoreLibraryTargetsForRecommendation,
   getCoreLibraryTargetDetail,
   getAssessmentRecommendationStatus,
@@ -68,6 +70,59 @@ describe('recommendationDraftAdapters', () => {
     expect(target.stg_id).toMatch(/^core-stg-/)
     expect(getDatabaseStgId(target.stg_id)).toBeNull()
     expect(getDatabaseStgId('11111111-1111-4111-8111-111111111111')).toBe('11111111-1111-4111-8111-111111111111')
+  })
+
+  it('builds client-program inserts that preserve library provenance without writing core ids into stg_id', () => {
+    const [target] = getCoreLibraryTargetsForRecommendation(adaptiveRecommendation, { limit: 1 })
+    const detail = getCoreLibraryTargetDetail(target)
+    const program = buildClientProgramInsertFromLibraryGoal({
+      id: target.id,
+      stg_id: target.stg_id,
+      library_target_id: target.id,
+      name: target.name,
+      objective: detail.objective,
+      domain_name: target.domain_name,
+      ltg_name: target.ltg_name,
+      stg_name: target.stg_name,
+      default_criteria: detail.default_criteria,
+      source_type: target.source_type,
+      source_label: target.source_label,
+      canonical_domain_slug: target.canonical_domain_slug,
+      canonical_deficit_slug: target.canonical_deficit_slug,
+      medical_necessity_tags: detail.medical_necessity_tags,
+      medical_necessity_rationale: detail.medical_necessity,
+      verification_summary: detail.verification_summary,
+      verification_sources: detail.verification_sources,
+    }, 'client-1')
+
+    expect(program.stg_id).toBeNull()
+    expect(program.library_target_id).toBe(target.id)
+    expect(program.canonical_deficit_slug).toBe(target.canonical_deficit_slug)
+    expect(program.source_label).toBe('SkillCascade Medically Necessary Library')
+    expect(program.medical_necessity_tags.length).toBeGreaterThan(0)
+    expect(program.verification_sources.length).toBeGreaterThan(0)
+  })
+
+  it('normalizes provenance fields from camelCase and snake_case sources', () => {
+    expect(getGoalProvenanceFields({
+      libraryTargetId: 'core-target-help',
+      canonicalDomainSlug: 'communication',
+      canonical_deficit_slug: 'functional_communication',
+      sourceType: 'core',
+      source_label: 'SkillCascade Medically Necessary Library',
+      medicalNecessityRationale: 'Functionally necessary.',
+      verificationSummary: 'Publicly verifiable.',
+      verification_sources: [{ label: 'WHO ICF' }],
+    })).toMatchObject({
+      library_target_id: 'core-target-help',
+      canonical_domain_slug: 'communication',
+      canonical_deficit_slug: 'functional_communication',
+      source_type: 'core',
+      source_label: 'SkillCascade Medically Necessary Library',
+      medical_necessity_rationale: 'Functionally necessary.',
+      verification_summary: 'Publicly verifiable.',
+      verification_sources: [{ label: 'WHO ICF' }],
+    })
   })
 
   it('recognizes imported client goals that came from the built-in library', () => {
