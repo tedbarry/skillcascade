@@ -10,6 +10,7 @@ import {
 import { getSkillDescription } from '../data/skillDescriptions.js'
 import { getBehavioralIndicator } from '../data/behavioralIndicators.js'
 import { getTeachingPlaybook } from '../data/teachingPlaybook.js'
+import { CANONICAL_DOMAIN_LABELS } from '../data/canonicalRecommendationProfiles.js'
 import { downloadFile, csvEscape } from '../lib/fileExports.js'
 import { buildAssessmentRecommendations } from '../lib/assessmentRecommendationEngine.js'
 import { api } from '../lib/api.js'
