@@ -1,4 +1,4 @@
-import { useState, useMemo, useEffect, useCallback, useRef } from 'react'
+import { lazy, Suspense, useState, useMemo, useEffect, useCallback, useRef } from 'react'
 import { framework, ASSESSMENT_LEVELS, ASSESSMENT_LABELS, ASSESSMENT_COLORS, isAssessed } from '../data/framework.js'
 import { getSkillDescription } from '../data/skillDescriptions.js'
 import { getBehavioralIndicator } from '../data/behavioralIndicators.js'
@@ -6,6 +6,9 @@ import { getTeachingPlaybook } from '../data/teachingPlaybook.js'
 import { getSkillCeiling } from '../data/skillInfluence.js'
 import { SKILL_PREREQUISITES, buildReversePrereqMap, getSkillTier } from '../data/skillDependencies.js'
 import { TIER_LABELS, TIER_COLORS } from '../constants/tiers.js'
+import { buildAssessmentRecommendations } from '../lib/assessmentRecommendationEngine.js'
+import { getCoreLibraryTargetsForRecommendation } from '../lib/recommendationDraftAdapters.js'
+const GoalLibrary = lazy(() => import('./platform/GoalLibrary.jsx'))
 
 
 // Lazy-cached reverse prerequisite map (skill → skills that depend on it)
@@ -78,6 +81,60 @@ function TargetIcon({ className = 'w-3.5 h-3.5' }) {
   )
 }
 
+function AssessmentLibraryMatches({ matches, onViewLibraryGoal, onViewGoals, compact = false }) {
+  if (!matches.length) return null
+
+  return (
+    <div className={`rounded-2xl border border-blue-100 bg-blue-50/70 ${compact ? 'p-3' : 'p-4'} shadow-sm`}>
+      <div className="flex items-start justify-between gap-3">
+        <div>
+          <p className="text-[10px] font-semibold uppercase tracking-wider text-blue-700">Goal Library Matches</p>
+          <p className={`${compact ? 'text-[11px]' : 'text-xs'} mt-1 text-blue-700`}>
+            These assessment findings map to built-in medically necessary goals. Open the exact library goal here, or jump to the full Goal Engine.
+          </p>
+        </div>
+        {onViewGoals && (
+          <button
+            type="button"
+            onClick={onViewGoals}
+            className="shrink-0 rounded-full border border-blue-200 bg-white px-3 py-2 text-[10px] font-semibold text-blue-700 hover:bg-blue-100 transition-colors"
+          >
+            Goal Engine
+          </button>
+        )}
+      </div>
+      <div className="mt-3 space-y-2">
+        {matches.map(({ recommendation, targets, isCurrentSubArea }) => (
+          <div key={recommendation.deficitSlug} className="rounded-xl border border-blue-100 bg-white p-3">
+            <div className="flex items-start justify-between gap-2">
+              <div>
+                <p className="text-xs font-semibold text-warm-800">{recommendation.goalFamilyTitle}</p>
+                <p className="mt-1 text-[10px] text-warm-500 line-clamp-2">{recommendation.evidenceSummary}</p>
+              </div>
+              {isCurrentSubArea && (
+                <span className="shrink-0 rounded-full bg-sage-100 px-2 py-1 text-[9px] font-semibold text-sage-700">This area</span>
+              )}
+            </div>
+            <div className="mt-2 flex flex-wrap gap-1.5">
+              {targets.map((target) => (
+                <button
+                  key={target.id}
+                  type="button"
+                  onClick={() => onViewLibraryGoal(target)}
+                  className="inline-flex items-center gap-1 rounded-full border border-blue-200 bg-blue-50 px-2.5 py-1.5 text-left text-[10px] font-semibold text-blue-700 hover:bg-blue-100 transition-colors"
+                >
+                  <TargetIcon />
+                  View in Library: {target.name}
+                </button>
+              ))}
+            </div>
+          </div>
+        ))}
+      </div>
+    </div>
+  )
+}
+
 export default function AssessmentPanel({ assessments, onAssess, initialSubAreaId, initialIndex, onPositionChange, onDrillDown, onAssessmentComplete, onSkillGoal, onViewGoals }) {
   const { isPhone } = useResponsive()
   const onPositionChangeRef = useRef(onPositionChange)
@@ -129,6 +186,7 @@ export default function AssessmentPanel({ assessments, onAssess, initialSubAreaI
       return next
     })
   }, [])
+  const [libraryTarget, setLibraryTarget] = useState(null)
 
   // Jump to a specific sub-area when navigated from elsewhere
   useEffect(() => {
@@ -140,6 +198,20 @@ export default function AssessmentPanel({ assessments, onAssess, initialSubAreaI
 
   const currentSubArea = ALL_SUB_AREAS[currentIndex]
   const currentDomain = currentSubArea.domain
+  const assessmentGoalMatches = useMemo(() => {
+    const recommendations = buildAssessmentRecommendations(assessments)
+    const rankedMatches = recommendations
+      .map((recommendation) => ({
+        recommendation,
+        targets: getCoreLibraryTargetsForRecommendation(recommendation, { limit: 2 }),
+        isCurrentSubArea: recommendation.supportingSubAreas.some((item) => item.subAreaId === currentSubArea.id),
+        isCurrentDomain: recommendation.supportingSubAreas.some((item) => item.domainName === currentDomain.name),
+      }))
+      .filter((match) => match.targets.length > 0)
+      .sort((a, b) => Number(b.isCurrentSubArea) - Number(a.isCurrentSubArea) || Number(b.isCurrentDomain) - Number(a.isCurrentDomain))
+
+    return rankedMatches.slice(0, 3)
+  }, [assessments, currentDomain.name, currentSubArea.id])
 
   // Overall progress
   const overallStats = useMemo(() => {
@@ -293,11 +365,26 @@ export default function AssessmentPanel({ assessments, onAssess, initialSubAreaI
   )
 
   // ── Phone layout ──
+  const libraryGoalModal = libraryTarget && (
+    <div className="fixed inset-0 z-[60] bg-black/50 backdrop-blur-sm flex items-start justify-center overflow-y-auto p-4">
+      <div className="bg-white rounded-xl shadow-lg my-4 w-full max-w-3xl max-h-[90vh] overflow-y-auto p-4">
+        <Suspense fallback={<div className="py-8 text-center text-warm-500">Loading library...</div>}>
+          <GoalLibrary
+            initialTargetId={libraryTarget.id}
+            initialSearch={libraryTarget.name}
+            onClose={() => setLibraryTarget(null)}
+          />
+        </Suspense>
+      </div>
+    </div>
+  )
+
   if (isPhone) {
     return (
       <div className="flex flex-col h-full relative">
         <div aria-live="polite" className="sr-only">{navAnnouncement}</div>
         {bulkRateConfirm}
+        {libraryGoalModal}
         {/* Navigation overlay */}
         {navOverlayOpen && (
           <>
@@ -391,6 +478,15 @@ export default function AssessmentPanel({ assessments, onAssess, initialSubAreaI
 
         {/* Skill rating content */}
         <div className="flex-1 overflow-y-auto px-4 py-4 pb-20" ref={contentRef}>
+          <div className="mb-4">
+            <AssessmentLibraryMatches
+              compact
+              matches={assessmentGoalMatches}
+              onViewLibraryGoal={setLibraryTarget}
+              onViewGoals={onViewGoals ? () => onViewGoals(currentDomain.id) : null}
+            />
+          </div>
+
           {/* Bulk actions */}
           <div className="flex items-center gap-1.5 mb-4 pb-4 border-b border-warm-200 overflow-x-auto scrollbar-hide">
             <span className="text-[10px] text-warm-500 shrink-0">Quick:</span>
@@ -477,6 +573,7 @@ export default function AssessmentPanel({ assessments, onAssess, initialSubAreaI
       <div aria-live="polite" className="sr-only">{navAnnouncement}</div>
       {bulkRateConfirm}
       {/* Left nav — domain/sub-area list */}
+      {libraryGoalModal}
       <div className="w-64 bg-white border-r border-warm-200 overflow-y-auto shrink-0">
         <div className="p-4">
           <h3 className="text-xs uppercase tracking-wider text-warm-500 font-semibold mb-3">
@@ -667,6 +764,14 @@ export default function AssessmentPanel({ assessments, onAssess, initialSubAreaI
                 Get Goals From Assessment
               </button>
             )}
+          </div>
+
+          <div className="mb-6">
+            <AssessmentLibraryMatches
+              matches={assessmentGoalMatches}
+              onViewLibraryGoal={setLibraryTarget}
+              onViewGoals={onViewGoals ? () => onViewGoals(currentDomain.id) : null}
+            />
           </div>
 
           {/* Progress for this sub-area */}
