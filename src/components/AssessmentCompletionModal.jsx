@@ -1,6 +1,7 @@
 import { useMemo } from 'react'
 import { framework, isAssessed, ASSESSMENT_LEVELS, ASSESSMENT_LABELS } from '../data/framework.js'
 import { buildAssessmentRecommendations } from '../lib/assessmentRecommendationEngine.js'
+import { getCoreLibraryTargetsForRecommendation } from '../lib/recommendationDraftAdapters.js'
 import useResponsive from '../hooks/useResponsive.js'
 
 /**
@@ -51,9 +52,19 @@ export default function AssessmentCompletionModal({ assessments, onGenerateGoals
 
   const recommendationSummary = useMemo(() => {
     const recommendations = buildAssessmentRecommendations(assessments)
+    const matchedGoalCount = recommendations.reduce((sum, recommendation) => (
+      sum + getCoreLibraryTargetsForRecommendation(recommendation).length
+    ), 0)
     return {
       total: recommendations.length,
-      topTitles: recommendations.slice(0, 3).map((recommendation) => recommendation.goalFamilyTitle),
+      matchedGoalCount,
+      topMatches: recommendations.slice(0, 3).map((recommendation) => {
+        const matches = getCoreLibraryTargetsForRecommendation(recommendation, { limit: 1 })
+        return {
+          familyTitle: recommendation.goalFamilyTitle,
+          primaryGoalName: matches[0]?.name || null,
+        }
+      }),
     }
   }, [assessments])
 
@@ -115,14 +126,14 @@ export default function AssessmentCompletionModal({ assessments, onGenerateGoals
             <p className="text-sm text-sage-800 font-medium">Ready to turn this into medically necessary goals?</p>
             <p className="text-xs text-sage-600 mt-0.5">
               {recommendationSummary.total > 0
-                ? `This assessment surfaced ${recommendationSummary.total} canonical goal famil${recommendationSummary.total === 1 ? 'y' : 'ies'} for BCBA review.`
+                ? `This assessment surfaced ${recommendationSummary.total} canonical goal famil${recommendationSummary.total === 1 ? 'y' : 'ies'} with ${recommendationSummary.matchedGoalCount} built-in medically necessary goal option${recommendationSummary.matchedGoalCount === 1 ? '' : 's'} for BCBA review.`
                 : `AI can draft ${stats.needsWork + stats.developing > 10 ? '8-10' : `${Math.min(stats.needsWork + stats.developing, 10)}`} prioritized, editable goals based on this assessment.`}
             </p>
-            {recommendationSummary.topTitles.length > 0 && (
+            {recommendationSummary.topMatches.length > 0 && (
               <div className="mt-2 flex flex-wrap gap-1.5">
-                {recommendationSummary.topTitles.map((title) => (
-                  <span key={title} className="text-[10px] font-medium px-2 py-1 rounded-full bg-white text-sage-700 border border-sage-200">
-                    {title}
+                {recommendationSummary.topMatches.map((match) => (
+                  <span key={match.familyTitle} className="text-[10px] font-medium px-2 py-1 rounded-full bg-white text-sage-700 border border-sage-200">
+                    {match.primaryGoalName || match.familyTitle}
                   </span>
                 ))}
               </div>
