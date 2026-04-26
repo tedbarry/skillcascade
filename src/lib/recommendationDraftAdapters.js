@@ -48,6 +48,16 @@ function normalizeGoalText(value) {
   return (value || '').toLowerCase().replace(/\s+/g, ' ').trim()
 }
 
+const DATABASE_UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i
+
+export function isDatabaseUuid(value) {
+  return typeof value === 'string' && DATABASE_UUID_RE.test(value)
+}
+
+export function getDatabaseStgId(value) {
+  return isDatabaseUuid(value) ? value : null
+}
+
 export function getCoreLibraryTargetDetail(target) {
   return parseCoreTargetDetail(target)
 }
@@ -55,7 +65,10 @@ export function getCoreLibraryTargetDetail(target) {
 export function findCoreLibraryTargetForGoal(goal) {
   if (!goal) return null
 
-  const targetId = goal.library_target_id || goal.id
+  const rawTargetId = goal.library_target_id || goal.skillId || goal.stg_id || goal.id
+  const targetId = typeof rawTargetId === 'string' && rawTargetId.startsWith('recommendation-')
+    ? rawTargetId.replace(/^recommendation-/, '')
+    : rawTargetId
   if (targetId) {
     const byId = CORE_GOAL_LIBRARY.targets.find((target) => target.id === targetId)
     if (byId) return byId

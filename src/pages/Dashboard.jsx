@@ -94,6 +94,7 @@ import { generateSampleAssessments, generateSampleSnapshots } from '../data/samp
 import { saveSnapshot, getSnapshots, deleteSnapshot, getAssessments, saveAssessment } from '../data/storage.js'
 import { useAuth } from '../contexts/AuthContext.jsx'
 import { api } from '../lib/api.js'
+import { getDatabaseStgId } from '../lib/recommendationDraftAdapters.js'
 
 /** Shallow equality for flat assessment objects (key→number|null). */
 function shallowEqual(a, b) {
@@ -174,8 +175,8 @@ const VIEW_LABELS = {
   'learning-tree': 'Learning Tree',
   'graph-dashboard': 'Graph Dashboard',
   'sessions': 'Sessions',
-  'goal-drafts': 'AI Goals',
-  'deficit-goals': 'Deficit Goals',
+  'goal-drafts': 'Fallback Drafts',
+  'deficit-goals': 'Legacy Deficit Goals',
   'lesson-plan': 'Lesson Plan',
   'schedule': 'Schedule',
   'daily-agenda': 'My Day',
@@ -1597,6 +1598,7 @@ export default function Dashboard() {
                 <AssessmentPanel
                   assessments={assessments}
                   onAssess={setAssessments}
+                  clientId={clientId}
                   initialSubAreaId={assessTarget}
                   initialIndex={viewParams.i ? Number(viewParams.i) : undefined}
                   onPositionChange={handleAssessPosition}
@@ -1925,7 +1927,7 @@ export default function Dashboard() {
                       .from('client_programs')
                       .insert({
                         client_id: clientId,
-                        stg_id: goal.stg_id || null,
+                        stg_id: getDatabaseStgId(goal.stg_id),
                         domain: goal.domain_name || 'Communication',
                         ltg_name: goal.ltg_name || '',
                         stg_name: goal.stg_name || '',
@@ -1952,7 +1954,7 @@ export default function Dashboard() {
             </div>
           )}
 
-          {/* AI Goal Drafts */}
+          {/* Fallback Drafts */}
           {activeView === VIEWS.GOAL_DRAFTS && (
             <div className="w-full h-full overflow-y-auto">
               <Suspense fallback={<ViewLoader view={activeView} />}>
@@ -2225,6 +2227,7 @@ export default function Dashboard() {
       <Suspense fallback={null}>
         <AssessmentCompletionModal
           assessments={assessments}
+          clientId={clientId}
           onGenerateGoals={handleGenerateGoals}
           onViewGoals={() => { setShowCompletionModal(false); guardedSetActiveView(VIEWS.GOALS) }}
           onDismiss={() => setShowCompletionModal(false)}

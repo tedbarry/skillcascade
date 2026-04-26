@@ -172,19 +172,18 @@ export default function GoalDraftPanel({ assessments, clientName, onClose, onVie
               <circle cx="10" cy="10" r="1" fill="currentColor" />
             </svg>
           </div>
-          <h2 className="text-lg font-bold text-warm-800 font-display">AI Goal Generator</h2>
+          <h2 className="text-lg font-bold text-warm-800 font-display">Fallback AI Goal Drafts</h2>
           <p className="text-sm text-warm-500 mt-1">
-            Generate draft goals from {priorities.filter(p => p.priority <= 2).length} priority skills
+            Use only when the Medically Necessary Library does not already cover the need.
           </p>
         </div>
 
         <div className="bg-sage-50 rounded-lg px-4 py-3 border border-sage-100 mb-4 text-sm text-sage-700">
-          <p className="font-medium mb-1">How it works:</p>
+          <p className="font-medium mb-1">Library-first guardrail:</p>
           <ul className="text-xs text-sage-600 space-y-0.5 list-disc list-inside">
-            <li>AI analyzes your assessment to find the highest-priority skills</li>
-            <li>Generates 5-10 measurable, editable goal templates</li>
-            <li>You tweak duration, criteria, setting, and wording</li>
-            <li>Copy to clipboard when ready</li>
+            <li>Prefer built-in medically necessary goals from the Goal Engine and Goal Library</li>
+            <li>Use these drafts only for edge cases that need BCBA customization</li>
+            <li>Copy only after reviewing medical necessity, criteria, and setting fit</li>
           </ul>
         </div>
 
@@ -204,7 +203,7 @@ export default function GoalDraftPanel({ assessments, clientName, onClose, onVie
                 Generating goals...
               </>
             ) : (
-              'Generate Draft Goals'
+              'Generate Fallback Drafts'
             )}
           </button>
           {onClose && (

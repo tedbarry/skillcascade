@@ -5,6 +5,7 @@ import {
   buildLearningTreeDraftFromRecommendation,
   createAssessmentRecommendationReviewState,
   findCoreLibraryTargetForGoal,
+  getDatabaseStgId,
   getCoreLibraryTargetsForRecommendation,
   getCoreLibraryTargetDetail,
   getAssessmentRecommendationStatus,
@@ -61,6 +62,14 @@ describe('recommendationDraftAdapters', () => {
     })
   })
 
+  it('does not treat built-in core library ids as database UUIDs', () => {
+    const [target] = getCoreLibraryTargetsForRecommendation(adaptiveRecommendation, { limit: 1 })
+
+    expect(target.stg_id).toMatch(/^core-stg-/)
+    expect(getDatabaseStgId(target.stg_id)).toBeNull()
+    expect(getDatabaseStgId('11111111-1111-4111-8111-111111111111')).toBe('11111111-1111-4111-8111-111111111111')
+  })
+
   it('recognizes imported client goals that came from the built-in library', () => {
     const match = findCoreLibraryTargetForGoal({
       name: 'Follow emergency or safety directives immediately',
@@ -70,6 +79,13 @@ describe('recommendationDraftAdapters', () => {
 
     expect(match?.canonical_deficit_slug).toBe('safety_awareness_emergency_response')
     expect(detail.verification_summary).toContain('WHO ICF')
+  })
+
+  it('recognizes core library target ids stored in goal skill ids', () => {
+    const [target] = getCoreLibraryTargetsForRecommendation(adaptiveRecommendation, { limit: 1 })
+
+    expect(findCoreLibraryTargetForGoal({ skillId: target.id })?.id).toBe(target.id)
+    expect(findCoreLibraryTargetForGoal({ id: `recommendation-${target.id}` })?.id).toBe(target.id)
   })
 
   it('maps new learning-tree domains into auth-report domains', () => {

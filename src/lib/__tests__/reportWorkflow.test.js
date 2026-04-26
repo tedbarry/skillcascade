@@ -87,7 +87,7 @@ describe('reportWorkflow', () => {
       hideGeneratedReports: true,
       steps: [
         'Review current client context and payer details.',
-        'Complete the authorization builder below.',
+        'Review medically necessary goal families and import what belongs in the report.',
         'Preview or finalize, then return to the ops queue.',
       ],
     })

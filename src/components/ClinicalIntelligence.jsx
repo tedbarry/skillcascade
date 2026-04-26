@@ -447,22 +447,22 @@ function AINudgeSection({ targetSkills, onOpenAI, onNavigateToGoals, onGenerateG
         </button>
       </div>
       <div className="space-y-1.5">
-        {onGenerateGoals && (
-          <button
-            onClick={onGenerateGoals}
-            className="w-full text-left text-[11px] text-gray-300 hover:text-white bg-[#1e2e26] hover:bg-[#243828] rounded px-3 py-2 min-h-[44px] flex items-center gap-2 transition-colors"
-          >
-            <span className="text-[#10B981] shrink-0">&#8250;</span>
-            Generate AI Goals from assessment
-          </button>
-        )}
         {onNavigateToGoals && (
           <button
             onClick={() => onNavigateToGoals(topTarget?.domainId)}
             className="w-full text-left text-[11px] text-gray-300 hover:text-white bg-[#1e2e26] hover:bg-[#243828] rounded px-3 py-2 min-h-[44px] flex items-center gap-2 transition-colors"
           >
             <span className="text-[#10B981] shrink-0">&#8250;</span>
-            View goal priorities for top {Math.min(3, targetSkills.length)} targets
+            Review medically necessary goal matches for top {Math.min(3, targetSkills.length)} targets
+          </button>
+        )}
+        {onGenerateGoals && (
+          <button
+            onClick={onGenerateGoals}
+            className="w-full text-left text-[11px] text-gray-400 hover:text-gray-200 bg-[#1e2e26] hover:bg-[#243828] rounded px-3 py-2 min-h-[44px] flex items-center gap-2 transition-colors"
+          >
+            <span className="text-gray-500 shrink-0">&#8250;</span>
+            Fallback AI drafts if no library goal fits
           </button>
         )}
         {onOpenAI && (

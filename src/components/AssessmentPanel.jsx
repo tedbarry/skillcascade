@@ -7,7 +7,8 @@ import { getSkillCeiling } from '../data/skillInfluence.js'
 import { SKILL_PREREQUISITES, buildReversePrereqMap, getSkillTier } from '../data/skillDependencies.js'
 import { TIER_LABELS, TIER_COLORS } from '../constants/tiers.js'
 import { buildAssessmentRecommendations } from '../lib/assessmentRecommendationEngine.js'
-import { getCoreLibraryTargetsForRecommendation } from '../lib/recommendationDraftAdapters.js'
+import { getCoreLibraryTargetsForRecommendation, getDatabaseStgId } from '../lib/recommendationDraftAdapters.js'
+import { api } from '../lib/api.js'
 const GoalLibrary = lazy(() => import('./platform/GoalLibrary.jsx'))
 
 
@@ -135,7 +136,7 @@ function AssessmentLibraryMatches({ matches, onViewLibraryGoal, onViewGoals, com
   )
 }
 
-export default function AssessmentPanel({ assessments, onAssess, initialSubAreaId, initialIndex, onPositionChange, onDrillDown, onAssessmentComplete, onSkillGoal, onViewGoals }) {
+export default function AssessmentPanel({ assessments, onAssess, clientId, initialSubAreaId, initialIndex, onPositionChange, onDrillDown, onAssessmentComplete, onSkillGoal, onViewGoals }) {
   const { isPhone } = useResponsive()
   const onPositionChangeRef = useRef(onPositionChange)
   onPositionChangeRef.current = onPositionChange
@@ -187,6 +188,7 @@ export default function AssessmentPanel({ assessments, onAssess, initialSubAreaI
     })
   }, [])
   const [libraryTarget, setLibraryTarget] = useState(null)
+  const [libraryAddMessage, setLibraryAddMessage] = useState(null)
 
   // Jump to a specific sub-area when navigated from elsewhere
   useEffect(() => {
@@ -212,6 +214,9 @@ export default function AssessmentPanel({ assessments, onAssess, initialSubAreaI
 
     return rankedMatches.slice(0, 3)
   }, [assessments, currentDomain.name, currentSubArea.id])
+  const currentSubAreaLibraryTarget = useMemo(() => (
+    assessmentGoalMatches.find((match) => match.isCurrentSubArea)?.targets?.[0] || null
+  ), [assessmentGoalMatches])
 
   // Overall progress
   const overallStats = useMemo(() => {
@@ -365,14 +370,55 @@ export default function AssessmentPanel({ assessments, onAssess, initialSubAreaI
   )
 
   // ── Phone layout ──
+  const handleAddLibraryGoalToTree = useCallback(async (goal) => {
+    if (!clientId) return
+    setLibraryAddMessage(null)
+
+    const { error } = await api
+      .from('client_programs')
+      .insert({
+        client_id: clientId,
+        stg_id: getDatabaseStgId(goal.stg_id),
+        domain: goal.domain_name || 'Communication',
+        ltg_name: goal.ltg_name || '',
+        stg_name: goal.stg_name || '',
+        name: goal.name,
+        objective: goal.objective,
+        criteria: goal.default_criteria || '80% accuracy across 5 consecutive sessions',
+        measurement_type: goal.measurement_type || 'percentage',
+        goal_type: goal.goal_type || 'increase',
+        skill_mappings: goal.skill_mappings || [],
+        status: 'acquisition',
+        display_order: 0,
+      })
+
+    if (error) {
+      setLibraryAddMessage({ type: 'error', text: `Could not add goal: ${error.message}` })
+      return
+    }
+
+    setLibraryAddMessage({ type: 'success', text: `Added "${goal.name}" to the Learning Tree.` })
+  }, [clientId])
+
   const libraryGoalModal = libraryTarget && (
     <div className="fixed inset-0 z-[60] bg-black/50 backdrop-blur-sm flex items-start justify-center overflow-y-auto p-4">
       <div className="bg-white rounded-xl shadow-lg my-4 w-full max-w-3xl max-h-[90vh] overflow-y-auto p-4">
+        {libraryAddMessage && (
+          <div className={`mb-3 rounded-xl border px-3 py-2 text-xs font-semibold ${
+            libraryAddMessage.type === 'error'
+              ? 'border-red-200 bg-red-50 text-red-700'
+              : 'border-sage-200 bg-sage-50 text-sage-700'
+          }`}>
+            {libraryAddMessage.text}
+          </div>
+        )}
         <Suspense fallback={<div className="py-8 text-center text-warm-500">Loading library...</div>}>
           <GoalLibrary
+            clientId={clientId}
+            onSelectGoal={clientId ? handleAddLibraryGoalToTree : undefined}
             initialTargetId={libraryTarget.id}
             initialSearch={libraryTarget.name}
-            onClose={() => setLibraryTarget(null)}
+            onClose={() => { setLibraryTarget(null); setLibraryAddMessage(null) }}
           />
         </Suspense>
       </div>
@@ -530,7 +576,19 @@ export default function AssessmentPanel({ assessments, onAssess, initialSubAreaI
           {/* Skill groups */}
           <div className="space-y-6">
             {currentSubArea.skillGroups.map((sg) => (
-              <SkillGroupRater key={sg.id} skillGroup={sg} assessments={assessments} onAssess={onAssess} showAllDescs={showAllDescs} showAllTeaching={showAllTeaching} onNavigateToSkill={navigateToSkill} highlightedSkillId={highlightedSkillId} onSkillGoal={onSkillGoal} />
+              <SkillGroupRater
+                key={sg.id}
+                skillGroup={sg}
+                assessments={assessments}
+                onAssess={onAssess}
+                showAllDescs={showAllDescs}
+                showAllTeaching={showAllTeaching}
+                onNavigateToSkill={navigateToSkill}
+                highlightedSkillId={highlightedSkillId}
+                onSkillGoal={onSkillGoal}
+                libraryGoalTarget={currentSubAreaLibraryTarget}
+                onViewLibraryGoal={setLibraryTarget}
+              />
             ))}
           </div>
         </div>
@@ -846,6 +904,8 @@ export default function AssessmentPanel({ assessments, onAssess, initialSubAreaI
                 onNavigateToSkill={navigateToSkill}
                 highlightedSkillId={highlightedSkillId}
                 onSkillGoal={onSkillGoal}
+                libraryGoalTarget={currentSubAreaLibraryTarget}
+                onViewLibraryGoal={setLibraryTarget}
               />
             ))}
           </div>
@@ -858,7 +918,7 @@ export default function AssessmentPanel({ assessments, onAssess, initialSubAreaI
 /**
  * A single skill group with all its skills to rate
  */
-function SkillGroupRater({ skillGroup, assessments, onAssess, showAllDescs, showAllTeaching, onNavigateToSkill, highlightedSkillId, onSkillGoal }) {
+function SkillGroupRater({ skillGroup, assessments, onAssess, showAllDescs, showAllTeaching, onNavigateToSkill, highlightedSkillId, onSkillGoal, libraryGoalTarget, onViewLibraryGoal }) {
   return (
     <div>
       <h3 className="text-sm font-semibold text-warm-700 mb-3">
@@ -881,6 +941,8 @@ function SkillGroupRater({ skillGroup, assessments, onAssess, showAllDescs, show
             onNavigateToSkill={onNavigateToSkill}
             isHighlighted={highlightedSkillId === skill.id}
             onSkillGoal={onSkillGoal}
+            libraryGoalTarget={libraryGoalTarget}
+            onViewLibraryGoal={onViewLibraryGoal}
           />
         ))}
       </div>
@@ -891,7 +953,7 @@ function SkillGroupRater({ skillGroup, assessments, onAssess, showAllDescs, show
 /**
  * Individual skill rating row
  */
-function SkillRater({ skill, level, onRate, showAllDescs, showAllTeaching, assessments = {}, onNavigateToSkill, isHighlighted, onSkillGoal }) {
+function SkillRater({ skill, level, onRate, showAllDescs, showAllTeaching, assessments = {}, onNavigateToSkill, isHighlighted, onSkillGoal, libraryGoalTarget, onViewLibraryGoal }) {
   const [showDescLocal, setShowDescLocal] = useState(false)
   const [showTeachingLocal, setShowTeachingLocal] = useState(false)
   const [showDependents, setShowDependents] = useState(false)
@@ -964,14 +1026,24 @@ function SkillRater({ skill, level, onRate, showAllDescs, showAllTeaching, asses
                 </svg>
               </button>
             )}
-            {onSkillGoal && isAssessed(level) && (
+            {libraryGoalTarget && isAssessed(level) && level <= ASSESSMENT_LEVELS.DEVELOPING && (
               <button
-                onClick={() => onSkillGoal(skill.id)}
-                className="inline-flex items-center gap-1 rounded-full border border-sage-200 bg-sage-50 px-2 py-1 text-[10px] font-semibold text-sage-700 transition-colors shrink-0 hover:bg-sage-100"
-                title="Generate goal for this skill"
+                onClick={() => onViewLibraryGoal?.(libraryGoalTarget)}
+                className="inline-flex items-center gap-1 rounded-full border border-blue-200 bg-blue-50 px-2 py-1 text-[10px] font-semibold text-blue-700 transition-colors shrink-0 hover:bg-blue-100"
+                title="View the matching medically necessary library goal for this assessment area"
               >
                 <TargetIcon />
-                Goal
+                Library Goal
+              </button>
+            )}
+            {!libraryGoalTarget && onSkillGoal && isAssessed(level) && level <= ASSESSMENT_LEVELS.DEVELOPING && (
+              <button
+                onClick={() => onSkillGoal(skill.id)}
+                className="inline-flex items-center gap-1 rounded-full border border-warm-200 bg-warm-50 px-2 py-1 text-[10px] font-semibold text-warm-600 transition-colors shrink-0 hover:bg-warm-100"
+                title="Fallback skill draft. Prefer the built-in library when a match exists."
+              >
+                <TargetIcon />
+                Skill Draft
               </button>
             )}
           </div>

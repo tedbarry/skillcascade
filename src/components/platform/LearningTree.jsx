@@ -4,6 +4,7 @@ import { syncSessionDataToAssessment } from '../../data/storage.js'
 import { useAuth } from '../../contexts/AuthContext.jsx'
 import useResponsive from '../../hooks/useResponsive.js'
 import { track } from '../../lib/analytics.js'
+import { getDatabaseStgId } from '../../lib/recommendationDraftAdapters.js'
 
 const GoalLibrary = lazy(() => import('./GoalLibrary.jsx'))
 const ProgramGraph = lazy(() => import('./ProgramGraph.jsx'))
@@ -161,7 +162,7 @@ export default function LearningTree({ clientId, clientName, assessments, onStar
       .from('client_programs')
       .insert({
         client_id: clientId,
-        stg_id: goal.stg_id || null,
+        stg_id: getDatabaseStgId(goal.stg_id),
         domain: goal.domain_name || 'Communication',
         ltg_name: goal.ltg_name || '',
         stg_name: goal.stg_name || '',

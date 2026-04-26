@@ -8,6 +8,7 @@
  */
 
 import { api } from '../lib/api.js'
+import { getDatabaseStgId } from '../lib/recommendationDraftAdapters.js'
 import { getSessionKey, encryptFields, decryptFields, PHI_FIELDS, logEncryption, restoreSessionKey } from '../lib/crypto.js'
 import { getLinkedSessionStatusForNoteStatus } from '../lib/sessionNoteWorkflow.js'
 
@@ -437,7 +438,7 @@ export async function syncReportToLearningTree(clientId, reportFields) {
   for (const goal of goals) {
     // Parent goals now sync like all others (domain = 'Parent Training')
 
-    const stgId = goal.skillId || goal.stg_id || null
+    const stgId = getDatabaseStgId(goal.stg_id || goal.skillId)
     let match = null
     if (stgId) match = existing.find(p => p.stg_id === stgId)
     if (!match && goal.program) match = existing.find(p => (p.name || '').toLowerCase().trim() === (goal.program || '').toLowerCase().trim())

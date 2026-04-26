@@ -91,7 +91,7 @@ INSTRUCTIONS:
   return (
     <div className={`${isPhone ? 'px-4 py-6' : 'px-6 py-8'} max-w-2xl mx-auto`}>
       <div className="mb-6">
-        <h2 className="text-lg font-bold text-warm-800 font-display">Insurance Deficit Goals</h2>
+        <h2 className="text-lg font-bold text-warm-800 font-display">Legacy Insurance Deficit Goals</h2>
         <p className="text-sm text-warm-500 mt-1">Enter deficits and generate insurance-ready goals</p>
       </div>
 

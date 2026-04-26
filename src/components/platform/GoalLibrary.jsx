@@ -4,6 +4,7 @@ import useResponsive from '../../hooks/useResponsive.js'
 import usePermissions from '../../hooks/usePermissions.js'
 import { track } from '../../lib/analytics.js'
 import { CORE_GOAL_LIBRARY, CORE_GOAL_LIBRARY_NAME } from '../../data/canonicalGoalLibrary.js'
+import { getDatabaseStgId } from '../../lib/recommendationDraftAdapters.js'
 
 const AddGoalDialog = lazy(() => import('./AddGoalDialog.jsx'))
 
@@ -203,7 +204,8 @@ export default function GoalLibrary({ onSelectGoal, onClose, clientId, initialTa
     track('feature_use', 'goal_library_select')
     onSelectGoal({
       id: target.id,
-      stg_id: target.stg_id,
+      stg_id: getDatabaseStgId(target.stg_id),
+      library_target_id: target.id,
       name: target.name,
       objective: detail.objective,
       goal_type: detail.goal_type || 'increase',
