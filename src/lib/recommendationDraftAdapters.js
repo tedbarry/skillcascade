@@ -44,6 +44,35 @@ function parseCoreTargetDetail(target) {
   }
 }
 
+function normalizeGoalText(value) {
+  return (value || '').toLowerCase().replace(/\s+/g, ' ').trim()
+}
+
+export function getCoreLibraryTargetDetail(target) {
+  return parseCoreTargetDetail(target)
+}
+
+export function findCoreLibraryTargetForGoal(goal) {
+  if (!goal) return null
+
+  const targetId = goal.library_target_id || goal.id
+  if (targetId) {
+    const byId = CORE_GOAL_LIBRARY.targets.find((target) => target.id === targetId)
+    if (byId) return byId
+  }
+
+  const name = normalizeGoalText(goal.name || goal.program || goal.skillName)
+  const objective = normalizeGoalText(goal.objective || goal.goalText)
+  const deficitSlug = goal.canonical_deficit_slug || goal.canonicalDeficitSlug
+  const candidateTargets = deficitSlug
+    ? CORE_GOAL_LIBRARY.targets.filter((target) => target.canonical_deficit_slug === deficitSlug)
+    : CORE_GOAL_LIBRARY.targets
+
+  return candidateTargets.find((target) => normalizeGoalText(target.name) === name)
+    || candidateTargets.find((target) => normalizeGoalText(parseCoreTargetDetail(target).objective || target.objective) === objective)
+    || null
+}
+
 function getProgramTypeForCoreTarget(target) {
   if (target?.canonical_domain_slug === 'caregiver_support') return 'parent_training'
   if (target?.goal_type === 'decrease') return 'behavior_reduction'

@@ -4,6 +4,7 @@ import { track } from '../../lib/analytics.js'
 import useResponsive from '../../hooks/useResponsive.js'
 import { checkMisplacement } from '../../lib/goalRouter.js'
 import { calculateCurrentLevel, autoSetBaseline } from '../../lib/goalCalculations.js'
+import { findCoreLibraryTargetForGoal, getCoreLibraryTargetDetail } from '../../lib/recommendationDraftAdapters.js'
 
 const ProgramGraph = lazy(() => import('./ProgramGraph.jsx'))
 
@@ -188,6 +189,11 @@ export default function GoalDetailPanel({
   const dataMethod = program.data_method || programType.defaultMethod
   const isTrialBased = dataMethod === 'trial'
   const panelWidth = isPhone ? '100%' : '480px'
+  const coreLibraryTarget = findCoreLibraryTargetForGoal(program)
+  const coreLibraryDetail = coreLibraryTarget ? getCoreLibraryTargetDetail(coreLibraryTarget) : null
+  const verificationSources = Array.isArray(coreLibraryDetail?.verification_sources)
+    ? coreLibraryDetail.verification_sources.slice(0, 4)
+    : []
 
   return (
     <>
@@ -246,9 +252,15 @@ export default function GoalDetailPanel({
               </div>
               {/* Labels placeholder */}
               <div className="mt-2">
-                <button className="text-xs text-warm-500 hover:text-warm-600 transition-colors min-h-[28px]">
-                  + Add label
-                </button>
+                {coreLibraryTarget ? (
+                  <span className="inline-flex items-center rounded-full border border-blue-200 bg-blue-50 px-2 py-1 text-[10px] font-semibold text-blue-700">
+                    Medically Necessary Library
+                  </span>
+                ) : (
+                  <button className="text-xs text-warm-500 hover:text-warm-600 transition-colors min-h-[28px]">
+                    + Add label
+                  </button>
+                )}
               </div>
             </div>
             {/* Close button */}
@@ -278,6 +290,40 @@ export default function GoalDetailPanel({
           )}
 
           {/* ── Section 2: Program Type & Measurement ── */}
+          {coreLibraryTarget && (
+            <div className="mx-4 mt-3 rounded-xl border border-blue-200 bg-blue-50/70 px-4 py-3">
+              <p className="text-[10px] font-semibold uppercase tracking-wider text-blue-700">
+                Official Verification
+              </p>
+              <p className="mt-1 text-sm font-semibold text-blue-900">{coreLibraryTarget.name}</p>
+              {coreLibraryDetail?.medical_necessity && (
+                <p className="mt-1 text-xs leading-relaxed text-blue-800">
+                  {coreLibraryDetail.medical_necessity}
+                </p>
+              )}
+              {coreLibraryDetail?.verification_summary && (
+                <p className="mt-2 text-[11px] leading-relaxed text-blue-700">
+                  {coreLibraryDetail.verification_summary}
+                </p>
+              )}
+              {verificationSources.length > 0 && (
+                <div className="mt-2 flex flex-wrap gap-1.5">
+                  {verificationSources.map((source) => (
+                    <a
+                      key={source.id}
+                      href={source.url}
+                      target="_blank"
+                      rel="noreferrer"
+                      className="rounded-full border border-blue-200 bg-white px-2 py-1 text-[10px] font-semibold text-blue-700 hover:bg-blue-100"
+                    >
+                      {source.label}
+                    </a>
+                  ))}
+                </div>
+              )}
+            </div>
+          )}
+
           <CollapsibleSection
             title="Program Type & Measurement"
             sectionKey="type"

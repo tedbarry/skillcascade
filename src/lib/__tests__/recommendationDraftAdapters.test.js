@@ -4,7 +4,9 @@ import {
   buildAuthReportGoalFromRecommendation,
   buildLearningTreeDraftFromRecommendation,
   createAssessmentRecommendationReviewState,
+  findCoreLibraryTargetForGoal,
   getCoreLibraryTargetsForRecommendation,
+  getCoreLibraryTargetDetail,
   getAssessmentRecommendationStatus,
   getAuthReportDomainLabel,
   mapLearningTreeDomainToAuthGoalDomain,
@@ -57,6 +59,17 @@ describe('recommendationDraftAdapters', () => {
       canonical_deficit_slug: 'safety_awareness_emergency_response',
       source_type: 'core',
     })
+  })
+
+  it('recognizes imported client goals that came from the built-in library', () => {
+    const match = findCoreLibraryTargetForGoal({
+      name: 'Follow emergency or safety directives immediately',
+      objective: 'The client will follow emergency, safety, or protective directives immediately and remain with the adult or safe location during high-risk routines.',
+    })
+    const detail = getCoreLibraryTargetDetail(match)
+
+    expect(match?.canonical_deficit_slug).toBe('safety_awareness_emergency_response')
+    expect(detail.verification_summary).toContain('WHO ICF')
   })
 
   it('maps new learning-tree domains into auth-report domains', () => {
