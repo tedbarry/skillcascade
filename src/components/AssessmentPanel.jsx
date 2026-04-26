@@ -68,7 +68,17 @@ function getDomainStats(domain, assessments) {
   return { total, assessed, avg: assessed > 0 ? scoreSum / assessed : 0 }
 }
 
-export default function AssessmentPanel({ assessments, onAssess, initialSubAreaId, initialIndex, onPositionChange, onDrillDown, onAssessmentComplete, onSkillGoal }) {
+function TargetIcon({ className = 'w-3.5 h-3.5' }) {
+  return (
+    <svg className={className} viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+      <circle cx="10" cy="10" r="7" />
+      <circle cx="10" cy="10" r="4" />
+      <circle cx="10" cy="10" r="1" fill="currentColor" />
+    </svg>
+  )
+}
+
+export default function AssessmentPanel({ assessments, onAssess, initialSubAreaId, initialIndex, onPositionChange, onDrillDown, onAssessmentComplete, onSkillGoal, onViewGoals }) {
   const { isPhone } = useResponsive()
   const onPositionChangeRef = useRef(onPositionChange)
   onPositionChangeRef.current = onPositionChange
@@ -368,6 +378,15 @@ export default function AssessmentPanel({ assessments, onAssess, initialSubAreaI
             </div>
             <span className="text-[10px] text-warm-500 whitespace-nowrap">{subAreaStats.assessed}/{subAreaStats.total}</span>
           </div>
+          {onViewGoals && overallStats.assessed > 0 && (
+            <button
+              onClick={() => onViewGoals(currentDomain.id)}
+              className="mt-2 w-full min-h-[44px] rounded-lg border border-sage-200 bg-sage-50 px-3 py-2 text-[11px] font-semibold text-sage-700 hover:bg-sage-100 transition-colors flex items-center justify-center gap-1.5"
+            >
+              <TargetIcon />
+              Get Goals From Assessment
+            </button>
+          )}
         </div>
 
         {/* Skill rating content */}
@@ -639,6 +658,15 @@ export default function AssessmentPanel({ assessments, onAssess, initialSubAreaI
             {currentDomain.coreQuestion && (
               <p className="text-sm text-warm-500 italic mt-1">{currentDomain.coreQuestion}</p>
             )}
+            {onViewGoals && overallStats.assessed > 0 && (
+              <button
+                onClick={() => onViewGoals(currentDomain.id)}
+                className="mt-4 min-h-[44px] rounded-full border border-sage-200 bg-sage-50 px-4 py-2 text-xs font-semibold text-sage-700 hover:bg-sage-100 transition-colors flex items-center gap-2"
+              >
+                <TargetIcon className="w-4 h-4" />
+                Get Goals From Assessment
+              </button>
+            )}
           </div>
 
           {/* Progress for this sub-area */}
@@ -834,14 +862,11 @@ function SkillRater({ skill, level, onRate, showAllDescs, showAllTeaching, asses
             {onSkillGoal && isAssessed(level) && (
               <button
                 onClick={() => onSkillGoal(skill.id)}
-                className="transition-colors shrink-0 text-warm-300 hover:text-sage-500"
+                className="inline-flex items-center gap-1 rounded-full border border-sage-200 bg-sage-50 px-2 py-1 text-[10px] font-semibold text-sage-700 transition-colors shrink-0 hover:bg-sage-100"
                 title="Generate goal for this skill"
               >
-                <svg className="w-3.5 h-3.5" viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
-                  <circle cx="10" cy="10" r="7" />
-                  <circle cx="10" cy="10" r="4" />
-                  <circle cx="10" cy="10" r="1" fill="currentColor" />
-                </svg>
+                <TargetIcon />
+                Goal
               </button>
             )}
           </div>

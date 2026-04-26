@@ -1603,6 +1603,7 @@ export default function Dashboard() {
                   onDrillDown={handleAssessDrillDown}
                   onAssessmentComplete={handleAssessmentComplete}
                   onSkillGoal={handleSkillGoal}
+                  onViewGoals={handleNavigateToGoals}
                 />
               </div>
             </Suspense>
