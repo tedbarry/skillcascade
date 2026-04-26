@@ -66,4 +66,92 @@ describe('canonicalGoalLibrary', () => {
     expect(maladaptiveDetail.linked_ferb_names).toContain(ferb.name)
     expect(ferbDetail.linked_maladaptive_names).toContain(maladaptive.name)
   })
+
+  it('expands lane A and lane B with deeper medically necessary coverage', () => {
+    const targetNames = CORE_GOAL_LIBRARY.targets.map((item) => item.name)
+
+    expect(targetNames).toEqual(expect.arrayContaining([
+      'Reduce head hitting, biting, or body slamming during demands',
+      'Reduce property destruction during transitions away from preferred items',
+      'Transition away from preferred locations without eloping',
+      'Request toileting, hygiene, or physical-needs support',
+      'Request clarification when directions are confusing',
+      'Report pain, illness, or physical discomfort with useful detail',
+      'Ask the listener to repeat, slow down, or show',
+      'Request more time or clarification instead of refusing tasks',
+    ]))
+  })
+
+  it('deepens communication and social goal coverage without leaving the core library model', () => {
+    const targetNames = CORE_GOAL_LIBRARY.targets.map((item) => item.name)
+    const communicationCount = CORE_GOAL_LIBRARY.targets.filter((item) => item.domain_name === 'Communication').length
+    const socialCount = CORE_GOAL_LIBRARY.targets.filter((item) => item.domain_name === 'Social').length
+
+    expect(communicationCount).toBeGreaterThanOrEqual(48)
+    expect(socialCount).toBeGreaterThanOrEqual(47)
+    expect(targetNames).toEqual(expect.arrayContaining([
+      'Request a pause or slower pace during multi-step instruction',
+      'Advocate for a safer seating, spacing, or group position',
+      'Report pain, illness, or physical discomfort with useful detail',
+      'Repair when the communication device, tool, or support fails',
+      'Request immediate help for an injury, safety concern, or urgent need',
+      'Describe a schedule, routine, or instruction change causing difficulty',
+      'Repair after missing part of a group direction',
+      'Shift topics appropriately using a bridge statement',
+      'Enter a group conversation with an on-topic comment',
+      'Follow another person\'s point, gaze, or directional cue',
+      'Predict the likely social outcome of a response choice',
+      'Maintain expected personal space and body boundaries',
+      'Notice when a peer is attempting to share information or materials',
+      'Recognize when a conversation partner is confused or losing interest',
+      'Negotiate turn order or rule changes during play',
+      'Request adult mediation before conflict escalates',
+      'Respond appropriately when a peer initiates interaction',
+      'Use a calm exit-and-return plan during escalating peer conflict',
+    ]))
+  })
+
+  it('expands lane C adaptive and safety coverage without drifting out of the medically necessary model', () => {
+    const targetNames = CORE_GOAL_LIBRARY.targets.map((item) => item.name)
+    const adaptiveCount = CORE_GOAL_LIBRARY.targets.filter((item) => item.domain_name === 'Adaptive Daily Living').length
+
+    expect(adaptiveCount).toBeGreaterThanOrEqual(24)
+    expect(targetNames).toEqual(expect.arrayContaining([
+      'Complete a toileting routine including hygiene and clothing steps',
+      'Brush teeth or complete an oral-care routine with reduced prompts',
+      'Dress for weather, activity, or schedule demands with reduced prompting',
+      'Follow a meal or snack routine using safe eating steps',
+      'Check in before moving to a new location during outings',
+      'Adapt safely when the route, routine, or destination changes',
+      'Follow a fire drill, alarm, or evacuation routine safely',
+      'Stop at curbs, parking lots, doors, or exit boundaries until cued',
+      'Use a safe response when approached by an unfamiliar adult',
+    ]))
+  })
+
+  it('expands regulation and parent-training lanes with clinically meaningful coverage', () => {
+    const targetNames = CORE_GOAL_LIBRARY.targets.map((item) => item.name)
+    const copingCount = CORE_GOAL_LIBRARY.targets.filter((item) => item.domain_name === 'Coping & Self-Regulation').length
+    const parentTrainingCount = CORE_GOAL_LIBRARY.targets.filter((item) => item.domain_name === 'Parent Training').length
+
+    expect(copingCount).toBeGreaterThanOrEqual(36)
+    expect(parentTrainingCount).toBeGreaterThanOrEqual(28)
+    expect(targetNames).toEqual(expect.arrayContaining([
+      'Differentiate calm, escalating, and overwhelmed states',
+      'Name the support needed for a known trigger',
+      'Recover within two minutes after denied access or frustration',
+      'Use a flexible alternative when a preferred item or plan is unavailable',
+      'Re-initiate a task after interruption or correction',
+      'Use a self-check to catch and fix an error before disengaging',
+      'Generate two safe options before choosing a response',
+      'Accept correction and continue the activity',
+      'Use an offered visual, model, or sensory support to complete a task',
+      'Caregiver will identify precursors and start planned supports early',
+      'Caregiver will create opportunities for functional communication during routines',
+      'Caregiver will track duration or recovery time for escalation episodes',
+      'Caregiver will fade prompts according to the plan without rescuing too early',
+      'Caregiver will guide a return-to-routine sequence after de-escalation',
+      'Caregiver will demonstrate the target procedure during coaching review',
+    ]))
+  })
 })

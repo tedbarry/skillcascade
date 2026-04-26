@@ -1,5 +1,7 @@
 import { mkdirSync, readFileSync, writeFileSync } from 'node:fs'
 import { dirname, resolve } from 'node:path'
+import { CORE_GOAL_LIBRARY } from '../src/data/canonicalGoalLibrary.js'
+import { validateCoreGoalLibrary } from '../src/data/goalMedicalNecessityValidation.js'
 
 const SOURCE_PATH = resolve('src/data/goalLibrary4Tier.json')
 const ROUTER_INDEX_PATH = resolve('src/data/goalRouterIndex.json')
@@ -46,6 +48,11 @@ function main() {
   const goalLibrary = readGoalLibrary()
   writeJson(ROUTER_INDEX_PATH, buildRouterIndex(goalLibrary))
   writeJson(HIERARCHY_PATH, buildGoalHierarchy(goalLibrary))
+
+  const validation = validateCoreGoalLibrary(CORE_GOAL_LIBRARY)
+  if (!validation.ok) {
+    throw new Error(`Core goal library medical-necessity validation failed:\n- ${validation.errors.join('\n- ')}`)
+  }
 }
 
 main()

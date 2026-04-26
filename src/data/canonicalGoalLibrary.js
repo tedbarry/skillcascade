@@ -88,6 +88,14 @@ const CANONICAL_TEMPLATE_SETS = {
         name: 'Identify early body cues of escalation',
         objective: 'The client will identify early body cues or activation signals before escalation and communicate the need for support or coping.',
       },
+      {
+        name: 'Differentiate calm, escalating, and overwhelmed states',
+        objective: 'The client will differentiate calm, escalating, and overwhelmed states early enough to access the appropriate coping or support routine.',
+      },
+      {
+        name: 'Match an identified emotion to a coping or support need',
+        objective: 'The client will match an identified emotion or internal state to a coping strategy, break request, or support need across routines.',
+      },
     ],
   },
   trigger_awareness_self_insight: {
@@ -100,6 +108,14 @@ const CANONICAL_TEMPLATE_SETS = {
       {
         name: 'Use a confusion or stress scale to request support',
         objective: 'The client will rate their level of confusion, stress, or overwhelm and request the matching level of support before escalation or shutdown.',
+      },
+      {
+        name: 'Identify a high-risk routine before escalation begins',
+        objective: 'The client will identify a high-risk routine, trigger, or setting condition before escalation begins and access the planned support response.',
+      },
+      {
+        name: 'Name the support needed for a known trigger',
+        objective: 'The client will name the support, accommodation, or coping tool needed for a known trigger before behavior risk increases.',
       },
     ],
   },
@@ -118,6 +134,14 @@ const CANONICAL_TEMPLATE_SETS = {
         name: 'Return to task after regulation support',
         objective: 'The client will return to the expected task or routine after co-regulation or coping support with increasing independence.',
       },
+      {
+        name: 'Remain in the area while using a taught regulation routine',
+        objective: 'The client will remain in the area and use a taught regulation routine instead of dropping, fleeing, or escalating when frustrated or overwhelmed.',
+      },
+      {
+        name: 'Recover within two minutes after denied access or frustration',
+        objective: 'The client will recover within two minutes after denied access, frustration, or correction by using the taught coping and re-entry routine.',
+      },
     ],
   },
   coping_skills_flexibility: {
@@ -135,6 +159,14 @@ const CANONICAL_TEMPLATE_SETS = {
         name: 'Respond calmly to a setback or non-preferred outcome',
         objective: 'The client will respond to a setback, denied request, or non-preferred outcome with an adaptive coping response instead of escalation.',
       },
+      {
+        name: 'Use a flexible alternative when a preferred item or plan is unavailable',
+        objective: 'The client will use a flexible alternative when a preferred item, activity, person, or plan is unavailable instead of escalating or shutting down.',
+      },
+      {
+        name: 'Complete a changed first-then routine without escalation',
+        objective: 'The client will complete a changed first-then routine without escalation by using a coping strategy and following the revised expectation.',
+      },
     ],
   },
   executive_initiation_persistence: {
@@ -147,6 +179,14 @@ const CANONICAL_TEMPLATE_SETS = {
       {
         name: 'Persist on a moderately challenging task for five minutes',
         objective: 'The client will persist on a moderately challenging task for at least five minutes with reduced avoidance and increased follow-through.',
+      },
+      {
+        name: 'Re-initiate a task after interruption or correction',
+        objective: 'The client will re-initiate a task after interruption, correction, or brief problem-solving support without prolonged avoidance.',
+      },
+      {
+        name: 'Begin a visual routine independently at the scheduled time',
+        objective: 'The client will begin a visual routine independently at the scheduled time with reduced verbal prompting from adults.',
       },
     ],
   },
@@ -161,6 +201,14 @@ const CANONICAL_TEMPLATE_SETS = {
         name: 'Self-monitor understanding during task completion',
         objective: 'The client will self-monitor their understanding during a task and ask for clarification or support before disengaging.',
       },
+      {
+        name: 'Check materials and readiness before a transition or task',
+        objective: 'The client will check materials, readiness, and next-step expectations before a transition or task with increasing independence.',
+      },
+      {
+        name: 'Use a self-check to catch and fix an error before disengaging',
+        objective: 'The client will use a self-check routine to catch and fix an error before disengaging, escalating, or abandoning the task.',
+      },
     ],
   },
   problem_solving_judgment: {
@@ -173,6 +221,14 @@ const CANONICAL_TEMPLATE_SETS = {
       {
         name: 'Select an adaptive response in conflict or frustration',
         objective: 'The client will evaluate response options and choose an adaptive, safety-focused response when frustrated or in conflict.',
+      },
+      {
+        name: 'Identify when a problem requires adult help instead of independent action',
+        objective: 'The client will identify when a problem requires adult help, supervision, or a safety routine instead of unsafe independent action.',
+      },
+      {
+        name: 'Generate two safe options before choosing a response',
+        objective: 'The client will generate at least two safe response options before choosing how to respond to an everyday problem or obstacle.',
       },
     ],
   },
@@ -187,6 +243,14 @@ const CANONICAL_TEMPLATE_SETS = {
         name: 'Re-engage after disappointment or correction',
         objective: 'The client will re-engage in the expected activity after disappointment, correction, or uncertainty without prolonged avoidance.',
       },
+      {
+        name: 'Accept correction and continue the activity',
+        objective: 'The client will accept correction and continue the activity using adaptive self-talk and a ready body instead of escalating or shutting down.',
+      },
+      {
+        name: 'Use adaptive self-talk before asking to stop or quit',
+        objective: 'The client will use adaptive self-talk before asking to stop or quit so they can stay engaged long enough to access support appropriately.',
+      },
     ],
   },
   support_utilization_help_acceptance: {
@@ -199,6 +263,14 @@ const CANONICAL_TEMPLATE_SETS = {
       {
         name: 'Use offered support to stay engaged in treatment',
         objective: 'The client will use offered co-regulation, prompting, or assistance to remain engaged in treatment and functional routines.',
+      },
+      {
+        name: 'Accept redirection and remain engaged in the routine',
+        objective: 'The client will accept redirection and remain engaged in the routine instead of escalating, arguing, or withdrawing from the activity.',
+      },
+      {
+        name: 'Use an offered visual, model, or sensory support to complete a task',
+        objective: 'The client will use an offered visual, model, sensory support, or structured prompt to complete a task with reduced avoidance.',
       },
     ],
   },
@@ -217,6 +289,34 @@ const CANONICAL_TEMPLATE_SETS = {
         name: 'Initiate attention appropriately from adults or peers',
         objective: 'The client will appropriately initiate attention from adults or peers instead of using disruptive or ineffective communication.',
       },
+      {
+        name: 'Request toileting, hygiene, or physical-needs support',
+        objective: 'The client will appropriately request toileting, hygiene, pain, hunger, or other physical-needs support before the need escalates into unsafe or disruptive behavior.',
+      },
+      {
+        name: 'Request an environmental or sensory accommodation before escalation',
+        objective: 'The client will request an environmental, sensory, or pacing accommodation before escalation when a setting becomes overwhelming.',
+      },
+      {
+        name: 'Request adult attention appropriately instead of disruptive behavior',
+        objective: 'The client will request adult attention appropriately instead of using disruptive, unsafe, or ineffective communication responses.',
+      },
+      {
+        name: 'Request a pause or slower pace during multi-step instruction',
+        objective: 'The client will request a pause, slower pace, or chunked instruction during multi-step demands before disengaging or escalating.',
+      },
+      {
+        name: 'Request access to a visual, model, or communication support',
+        objective: 'The client will request a visual, model, AAC support, or other communication aid needed to participate successfully in routines.',
+      },
+      {
+        name: 'Request immediate help for an injury, safety concern, or urgent need',
+        objective: 'The client will initiate an immediate help request for an injury, safety concern, urgent need, or unexpected problem instead of freezing, leaving, or escalating.',
+      },
+      {
+        name: 'Communicate before leaving or stopping an activity',
+        objective: 'The client will communicate before leaving, stopping, or abandoning an activity by requesting support, a break, or a change in plan.',
+      },
     ],
   },
   help_seeking_self_advocacy: {
@@ -233,6 +333,34 @@ const CANONICAL_TEMPLATE_SETS = {
       {
         name: 'Set a boundary or say no appropriately',
         objective: 'The client will communicate refusal, boundary-setting, or personal needs appropriately using an effective communication mode.',
+      },
+      {
+        name: 'Request clarification when directions are confusing',
+        objective: 'The client will request clarification, repetition, or a demonstration when directions are confusing before refusing or disengaging.',
+      },
+      {
+        name: 'Ask for space or a reduced sensory load appropriately',
+        objective: 'The client will appropriately ask for space, reduced noise, or another accommodation when sensory load or crowding interferes with safe participation.',
+      },
+      {
+        name: 'Request adult support during peer conflict or unsafe situations',
+        objective: 'The client will request adult support during peer conflict, unsafe situations, or moments of uncertainty instead of escalating, withdrawing, or leaving the area.',
+      },
+      {
+        name: 'Advocate for a safer seating, spacing, or group position',
+        objective: 'The client will advocate for a safer or more workable seating, spacing, or group position when participation is affected by sensory load, conflict, or distraction.',
+      },
+      {
+        name: 'Request a transition warning or countdown before change',
+        objective: 'The client will request a transition warning, countdown, or preview before a difficult change in routine instead of escalating or refusing.',
+      },
+      {
+        name: 'Disclose lack of understanding before errors build up',
+        objective: 'The client will disclose when they do not understand and request re-teaching or modeling before errors, avoidance, or escalation increase.',
+      },
+      {
+        name: 'Request support when peer behavior feels unsafe or intrusive',
+        objective: 'The client will request support or a boundary when peer behavior feels unsafe, intrusive, or overly distracting instead of responding with aggression, elopement, or shutdown.',
       },
     ],
   },
@@ -251,6 +379,34 @@ const CANONICAL_TEMPLATE_SETS = {
         name: 'Verbally describe progress or barriers during a task',
         objective: 'The client will verbally describe progress, confusion, or barriers during a task rather than disengaging without communication.',
       },
+      {
+        name: 'Report pain, illness, or physical discomfort with useful detail',
+        objective: 'The client will report pain, illness, or physical discomfort with enough detail for another person to provide timely and appropriate support.',
+      },
+      {
+        name: 'Explain why a task is difficult and what support is needed',
+        objective: 'The client will explain why a task is difficult and identify what support, prompt, or accommodation is needed before refusing or shutting down.',
+      },
+      {
+        name: 'Report a missing item, mistake, or environmental barrier',
+        objective: 'The client will report a missing item, mistake, or environmental barrier clearly enough for another person to help resolve the problem.',
+      },
+      {
+        name: 'Explain a peer conflict or social problem with relevant detail',
+        objective: 'The client will explain a peer conflict, misunderstanding, or social problem with relevant detail so an adult can provide effective support.',
+      },
+      {
+        name: 'Describe overload, anxiety, or frustration before escalation',
+        objective: 'The client will describe overload, anxiety, frustration, or confusion before escalation in a way that guides another person toward helpful support.',
+      },
+      {
+        name: 'Report bullying, teasing, or unsafe peer behavior with relevant detail',
+        objective: 'The client will report bullying, teasing, unsafe peer behavior, or boundary violations with relevant detail so adults can respond effectively.',
+      },
+      {
+        name: 'Describe a schedule, routine, or instruction change causing difficulty',
+        objective: 'The client will describe how a schedule change, routine shift, or instruction change is causing difficulty and identify the support needed.',
+      },
     ],
   },
   communication_repair: {
@@ -263,6 +419,34 @@ const CANONICAL_TEMPLATE_SETS = {
       {
         name: 'Identify a communication breakdown and choose a repair',
         objective: 'The client will identify when a message was not understood and choose an adaptive repair strategy before becoming frustrated.',
+      },
+      {
+        name: 'Ask the listener to repeat, slow down, or show',
+        objective: 'The client will ask the listener to repeat, slow down, or provide a visual or modeled cue when the original message was not understood.',
+      },
+      {
+        name: 'Switch to another communication mode when not understood',
+        objective: 'The client will switch to another communication mode, such as gesture, AAC, writing, or pointing, when the first message was not understood.',
+      },
+      {
+        name: 'Confirm understanding after receiving important directions',
+        objective: 'The client will confirm understanding after receiving important or multi-step directions rather than guessing, refusing, or disengaging.',
+      },
+      {
+        name: 'Repair when the communication device, tool, or support fails',
+        objective: 'The client will use an alternate repair strategy when the primary communication device, tool, or support is unavailable or not working.',
+      },
+      {
+        name: 'Restate the message after a listener responds incorrectly',
+        objective: 'The client will restate or refine the message after a listener responds incorrectly instead of withdrawing or escalating.',
+      },
+      {
+        name: 'Repair after missing part of a group direction',
+        objective: 'The client will indicate when part of a group direction was missed and use a repair strategy to regain the needed information.',
+      },
+      {
+        name: 'Clarify yes, no, or choice responses when a listener guesses incorrectly',
+        objective: 'The client will clarify yes, no, or choice responses when a communication partner guesses incorrectly instead of giving up or escalating.',
       },
     ],
   },
@@ -281,6 +465,30 @@ const CANONICAL_TEMPLATE_SETS = {
         name: 'Use respectful listening and waiting during conversation',
         objective: 'The client will use respectful listening, wait for pauses, and avoid interrupting during conversational exchanges.',
       },
+      {
+        name: 'Respond to a greeting and continue the interaction',
+        objective: 'The client will respond to a greeting and continue the interaction with an appropriate comment, answer, or question.',
+      },
+      {
+        name: 'Ask a reciprocal question during a social exchange',
+        objective: 'The client will ask a reciprocal question during a social exchange to maintain interaction and improve social participation.',
+      },
+      {
+        name: 'Enter a group conversation with an on-topic comment',
+        objective: 'The client will enter a group conversation using an appropriate on-topic comment or entry phrase instead of interrupting or disengaging.',
+      },
+      {
+        name: 'End a conversation appropriately when the interaction is finished',
+        objective: 'The client will end a conversation appropriately when the interaction is finished by using a closing statement, transition phrase, or socially expected exit response.',
+      },
+      {
+        name: 'Answer a peer question with enough detail to continue the exchange',
+        objective: 'The client will answer a peer question with enough relevant detail to continue the exchange and support reciprocal interaction.',
+      },
+      {
+        name: 'Shift topics appropriately using a bridge statement',
+        objective: 'The client will shift topics appropriately using a bridge statement or related comment without abruptly interrupting or derailing the interaction.',
+      },
     ],
   },
   shared_attention_social_orientation: {
@@ -293,6 +501,26 @@ const CANONICAL_TEMPLATE_SETS = {
       {
         name: 'Join shared attention during play or instruction',
         objective: 'The client will join shared attention during play, instruction, or a peer activity and remain available for reciprocal interaction.',
+      },
+      {
+        name: 'Respond to name or attention cues in group settings',
+        objective: 'The client will respond to name, attention cues, or group-orientation signals in classroom, therapy, or community settings within an appropriate timeframe.',
+      },
+      {
+        name: 'Follow another person\'s point, gaze, or directional cue',
+        objective: 'The client will follow another person\'s point, gaze, or directional cue to orient to the relevant object, task, or social event.',
+      },
+      {
+        name: 'Shift attention between materials and social partner during instruction',
+        objective: 'The client will shift attention between materials and the social partner during instruction or cooperative activity without disengaging.',
+      },
+      {
+        name: 'Notice when a peer is attempting to share information or materials',
+        objective: 'The client will notice when a peer is attempting to share information, materials, or attention and orient to the interaction opportunity.',
+      },
+      {
+        name: 'Orient to the group speaker during announcements or transitions',
+        objective: 'The client will orient to the group speaker during announcements, transitions, or safety directions and remain available for follow-through.',
       },
     ],
   },
@@ -311,6 +539,26 @@ const CANONICAL_TEMPLATE_SETS = {
         name: 'Accept another person\'s opinion or point of view',
         objective: 'The client will respond adaptively when another person has a different opinion, preference, or perspective.',
       },
+      {
+        name: 'Infer why another person might feel uncomfortable or upset',
+        objective: 'The client will infer why another person might feel uncomfortable, confused, or upset and adjust behavior accordingly.',
+      },
+      {
+        name: 'Predict the likely social outcome of a response choice',
+        objective: 'The client will predict the likely social outcome of a response choice before acting in common peer, school, or family situations.',
+      },
+      {
+        name: 'Adjust language after noticing another person\'s reaction',
+        objective: 'The client will adjust language, tone, or behavior after noticing another person\'s reaction in order to preserve participation and social safety.',
+      },
+      {
+        name: 'Identify when another person wants space, help, or a pause',
+        objective: 'The client will identify when another person wants space, help, or a pause and adjust responding accordingly.',
+      },
+      {
+        name: 'Recognize when a conversation partner is confused or losing interest',
+        objective: 'The client will recognize when a conversation partner is confused, overwhelmed, or losing interest and adjust language or topic accordingly.',
+      },
     ],
   },
   social_norms_context: {
@@ -327,6 +575,26 @@ const CANONICAL_TEMPLATE_SETS = {
       {
         name: 'Wait for a pause and use excuse me before interrupting',
         objective: 'The client will wait for a pause and use an appropriate entry phrase before interrupting a conversation.',
+      },
+      {
+        name: 'Maintain expected personal space and body boundaries',
+        objective: 'The client will maintain expected personal space and body boundaries across peer, adult, school, and community interactions.',
+      },
+      {
+        name: 'Use an expected voice volume for the setting',
+        objective: 'The client will use an expected voice volume for the setting and shift volume appropriately across classroom, home, therapy, and community contexts.',
+      },
+      {
+        name: 'Distinguish private versus public topics or behaviors',
+        objective: 'The client will distinguish private versus public topics, body-related behaviors, and context-specific rules across daily settings.',
+      },
+      {
+        name: 'Adjust touch, proximity, and body orientation for the setting',
+        objective: 'The client will adjust touch, proximity, and body orientation based on the relationship, setting, and social expectation.',
+      },
+      {
+        name: 'Recognize when a topic is not appropriate for the setting',
+        objective: 'The client will recognize when a topic, question, or comment is not appropriate for the setting and choose a safer alternative.',
       },
     ],
   },
@@ -345,6 +613,26 @@ const CANONICAL_TEMPLATE_SETS = {
         name: 'Maintain reciprocity with a question or comment follow-up',
         objective: 'The client will maintain reciprocity in conversation by adding a relevant question or follow-up comment.',
       },
+      {
+        name: 'Wait for a turn during a structured group discussion',
+        objective: 'The client will wait for a turn during a structured group discussion and respond when called on or signaled.',
+      },
+      {
+        name: 'Share materials and roles during a cooperative activity',
+        objective: 'The client will share materials, roles, or choices during a cooperative activity without withdrawing, escalating, or becoming rigid.',
+      },
+      {
+        name: 'Respond to a peer invitation and sustain the exchange',
+        objective: 'The client will respond to a peer invitation and sustain the shared exchange for an appropriate portion of the activity.',
+      },
+      {
+        name: 'Negotiate turn order or rule changes during play',
+        objective: 'The client will negotiate turn order, role changes, or simple rule changes during play or group tasks without escalating or withdrawing.',
+      },
+      {
+        name: 'Offer conversational space when highly interested in a topic',
+        objective: 'The client will offer conversational space when highly interested in a topic by pausing, waiting, and inviting another person to contribute.',
+      },
     ],
   },
   repair_and_conflict_navigation: {
@@ -361,6 +649,26 @@ const CANONICAL_TEMPLATE_SETS = {
       {
         name: 'Use adaptive conflict-navigation to preserve participation',
         objective: 'The client will use an adaptive conflict-navigation response that preserves participation and reduces escalation.',
+      },
+      {
+        name: 'Request adult mediation before conflict escalates',
+        objective: 'The client will request adult mediation or support before a peer or sibling conflict escalates into unsafe, disruptive, or avoidant behavior.',
+      },
+      {
+        name: 'State disagreement respectfully without escalating',
+        objective: 'The client will state disagreement respectfully without escalating, insulting, withdrawing, or becoming physically unsafe.',
+      },
+      {
+        name: 'Recover and rejoin after a social conflict',
+        objective: 'The client will recover and rejoin the activity after a social conflict using a taught repair or re-entry response.',
+      },
+      {
+        name: 'Clarify intent after a social misunderstanding',
+        objective: 'The client will clarify intent after a social misunderstanding, accidental mistake, or perceived offense using a respectful repair response.',
+      },
+      {
+        name: 'Use a calm exit-and-return plan during escalating peer conflict',
+        objective: 'The client will use a calm exit-and-return plan during escalating peer conflict and rejoin with support instead of engaging in unsafe behavior or leaving without communication.',
       },
     ],
   },
@@ -379,6 +687,26 @@ const CANONICAL_TEMPLATE_SETS = {
         name: 'Maintain participation in a peer activity without withdrawing',
         objective: 'The client will maintain participation in a peer-common activity without withdrawing, escalating, or becoming overly rigid.',
       },
+      {
+        name: 'Respond appropriately when a peer initiates interaction',
+        objective: 'The client will respond appropriately when a peer initiates interaction and continue the exchange instead of ignoring, withdrawing, or responding disruptively.',
+      },
+      {
+        name: 'Rejoin a peer group after a brief separation or conflict',
+        objective: 'The client will rejoin a peer group after a brief separation, pause, or conflict using a socially appropriate re-entry response.',
+      },
+      {
+        name: 'Maintain flexibility during a shared-interest interaction',
+        objective: 'The client will maintain flexibility during a shared-interest interaction by tolerating another person\'s ideas, turns, or topic contributions.',
+      },
+      {
+        name: 'Initiate a check-in with a familiar peer across routines',
+        objective: 'The client will initiate a check-in or socially appropriate greeting with a familiar peer across daily routines to maintain relationships.',
+      },
+      {
+        name: 'Respond flexibly when a peer chooses a different activity or idea',
+        objective: 'The client will respond flexibly when a peer chooses a different activity, topic, or idea and remain engaged without controlling or withdrawing.',
+      },
     ],
   },
   safety_awareness_emergency_response: {
@@ -395,6 +723,26 @@ const CANONICAL_TEMPLATE_SETS = {
       {
         name: 'Maintain safe boundaries in community or school settings',
         objective: 'The client will maintain safe boundaries, remain with supervision, and respond appropriately to community safety expectations.',
+      },
+      {
+        name: 'Follow a fire drill, alarm, or evacuation routine safely',
+        objective: 'The client will follow a fire drill, alarm, evacuation, or other emergency routine safely and within the expected response window.',
+      },
+      {
+        name: 'Stop at curbs, parking lots, doors, or exit boundaries until cued',
+        objective: 'The client will stop at curbs, parking lots, doors, gates, or other exit boundaries until cued by the supervising adult or safety routine.',
+      },
+      {
+        name: 'Report unsafe objects, substances, or equipment to an adult',
+        objective: 'The client will report unsafe objects, substances, equipment, or environmental hazards to an adult instead of touching, using, or ignoring them.',
+      },
+      {
+        name: 'Identify a trusted helper or supervising adult when separated',
+        objective: 'The client will identify the supervising adult, trusted helper, or safe response routine when temporarily separated or unsure where to go.',
+      },
+      {
+        name: 'Use a safe response when approached by an unfamiliar adult',
+        objective: 'The client will use a safe response when approached by an unfamiliar adult and will orient back to the supervising caregiver, staff member, or safety plan.',
       },
     ],
   },
@@ -447,6 +795,26 @@ const MANUAL_CORE_FAMILIES = [
           'Use respectful replacement responses instead of escalation',
         ],
       },
+      {
+        name: 'Reduce aggression during transitions away from preferred activities',
+        objective: 'The client will reduce aggression during transitions away from preferred activities and shift to a taught transition or coping response.',
+        goalType: 'decrease',
+        measurementType: 'frequency',
+        linkedFerbNames: [
+          'Request help or a break instead of maladaptive behavior',
+          'Use respectful replacement responses instead of escalation',
+        ],
+      },
+      {
+        name: 'Reduce aggression during peer or sibling conflict',
+        objective: 'The client will reduce aggression during peer or sibling conflict and use a taught repair, help-seeking, or space-request response.',
+        goalType: 'decrease',
+        measurementType: 'frequency',
+        linkedFerbNames: [
+          'Use safe hands and request space instead of aggression',
+          'Request adult support during peer conflict or unsafe situations',
+        ],
+      },
     ],
   },
   {
@@ -480,6 +848,25 @@ const MANUAL_CORE_FAMILIES = [
         objective: 'The client will reduce the intensity of self-injury during escalation by accessing a taught regulation or support routine earlier.',
         goalType: 'decrease',
         measurementType: 'rating',
+        linkedFerbNames: [
+          'Use a safe-body regulation routine instead of self-injury',
+        ],
+      },
+      {
+        name: 'Reduce head hitting, biting, or body slamming during demands',
+        objective: 'The client will reduce head hitting, biting, body slamming, or similar self-injury during demands or blocked access situations.',
+        goalType: 'decrease',
+        measurementType: 'frequency',
+        linkedFerbNames: [
+          'Use a safe-body regulation routine instead of self-injury',
+          'Request help or a break instead of maladaptive behavior',
+        ],
+      },
+      {
+        name: 'Reduce the duration of self-injury episodes',
+        objective: 'The client will reduce the duration of self-injury episodes by orienting to support and accessing the taught safety routine sooner.',
+        goalType: 'decrease',
+        measurementType: 'duration',
         linkedFerbNames: [
           'Use a safe-body regulation routine instead of self-injury',
         ],
@@ -521,6 +908,26 @@ const MANUAL_CORE_FAMILIES = [
           'Hand over items and request help instead of property destruction',
         ],
       },
+      {
+        name: 'Reduce property destruction during transitions away from preferred items',
+        objective: 'The client will reduce property destruction during transitions away from preferred items, activities, or devices and shift to a taught transition response.',
+        goalType: 'decrease',
+        measurementType: 'frequency',
+        linkedFerbNames: [
+          'Hand over items and request help instead of property destruction',
+          'Request help or a break instead of maladaptive behavior',
+        ],
+      },
+      {
+        name: 'Reduce swiping, dumping, or overturning materials during tasks',
+        objective: 'The client will reduce swiping, dumping, or overturning materials during task demands and use a help-seeking or surrender response instead.',
+        goalType: 'decrease',
+        measurementType: 'frequency',
+        linkedFerbNames: [
+          'Hand over items and request help instead of property destruction',
+          'Request clarification when directions are confusing',
+        ],
+      },
     ],
   },
   {
@@ -558,6 +965,25 @@ const MANUAL_CORE_FAMILIES = [
           'Stop, return, and request movement or a break instead of eloping',
         ],
       },
+      {
+        name: 'Transition away from preferred locations without eloping',
+        objective: 'The client will transition away from preferred locations, people, or activities without eloping and will use a taught request or transition support response.',
+        goalType: 'increase',
+        measurementType: 'percentage',
+        linkedFerbNames: [
+          'Stop, return, and request movement or a break instead of eloping',
+          'Request help or a break instead of maladaptive behavior',
+        ],
+      },
+      {
+        name: 'Respond to stop, wait, or return cues before leaving the area',
+        objective: 'The client will respond to stop, wait, or return cues before leaving the area and maintain supervision-safe boundaries.',
+        goalType: 'increase',
+        measurementType: 'percentage',
+        linkedFerbNames: [
+          'Stop, return, and request movement or a break instead of eloping',
+        ],
+      },
     ],
   },
   {
@@ -572,6 +998,8 @@ const MANUAL_CORE_FAMILIES = [
     defaultCriteria: '0 instances over 14 consecutive sessions',
     defaultGoalType: 'decrease',
     assessmentSignals: ['Tantrum behaviors', 'Escalation during demands', 'Low frustration tolerance'],
+    probableFunction: 'Common maintaining variables can include escape, access to preferred items or activities, attention, or difficulty tolerating denied access, change, or delay. A BCBA should confirm whether escalation functions to avoid, obtain, or regulate a situation.',
+    ferb: 'Typical functionally equivalent replacement behaviors include requesting help, requesting a break, tolerating delay with support, using a coping routine, and using calm-body responses during frustration.',
     templates: [
       {
         name: 'Decrease tantrum behaviors',
@@ -584,6 +1012,18 @@ const MANUAL_CORE_FAMILIES = [
         objective: 'The client will reduce the duration of tantrum or escalation episodes by accessing regulation and support sooner.',
         goalType: 'decrease',
         measurementType: 'duration',
+      },
+      {
+        name: 'Decrease escalation during transitions or denied access',
+        objective: 'The client will decrease escalation during transitions, denied access, or changes in expectation and shift to a taught coping or request response.',
+        goalType: 'decrease',
+        measurementType: 'frequency',
+      },
+      {
+        name: 'Return to routine within two minutes after escalation support',
+        objective: 'The client will return to the expected routine within two minutes after receiving regulation or co-regulation support.',
+        goalType: 'increase',
+        measurementType: 'percentage',
       },
     ],
   },
@@ -621,6 +1061,25 @@ const MANUAL_CORE_FAMILIES = [
           'Stop, return, and request movement or a break instead of eloping',
         ],
       },
+      {
+        name: 'Respond to environmental safety boundaries without unsafe behavior',
+        objective: 'The client will respond to environmental safety boundaries such as parking lots, streets, doors, or unsafe equipment without unsafe behavior.',
+        goalType: 'increase',
+        measurementType: 'percentage',
+        linkedFerbNames: [
+          'Stop, return, and request movement or a break instead of eloping',
+        ],
+      },
+      {
+        name: 'Request help when unsure about a safety boundary',
+        objective: 'The client will request help when unsure about a safety boundary or community expectation instead of moving away, climbing, or engaging in unsafe behavior.',
+        goalType: 'increase',
+        measurementType: 'percentage',
+        linkedFerbNames: [
+          'Request help or a break instead of maladaptive behavior',
+          'Stop, return, and request movement or a break instead of eloping',
+        ],
+      },
     ],
   },
   {
@@ -635,6 +1094,8 @@ const MANUAL_CORE_FAMILIES = [
     defaultCriteria: '80% of opportunities across 3 consecutive sessions',
     defaultGoalType: 'increase',
     assessmentSignals: ['Task refusal', 'Noncompliance', 'Difficulty initiating non-preferred tasks'],
+    probableFunction: 'Common maintaining variables can include escape from difficult or non-preferred demands, access to attention, access to preferred alternatives, or confusion about the task. A BCBA should confirm whether refusal is maintained by escape, competing reinforcement, or skill deficits.',
+    ferb: 'Typical functionally equivalent replacement behaviors include requesting help, requesting a break, requesting more time, requesting clarification, and using a taught start routine instead of refusal or disruption.',
     templates: [
       {
         name: 'Reduce task refusal and begin non-preferred tasks',
@@ -654,6 +1115,18 @@ const MANUAL_CORE_FAMILIES = [
         goalType: 'increase',
         measurementType: 'percentage',
       },
+      {
+        name: 'Request more time or clarification before refusing a task',
+        objective: 'The client will request more time, clarification, or help before refusing, leaving, or disrupting a task demand.',
+        goalType: 'increase',
+        measurementType: 'percentage',
+      },
+      {
+        name: 'Transition to the first step of a non-preferred task without refusal',
+        objective: 'The client will transition to the first step of a non-preferred task without refusal by using the taught start routine, first-then support, or help-seeking response.',
+        goalType: 'increase',
+        measurementType: 'percentage',
+      },
     ],
   },
   {
@@ -668,6 +1141,8 @@ const MANUAL_CORE_FAMILIES = [
     defaultCriteria: '80% of opportunities across 3 consecutive sessions',
     defaultGoalType: 'increase',
     assessmentSignals: ['Replacement behavior deficits', 'Escalation during demands', 'Low self-advocacy'],
+    probableFunction: 'The specific replacement response should match the maintaining variable of the linked maladaptive behavior, such as escape, access, attention, or automatic regulation. A BCBA should verify that the replacement behavior can contact the same or similar outcome more safely and efficiently.',
+    ferb: 'These goals directly target functionally equivalent replacement behaviors such as requesting help, requesting a break, requesting space, surrendering items safely, stopping and returning, or using a taught coping response.',
     templates: [
       {
         name: 'Use respectful replacement responses instead of escalation',
@@ -721,6 +1196,27 @@ const MANUAL_CORE_FAMILIES = [
           'Decrease elopement or leaving without permission',
           'Remain with supervising adult during transitions',
           'Remain within supervision boundaries and reduce elopement',
+          'Transition away from preferred locations without eloping',
+          'Respond to stop, wait, or return cues before leaving the area',
+        ],
+      },
+      {
+        name: 'Request more time or clarification instead of refusing tasks',
+        objective: 'The client will request more time, clarification, or help instead of refusing, leaving, or escalating during task demands.',
+        linkedMaladaptiveNames: [
+          'Reduce task refusal and begin non-preferred tasks',
+          'Request more time or clarification before refusing a task',
+          'Transition to the first step of a non-preferred task without refusal',
+        ],
+      },
+      {
+        name: 'Use a coping routine and return to task instead of tantrum escalation',
+        objective: 'The client will use a taught coping routine and return to the task or routine instead of escalating into a tantrum episode.',
+        linkedMaladaptiveNames: [
+          'Decrease tantrum behaviors',
+          'Reduce the duration of tantrum episodes',
+          'Decrease escalation during transitions or denied access',
+          'Return to routine within two minutes after escalation support',
         ],
       },
     ],
@@ -750,6 +1246,26 @@ const MANUAL_CORE_FAMILIES = [
         name: 'Transition between locations while following supervision boundaries',
         objective: 'The client will transition between locations while following supervision boundaries and safety expectations.',
       },
+      {
+        name: 'Check in before moving to a new location during outings',
+        objective: 'The client will check in with the supervising adult before moving to a new location, area, or activity during outings.',
+      },
+      {
+        name: 'Wait with the group during transitions between community locations',
+        objective: 'The client will wait with the group during transitions between community locations without wandering, rushing ahead, or falling behind unsafely.',
+      },
+      {
+        name: 'Adapt safely when the route, routine, or destination changes',
+        objective: 'The client will adapt safely when the route, routine, or destination changes by following adult direction and using the taught support response.',
+      },
+      {
+        name: 'Identify the meeting point or next location during an outing',
+        objective: 'The client will identify the meeting point, next location, or return destination during an outing with increasing independence.',
+      },
+      {
+        name: 'Follow a community checklist through a multi-step outing routine',
+        objective: 'The client will follow a community checklist or visual support through a multi-step outing routine with reduced prompting.',
+      },
     ],
   },
   {
@@ -777,6 +1293,30 @@ const MANUAL_CORE_FAMILIES = [
         name: 'Maintain materials and personal belongings appropriately',
         objective: 'The client will maintain materials, belongings, and routine organization appropriately across daily contexts.',
       },
+      {
+        name: 'Complete a toileting routine including hygiene and clothing steps',
+        objective: 'The client will complete a toileting routine including clothing management, hygiene, and return-to-routine steps with reduced prompting.',
+      },
+      {
+        name: 'Brush teeth or complete an oral-care routine with reduced prompts',
+        objective: 'The client will brush teeth or complete an oral-care routine with reduced prompting and improved independence.',
+      },
+      {
+        name: 'Dress for weather, activity, or schedule demands with reduced prompting',
+        objective: 'The client will dress for weather, activity, or schedule demands with reduced prompting and appropriate item selection.',
+      },
+      {
+        name: 'Follow a meal or snack routine using safe eating steps',
+        objective: 'The client will follow a meal or snack routine using safe eating, drinking, and setup steps with increasing independence.',
+      },
+      {
+        name: 'Clean up personal area or materials after meals and self-care routines',
+        objective: 'The client will clean up the personal area, materials, or task space after meals and self-care routines with reduced prompting.',
+      },
+      {
+        name: 'Pack and carry required belongings for a daily routine transition',
+        objective: 'The client will pack, carry, and keep track of required belongings for a daily routine transition with increasing independence.',
+      },
     ],
   },
   {
@@ -799,6 +1339,14 @@ const MANUAL_CORE_FAMILIES = [
       {
         name: 'Caregiver will follow the response flow during incidents',
         objective: 'The caregiver will follow the planned response flow during incidents, including safety, neutral response, and reinforcement of replacement behavior.',
+      },
+      {
+        name: 'Caregiver will identify precursors and start planned supports early',
+        objective: 'The caregiver will identify early precursor behavior or trigger cues and start the planned antecedent or prevention supports before escalation grows.',
+      },
+      {
+        name: 'Caregiver will reinforce the linked replacement behavior after incidents',
+        objective: 'The caregiver will reinforce the linked replacement behavior after incidents or near-miss moments so the safer response contacts the intended outcome.',
       },
     ],
   },
@@ -827,6 +1375,14 @@ const MANUAL_CORE_FAMILIES = [
         name: 'Caregiver will operate a token or reinforcement system accurately',
         objective: 'The caregiver will operate the token economy or reinforcement system with correct criteria and exchange procedures.',
       },
+      {
+        name: 'Caregiver will create opportunities for functional communication during routines',
+        objective: 'The caregiver will create natural opportunities for functional communication during home routines and wait appropriately for the target response.',
+      },
+      {
+        name: 'Caregiver will respond to replacement communication according to the plan',
+        objective: 'The caregiver will respond to replacement communication according to the plan by acknowledging, honoring when appropriate, and shaping toward independence.',
+      },
     ],
   },
   {
@@ -853,6 +1409,14 @@ const MANUAL_CORE_FAMILIES = [
       {
         name: 'Caregiver will provide a concise home progress summary',
         objective: 'The caregiver will provide a concise home progress or generalization summary with an example during team follow-up.',
+      },
+      {
+        name: 'Caregiver will track duration or recovery time for escalation episodes',
+        objective: 'The caregiver will track duration or recovery time for escalation episodes so the team can assess response efficiency and progress over time.',
+      },
+      {
+        name: 'Caregiver will note setting events affecting behavior and participation',
+        objective: 'The caregiver will note relevant setting events such as sleep disruption, illness, schedule changes, or medication issues that may affect behavior and participation.',
       },
     ],
   },
@@ -881,6 +1445,14 @@ const MANUAL_CORE_FAMILIES = [
         name: 'Caregiver will set up a practice opportunity for a targeted skill',
         objective: 'The caregiver will set up a natural practice opportunity for a targeted social, communication, or daily-living skill and provide feedback.',
       },
+      {
+        name: 'Caregiver will fade prompts according to the plan without rescuing too early',
+        objective: 'The caregiver will fade prompts according to the plan without rescuing too early so the client can build independent responding safely.',
+      },
+      {
+        name: 'Caregiver will run one home generalization routine for a target ADL or communication skill',
+        objective: 'The caregiver will run at least one home generalization routine for a target ADL, communication, or social skill using the coached support plan.',
+      },
     ],
   },
   {
@@ -908,6 +1480,14 @@ const MANUAL_CORE_FAMILIES = [
         name: 'Caregiver will run the taught regulation routine with the client',
         objective: 'The caregiver will run the taught regulation routine with the client to support recovery and re-engagement.',
       },
+      {
+        name: 'Caregiver will identify early escalation signs and start the regulation plan',
+        objective: 'The caregiver will identify early escalation signs and start the regulation plan before the client reaches a high-risk state.',
+      },
+      {
+        name: 'Caregiver will guide a return-to-routine sequence after de-escalation',
+        objective: 'The caregiver will guide the client through the planned return-to-routine sequence after de-escalation instead of ending the routine abruptly or inconsistently.',
+      },
     ],
   },
   {
@@ -930,6 +1510,14 @@ const MANUAL_CORE_FAMILIES = [
       {
         name: 'Caregiver will complete assigned home practice and return evidence',
         objective: 'The caregiver will implement the assigned home practice plan and return a permanent product, data point, or example of carryover.',
+      },
+      {
+        name: 'Caregiver will demonstrate the target procedure during coaching review',
+        objective: 'The caregiver will demonstrate the target procedure during coaching review so the BCBA can confirm fidelity and provide corrective feedback.',
+      },
+      {
+        name: 'Caregiver will ask clarifying questions and update home supports when the plan changes',
+        objective: 'The caregiver will ask clarifying questions and update visuals, routines, or materials at home when the treatment plan changes.',
       },
     ],
   },

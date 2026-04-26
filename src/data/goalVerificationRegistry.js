@@ -228,17 +228,41 @@ export const ICF_CODE_REFERENCES = {
     url: 'https://apps.who.int/classifications/icfbrowser/Browse.aspx?code=d330',
     note: 'WHO communication code for producing spoken messages with literal or implied meaning.',
   },
+  d460: {
+    code: 'd460',
+    title: 'Moving around in different locations',
+    url: 'https://apps.who.int/classifications/icfbrowser/Browse.aspx?code=d460',
+    note: 'WHO mobility code for moving around safely within the home, buildings, and community locations.',
+  },
   d350: {
     code: 'd350',
     title: 'Conversation',
     url: 'https://apps.who.int/classifications/icfbrowser/Browse.aspx?code=d350',
     note: 'WHO communication code for starting, sustaining, and ending exchanges with others.',
   },
+  d520: {
+    code: 'd520',
+    title: 'Caring for body parts',
+    url: 'https://apps.who.int/classifications/icfbrowser/Browse.aspx?code=d520&hsr=1',
+    note: 'WHO self-care code for looking after teeth, hair, skin, nails, and other body parts requiring ongoing care.',
+  },
+  d530: {
+    code: 'd530',
+    title: 'Toileting',
+    url: 'https://apps.who.int/classifications/icfbrowser/Browse.aspx?code=d530',
+    note: 'WHO self-care code for carrying out elimination routines and cleaning oneself afterwards.',
+  },
   d540: {
     code: 'd540',
     title: 'Dressing',
     url: 'https://apps.who.int/classifications/icfbrowser/Browse.aspx?code=d540',
     note: 'WHO self-care code for dressing and choosing appropriate clothing.',
+  },
+  d550: {
+    code: 'd550',
+    title: 'Eating',
+    url: 'https://apps.who.int/classifications/icfbrowser/Browse.aspx?code=d550',
+    note: 'WHO self-care code for carrying out meal routines, utensil use, and consuming food safely.',
   },
   d570: {
     code: 'd570',
@@ -251,6 +275,18 @@ export const ICF_CODE_REFERENCES = {
     title: 'Acquisition of goods and services',
     url: 'https://apps.who.int/classifications/icfbrowser/Browse.aspx?code=d620',
     note: 'WHO domestic-life code for selecting and obtaining necessities required for daily living.',
+  },
+  d630: {
+    code: 'd630',
+    title: 'Preparing meals',
+    url: 'https://apps.who.int/classifications/icfbrowser/Browse.aspx?code=d630',
+    note: 'WHO domestic-life code for planning, organizing, and preparing simple or complex meals.',
+  },
+  d640: {
+    code: 'd640',
+    title: 'Doing housework',
+    url: 'https://apps.who.int/classifications/icfbrowser/Browse.aspx?code=d640',
+    note: 'WHO domestic-life code for cleaning, storing items, using household tools, and managing household tasks.',
   },
   d710: {
     code: 'd710',
@@ -401,7 +437,7 @@ const FAMILY_REFERENCE_PROFILES = {
     assessmentSourceIds: ['vineland_3', 'srs_2', 'abas_3'],
   },
   safety_awareness_emergency_response: {
-    icfCodes: ['d570', 'd230'],
+    icfCodes: ['d570', 'd230', 'd460'],
     assessmentSourceIds: ['vineland_3', 'abas_3', 'afls', 'efl'],
   },
   aggression_risk_reduction: {
@@ -437,11 +473,11 @@ const FAMILY_REFERENCE_PROFILES = {
     assessmentSourceIds: ['vineland_3', 'vbmapp_app', 'ablls_r_guide'],
   },
   community_navigation_support: {
-    icfCodes: ['d620', 'd230', 'd570'],
+    icfCodes: ['d460', 'd620', 'd230', 'd570'],
     assessmentSourceIds: ['vineland_3', 'abas_3', 'afls', 'efl'],
   },
   domestic_self_care_independence: {
-    icfCodes: ['d540', 'd230', 'd570'],
+    icfCodes: ['d520', 'd530', 'd540', 'd550', 'd630', 'd640', 'd230', 'd570'],
     assessmentSourceIds: ['vineland_3', 'abas_3', 'afls', 'efl'],
   },
   behavior_plan_implementation: {
