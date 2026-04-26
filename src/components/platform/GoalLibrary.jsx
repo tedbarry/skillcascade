@@ -86,6 +86,7 @@ export default function GoalLibrary({ onSelectGoal, onClose, clientId }) {
   const { can } = usePermissions()
   const canEditGoalLibrary = can('goals', 'edit')
   const [showAddDialog, setShowAddDialog] = useState(false)
+  const [showLegacyLibrary, setShowLegacyLibrary] = useState(false)
   const [addedIds, setAddedIds] = useState(new Set())
   const [domains, setDomains] = useState([])
   const [ltgs, setLtgs] = useState([])
@@ -97,7 +98,9 @@ export default function GoalLibrary({ onSelectGoal, onClose, clientId }) {
   const coreLtgs = CORE_GOAL_LIBRARY.ltgs
   const coreStgs = CORE_GOAL_LIBRARY.stgs
   const coreTargets = CORE_GOAL_LIBRARY.targets
-  const allTargets = useMemo(() => [...coreTargets, ...targets], [coreTargets, targets])
+  const visibleTargets = useMemo(() => (
+    canEditGoalLibrary && showLegacyLibrary ? [...coreTargets, ...targets] : coreTargets
+  ), [canEditGoalLibrary, coreTargets, showLegacyLibrary, targets])
   const coreGoalCountLabel = `${coreTargets.length} built-in medically necessary goals`
   const coreFamilyCountLabel = `${coreStgs.length} families across ${coreDomains.length} domains`
 
@@ -119,37 +122,41 @@ export default function GoalLibrary({ onSelectGoal, onClose, clientId }) {
   useEffect(() => {
     async function load() {
       setLoading(true)
-      const queries = [
-        api.from('goal_domains').select('*').order('display_order'),
-        api.from('goal_ltgs').select('*').order('display_order'),
-        api.from('goal_stgs').select('*').order('display_order'),
-        api.from('goal_targets').select('*').order('display_order'),
-      ]
+      const queries = canEditGoalLibrary
+        ? [
+            api.from('goal_domains').select('*').order('display_order'),
+            api.from('goal_ltgs').select('*').order('display_order'),
+            api.from('goal_stgs').select('*').order('display_order'),
+            api.from('goal_targets').select('*').order('display_order'),
+          ]
+        : []
       // Load client's existing programs to detect duplicates
       if (clientId) {
         queries.push(api.from('client_programs').select('stg_id, name').eq('client_id', clientId))
       }
       const results = await Promise.all(queries)
-      setDomains(results[0].data || [])
-      setLtgs(results[1].data || [])
-      setStgs(results[2].data || [])
-      setTargets(results[3].data || [])
+      const legacyOffset = canEditGoalLibrary ? 4 : 0
+      const legacyTargets = canEditGoalLibrary ? (results[3].data || []) : []
+      setDomains(canEditGoalLibrary ? (results[0].data || []) : [])
+      setLtgs(canEditGoalLibrary ? (results[1].data || []) : [])
+      setStgs(canEditGoalLibrary ? (results[2].data || []) : [])
+      setTargets(legacyTargets)
       // Mark existing goals as already added — match by name since IDs may differ
-      if (results[4]?.data) {
-        setAddedIds(findAddedTargetIds(results[4].data, [...coreTargets, ...(results[3].data || [])]))
+      if (results[legacyOffset]?.data) {
+        setAddedIds(findAddedTargetIds(results[legacyOffset].data, [...coreTargets, ...legacyTargets]))
       } else {
         setAddedIds(new Set())
       }
       setLoading(false)
     }
     load()
-  }, [clientId, coreTargets])
+  }, [canEditGoalLibrary, clientId, coreTargets])
 
   // Search across all targets
   const searchResults = useMemo(() => {
     if (!search.trim()) return null
     const q = search.toLowerCase()
-    return allTargets.filter(t => {
+    return visibleTargets.filter(t => {
       const detail = parseGoalDetail(t)
       return t.name.toLowerCase().includes(q) ||
         (detail.objective && detail.objective.toLowerCase().includes(q)) ||
@@ -161,7 +168,7 @@ export default function GoalLibrary({ onSelectGoal, onClose, clientId }) {
         (Array.isArray(detail.linked_maladaptive_names) && getLinkedNameSearchText(detail.linked_maladaptive_names).includes(q)) ||
         getLibrarySourceLabel(t).toLowerCase().includes(q)
     })
-  }, [allTargets, search])
+  }, [search, visibleTargets])
 
   // Handle adding a target to client
   const handleSelect = useCallback((target) => {
@@ -216,7 +223,7 @@ export default function GoalLibrary({ onSelectGoal, onClose, clientId }) {
     const detail = parseGoalDetail(target)
     const sourceLabel = getLibrarySourceLabel(target)
     const openLinkedGoal = (goalName) => {
-      const linkedTarget = allTargets.find((item) => (item.name || '').toLowerCase().trim() === goalName.toLowerCase().trim())
+      const linkedTarget = visibleTargets.find((item) => (item.name || '').toLowerCase().trim() === goalName.toLowerCase().trim())
       setSearch(goalName)
       if (linkedTarget) {
         setExpandedTarget(linkedTarget.id)
@@ -546,29 +553,33 @@ export default function GoalLibrary({ onSelectGoal, onClose, clientId }) {
   const reloadGoals = useCallback(() => {
     setLoading(true)
     async function reload() {
-      const queries = [
-        api.from('goal_domains').select('*').order('display_order'),
-        api.from('goal_ltgs').select('*').order('display_order'),
-        api.from('goal_stgs').select('*').order('display_order'),
-        api.from('goal_targets').select('*').order('display_order'),
-      ]
+      const queries = canEditGoalLibrary
+        ? [
+            api.from('goal_domains').select('*').order('display_order'),
+            api.from('goal_ltgs').select('*').order('display_order'),
+            api.from('goal_stgs').select('*').order('display_order'),
+            api.from('goal_targets').select('*').order('display_order'),
+          ]
+        : []
       if (clientId) {
         queries.push(api.from('client_programs').select('stg_id, name').eq('client_id', clientId))
       }
       const results = await Promise.all(queries)
-      setDomains(results[0].data || [])
-      setLtgs(results[1].data || [])
-      setStgs(results[2].data || [])
-      setTargets(results[3].data || [])
-      if (results[4]?.data) {
-        setAddedIds(findAddedTargetIds(results[4].data, [...coreTargets, ...(results[3].data || [])]))
+      const legacyOffset = canEditGoalLibrary ? 4 : 0
+      const legacyTargets = canEditGoalLibrary ? (results[3].data || []) : []
+      setDomains(canEditGoalLibrary ? (results[0].data || []) : [])
+      setLtgs(canEditGoalLibrary ? (results[1].data || []) : [])
+      setStgs(canEditGoalLibrary ? (results[2].data || []) : [])
+      setTargets(legacyTargets)
+      if (results[legacyOffset]?.data) {
+        setAddedIds(findAddedTargetIds(results[legacyOffset].data, [...coreTargets, ...legacyTargets]))
       } else {
         setAddedIds(new Set())
       }
       setLoading(false)
     }
     reload()
-  }, [clientId, coreTargets])
+  }, [canEditGoalLibrary, clientId, coreTargets])
 
   if (loading) {
     return <div className="flex items-center justify-center py-12">
@@ -583,7 +594,7 @@ export default function GoalLibrary({ onSelectGoal, onClose, clientId }) {
           <h2 className="text-lg font-bold text-warm-800 font-display">Goal Library</h2>
           <p className="text-xs text-warm-500">
             {coreGoalCountLabel} always available
-            {targets.length > 0 ? ` · ${targets.length} preserved legacy/custom goals` : ''}
+            {canEditGoalLibrary && targets.length > 0 ? ` · ${targets.length} preserved admin-only goals` : ''}
           </p>
         </div>
         <div className="flex items-center gap-2">
@@ -608,7 +619,7 @@ export default function GoalLibrary({ onSelectGoal, onClose, clientId }) {
 
       <input
         type="text" value={search} onChange={(e) => setSearch(e.target.value)}
-        placeholder="Search across built-in and legacy goals... (e.g., 'safety', 'conversation', 'peer')"
+        placeholder={showLegacyLibrary ? "Search built-in and preserved admin goals... (e.g., 'safety', 'conversation', 'peer')" : "Search medically necessary goals... (e.g., 'safety', 'conversation', 'peer')"}
         className="w-full px-4 py-2.5 min-h-[44px] rounded-full border border-warm-200 text-sm text-warm-700 placeholder-warm-300 focus:outline-none focus:ring-2 focus:ring-sage-300 mb-4"
         autoFocus={Boolean(searchResults)}
       />
@@ -617,7 +628,11 @@ export default function GoalLibrary({ onSelectGoal, onClose, clientId }) {
         <div className="space-y-3">
           <div className="rounded-2xl border border-warm-200 bg-white p-4">
             <p className="text-xs font-semibold text-warm-700">{searchResults.length} result{searchResults.length !== 1 ? 's' : ''}</p>
-            <p className="text-[11px] text-warm-500 mt-1">Results include the permanent SkillCascade core library and your preserved legacy/custom goals.</p>
+            <p className="text-[11px] text-warm-500 mt-1">
+              {showLegacyLibrary
+                ? 'Results include the permanent SkillCascade core library and the preserved admin-only library.'
+                : 'Results come from the permanent SkillCascade medically necessary library.'}
+            </p>
           </div>
           <div className="space-y-2">{searchResults.map(renderTarget)}</div>
         </div>
@@ -643,25 +658,39 @@ export default function GoalLibrary({ onSelectGoal, onClose, clientId }) {
             {renderDomainTree(coreDomains, coreLtgs, coreStgs, coreTargets)}
           </section>
 
-          <section className="rounded-2xl border border-warm-200 bg-white p-4">
-            <div className="flex flex-wrap items-start justify-between gap-3 mb-3">
-              <div>
-                <p className="text-sm font-semibold text-warm-800">Legacy & Custom Library</p>
-                <p className="text-[11px] text-warm-500 mt-1">
-                  Your earlier Goal Library stays preserved here so nothing is lost while we pivot the product.
-                </p>
+          {canEditGoalLibrary && (
+            <section className="rounded-2xl border border-warm-200 bg-white p-4">
+              <div className="flex flex-wrap items-center justify-between gap-3">
+                <div>
+                  <p className="text-sm font-semibold text-warm-800">Preserved Legacy & Custom Library</p>
+                  <p className="text-[11px] text-warm-500 mt-1">
+                    Admin-only reference area. Keep using the built-in medically necessary library for normal goal selection.
+                  </p>
+                </div>
+                <div className="flex flex-wrap items-center gap-2">
+                  <span className="text-[10px] font-semibold px-2.5 py-1 rounded-full bg-warm-50 text-warm-600 border border-warm-200">
+                    {targets.length} goals
+                  </span>
+                  <button
+                    onClick={() => setShowLegacyLibrary((prev) => !prev)}
+                    className="px-3 py-2 min-h-[40px] rounded-full border border-warm-300 text-warm-700 text-[11px] font-semibold hover:bg-warm-50 transition-colors"
+                  >
+                    {showLegacyLibrary ? 'Hide Preserved Library' : 'Show Preserved Library'}
+                  </button>
+                </div>
               </div>
-              <span className="text-[10px] font-semibold px-2.5 py-1 rounded-full bg-warm-50 text-warm-600 border border-warm-200">
-                {targets.length} goals
-              </span>
-            </div>
 
-            {targets.length > 0 ? (
-              renderDomainTree(domains, ltgs, stgs, targets)
-            ) : (
-              <p className="text-[11px] text-warm-500">No legacy/custom goals are loaded in this workspace yet.</p>
-            )}
-          </section>
+              {showLegacyLibrary && (
+                <div className="mt-3">
+                  {targets.length > 0 ? (
+                    renderDomainTree(domains, ltgs, stgs, targets)
+                  ) : (
+                    <p className="text-[11px] text-warm-500">No legacy/custom goals are loaded in this workspace yet.</p>
+                  )}
+                </div>
+              )}
+            </section>
+          )}
         </div>
       )}
     </div>
