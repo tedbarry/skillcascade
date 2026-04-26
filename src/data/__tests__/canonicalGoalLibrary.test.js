@@ -33,6 +33,11 @@ describe('canonicalGoalLibrary', () => {
     expect(detail.library_description).toContain('medically necessary')
     expect(detail.assessment_signals.length).toBeGreaterThan(0)
     expect(detail.source_library).toBe(CORE_GOAL_LIBRARY_NAME)
+    expect(detail.verification_summary).toContain('WHO ICF')
+    expect(detail.verification_sources.length).toBeGreaterThan(3)
+    expect(detail.verification_sources.some((source) => source.label.includes('WHO ICF'))).toBe(true)
+    expect(detail.verification_sources.some((source) => source.label.includes('CASP'))).toBe(true)
+    expect(detail.verification_sources.some((source) => source.category === 'payer_criteria')).toBe(true)
   })
 
   it('includes manual medically necessary behavior goals in the permanent library', () => {

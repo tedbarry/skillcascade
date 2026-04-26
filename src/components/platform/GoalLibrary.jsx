@@ -34,6 +34,21 @@ function getLibrarySourceLabel(target) {
   return target?.source_label || 'Legacy Library'
 }
 
+const VERIFICATION_CATEGORY_LABELS = {
+  public_function_code: 'Direct Public Code',
+  practice_standard: 'BCBA Standard',
+  payer_criteria: 'Payer Criteria',
+  assessment_system: 'Assessment System',
+}
+
+function getVerificationSearchText(sources = []) {
+  return sources
+    .flatMap((source) => [source.label, source.authority, source.note, source.category])
+    .filter(Boolean)
+    .join(' ')
+    .toLowerCase()
+}
+
 function findAddedTargetIds(existingPrograms, libraryTargets) {
   if (!Array.isArray(existingPrograms) || existingPrograms.length === 0) return new Set()
 
@@ -136,6 +151,8 @@ export default function GoalLibrary({ onSelectGoal, onClose, clientId }) {
         (detail.objective && detail.objective.toLowerCase().includes(q)) ||
         (detail.operational_definition && detail.operational_definition.toLowerCase().includes(q)) ||
         (detail.medical_necessity && detail.medical_necessity.toLowerCase().includes(q)) ||
+        (detail.verification_summary && detail.verification_summary.toLowerCase().includes(q)) ||
+        (Array.isArray(detail.verification_sources) && getVerificationSearchText(detail.verification_sources).includes(q)) ||
         getLibrarySourceLabel(t).toLowerCase().includes(q)
     })
   }, [allTargets, search])
@@ -298,6 +315,45 @@ export default function GoalLibrary({ onSelectGoal, onClose, clientId }) {
               <div>
                 <p className="text-[10px] font-semibold text-blue-700 uppercase tracking-wider">Medical Necessity</p>
                 <p className="text-[11px] text-warm-600 leading-relaxed mt-0.5">{detail.medical_necessity}</p>
+              </div>
+            )}
+            {detail.verification_summary && (
+              <div>
+                <p className="text-[10px] font-semibold text-blue-700 uppercase tracking-wider">Official Verification</p>
+                <p className="text-[11px] text-warm-600 leading-relaxed mt-0.5">{detail.verification_summary}</p>
+              </div>
+            )}
+            {Array.isArray(detail.verification_sources) && detail.verification_sources.length > 0 && (
+              <div>
+                <p className="text-[10px] font-semibold text-blue-700 uppercase tracking-wider">Verification Anchors</p>
+                <div className="space-y-2 mt-1.5">
+                  {detail.verification_sources.map((source) => (
+                    <div key={source.id} className="rounded-2xl border border-blue-100 bg-white/80 px-3 py-2">
+                      <div className="flex flex-wrap items-center gap-2">
+                        <span className="text-[9px] px-2 py-0.5 rounded-full bg-blue-50 text-blue-700 border border-blue-200">
+                          {VERIFICATION_CATEGORY_LABELS[source.category] || source.category}
+                        </span>
+                        <span className="text-[9px] px-2 py-0.5 rounded-full bg-warm-100 text-warm-600">
+                          {source.access}
+                        </span>
+                        <a
+                          href={source.url}
+                          target="_blank"
+                          rel="noreferrer"
+                          className="text-[11px] font-semibold text-blue-700 hover:text-blue-800 underline underline-offset-2"
+                        >
+                          {source.label}
+                        </a>
+                      </div>
+                      {source.authority && (
+                        <p className="text-[10px] text-warm-500 mt-1">{source.authority}</p>
+                      )}
+                      {source.note && (
+                        <p className="text-[11px] text-warm-600 leading-relaxed mt-1">{source.note}</p>
+                      )}
+                    </div>
+                  ))}
+                </div>
               </div>
             )}
             {Array.isArray(detail.medical_necessity_tags) && detail.medical_necessity_tags.length > 0 && (

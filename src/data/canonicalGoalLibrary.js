@@ -1,5 +1,6 @@
 import { framework } from './framework.js'
 import { CANONICAL_DOMAIN_LABELS, DEFICIT_PROFILES, SUBAREA_TO_DEFICIT } from './canonicalRecommendationProfiles.js'
+import { buildGoalVerificationPacket } from './goalVerificationRegistry.js'
 
 const CORE_LIBRARY_NAME = 'SkillCascade Medically Necessary Library'
 
@@ -778,6 +779,11 @@ function buildTargetDescription(family, template, domainLabel) {
   const recommendedWhen = template.recommendedWhen || `Use when deficits in ${signalText || family.title.toLowerCase()} materially limit ${family.impactStatement}.`
   const operationalDefinition = template.operationalDefinition || `${template.name} addresses observable, clinically meaningful deficits that affect ${family.impactStatement}.`
   const libraryDescription = `${family.title} is a built-in medically necessary ${domainLabel.toLowerCase()} goal family focused on ${family.impactStatement}.`
+  const verificationPacket = buildGoalVerificationPacket({
+    familySlug: family.slug,
+    domainSlug: family.domainSlug,
+    assessmentSignals,
+  })
 
   return JSON.stringify({
     objective: template.objective,
@@ -794,6 +800,8 @@ function buildTargetDescription(family, template, domainLabel) {
     goal_type: template.goalType || family.defaultGoalType || 'increase',
     source_library: CORE_LIBRARY_NAME,
     medical_necessity_tags: family.medicalNecessityTags || [],
+    verification_summary: verificationPacket.verification_summary,
+    verification_sources: verificationPacket.verification_sources,
   })
 }
 
