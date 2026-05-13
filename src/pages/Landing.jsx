@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef, lazy, Suspense } from 'react'
+import { useState, useEffect, lazy, Suspense } from 'react'
 import { Link } from 'react-router-dom'
 import { captureUtmParams } from '../lib/utmCapture.js'
 
@@ -156,10 +156,10 @@ function ArrowDownIcon({ className = '' }) {
 /* ── Data ─────────────────────────────────────────────────── */
 
 const NAV_LINKS = [
-  { label: 'Features', href: '#features' },
-  { label: 'Framework', href: '#framework' },
-  { label: 'Demo', href: '#demo' },
-  { label: 'Pricing', href: '#pricing' },
+  { label: 'Features', to: '/features', page: 'features' },
+  { label: 'Framework', to: '/framework', page: 'framework' },
+  { label: 'Demo', to: '/demo', page: 'demo' },
+  { label: 'Pricing', to: '/pricing', page: 'pricing' },
 ]
 
 const STATS = [
@@ -231,6 +231,60 @@ const EARLY_ACCESS_FEATURES = [
     description: 'Goal writing, BIP generation, session notes, operational definitions, and more — each pre-loaded with the client\'s current assessment data.',
   },
 ]
+
+const HOME_PAGE_LINKS = [
+  {
+    label: 'Features',
+    to: '/features',
+    title: 'See the BCBA assistant tools',
+    desc: 'Goal engine, clinical intelligence, reports, AI support, and assessment workflows in one focused product tour.',
+    icon: SparkleIcon,
+  },
+  {
+    label: 'Framework',
+    to: '/framework',
+    title: 'Understand the clinical model',
+    desc: 'Explore how the 9 domains connect, where foundational gaps cascade, and why the system prioritizes root skills.',
+    icon: CascadeIcon,
+  },
+  {
+    label: 'Demo',
+    to: '/demo',
+    title: 'Preview the app experience',
+    desc: 'Watch the demo and browse the interactive mockups for dashboard, assessment, AI, reports, and visualization.',
+    icon: DashboardIcon,
+  },
+  {
+    label: 'Pricing',
+    to: '/pricing',
+    title: 'Choose an early-access plan',
+    desc: 'Review pricing, capacity, and included features without digging through the rest of the marketing page.',
+    icon: TargetIcon,
+  },
+]
+
+const PAGE_INTROS = {
+  features: {
+    eyebrow: 'Features',
+    title: 'BCBA assistant tools, separated into their own page',
+    desc: 'A focused tour of the workflows inside SkillCascade: assessment, clinical intelligence, goal writing, reports, AI support, and caregiver clarity.',
+  },
+  framework: {
+    eyebrow: 'Framework',
+    title: 'The clinical model behind the cascade',
+    desc: 'A standalone view of the 9-domain developmental-functional framework and how foundational skills support higher-level outcomes.',
+  },
+  demo: {
+    eyebrow: 'Demo',
+    title: 'A separate demo page for seeing the app in motion',
+    desc: 'Watch the demo and browse the interactive product mockups without scrolling through the whole marketing homepage.',
+  },
+  pricing: {
+    eyebrow: 'Pricing',
+    title: 'Plans and early-access pricing',
+    desc: 'A dedicated pricing page with plan details and signup paths, separate from the homepage story.',
+  },
+}
 
 const DEMO_TABS = [
   {
@@ -609,10 +663,10 @@ function ReportsMockup() {
 
 const FOOTER_LINKS = {
   Product: [
-    { label: 'Features', href: '#features' },
-    { label: 'Pricing', href: '#pricing' },
-    { label: 'Framework', href: '#framework' },
-    { label: 'Live Demo', href: '#demo' },
+    { label: 'Features', href: '/features' },
+    { label: 'Pricing', href: '/pricing' },
+    { label: 'Framework', href: '/framework' },
+    { label: 'Live Demo', href: '/demo' },
     { label: 'Dashboard', href: '/dashboard' },
   ],
   Support: [
@@ -631,11 +685,16 @@ const FOOTER_LINKS = {
 
 /* ── Main Component ───────────────────────────────────────── */
 
-export default function Landing() {
+function MarketingPage({ page = 'home' }) {
   const [scrolled, setScrolled] = useState(false)
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
   const [activeDemo, setActiveDemo] = useState('dashboard')
-  const heroRef = useRef(null)
+  const isHomePage = page === 'home'
+  const showFeatures = page === 'features'
+  const showFramework = page === 'framework'
+  const showDemo = page === 'demo'
+  const showPricing = page === 'pricing'
+  const pageIntro = PAGE_INTROS[page]
 
   // Capture UTM params on landing page visit
   useEffect(() => { captureUtmParams() }, [])
@@ -647,12 +706,6 @@ export default function Landing() {
     window.addEventListener('scroll', handleScroll, { passive: true })
     return () => window.removeEventListener('scroll', handleScroll)
   }, [])
-
-  const scrollToSection = (href) => {
-    setMobileMenuOpen(false)
-    const el = document.querySelector(href)
-    if (el) el.scrollIntoView({ behavior: 'smooth' })
-  }
 
   return (
     <div className="min-h-screen bg-warm-50 overflow-x-hidden">
@@ -668,22 +721,25 @@ export default function Landing() {
         }`}
       >
         <div className="flex items-center justify-between px-6 lg:px-8 py-4 max-w-7xl mx-auto">
-          <div className="flex items-center gap-2 text-2xl font-bold text-warm-800 font-display">
+          <Link to="/" className="flex items-center gap-2 text-2xl font-bold text-warm-800 font-display">
             <img src="/brand/icon-mark.jpg" alt="" className="w-7 h-7 rounded" aria-hidden="true" />
             Skill<span className="text-sage-600">Cascade</span>
-          </div>
+          </Link>
 
           {/* Desktop nav */}
           <div className="hidden md:flex gap-8 items-center">
             {NAV_LINKS.map((link) => (
-              <button
+              <Link
                 key={link.label}
-                type="button"
-                onClick={() => scrollToSection(link.href)}
-                className="text-warm-600 hover:text-warm-800 transition-colors text-sm font-medium"
+                to={link.to}
+                className={`transition-colors text-sm font-medium ${
+                  page === link.page
+                    ? 'text-sage-700'
+                    : 'text-warm-600 hover:text-warm-800'
+                }`}
               >
                 {link.label}
-              </button>
+              </Link>
             ))}
             <Link
               to="/dashboard"
@@ -709,14 +765,18 @@ export default function Landing() {
           <div className="md:hidden bg-white border-t border-warm-100 shadow-lg">
             <div className="px-6 py-4 space-y-3">
               {NAV_LINKS.map((link) => (
-                <button
+                <Link
                   key={link.label}
-                  type="button"
-                  onClick={() => scrollToSection(link.href)}
-                  className="block w-full text-left text-warm-700 hover:text-warm-900 py-2 text-base font-medium"
+                  to={link.to}
+                  onClick={() => setMobileMenuOpen(false)}
+                  className={`block w-full text-left py-2 text-base font-medium ${
+                    page === link.page
+                      ? 'text-sage-700'
+                      : 'text-warm-700 hover:text-warm-900'
+                  }`}
                 >
                   {link.label}
-                </button>
+                </Link>
               ))}
               <Link
                 to="/dashboard"
@@ -733,10 +793,8 @@ export default function Landing() {
       {/* ────────────────────────────────────────────────────────
           2. Hero
           ──────────────────────────────────────────────────────── */}
-      <section
-        ref={heroRef}
-        className="relative pt-32 pb-16 lg:pt-44 lg:pb-24"
-      >
+      {isHomePage && (
+      <section className="relative pt-32 pb-16 lg:pt-44 lg:pb-24">
         <div className="max-w-7xl mx-auto px-6 lg:px-8">
           <div className="grid lg:grid-cols-2 gap-12 lg:gap-16 items-center">
             {/* Left: Text content */}
@@ -760,13 +818,12 @@ export default function Landing() {
                 >
                   Start Free Trial
                 </Link>
-                <button
-                  type="button"
-                  onClick={() => scrollToSection('#demo')}
+                <Link
+                  to="/demo"
                   className="border-2 border-sage-600 text-sage-700 px-8 py-4 rounded-full hover:bg-sage-50 transition-all text-lg font-semibold flex items-center justify-center gap-2 text-center"
                 >
                   See How It Works
-                </button>
+                </Link>
               </div>
 
               <p className="text-sm text-warm-500">
@@ -799,10 +856,12 @@ export default function Landing() {
           </div>
         </div>
       </section>
+      )}
 
       {/* ────────────────────────────────────────────────────────
           3. Key Stats Bar
           ──────────────────────────────────────────────────────── */}
+      {isHomePage && (
       <section className="bg-warm-800">
         <div className="max-w-7xl mx-auto px-6 lg:px-8 py-10">
           <div className="grid grid-cols-2 lg:grid-cols-4 gap-8 text-center">
@@ -819,10 +878,77 @@ export default function Landing() {
           </div>
         </div>
       </section>
+      )}
+
+      {isHomePage && (
+      <section className="bg-warm-50">
+        <div className="max-w-7xl mx-auto px-6 lg:px-8 py-16 lg:py-20">
+          <div className="max-w-2xl mb-10">
+            <div className="inline-flex items-center gap-2 rounded-full bg-sage-50 border border-sage-200 px-4 py-1.5 text-xs font-semibold text-sage-700 uppercase tracking-wider mb-4">
+              Pick a page
+            </div>
+            <h2 className="text-3xl sm:text-4xl font-bold text-warm-900 font-display mb-4">
+              Explore SkillCascade without the scroll marathon
+            </h2>
+            <p className="text-warm-600 text-lg">
+              The homepage is now a front door. Each major topic has its own page so you can move around without the old anchor-jump feeling.
+            </p>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-5">
+            {HOME_PAGE_LINKS.map(({ label, to, title, desc, icon: Icon }) => (
+              <Link
+                key={label}
+                to={to}
+                className="group bg-white rounded-2xl p-6 shadow-sm border border-warm-100 hover:-translate-y-1 hover:shadow-lg transition-all"
+              >
+                <div className="flex items-center justify-between gap-3 mb-5">
+                  <div className="text-sage-600">
+                    <Icon />
+                  </div>
+                  <span className="text-xs font-bold uppercase tracking-wider text-warm-400 group-hover:text-sage-600 transition-colors">
+                    {label}
+                  </span>
+                </div>
+                <h3 className="text-lg font-bold text-warm-900 font-display mb-2">
+                  {title}
+                </h3>
+                <p className="text-sm text-warm-500 leading-relaxed mb-5">
+                  {desc}
+                </p>
+                <span className="inline-flex items-center gap-2 text-sm font-semibold text-sage-700">
+                  Open page
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
+                </span>
+              </Link>
+            ))}
+          </div>
+        </div>
+      </section>
+      )}
+
+      {!isHomePage && pageIntro && (
+      <section className="bg-warm-900 pt-32 pb-14 lg:pt-36 lg:pb-16">
+        <div className="max-w-7xl mx-auto px-6 lg:px-8">
+          <div className="max-w-3xl">
+            <div className="inline-flex items-center gap-2 rounded-full bg-sage-500/15 border border-sage-400/30 px-4 py-1.5 text-xs font-semibold text-sage-200 uppercase tracking-wider mb-5">
+              {pageIntro.eyebrow}
+            </div>
+            <h1 className="text-4xl sm:text-5xl font-extrabold text-white font-display leading-tight mb-5">
+              {pageIntro.title}
+            </h1>
+            <p className="text-lg text-warm-300 leading-relaxed">
+              {pageIntro.desc}
+            </p>
+          </div>
+        </div>
+      </section>
+      )}
 
       {/* ────────────────────────────────────────────────────────
           4. Features Grid
           ──────────────────────────────────────────────────────── */}
+      {showFeatures && (
       <section id="features" className="bg-warm-200/50">
         <div className="max-w-7xl mx-auto px-6 lg:px-8 py-20 lg:py-28">
           <div className="text-center mb-16">
@@ -855,10 +981,12 @@ export default function Landing() {
           </div>
         </div>
       </section>
+      )}
 
       {/* ────────────────────────────────────────────────────────
           5. How It Works
           ──────────────────────────────────────────────────────── */}
+      {showFeatures && (
       <section className="bg-warm-100/50">
         <div className="max-w-7xl mx-auto px-6 lg:px-8 py-20 lg:py-28">
           <div className="text-center mb-16">
@@ -901,10 +1029,12 @@ export default function Landing() {
           </div>
         </div>
       </section>
+      )}
 
       {/* ────────────────────────────────────────────────────────
           6. Framework Section
           ──────────────────────────────────────────────────────── */}
+      {showFramework && (
       <section id="framework" className="max-w-7xl mx-auto px-6 lg:px-8 py-20 lg:py-28">
         <div className="text-center mb-16">
           <div className="inline-flex items-center gap-2 rounded-full bg-sage-50 border border-sage-200 px-4 py-1.5 text-xs font-semibold text-sage-700 uppercase tracking-wider mb-4">
@@ -985,10 +1115,12 @@ export default function Landing() {
           </div>
         </div>
       </section>
+      )}
 
       {/* ────────────────────────────────────────────────────────
           7. Demo Section — Tabbed Feature Showcase
           ──────────────────────────────────────────────────────── */}
+      {showDemo && (
       <section id="demo" className="bg-warm-800">
         <div className="max-w-7xl mx-auto px-6 lg:px-8 py-20 lg:py-28">
           <div className="text-center mb-10">
@@ -1098,10 +1230,12 @@ export default function Landing() {
           })}
         </div>
       </section>
+      )}
 
       {/* ────────────────────────────────────────────────────────
           8. Built for Clinical Rigor
           ──────────────────────────────────────────────────────── */}
+      {showFeatures && (
       <section className="max-w-7xl mx-auto px-6 lg:px-8 py-20 lg:py-28">
         <div className="text-center mb-16">
           <div className="inline-flex items-center gap-2 rounded-full bg-sage-50 border border-sage-200 px-4 py-1.5 text-xs font-semibold text-sage-700 uppercase tracking-wider mb-4">
@@ -1142,10 +1276,12 @@ export default function Landing() {
           </p>
         </div>
       </section>
+      )}
 
       {/* ────────────────────────────────────────────────────────
           9. Pricing Section
           ──────────────────────────────────────────────────────── */}
+      {showPricing && (
       <section id="pricing">
         <Suspense fallback={
           <div className="min-h-screen bg-warm-50 px-4 py-16 sm:px-6 lg:px-8">
@@ -1200,6 +1336,7 @@ export default function Landing() {
           <PricingPage />
         </Suspense>
       </section>
+      )}
 
       {/* ────────────────────────────────────────────────────────
           10. Footer
@@ -1260,4 +1397,24 @@ export default function Landing() {
       </footer>
     </div>
   )
+}
+
+export function FeaturesMarketingPage() {
+  return <MarketingPage page="features" />
+}
+
+export function FrameworkMarketingPage() {
+  return <MarketingPage page="framework" />
+}
+
+export function DemoMarketingPage() {
+  return <MarketingPage page="demo" />
+}
+
+export function PricingMarketingPage() {
+  return <MarketingPage page="pricing" />
+}
+
+export default function Landing() {
+  return <MarketingPage page="home" />
 }

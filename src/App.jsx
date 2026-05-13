@@ -9,6 +9,10 @@ import OfflineBanner from './components/OfflineBanner.jsx'
 import LoadingScreen from './components/LoadingScreen.jsx'
 
 const Landing = lazy(() => import('./pages/Landing.jsx'))
+const Features = lazy(() => import('./pages/Features.jsx'))
+const Framework = lazy(() => import('./pages/Framework.jsx'))
+const Demo = lazy(() => import('./pages/Demo.jsx'))
+const Pricing = lazy(() => import('./pages/Pricing.jsx'))
 const Login = lazy(() => import('./pages/Login.jsx'))
 const Signup = lazy(() => import('./pages/Signup.jsx'))
 const ForgotPassword = lazy(() => import('./pages/ForgotPassword.jsx'))
@@ -64,6 +68,10 @@ const pageFade = {
 }
 
 const PAGE_TITLES = {
+  '/features': 'Features - SkillCascade',
+  '/framework': 'Framework - SkillCascade',
+  '/demo': 'Demo - SkillCascade',
+  '/pricing': 'Pricing - SkillCascade',
   '/': 'SkillCascade — Developmental Assessment & Visualization',
   '/login': 'Sign In — SkillCascade',
   '/signup': 'Create Account — SkillCascade',
@@ -98,6 +106,10 @@ export default function App() {
         <AnimatePresence mode="wait">
           <Routes location={location} key={location.pathname}>
             <Route path="/" element={<motion.div {...pageFade}><Landing /></motion.div>} />
+            <Route path="/features" element={<motion.div {...pageFade}><Features /></motion.div>} />
+            <Route path="/framework" element={<motion.div {...pageFade}><Framework /></motion.div>} />
+            <Route path="/demo" element={<motion.div {...pageFade}><Demo /></motion.div>} />
+            <Route path="/pricing" element={<motion.div {...pageFade}><Pricing /></motion.div>} />
             <Route path="/login" element={<motion.div {...pageFade}><Login /></motion.div>} />
             <Route path="/signup" element={<motion.div {...pageFade}><Signup /></motion.div>} />
             <Route path="/forgot-password" element={<motion.div {...pageFade}><ForgotPassword /></motion.div>} />
