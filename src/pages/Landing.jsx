@@ -236,55 +236,32 @@ const HOME_PAGE_LINKS = [
   {
     label: 'Features',
     to: '/features',
-    title: 'See the BCBA assistant tools',
-    desc: 'Goal engine, clinical intelligence, reports, AI support, and assessment workflows in one focused product tour.',
+    title: 'Features',
+    desc: 'Assessment, visualization, goal writing, reporting, and AI support in one focused overview.',
     icon: SparkleIcon,
   },
   {
     label: 'Framework',
     to: '/framework',
-    title: 'Understand the clinical model',
-    desc: 'Explore how the 9 domains connect, where foundational gaps cascade, and why the system prioritizes root skills.',
+    title: 'Framework',
+    desc: 'See how the 9 developmental-functional domains connect and cascade.',
     icon: CascadeIcon,
   },
   {
     label: 'Demo',
     to: '/demo',
-    title: 'Preview the app experience',
-    desc: 'Watch the demo and browse the interactive mockups for dashboard, assessment, AI, reports, and visualization.',
+    title: 'Demo',
+    desc: 'Preview the dashboard, assessment, AI, report, and visualization screens.',
     icon: DashboardIcon,
   },
   {
     label: 'Pricing',
     to: '/pricing',
-    title: 'Choose an early-access plan',
-    desc: 'Review pricing, capacity, and included features without digging through the rest of the marketing page.',
+    title: 'Pricing',
+    desc: 'Review early-access plans, included features, and signup options.',
     icon: TargetIcon,
   },
 ]
-
-const PAGE_INTROS = {
-  features: {
-    eyebrow: 'Features',
-    title: 'BCBA assistant tools, separated into their own page',
-    desc: 'A focused tour of the workflows inside SkillCascade: assessment, clinical intelligence, goal writing, reports, AI support, and caregiver clarity.',
-  },
-  framework: {
-    eyebrow: 'Framework',
-    title: 'The clinical model behind the cascade',
-    desc: 'A standalone view of the 9-domain developmental-functional framework and how foundational skills support higher-level outcomes.',
-  },
-  demo: {
-    eyebrow: 'Demo',
-    title: 'A separate demo page for seeing the app in motion',
-    desc: 'Watch the demo and browse the interactive product mockups without scrolling through the whole marketing homepage.',
-  },
-  pricing: {
-    eyebrow: 'Pricing',
-    title: 'Plans and early-access pricing',
-    desc: 'A dedicated pricing page with plan details and signup paths, separate from the homepage story.',
-  },
-}
 
 const DEMO_TABS = [
   {
@@ -694,7 +671,7 @@ function MarketingPage({ page = 'home' }) {
   const showFramework = page === 'framework'
   const showDemo = page === 'demo'
   const showPricing = page === 'pricing'
-  const pageIntro = PAGE_INTROS[page]
+  const solidHeader = scrolled || !isHomePage
 
   // Capture UTM params on landing page visit
   useEffect(() => { captureUtmParams() }, [])
@@ -715,7 +692,7 @@ function MarketingPage({ page = 'home' }) {
           ──────────────────────────────────────────────────────── */}
       <nav
         className={`fixed top-0 left-0 right-0 z-50 transition-all duration-300 ${
-          scrolled
+          solidHeader
             ? 'bg-white/95 backdrop-blur-sm shadow-md'
             : 'bg-transparent'
         }`}
@@ -885,13 +862,13 @@ function MarketingPage({ page = 'home' }) {
         <div className="max-w-7xl mx-auto px-6 lg:px-8 py-16 lg:py-20">
           <div className="max-w-2xl mb-10">
             <div className="inline-flex items-center gap-2 rounded-full bg-sage-50 border border-sage-200 px-4 py-1.5 text-xs font-semibold text-sage-700 uppercase tracking-wider mb-4">
-              Pick a page
+              Explore
             </div>
             <h2 className="text-3xl sm:text-4xl font-bold text-warm-900 font-display mb-4">
-              Explore SkillCascade without the scroll marathon
+              Explore SkillCascade by page
             </h2>
             <p className="text-warm-600 text-lg">
-              The homepage is now a front door. Each major topic has its own page so you can move around without the old anchor-jump feeling.
+              Open the product overview, clinical framework, demo, or pricing page directly.
             </p>
           </div>
 
@@ -922,24 +899,6 @@ function MarketingPage({ page = 'home' }) {
                 </span>
               </Link>
             ))}
-          </div>
-        </div>
-      </section>
-      )}
-
-      {!isHomePage && pageIntro && (
-      <section className="bg-warm-900 pt-32 pb-14 lg:pt-36 lg:pb-16">
-        <div className="max-w-7xl mx-auto px-6 lg:px-8">
-          <div className="max-w-3xl">
-            <div className="inline-flex items-center gap-2 rounded-full bg-sage-500/15 border border-sage-400/30 px-4 py-1.5 text-xs font-semibold text-sage-200 uppercase tracking-wider mb-5">
-              {pageIntro.eyebrow}
-            </div>
-            <h1 className="text-4xl sm:text-5xl font-extrabold text-white font-display leading-tight mb-5">
-              {pageIntro.title}
-            </h1>
-            <p className="text-lg text-warm-300 leading-relaxed">
-              {pageIntro.desc}
-            </p>
           </div>
         </div>
       </section>

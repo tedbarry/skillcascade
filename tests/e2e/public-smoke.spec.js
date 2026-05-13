@@ -7,7 +7,7 @@ test.describe('public smoke', () => {
     await expect(page.getByRole('link', { name: /^sign in$/i }).first()).toBeVisible()
     await expect(page.getByRole('link', { name: /start free trial/i }).first()).toBeVisible()
     await expect(page.getByText('260+', { exact: true })).toBeVisible()
-    await expect(page.getByRole('heading', { name: /without the scroll marathon/i })).toBeVisible()
+    await expect(page.getByRole('heading', { name: /explore skillcascade by page/i })).toBeVisible()
     await expect(page.getByRole('heading', { name: /^goal engine$/i })).toHaveCount(0)
   })
 
@@ -16,26 +16,23 @@ test.describe('public smoke', () => {
 
     await page.getByRole('navigation').getByRole('link', { name: /^features$/i }).click()
     await expect(page).toHaveURL(/\/features$/)
-    await expect(page.getByRole('heading', { name: /bcba assistant tools/i })).toBeVisible()
     await expect(page.getByRole('heading', { name: /everything you need/i })).toBeVisible()
 
     await page.getByRole('navigation').getByRole('link', { name: /^framework$/i }).click()
     await expect(page).toHaveURL(/\/framework$/)
-    await expect(page.getByRole('heading', { name: /clinical model/i })).toBeVisible()
     await expect(page.getByRole('heading', { name: /9 domains/i })).toBeVisible()
 
     await page.getByRole('navigation').getByRole('link', { name: /^demo$/i }).click()
     await expect(page).toHaveURL(/\/demo$/)
-    await expect(page.getByRole('heading', { name: /separate demo page/i })).toBeVisible()
     await expect(page.getByRole('heading', { name: /see what/i })).toBeVisible()
   })
 
   test('public marketing pages load from direct URLs', async ({ page }) => {
     const pages = [
-      ['/features', /bcba assistant tools/i],
-      ['/framework', /clinical model/i],
-      ['/demo', /separate demo page/i],
-      ['/pricing', /plans and early-access pricing/i],
+      ['/features', /everything you need/i],
+      ['/framework', /9 domains/i],
+      ['/demo', /see what/i],
+      ['/pricing', /simple, transparent pricing/i],
     ]
 
     for (const [path, heading] of pages) {
