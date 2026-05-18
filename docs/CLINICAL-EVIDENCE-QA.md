@@ -63,4 +63,3 @@ If credentials are unavailable for automated smoke:
 - Confirm it appears in `Learning Tree`.
 - Confirm `Auth Reports` show evidence support.
 - Delete or record any QA-created goal/decision rows.
-

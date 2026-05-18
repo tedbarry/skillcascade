@@ -119,4 +119,3 @@ Deferred until the spine is trustworthy:
 - Caregiver scripts and home programming packets.
 - Browser automation for copying text into outside systems.
 - Deeper scheduling/authorization/billing-adjacent rebuilds.
-
