@@ -1,6 +1,5 @@
 export const HIDDEN_BCBA_ASSISTANT_VIEWS = new Set([
   'sessions',
-  'notes',
   'practice-intelligence',
   'data',
 ])
@@ -8,6 +7,7 @@ export const HIDDEN_BCBA_ASSISTANT_VIEWS = new Set([
 const VIEW_RULES = {
   reports: ({ canViewReports, hasClinical }) => Boolean(hasClinical && canViewReports),
   'clinical-evidence': ({ hasClinical }) => Boolean(hasClinical),
+  notes: ({ hasClinical }) => Boolean(hasClinical),
   certifications: ({ canViewReports }) => Boolean(canViewReports),
   authorizations: ({ canViewBilling, hasClinical }) => Boolean(hasClinical && canViewBilling),
   'practice-intelligence': ({ canViewBilling, hasClinical }) => Boolean(hasClinical && canViewBilling),

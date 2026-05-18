@@ -103,6 +103,7 @@ const NAV_GROUPS = [
     views: [
       { key: 'reports', label: 'Auth Reports' },
       { key: 'clinical-evidence', label: 'Clinical Evidence' },
+      { key: 'notes', label: 'Clinical Notes' },
       { key: 'authorizations', label: 'Authorizations' },
       { key: 'learning-tree', label: 'Learning Tree' },
       { key: 'goal-library', label: 'Goal Library' },

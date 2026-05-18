@@ -18,13 +18,14 @@ import {
   getSessionNoteWorkflowReturnAction,
   normalizeRoleSlug,
 } from '../../lib/sessionNoteWorkflow.js'
-import { ensureSessionNoteForSession, syncSessionStatusForNote } from '../../data/storage.js'
+import { ensureSessionNoteForSession, getClientGoalDecisions, syncSessionStatusForNote } from '../../data/storage.js'
 import { buildSessionRecordsForAuthUtilization } from '../../lib/authorizationAnalytics.js'
 import { getDaysOpen } from '../../lib/practiceIntelligence.js'
+import { buildClinicalNotesStudioSummary } from '../../lib/clinicalNotesStudio.js'
 
 /**
- * Session Notes Manager — Org-wide view of all session notes with
- * completion status tracking and approval workflow.
+ * Clinical Notes Studio - BCBA-facing documentation workspace with
+ * evidence context plus the existing note approval workflow.
  *
  * Status flow: Draft -> Completed (therapist) -> Reviewed (BCBA) -> Approved (admin)
  */
@@ -89,6 +90,136 @@ function StatusPill({ status }) {
     <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-semibold border ${cfg.color}`}>
       {cfg.label}
     </span>
+  )
+}
+
+function StudioMetric({ label, value, detail, tone = 'warm' }) {
+  const toneClass = {
+    sage: 'border-sage-200 bg-sage-50 text-sage-800',
+    blue: 'border-blue-200 bg-blue-50 text-blue-800',
+    amber: 'border-amber-200 bg-amber-50 text-amber-800',
+    red: 'border-red-200 bg-red-50 text-red-800',
+    warm: 'border-warm-200 bg-white text-warm-800',
+  }[tone] || 'border-warm-200 bg-white text-warm-800'
+
+  return (
+    <div className={`rounded-xl border px-4 py-3 ${toneClass}`}>
+      <p className="text-[10px] font-semibold uppercase tracking-wider opacity-70">{label}</p>
+      <p className="mt-1 text-2xl font-bold">{value}</p>
+      {detail ? <p className="mt-1 text-[11px] leading-relaxed opacity-80">{detail}</p> : null}
+    </div>
+  )
+}
+
+function ClinicalNotesStudioPanel({
+  summary,
+  loading = false,
+  error = '',
+  selectedClientName = '',
+  onSelectNoteType,
+}) {
+  const goalRiskCount = summary.goals.needsSupport + summary.goals.adapted
+  const goalTone = goalRiskCount > 0 ? 'amber' : 'sage'
+
+  return (
+    <div className="mb-5 rounded-2xl border border-sage-200 bg-gradient-to-br from-sage-50 via-white to-blue-50 p-4 shadow-sm">
+      <div className="flex flex-col gap-3 lg:flex-row lg:items-start lg:justify-between">
+        <div>
+          <p className="text-[10px] font-semibold uppercase tracking-[0.22em] text-sage-700">BCBA Clinical Notes Studio</p>
+          <h3 className="mt-1 text-xl font-bold text-warm-900 font-display">
+            Notes tied to assessment evidence, canonical goals, and auth support
+          </h3>
+          <p className="mt-2 max-w-3xl text-sm leading-relaxed text-warm-600">
+            {summary.hasClient
+              ? `Focused on ${selectedClientName || 'the selected client'} so note writing starts from the Learning Tree and Clinical Evidence spine.`
+              : 'Select a client to pull Learning Tree goals, clinical decisions, and auth-ready support into the notes workflow.'}
+          </p>
+        </div>
+        <div className="rounded-xl border border-warm-200 bg-white px-3 py-2 text-xs text-warm-600">
+          <p className="font-semibold text-warm-800">V1 guardrail</p>
+          <p className="mt-1">No EMR export or external AI note transfer here. Keep documentation inside SkillCascade.</p>
+        </div>
+      </div>
+
+      {error ? (
+        <div className="mt-4 rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-xs text-amber-700">
+          Goal/evidence context could not load yet. The note queue is still usable.
+        </div>
+      ) : null}
+
+      <div className="mt-4 grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
+        <StudioMetric
+          label="Clinical-plan goals"
+          value={loading ? '...' : summary.goals.total}
+          detail={`${summary.goals.assessmentSupported} assessment-supported, ${summary.goals.libraryVerified} library verified.`}
+          tone={goalTone}
+        />
+        <StudioMetric
+          label="Needs support"
+          value={loading ? '...' : goalRiskCount}
+          detail="Custom or adapted goals should get clinical rationale before auth-facing use."
+          tone={goalRiskCount > 0 ? 'amber' : 'sage'}
+        />
+        <StudioMetric
+          label="Open notes"
+          value={summary.notes.open}
+          detail={`${summary.notes.draft} draft, ${summary.notes.completed} awaiting supervisor review.`}
+          tone={summary.notes.open > 0 ? 'blue' : 'sage'}
+        />
+        <StudioMetric
+          label="Approved record"
+          value={summary.notes.approved}
+          detail={`${summary.notes.recent30Days} note(s) in the last 30 days.`}
+          tone="warm"
+        />
+      </div>
+
+      <div className="mt-4 grid gap-4 xl:grid-cols-[minmax(0,1fr)_minmax(280px,0.85fr)]">
+        <div className="rounded-xl border border-warm-200 bg-white p-4">
+          <p className="text-xs font-semibold uppercase tracking-wider text-warm-500">BCBA note types</p>
+          <p className="mt-1 text-xs text-warm-500">Use these as filters and writing intents, not separate old EMR modules.</p>
+          <div className="mt-3 grid gap-2 sm:grid-cols-2">
+            {summary.noteTypes.map((type) => (
+              <button
+                key={type.id}
+                type="button"
+                onClick={() => onSelectNoteType?.(type)}
+                className="rounded-xl border border-warm-200 bg-warm-50 px-3 py-3 text-left transition-colors hover:border-sage-200 hover:bg-sage-50 min-h-[44px]"
+              >
+                <div className="flex items-center justify-between gap-2">
+                  <p className="text-xs font-semibold text-warm-800">{type.label}</p>
+                  {type.cptCode ? <span className="text-[10px] font-semibold text-sage-700">{type.cptCode}</span> : null}
+                </div>
+                <p className="mt-1 text-[11px] leading-relaxed text-warm-500">{type.purpose}</p>
+              </button>
+            ))}
+          </div>
+        </div>
+
+        <div className="rounded-xl border border-warm-200 bg-white p-4">
+          <p className="text-xs font-semibold uppercase tracking-wider text-warm-500">Evidence-backed writing prompts</p>
+          {summary.goalCards.length === 0 ? (
+            <p className="mt-3 text-xs leading-relaxed text-warm-500">
+              No active Learning Tree goals are loaded for this client yet. Import from Clinical Evidence to make notes more defensible.
+            </p>
+          ) : (
+            <div className="mt-3 space-y-3">
+              {summary.goalCards.map((goal) => (
+                <div key={goal.id} className="rounded-xl border border-warm-100 bg-warm-50 px-3 py-3">
+                  <div className="flex flex-wrap items-center gap-2">
+                    <p className="text-xs font-semibold text-warm-800">{goal.name}</p>
+                    <span className={`rounded-full border px-2 py-0.5 text-[10px] font-semibold ${goal.evidence.tone}`}>
+                      {goal.evidence.label}
+                    </span>
+                  </div>
+                  <p className="mt-2 text-[11px] leading-relaxed text-warm-600">{goal.notePrompt}</p>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+      </div>
+    </div>
   )
 }
 
@@ -172,6 +303,7 @@ export default function SessionNotesManager({
   const [sessions, setSessions] = useState([])
   const [clients, setClients] = useState([])
   const [staff, setStaff] = useState([])
+  const [clinicalContext, setClinicalContext] = useState({ loading: false, programs: [], decisions: [], error: '' })
   const [loading, setLoading] = useState(true)
   const [selectedNote, setSelectedNote] = useState(null)
   const [editMode, setEditMode] = useState(false)
@@ -242,6 +374,48 @@ export default function SessionNotesManager({
     for (const s of staff) m[s.id] = s.display_name || 'Unknown'
     return m
   }, [staff])
+
+  const selectedClinicalClientId = filterClient !== 'all' ? filterClient : (clientId || null)
+  const selectedClinicalClientName = selectedClinicalClientId
+    ? (clientMap[selectedClinicalClientId] || clientName || 'selected client')
+    : ''
+
+  useEffect(() => {
+    if (!selectedClinicalClientId) {
+      setClinicalContext({ loading: false, programs: [], decisions: [], error: '' })
+      return
+    }
+
+    let cancelled = false
+    setClinicalContext(prev => ({ ...prev, loading: true, error: '' }))
+
+    Promise.all([
+      api
+        .from('client_programs')
+        .select('*')
+        .eq('client_id', selectedClinicalClientId)
+        .is('deleted_at', null)
+        .order('display_order', { ascending: true }),
+      getClientGoalDecisions(selectedClinicalClientId),
+    ]).then(([programsRes, decisions]) => {
+      if (cancelled) return
+      if (programsRes.error) throw programsRes.error
+      setClinicalContext({
+        loading: false,
+        programs: programsRes.data || [],
+        decisions: decisions || [],
+        error: '',
+      })
+    }).catch((err) => {
+      if (cancelled) return
+      console.error('Failed to load clinical notes evidence context:', err)
+      setClinicalContext({ loading: false, programs: [], decisions: [], error: err?.message || 'Unable to load goal context' })
+    })
+
+    return () => {
+      cancelled = true
+    }
+  }, [selectedClinicalClientId])
 
   const documentationItems = useMemo(() => {
     const sessionRecords = buildSessionRecordsForAuthUtilization(sessions, notes)
@@ -428,6 +602,13 @@ export default function SessionNotesManager({
       return true
     })
   }, [documentationItems, filterLane, filterStatus, filterCpt, filterClient, filterStaff, filterDateFrom, filterDateTo])
+  const notesStudioSummary = useMemo(() => buildClinicalNotesStudioSummary({
+    selectedClientId: selectedClinicalClientId,
+    programs: clinicalContext.programs,
+    decisions: clinicalContext.decisions,
+    notes,
+    sessions,
+  }), [clinicalContext.decisions, clinicalContext.programs, notes, selectedClinicalClientId, sessions])
   const batchApprovalEnabled = canBatchApproveSessionNotes(roleSlug)
   const batchEligibleNotes = useMemo(
     () => filteredItems.filter(note => canSelectSessionNoteForBatchApproval(note, { roleSlug })),
@@ -435,6 +616,11 @@ export default function SessionNotesManager({
   )
   const allBatchEligibleSelected = batchEligibleNotes.length > 0 && batchEligibleNotes.every(note => batchSelected.has(note.id))
   const canCreateNotesForRole = canCreateSessionNote(roleSlug)
+  const handleSelectStudioNoteType = useCallback((type) => {
+    if (type?.cptCode) setFilterCpt(type.cptCode)
+    if (selectedClinicalClientId) setFilterClient(selectedClinicalClientId)
+    setFilterStatus('open')
+  }, [selectedClinicalClientId])
   const launchCreateSession = launchContext?.createFromSession || null
   const launchCreateKey = launchCreateSession
     ? [
@@ -775,7 +961,7 @@ export default function SessionNotesManager({
         <div className="flex items-center justify-between mb-4">
           <button onClick={() => setSelectedNote(null)} className="flex items-center gap-1.5 text-sm text-warm-500 hover:text-warm-700 min-h-[44px]">
             <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M15.75 19.5L8.25 12l7.5-7.5" /></svg>
-            Back to Notes
+            Back to Clinical Notes
           </button>
           <div className="flex items-center gap-2">
             <StatusPill status={note.status} />
@@ -1012,7 +1198,12 @@ export default function SessionNotesManager({
   return (
     <div className={`${isPhone ? 'px-3 py-4' : 'px-6 py-6'} max-w-6xl mx-auto`}>
       <div className="flex items-center justify-between mb-4">
-        <h2 className="text-lg font-bold text-warm-800 font-display">Session Notes</h2>
+        <div>
+          <h2 className="text-lg font-bold text-warm-800 font-display">Clinical Notes Studio</h2>
+          <p className="mt-1 text-xs text-warm-500">
+            BCBA documentation support connected to the evidence spine, Learning Tree, and authorization readiness.
+          </p>
+        </div>
         <div className="flex items-center gap-2">
           {batchApprovalEnabled && batchSelected.size > 0 && (
             <div className="flex flex-col items-end gap-2">
@@ -1044,6 +1235,14 @@ export default function SessionNotesManager({
           </button>
         </div>
       </div>
+
+      <ClinicalNotesStudioPanel
+        summary={notesStudioSummary}
+        loading={clinicalContext.loading}
+        error={clinicalContext.error}
+        selectedClientName={selectedClinicalClientName}
+        onSelectNoteType={handleSelectStudioNoteType}
+      />
 
       {launchSourceLabel ? (
         <div className="mb-4 rounded-xl border border-sky-200 bg-sky-50 px-4 py-3">

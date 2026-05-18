@@ -183,7 +183,7 @@ const VIEW_LABELS = {
   'lesson-plan': 'Lesson Plan',
   'schedule': 'Appointments',
   'daily-agenda': 'Today',
-  'notes': 'Session Notes',
+  'notes': 'Clinical Notes',
   'authorizations': 'Authorizations',
   'client-files': 'Files',
   'client-contacts': 'Contacts',
@@ -239,7 +239,7 @@ export const VIEWS = {
 // Clinical views — require clinical_access subscription add-on
 const CLINICAL_GATED_VIEWS = ['schedule', 'daily-agenda', 'authorizations', 'client-files', 'client-contacts']
 // All clinical views (gated + ungated clinical that still need subscription check for nav redirect)
-const CLINICAL_VIEWS = ['reports', 'clinical-evidence', 'learning-tree', 'goal-library', 'graph-dashboard', 'schedule', 'daily-agenda', 'authorizations', 'client-files', 'client-contacts', 'client-ai']
+const CLINICAL_VIEWS = ['reports', 'clinical-evidence', 'notes', 'learning-tree', 'goal-library', 'graph-dashboard', 'schedule', 'daily-agenda', 'authorizations', 'client-files', 'client-contacts', 'client-ai']
 
 export default function Dashboard() {
   const { user, profile } = useAuth()
@@ -2040,7 +2040,7 @@ export default function Dashboard() {
             </ClinicalGate>
           )}
 
-          {/* Session Notes Manager */}
+          {/* Clinical Notes Studio */}
           {activeView === VIEWS.NOTES && (
             <ClinicalGate>
             <div className="w-full h-full overflow-y-auto">

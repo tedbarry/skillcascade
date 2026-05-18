@@ -30,7 +30,7 @@ test.describe('clinical operator smoke', () => {
     await expect(page.getByRole('button', { name: /open notes/i })).toBeVisible()
 
     await page.getByRole('button', { name: /open notes/i }).click()
-    await expect(page.getByRole('heading', { name: /^session notes$/i })).toBeVisible()
+    await expect(page.getByRole('heading', { name: /^clinical notes studio$/i })).toBeVisible()
   })
 
   test('practice intelligence documentation actions open a note or targeted queue when present', async ({ page }) => {
@@ -43,7 +43,7 @@ test.describe('clinical operator smoke', () => {
     if (await downstreamActions.count()) {
       await downstreamActions.first().click()
       await expect(
-        page.getByRole('heading', { name: /authorization manager|session notes/i })
+        page.getByRole('heading', { name: /authorization manager|clinical notes studio/i })
       ).toBeVisible()
     }
   })
@@ -66,11 +66,12 @@ test.describe('clinical operator smoke', () => {
     await expect(page.getByRole('button', { name: /^summary$/i })).toBeVisible()
   })
 
-  test('session notes workspace exposes the open-workflow triage controls and note history', async ({ page }) => {
+  test('clinical notes workspace exposes the open-workflow triage controls and note history', async ({ page }) => {
     await signIn(page)
-    await openNavigationView(page, 'Clinical', 'Session Notes')
+    await openNavigationView(page, 'Clinical', 'Clinical Notes')
 
-    await expect(page.getByRole('heading', { name: /^session notes$/i })).toBeVisible()
+    await expect(page.getByRole('heading', { name: /^clinical notes studio$/i })).toBeVisible()
+    await expect(page.getByText(/notes tied to assessment evidence, canonical goals, and auth support/i)).toBeVisible()
     await expect(page.getByRole('button', { name: /open:/i })).toBeVisible()
 
     const statusFilter = page.locator('select').first()
@@ -170,7 +171,7 @@ test.describe('clinical operator smoke', () => {
     await itemAction.click()
 
     await Promise.race([
-      page.getByRole('heading', { name: /^session notes$/i }).waitFor({ state: 'visible' }),
+      page.getByRole('heading', { name: /^clinical notes studio$/i }).waitFor({ state: 'visible' }),
       page.getByRole('heading', { name: /authorization manager/i }).waitFor({ state: 'visible' }),
     ])
 

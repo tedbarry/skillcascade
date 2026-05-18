@@ -28,6 +28,10 @@ describe('dashboardViewAccess', () => {
       hasClinical: false,
     })).toBe(false)
 
+    expect(canAccessDashboardView('notes', {
+      hasClinical: false,
+    })).toBe(false)
+
     expect(canAccessDashboardView('authorizations', {
       hasClinical: true,
       canViewBilling: true,
@@ -36,9 +40,15 @@ describe('dashboardViewAccess', () => {
     expect(canAccessDashboardView('clinical-evidence', {
       hasClinical: true,
     })).toBe(true)
+
+    expect(canAccessDashboardView('notes', {
+      hasClinical: true,
+    })).toBe(true)
   })
 
   it('hides old-universe EMR and portability views regardless of permissions', () => {
+    expect(HIDDEN_BCBA_ASSISTANT_VIEWS.has('notes')).toBe(false)
+
     for (const view of HIDDEN_BCBA_ASSISTANT_VIEWS) {
       expect(canAccessDashboardView(view, {
         hasClinical: true,

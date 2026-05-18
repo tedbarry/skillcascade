@@ -85,8 +85,8 @@ function TabIcon({ tab, active }) {
   }
 }
 
-const CLINICAL_MORE_VIEWS = ['daily-agenda', 'schedule', 'reports', 'clinical-evidence', 'authorizations', 'graph-dashboard', 'goal-library', 'learning-tree']
-const CLINICAL_MORE_LABELS = { reports: 'Auth Reports', 'clinical-evidence': 'Evidence', authorizations: 'Auths', 'daily-agenda': 'Today', schedule: 'Appointments' }
+const CLINICAL_MORE_VIEWS = ['daily-agenda', 'schedule', 'reports', 'clinical-evidence', 'notes', 'authorizations', 'graph-dashboard', 'goal-library', 'learning-tree']
+const CLINICAL_MORE_LABELS = { reports: 'Auth Reports', 'clinical-evidence': 'Evidence', notes: 'Clinical Notes', authorizations: 'Auths', 'daily-agenda': 'Today', schedule: 'Appointments' }
 
 export default function MobileTabBar({ activeView, onChangeView, onOpenAI, canAccessView = () => true }) {
   const navigate = useNavigate()
