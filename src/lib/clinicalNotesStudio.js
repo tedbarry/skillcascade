@@ -36,6 +36,11 @@ export const CLINICAL_NOTES_STUDIO_TYPES = [
 
 const INACTIVE_PROGRAM_STATUSES = new Set(['archived', 'inactive', 'discontinued', 'deleted'])
 
+function cleanDraftValue(value, fallback = '') {
+  const cleaned = String(value || '').trim()
+  return cleaned || fallback
+}
+
 function isActiveProgram(program = {}) {
   if (program.deleted_at) return false
   return !INACTIVE_PROGRAM_STATUSES.has(String(program.status || '').toLowerCase())
@@ -76,6 +81,76 @@ function getGoalNotePrompt(goal = {}, evidenceStatus = {}) {
     default:
       return `Document the clinical reason ${name} remains in the treatment plan or flag it for more evidence.`
   }
+}
+
+function formatGoalDraftLine(goal = {}, index = 0) {
+  const name = cleanDraftValue(goal.name, `Goal ${index + 1}`)
+  const domain = cleanDraftValue(goal.domain, 'clinical domain')
+  const evidenceLabel = cleanDraftValue(goal.evidence?.label, 'evidence status pending')
+  const provenanceLabel = cleanDraftValue(goal.provenance?.label, 'source pending')
+  const prompt = cleanDraftValue(goal.notePrompt, 'Document current performance, barriers, and next clinical action.')
+
+  return `${index + 1}. ${name} (${domain}) - ${evidenceLabel}; ${provenanceLabel}. ${prompt}`
+}
+
+function getDraftFocusForType(noteType = {}) {
+  switch (noteType.id) {
+    case 'supervision':
+      return 'Review implementation fidelity, client response, barriers, and BCBA treatment-plan adjustments.'
+    case 'parent_training':
+      return 'Connect caregiver coaching to generalization, replacement behavior practice, and medically necessary goals.'
+    case 'treatment_planning':
+      return 'Document BCBA clinical reasoning, goal sequencing, prerequisites, and plan updates.'
+    case 'reassessment':
+      return 'Summarize assessment findings, deficit areas, risk factors, and recommendation decisions.'
+    case 'authorization_support':
+      return 'Prepare payer-facing support from assessment-backed Learning Tree goals without turning this into an EMR export.'
+    default:
+      return cleanDraftValue(noteType.purpose, 'Document clinical reasoning and next actions.')
+  }
+}
+
+export function getClinicalNotesStudioTypeForCpt(cptCode = '') {
+  const normalized = String(cptCode || '').trim().toUpperCase()
+  if (!normalized) return null
+  return CLINICAL_NOTES_STUDIO_TYPES.find((type) => String(type.cptCode || '').toUpperCase() === normalized) || null
+}
+
+export function buildClinicalNotesStudioDraft({
+  noteType = CLINICAL_NOTES_STUDIO_TYPES[0],
+  selectedClientName = '',
+  summary = {},
+  currentNarrative = '',
+} = {}) {
+  const type = noteType || CLINICAL_NOTES_STUDIO_TYPES[0]
+  const clientLabel = cleanDraftValue(selectedClientName, summary.hasClient ? 'selected client' : 'client not selected')
+  const goalCards = Array.isArray(summary.goalCards) ? summary.goalCards.slice(0, 3) : []
+  const existingNarrative = String(currentNarrative || '').trim()
+  const goalLines = goalCards.length
+    ? goalCards.map(formatGoalDraftLine).join('\n')
+    : '- No active Learning Tree goals were loaded. Add assessment findings, Learning Tree support, or BCBA rationale before using this for payer-facing documentation.'
+
+  return [
+    `${type.label || 'Clinical note'} draft starter${type.cptCode ? ` (${type.cptCode})` : ''}`,
+    `Client focus: ${clientLabel}`,
+    `Clinical intent: ${getDraftFocusForType(type)}`,
+    existingNarrative ? 'Existing narrative detected: review before appending so duplicate or conflicting facts are not introduced.' : 'Existing narrative detected: none.',
+    '',
+    'Evidence and goal support to consider:',
+    goalLines,
+    '',
+    'Facts the BCBA must add before signing:',
+    '- Date, time, duration, participants, and setting: [verify from the actual service record].',
+    '- Direct observation or data reviewed: [add only what was observed or reviewed].',
+    '- Client response, progress, and barriers: [include data, prompt level, generalization, safety, or skill-acquisition details].',
+    '- Caregiver or technician coaching, if applicable: [state what was modeled, coached, or changed].',
+    '',
+    'BCBA clinical reasoning and plan:',
+    '- Medical-necessity link: [connect impairment, risk, or adaptive deficit to the selected goal support].',
+    '- Decision or next action: [state plan adjustment, prerequisite need, reassessment need, or auth-support follow-up].',
+    '',
+    'Guardrail: This is a deterministic SkillCascade starter, not an external AI note and not an EMR export. Do not claim attendance, duration, services delivered, outcomes, or payer language unless the BCBA verifies those facts.',
+  ].join('\n')
 }
 
 export function buildClinicalNotesStudioSummary({

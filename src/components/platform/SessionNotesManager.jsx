@@ -21,7 +21,12 @@ import {
 import { ensureSessionNoteForSession, getClientGoalDecisions, syncSessionStatusForNote } from '../../data/storage.js'
 import { buildSessionRecordsForAuthUtilization } from '../../lib/authorizationAnalytics.js'
 import { getDaysOpen } from '../../lib/practiceIntelligence.js'
-import { buildClinicalNotesStudioSummary } from '../../lib/clinicalNotesStudio.js'
+import {
+  CLINICAL_NOTES_STUDIO_TYPES,
+  buildClinicalNotesStudioDraft,
+  buildClinicalNotesStudioSummary,
+  getClinicalNotesStudioTypeForCpt,
+} from '../../lib/clinicalNotesStudio.js'
 
 /**
  * Clinical Notes Studio - BCBA-facing documentation workspace with
@@ -111,11 +116,58 @@ function StudioMetric({ label, value, detail, tone = 'warm' }) {
   )
 }
 
+function ClinicalNotesStudioDraftCard({
+  draft = '',
+  noteType = null,
+  canApplyDraft = false,
+  onApplyDraft,
+  applyDisabledReason = 'Open an editable note to insert this starter.',
+  className = '',
+}) {
+  if (!draft) return null
+
+  return (
+    <div className={`rounded-xl border border-blue-200 bg-blue-50/70 p-4 ${className}`}>
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+        <div>
+          <p className="text-[10px] font-semibold uppercase tracking-wider text-blue-700">Evidence-aware draft starter</p>
+          <p className="mt-1 text-sm font-semibold text-warm-900">
+            {noteType?.label || 'Clinical note'} support
+          </p>
+          <p className="mt-1 text-xs leading-relaxed text-warm-600">
+            Built from the selected note intent plus Learning Tree evidence. It stays deliberately incomplete until the BCBA verifies the actual service facts.
+          </p>
+        </div>
+        {onApplyDraft ? (
+          <button
+            type="button"
+            onClick={onApplyDraft}
+            disabled={!canApplyDraft}
+            title={!canApplyDraft ? applyDisabledReason : undefined}
+            className="min-h-[40px] rounded-full bg-blue-700 px-4 py-2 text-xs font-semibold text-white transition-colors hover:bg-blue-800 disabled:cursor-not-allowed disabled:bg-blue-300"
+          >
+            Insert into narrative
+          </button>
+        ) : (
+          <span className="rounded-full border border-blue-200 bg-white px-3 py-1 text-[10px] font-semibold text-blue-700">
+            Open a note to insert
+          </span>
+        )}
+      </div>
+      <pre className="mt-3 max-h-80 overflow-auto whitespace-pre-wrap rounded-lg border border-blue-100 bg-white/80 p-3 text-[11px] leading-relaxed text-warm-700">
+        {draft}
+      </pre>
+    </div>
+  )
+}
+
 function ClinicalNotesStudioPanel({
   summary,
   loading = false,
   error = '',
   selectedClientName = '',
+  activeDraft = '',
+  activeNoteType = null,
   onSelectNoteType,
 }) {
   const goalRiskCount = summary.goals.needsSupport + summary.goals.adapted
@@ -179,20 +231,27 @@ function ClinicalNotesStudioPanel({
           <p className="text-xs font-semibold uppercase tracking-wider text-warm-500">BCBA note types</p>
           <p className="mt-1 text-xs text-warm-500">Use these as filters and writing intents, not separate old EMR modules.</p>
           <div className="mt-3 grid gap-2 sm:grid-cols-2">
-            {summary.noteTypes.map((type) => (
-              <button
-                key={type.id}
-                type="button"
-                onClick={() => onSelectNoteType?.(type)}
-                className="rounded-xl border border-warm-200 bg-warm-50 px-3 py-3 text-left transition-colors hover:border-sage-200 hover:bg-sage-50 min-h-[44px]"
-              >
-                <div className="flex items-center justify-between gap-2">
-                  <p className="text-xs font-semibold text-warm-800">{type.label}</p>
-                  {type.cptCode ? <span className="text-[10px] font-semibold text-sage-700">{type.cptCode}</span> : null}
-                </div>
-                <p className="mt-1 text-[11px] leading-relaxed text-warm-500">{type.purpose}</p>
-              </button>
-            ))}
+            {summary.noteTypes.map((type) => {
+              const isActive = activeNoteType?.id === type.id
+              return (
+                <button
+                  key={type.id}
+                  type="button"
+                  onClick={() => onSelectNoteType?.(type)}
+                  className={`rounded-xl border px-3 py-3 text-left transition-colors min-h-[44px] ${
+                    isActive
+                      ? 'border-sage-300 bg-sage-50 ring-2 ring-sage-100'
+                      : 'border-warm-200 bg-warm-50 hover:border-sage-200 hover:bg-sage-50'
+                  }`}
+                >
+                  <div className="flex items-center justify-between gap-2">
+                    <p className="text-xs font-semibold text-warm-800">{type.label}</p>
+                    {type.cptCode ? <span className="text-[10px] font-semibold text-sage-700">{type.cptCode}</span> : null}
+                  </div>
+                  <p className="mt-1 text-[11px] leading-relaxed text-warm-500">{type.purpose}</p>
+                </button>
+              )
+            })}
           </div>
         </div>
 
@@ -219,6 +278,12 @@ function ClinicalNotesStudioPanel({
           )}
         </div>
       </div>
+
+      <ClinicalNotesStudioDraftCard
+        draft={activeDraft}
+        noteType={activeNoteType}
+        className="mt-4"
+      />
     </div>
   )
 }
@@ -326,6 +391,8 @@ export default function SessionNotesManager({
 
   // Edit form state
   const [editForm, setEditForm] = useState({})
+  const [studioDraft, setStudioDraft] = useState('')
+  const [studioDraftNoteType, setStudioDraftNoteType] = useState(null)
 
   const orgId = profile?.org_id
   const roleSlug = normalizeRoleSlug(profile?.role)
@@ -375,10 +442,15 @@ export default function SessionNotesManager({
     return m
   }, [staff])
 
-  const selectedClinicalClientId = filterClient !== 'all' ? filterClient : (clientId || null)
+  const selectedClinicalClientId = filterClient !== 'all' ? filterClient : (selectedNote?.client_id || clientId || null)
   const selectedClinicalClientName = selectedClinicalClientId
     ? (clientMap[selectedClinicalClientId] || clientName || 'selected client')
     : ''
+
+  useEffect(() => {
+    setStudioDraft('')
+    setStudioDraftNoteType(null)
+  }, [selectedClinicalClientId])
 
   useEffect(() => {
     if (!selectedClinicalClientId) {
@@ -620,7 +692,36 @@ export default function SessionNotesManager({
     if (type?.cptCode) setFilterCpt(type.cptCode)
     if (selectedClinicalClientId) setFilterClient(selectedClinicalClientId)
     setFilterStatus('open')
-  }, [selectedClinicalClientId])
+    setStudioDraftNoteType(type)
+    setStudioDraft(buildClinicalNotesStudioDraft({
+      noteType: type,
+      selectedClientName: selectedClinicalClientName,
+      summary: notesStudioSummary,
+      currentNarrative: editForm.narrative || '',
+    }))
+  }, [editForm.narrative, notesStudioSummary, selectedClinicalClientId, selectedClinicalClientName])
+  const handleBuildStudioDraftForNote = useCallback((note) => {
+    const noteType = getClinicalNotesStudioTypeForCpt(note?.cpt_code) || studioDraftNoteType || CLINICAL_NOTES_STUDIO_TYPES[0]
+    const noteClientName = note?.client_id ? (clientMap[note.client_id] || selectedClinicalClientName) : selectedClinicalClientName
+    setStudioDraftNoteType(noteType)
+    setStudioDraft(buildClinicalNotesStudioDraft({
+      noteType,
+      selectedClientName: noteClientName,
+      summary: notesStudioSummary,
+      currentNarrative: editForm.narrative || note?.narrative || '',
+    }))
+  }, [clientMap, editForm.narrative, notesStudioSummary, selectedClinicalClientName, studioDraftNoteType])
+  const handleApplyStudioDraft = useCallback(() => {
+    if (!studioDraft) return
+    setEditForm(prev => {
+      const currentNarrative = String(prev.narrative || '').trim()
+      return {
+        ...prev,
+        narrative: currentNarrative ? `${currentNarrative}\n\n---\n\n${studioDraft}` : studioDraft,
+      }
+    })
+    track('feature_use', 'clinical_notes_studio_draft_insert')
+  }, [studioDraft])
   const launchCreateSession = launchContext?.createFromSession || null
   const launchCreateKey = launchCreateSession
     ? [
@@ -1008,6 +1109,36 @@ export default function SessionNotesManager({
           </div>
         ) : null}
 
+        {studioDraft ? (
+          <ClinicalNotesStudioDraftCard
+            draft={studioDraft}
+            noteType={studioDraftNoteType}
+            canApplyDraft={Boolean(editMode && canEditSelectedNote)}
+            onApplyDraft={handleApplyStudioDraft}
+            applyDisabledReason={canEditSelectedNote ? 'Turn on edit mode to insert this starter.' : restrictionMessage || 'This note is not editable for your role.'}
+            className="mb-4"
+          />
+        ) : (
+          <div className="mb-4 rounded-xl border border-sage-200 bg-sage-50/70 px-4 py-3">
+            <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+              <div>
+                <p className="text-[10px] font-semibold uppercase tracking-wider text-sage-700">Clinical Notes Studio starter</p>
+                <p className="mt-1 text-xs leading-relaxed text-warm-600">
+                  Build a guarded starter from this note type, the selected client, and loaded Learning Tree evidence before editing the narrative.
+                </p>
+              </div>
+              <button
+                type="button"
+                onClick={() => handleBuildStudioDraftForNote(note)}
+                disabled={clinicalContext.loading}
+                className="min-h-[40px] rounded-full border border-sage-300 bg-white px-4 py-2 text-xs font-semibold text-sage-700 transition-colors hover:bg-sage-100 disabled:cursor-not-allowed disabled:opacity-60"
+              >
+                {clinicalContext.loading ? 'Loading evidence...' : 'Build starter'}
+              </button>
+            </div>
+          </div>
+        )}
+
         <div className="bg-white rounded-xl border border-warm-200 shadow-sm p-5 space-y-4">
           {completionBlocked && (
             <div className="rounded-lg border border-amber-200 bg-amber-50 px-3 py-2.5 text-xs text-amber-800">
@@ -1241,6 +1372,8 @@ export default function SessionNotesManager({
         loading={clinicalContext.loading}
         error={clinicalContext.error}
         selectedClientName={selectedClinicalClientName}
+        activeDraft={studioDraft}
+        activeNoteType={studioDraftNoteType}
         onSelectNoteType={handleSelectStudioNoteType}
       />
 

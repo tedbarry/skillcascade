@@ -1,5 +1,9 @@
 import { describe, expect, it } from 'vitest'
-import { buildClinicalNotesStudioSummary } from '../clinicalNotesStudio.js'
+import {
+  buildClinicalNotesStudioDraft,
+  buildClinicalNotesStudioSummary,
+  getClinicalNotesStudioTypeForCpt,
+} from '../clinicalNotesStudio.js'
 
 describe('clinicalNotesStudio', () => {
   it('summarizes notes, canonical goal support, and BCBA note types for the selected client', () => {
@@ -64,5 +68,54 @@ describe('clinicalNotesStudio', () => {
     })
 
     expect(summary.goals.total).toBe(1)
+  })
+
+  it('builds a guarded evidence-aware draft starter without fabricating service facts', () => {
+    const summary = buildClinicalNotesStudioSummary({
+      selectedClientId: 'client-1',
+      programs: [
+        {
+          id: 'program-1',
+          client_id: 'client-1',
+          name: 'Request help',
+          domain: 'Communication',
+          library_target_id: 'goal-1',
+          provenance_status: 'canonical',
+        },
+      ],
+      decisions: [
+        {
+          canonical_target_id: 'goal-1',
+          decision_status: 'imported',
+        },
+      ],
+    })
+
+    const draft = buildClinicalNotesStudioDraft({
+      noteType: getClinicalNotesStudioTypeForCpt('97155'),
+      selectedClientName: 'QA Client',
+      summary,
+    })
+
+    expect(draft).toMatch(/BCBA supervision draft starter \(97155\)/)
+    expect(draft).toMatch(/Request help/)
+    expect(draft).toMatch(/persisted assessment support/i)
+    expect(draft).toMatch(/Date, time, duration, participants, and setting: \[verify/i)
+    expect(draft).toMatch(/Do not claim attendance, duration, services delivered, outcomes/i)
+    expect(draft).not.toMatch(/60 minutes/)
+    expect(draft).not.toMatch(/was present/)
+  })
+
+  it('flags existing narrative so draft insertion is deliberate', () => {
+    const draft = buildClinicalNotesStudioDraft({
+      noteType: getClinicalNotesStudioTypeForCpt('97156'),
+      selectedClientName: 'QA Client',
+      summary: { hasClient: true, goalCards: [] },
+      currentNarrative: 'Existing note text',
+    })
+
+    expect(draft).toMatch(/Parent training draft starter \(97156\)/)
+    expect(draft).toMatch(/Existing narrative detected: review before appending/i)
+    expect(draft).toMatch(/No active Learning Tree goals were loaded/i)
   })
 })
