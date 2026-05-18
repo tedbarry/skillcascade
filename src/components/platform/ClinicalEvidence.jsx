@@ -12,6 +12,7 @@ import {
 } from '../../lib/recommendationDraftAdapters.js'
 import {
   buildClientGoalDecisionPayload,
+  buildClinicalEvidenceReviewBrief,
   deriveClinicalEvidenceRows,
   getAuthEvidenceStatusForGoal,
   getClientGoalDecisionBadge,
@@ -103,6 +104,34 @@ function EvidenceSignalList({ snapshot }) {
   )
 }
 
+function ReviewBrief({ row }) {
+  const brief = buildClinicalEvidenceReviewBrief(row)
+  const items = [
+    ['Why this goal', brief.whyThisGoal],
+    ['Assessment support', brief.assessmentSupport],
+    ['Medical necessity', brief.medicalNecessity],
+    ['Decision needed', brief.decisionNeed],
+  ]
+
+  return (
+    <div className="mt-4 rounded-2xl border border-blue-100 bg-gradient-to-br from-blue-50 to-white p-3">
+      <div className="flex flex-wrap items-center justify-between gap-2">
+        <p className="text-[10px] font-semibold uppercase tracking-wider text-blue-700">BCBA Review Brief</p>
+        <Badge tone="border-blue-200 bg-white text-blue-700">{row.target ? 'Canonical match' : 'Needs mapping review'}</Badge>
+      </div>
+      <div className="mt-3 grid gap-2 md:grid-cols-2">
+        {items.map(([label, value]) => (
+          <div key={label} className="rounded-xl border border-blue-100 bg-white/80 px-3 py-2">
+            <p className="text-[10px] font-semibold uppercase tracking-wider text-warm-500">{label}</p>
+            <p className="mt-1 text-xs leading-relaxed text-warm-700">{value}</p>
+          </div>
+        ))}
+      </div>
+      <p className="mt-2 text-[11px] leading-relaxed text-blue-700">{brief.sourceIntegrity}</p>
+    </div>
+  )
+}
+
 function RecommendationCard({
   row,
   busy,
@@ -147,6 +176,8 @@ function RecommendationCard({
           <p className="mt-1 text-xs leading-relaxed text-sage-900">{medicalNecessity}</p>
         </div>
       )}
+
+      <ReviewBrief row={row} />
 
       <EvidenceSignalList snapshot={evidenceSnapshot} />
 

@@ -415,6 +415,70 @@ export function summarizeClinicalEvidenceRows(rows = [], programs = []) {
   return summary
 }
 
+function summarizeAssessmentSections(snapshot = {}) {
+  const sections = Array.isArray(snapshot.supporting_sections) ? snapshot.supporting_sections : []
+  const sectionLabels = unique(sections.map((section) => section.section_label))
+  const weakSkillNames = unique(sections.flatMap((section) => section.weak_skill_names || []))
+  const fragileSkillNames = unique(sections.flatMap((section) => section.fragile_skill_names || []))
+  const signalLabels = unique(snapshot.signal_labels || [])
+
+  return {
+    sectionLabels,
+    weakSkillNames,
+    fragileSkillNames,
+    signalLabels,
+    primarySection: sectionLabels[0] || signalLabels[0] || snapshot.section_domain || 'assessment findings',
+  }
+}
+
+function getDecisionNextStep(status) {
+  switch (normalizeClientGoalDecisionStatus(status)) {
+    case 'imported':
+      return 'Imported. Review client-specific wording in the Learning Tree and keep progress/status edits separate from provenance.'
+    case 'linked':
+      return 'Linked. Confirm the existing Learning Tree goal still matches the assessment-supported canonical intent.'
+    case 'excluded':
+      return 'Excluded. Keep the reason visible so the auth report does not treat this as a current treatment priority.'
+    case 'needs_prerequisite':
+      return 'Prerequisite needed. Sequence precursor skills before importing this canonical goal.'
+    case 'needs_assessment':
+      return 'Needs more assessment. Gather more clinical support before using this goal in treatment planning or auth support.'
+    default:
+      return 'BCBA decision needed: import, link to an existing goal, exclude, mark prerequisite needs, or request more assessment.'
+  }
+}
+
+export function buildClinicalEvidenceReviewBrief(row = {}) {
+  const recommendation = row.recommendation || {}
+  const target = row.target || null
+  const detail = target ? getCoreLibraryTargetDetail(target) : {}
+  const snapshot = row.evidenceSnapshot || buildAssessmentEvidenceSnapshot(recommendation, target)
+  const assessment = summarizeAssessmentSections(snapshot)
+  const targetName = target?.name || snapshot.canonical_target_name || recommendation.goalFamilyTitle || 'this canonical goal'
+  const goalFamily = recommendation.goalFamilyTitle || target?.stg_name || snapshot.recommendation_title || 'the mapped goal family'
+  const priority = Number.isFinite(recommendation.priorityScore)
+    ? `${Math.round(recommendation.priorityScore * 100)}% priority`
+    : 'priority needs BCBA review'
+  const strength = snapshot.recommendation_strength || recommendation.recommendationStrength || 'clinical'
+  const medicalNecessity = detail.medical_necessity
+    || recommendation.medicalNecessityRationale
+    || 'Medical necessity support is stored with the canonical goal source.'
+  const matchedCount = Array.isArray(row.matchedTargets) ? row.matchedTargets.length : 0
+  const signalSummary = assessment.weakSkillNames.length > 0
+    ? `${assessment.primarySection}: ${assessment.weakSkillNames.slice(0, 3).join(', ')}`
+    : `${assessment.primarySection}${assessment.signalLabels.length > 1 ? ` plus ${assessment.signalLabels.length - 1} related signal(s)` : ''}`
+
+  return {
+    whyThisGoal: `${signalSummary} maps to ${goalFamily}; ${targetName} is the closest canonical target currently ranked for review.`,
+    assessmentSupport: `${priority}; ${strength} recommendation strength from ${snapshot.assessment_tool || 'assessment'} evidence.`,
+    medicalNecessity,
+    decisionNeed: getDecisionNextStep(row.decisionStatus),
+    sourceIntegrity: matchedCount > 1
+      ? `Matched against ${matchedCount} canonical target candidates; open the source to verify fit before import.`
+      : 'Matched to a single canonical source; open the source to verify fit before import.',
+  }
+}
+
 export function getAuthEvidenceStatusForGoal(goal = {}, decisions = []) {
   const target = findCoreLibraryTargetForGoal(goal)
   const targetId = getProgramLibraryTargetId(goal) || target?.id || null

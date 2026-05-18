@@ -37,6 +37,20 @@ function loadEnvFile(filename) {
   }
 }
 
+function normalizeConnectionString(connectionString) {
+  try {
+    const url = new URL(connectionString)
+    const sslmode = url.searchParams.get('sslmode')
+    if (sslmode === 'require' && !url.searchParams.has('uselibpqcompat') && !url.searchParams.has('sslrootcert')) {
+      // Match libpq's sslmode=require behavior for managed DBs with platform certificates.
+      url.searchParams.set('uselibpqcompat', 'true')
+    }
+    return url.toString()
+  } catch {
+    return connectionString
+  }
+}
+
 function getConnectionConfig() {
   loadEnvFile('.env.local')
   loadEnvFile('.env')
@@ -49,7 +63,7 @@ function getConnectionConfig() {
   if (connectionString) {
     const sslMode = process.env.PGSSLMODE || ''
     return {
-      connectionString,
+      connectionString: normalizeConnectionString(connectionString),
       ssl: sslMode === 'disable' ? false : { rejectUnauthorized: false },
     }
   }

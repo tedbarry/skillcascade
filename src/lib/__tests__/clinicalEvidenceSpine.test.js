@@ -5,6 +5,7 @@ import {
   CLIENT_GOAL_DECISION_STATUSES,
   buildAssessmentEvidenceSnapshot,
   buildClientGoalDecisionPayload,
+  buildClinicalEvidenceReviewBrief,
   buildGoalDecisionPayloadFromImport,
   deriveClinicalEvidenceRows,
   getAuthEvidenceStatusForGoal,
@@ -155,6 +156,24 @@ describe('clinicalEvidenceSpine', () => {
     expect(rows[0].clientProgramId).toBe('program-1')
     expect(rows[0].decisionStatus).toBe('linked')
     expect(rows[0].authReportSupport.status).toBe('assessment_supported')
+  })
+
+  it('explains each recommendation in BCBA-review language', () => {
+    const recommendation = sampleRecommendation()
+    const rows = deriveClinicalEvidenceRows({
+      recommendations: [recommendation],
+      decisions: [],
+      programs: [],
+    })
+
+    const brief = buildClinicalEvidenceReviewBrief(rows[0])
+
+    expect(brief.whyThisGoal).toContain('Requesting Help')
+    expect(brief.whyThisGoal).toContain(recommendation.goalFamilyTitle)
+    expect(brief.assessmentSupport).toContain('88% priority')
+    expect(brief.medicalNecessity).toBeTruthy()
+    expect(brief.decisionNeed).toMatch(/BCBA decision needed/i)
+    expect(brief.sourceIntegrity).toMatch(/canonical/i)
   })
 
   it('flags custom and adapted auth-report goals that need more support', () => {
