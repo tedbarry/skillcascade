@@ -9,6 +9,7 @@
 - Master roadmap: [centralreach-replacement-master-plan.md](./centralreach-replacement-master-plan.md)
 - Live shipping protocol: [live-release-protocol.md](./live-release-protocol.md)
 - First execution backlog: [first-execution-backlog.md](./first-execution-backlog.md)
+- BCBA super assistant active execution plan: [bcba-super-assistant-active-plan.md](./bcba-super-assistant-active-plan.md)
 - AI/data-flow inventory: [ai-data-flow-inventory.md](./ai-data-flow-inventory.md)
 - Decision log updated with AWS-first HIPAA path and clinical-spine priority
 
