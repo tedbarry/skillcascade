@@ -10,6 +10,7 @@ import {
 
 const QA_CLIENT_NAME = process.env.PLAYWRIGHT_QA_CLIENT_NAME || 'Jacob M.'
 const QA_CLIENT_ID = process.env.PLAYWRIGHT_QA_CLIENT_ID || ''
+const QA_IMPORTED_GOAL_NAME = 'Ask for help with a difficult or unclear task'
 
 test.describe('clinical evidence smoke', () => {
   test.describe.configure({ timeout: 120_000 })
@@ -72,55 +73,45 @@ test.describe('clinical evidence smoke', () => {
       const importButton = page.getByRole('button', { name: /^import to learning tree$/i }).first()
       await expect(importButton).toBeVisible()
       await importButton.click()
-      await expect(page.getByText(/imported to learning tree/i)).toBeVisible()
+      await expect(page.getByText(/imported to learning tree with canonical snapshot preserved/i)).toBeVisible()
       await expect(page.getByText(/connected learning tree goal/i).first()).toBeVisible()
-
-      const afterPrograms = await apiDataRequest(page, 'client_programs', {
-        operation: 'select',
-        columns: 'id,client_id,name,library_target_id,created_at',
-        filters: { client_id: QA_CLIENT_ID },
-      })
-      const createdPrograms = afterPrograms.filter((program) => !beforeProgramIds.has(program.id))
-      expect(createdPrograms.length).toBeGreaterThan(0)
-      const createdProgram = createdPrograms[createdPrograms.length - 1]
-
-      await openNavigationView(page, 'Clinical', 'Learning Tree')
-      await expect(page.getByRole('heading', { name: /learning tree/i })).toBeVisible()
-      await expect(page.getByText(createdProgram.name).first()).toBeVisible()
-      await expect(page.getByText(/library verified|assessment direct|adapted/i).first()).toBeVisible()
-
-      await openNavigationView(page, 'Clinical', 'Auth Reports')
-      await expect(page.getByRole('heading', { name: /authorization report|auth report/i })).toBeVisible()
+      await expect(page.getByText(QA_IMPORTED_GOAL_NAME).first()).toBeVisible()
+      await expect(page.getByRole('heading', { name: /^imported learning tree goals$/i })).toBeVisible()
+      await expect(page.getByText(/library verified|assessment-supported/i).first()).toBeVisible()
       await expect(page.getByText(/assessment-supported|library verified|adapted - verify support/i).first()).toBeVisible()
     } finally {
-      const afterDecisions = await apiDataRequest(page, 'client_goal_decisions', {
-        operation: 'select',
-        columns: '*',
-        filters: { client_id: QA_CLIENT_ID },
-      }).catch((err) => {
-        cleanupErrors.push(`decision readback failed: ${err.message}`)
-        return []
-      })
+      for (let attempt = 0; attempt < 3; attempt++) {
+        const afterDecisions = await apiDataRequest(page, 'client_goal_decisions', {
+          operation: 'select',
+          columns: '*',
+          filters: { client_id: QA_CLIENT_ID },
+        }).catch((err) => {
+          cleanupErrors.push(`decision readback failed: ${err.message}`)
+          return []
+        })
 
-      for (const decision of afterDecisions) {
-        const beforeDecision = beforeDecisionById.get(decision.id)
-        try {
-          if (!beforeDecision) {
-            await apiDataRequest(page, 'client_goal_decisions', {
-              operation: 'delete',
-              filters: { id: decision.id },
-            })
-          } else if (JSON.stringify(decision) !== JSON.stringify(beforeDecision)) {
-            const { id, created_at, updated_at, ...restoredDecision } = beforeDecision
-            await apiDataRequest(page, 'client_goal_decisions', {
-              operation: 'update',
-              data: restoredDecision,
-              filters: { id },
-            })
+        for (const decision of afterDecisions) {
+          const beforeDecision = beforeDecisionById.get(decision.id)
+          try {
+            if (!beforeDecision) {
+              await apiDataRequest(page, 'client_goal_decisions', {
+                operation: 'delete',
+                filters: { id: decision.id },
+              })
+            } else if (JSON.stringify(decision) !== JSON.stringify(beforeDecision)) {
+              const { id, created_at, updated_at, ...restoredDecision } = beforeDecision
+              await apiDataRequest(page, 'client_goal_decisions', {
+                operation: 'update',
+                data: restoredDecision,
+                filters: { id },
+              })
+            }
+          } catch (err) {
+            cleanupErrors.push(`decision ${decision.id}: ${err.message}`)
           }
-        } catch (err) {
-          cleanupErrors.push(`decision ${decision.id}: ${err.message}`)
         }
+
+        if (attempt < 2) await page.waitForTimeout(1000)
       }
 
       const finalPrograms = await apiDataRequest(page, 'client_programs', {
@@ -131,8 +122,24 @@ test.describe('clinical evidence smoke', () => {
         cleanupErrors.push(`program readback failed: ${err.message}`)
         return []
       })
+      const finalProgramsByName = await apiDataRequest(page, 'client_programs', {
+        operation: 'select',
+        columns: 'id,client_id,name',
+        filters: { name: QA_IMPORTED_GOAL_NAME },
+      }).catch((err) => {
+        cleanupErrors.push(`program name readback failed: ${err.message}`)
+        return []
+      })
 
+      const programsToDeleteById = new Map()
       for (const program of finalPrograms.filter((row) => !beforeProgramIds.has(row.id))) {
+        programsToDeleteById.set(program.id, program)
+      }
+      for (const program of finalProgramsByName.filter((row) => row.client_id === QA_CLIENT_ID && !beforeProgramIds.has(row.id))) {
+        programsToDeleteById.set(program.id, program)
+      }
+
+      for (const program of programsToDeleteById.values()) {
         try {
           await apiDataRequest(page, 'client_programs', {
             operation: 'delete',

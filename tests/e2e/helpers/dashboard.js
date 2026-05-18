@@ -112,7 +112,21 @@ export async function selectQaClient(page, clientName = 'Jacob M.') {
 }
 
 export async function getAuthTokenFromPage(page) {
-  return page.evaluate(() => {
+  const expectedProjectRef = process.env.VITE_SUPABASE_URL
+    ? new URL(process.env.VITE_SUPABASE_URL).hostname.split('.')[0]
+    : null
+  const expectedStorageKey = expectedProjectRef ? `sb-${expectedProjectRef}-auth-token` : null
+
+  return page.evaluate((preferredKey) => {
+    if (preferredKey) {
+      try {
+        const parsed = JSON.parse(window.localStorage.getItem(preferredKey) || '{}')
+        if (parsed?.access_token) return parsed.access_token
+      } catch {
+        // Fall back to scanning below; stale/malformed storage should not fail the smoke.
+      }
+    }
+
     for (const key of Object.keys(window.localStorage)) {
       if (!key.startsWith('sb-') || !key.endsWith('-auth-token')) continue
       try {
@@ -123,7 +137,7 @@ export async function getAuthTokenFromPage(page) {
       }
     }
     return null
-  })
+  }, expectedStorageKey)
 }
 
 export async function apiDataRequest(page, table, body) {
