@@ -1460,6 +1460,7 @@ export default function Dashboard() {
               <HomeDashboard
                 assessments={assessments}
                 snapshots={snapshots}
+                clientId={clientId}
                 clientName={clientName}
                 onChangeView={guardedSetActiveView}
                 onNavigateToAssess={handleNavigateToAssess}

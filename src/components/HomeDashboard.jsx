@@ -7,7 +7,10 @@ import KBLink from './kb/KBLink.jsx'
 import GettingStartedChecklist from './GettingStartedChecklist.jsx'
 import { framework, ASSESSMENT_LEVELS, isAssessed } from '../data/framework.js'
 import { computeDomainHealth, detectCascadeRisks, computeImpactRanking } from '../data/cascadeModel.js'
+import { getClientGoalDecisions, getReports } from '../data/storage.js'
 import { DOMAIN_COLORS } from '../constants/colors.js'
+import { api } from '../lib/api.js'
+import { buildBcbaCommandCenterSummary } from '../lib/bcbaCommandCenter.js'
 import { safeGetItem, safeSetItem } from '../lib/safeStorage.js'
 import { buildHomeQuickActionVisibility } from '../lib/homeDashboardAccess.js'
 
@@ -220,11 +223,203 @@ function QuickActionButton({ icon, label, sublabel, onClick, variant = 'default'
   )
 }
 
+const COMMAND_TONES = {
+  sage: 'border-sage-200 bg-sage-50 text-sage-700',
+  blue: 'border-blue-200 bg-blue-50 text-blue-700',
+  amber: 'border-amber-200 bg-amber-50 text-amber-700',
+  coral: 'border-coral-200 bg-coral-50 text-coral-700',
+  warm: 'border-warm-200 bg-white text-warm-700',
+}
+
+const CLINICAL_COMMAND_VIEWS = new Set(['clinical-evidence', 'learning-tree', 'goal-library', 'reports', 'authorizations'])
+
+function formatPercent(value) {
+  return Number.isFinite(value) ? `${Math.round(value * 100)}%` : 'Review'
+}
+
+function formatReportDate(timestamp) {
+  if (!timestamp) return 'No saved auth report yet'
+  return `Latest ${new Date(timestamp).toLocaleDateString()}`
+}
+
+function CommandMetricCard({ label, value, detail, tone = 'warm' }) {
+  return (
+    <div className={`rounded-2xl border px-4 py-3 ${COMMAND_TONES[tone] || COMMAND_TONES.warm}`}>
+      <p className="text-[10px] font-semibold uppercase tracking-wider opacity-80">{label}</p>
+      <p className="mt-1 text-2xl font-bold">{value}</p>
+      <p className="mt-1 text-xs leading-relaxed opacity-80">{detail}</p>
+    </div>
+  )
+}
+
+function CommandActionCard({ action, onNavigate }) {
+  return (
+    <button
+      type="button"
+      onClick={() => onNavigate(action.view)}
+      className={`w-full rounded-2xl border px-4 py-3 text-left transition hover:-translate-y-0.5 hover:shadow-sm ${COMMAND_TONES[action.tone] || COMMAND_TONES.warm}`}
+    >
+      <div className="flex items-start justify-between gap-3">
+        <div>
+          <p className="text-sm font-bold">{action.label}</p>
+          <p className="mt-1 text-xs leading-relaxed opacity-80">{action.detail}</p>
+        </div>
+        <span className="mt-0.5 text-xs font-bold opacity-70">Open</span>
+      </div>
+    </button>
+  )
+}
+
+function RecommendationPreviewList({ recommendations }) {
+  if (!recommendations.length) {
+    return (
+      <div className="rounded-2xl border border-warm-200 bg-white px-4 py-4">
+        <p className="text-sm font-semibold text-warm-800">No recommendation queue yet</p>
+        <p className="mt-1 text-xs leading-relaxed text-warm-500">
+          Assessment signals will populate this queue once low or fragile skill clusters map to medically necessary goal families.
+        </p>
+      </div>
+    )
+  }
+
+  return (
+    <div className="space-y-2">
+      {recommendations.map((recommendation) => (
+        <div key={recommendation.id} className="rounded-2xl border border-warm-200 bg-white px-4 py-3">
+          <div className="flex flex-wrap items-start justify-between gap-2">
+            <div>
+              <p className="text-sm font-semibold text-warm-900">{recommendation.title}</p>
+              <p className="mt-0.5 text-xs text-warm-500">{recommendation.family}</p>
+            </div>
+            <span className="rounded-full border border-blue-200 bg-blue-50 px-2 py-0.5 text-[10px] font-semibold text-blue-700">
+              {formatPercent(recommendation.priorityScore)}
+            </span>
+          </div>
+          <div className="mt-2 flex flex-wrap gap-1.5">
+            <span className="rounded-full border border-warm-200 bg-warm-50 px-2 py-0.5 text-[10px] font-semibold text-warm-600">
+              {recommendation.decisionLabel}
+            </span>
+            <span className="rounded-full border border-sage-200 bg-sage-50 px-2 py-0.5 text-[10px] font-semibold text-sage-700">
+              {recommendation.supportLabel}
+            </span>
+          </div>
+        </div>
+      ))}
+    </div>
+  )
+}
+
+function BcbaCommandCenter({ summary, loading, error, hasClient, clientName, onNavigate, canAccessView }) {
+  const hasClinicalWorkspace = canAccessView('clinical-evidence')
+  const visibleActions = summary.nextActions.filter((action) => {
+    if (action.view === 'clients') return true
+    if (!CLINICAL_COMMAND_VIEWS.has(action.view)) return canAccessView(action.view)
+    if (action.view === 'reports') return canAccessView('reports')
+    return hasClinicalWorkspace
+  })
+  const actionRows = visibleActions.length > 0 ? visibleActions : [{
+    id: 'review-assessment-access',
+    label: 'Review assessment data',
+    detail: 'Clinical Evidence, Learning Tree, and Auth Reports unlock when the BCBA clinical workspace is available.',
+    view: 'assess',
+    tone: 'warm',
+  }]
+  const supportedGoals = summary.goalEvidence.assessmentSupported + summary.goalEvidence.libraryVerified
+  const unsupportedGoals = summary.goalEvidence.needsSupport + summary.goalEvidence.adapted
+
+  return (
+    <section className="mb-6 sm:mb-8 rounded-3xl border border-sage-200 bg-gradient-to-br from-sage-50 via-white to-blue-50 p-4 sm:p-6 shadow-[0_10px_30px_rgba(16,185,129,0.08)]">
+      <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
+        <div className="max-w-2xl">
+          <p className="text-[10px] font-semibold uppercase tracking-[0.22em] text-sage-700">BCBA Super Assistant</p>
+          <h2 className="mt-2 text-2xl font-bold text-warm-900">
+            {hasClient ? `${clientName || 'Client'} command center` : 'Select a client to activate the clinical spine'}
+          </h2>
+          <p className="mt-2 text-sm leading-relaxed text-warm-600">
+            This workspace connects assessment signals, canonical goal decisions, Learning Tree support, and auth-report readiness so the next clinical step is obvious.
+          </p>
+          {error && (
+            <p className="mt-3 rounded-xl border border-amber-200 bg-amber-50 px-3 py-2 text-xs text-amber-700">
+              Clinical workspace data could not load yet: {error}
+            </p>
+          )}
+        </div>
+        <div className="rounded-2xl border border-white/80 bg-white/80 px-4 py-3 text-xs text-warm-600 shadow-sm">
+          <p className="font-semibold text-warm-800">Current loop</p>
+          <p className="mt-1">Assessment to Clinical Evidence to Learning Tree to Auth Report</p>
+          {loading && <p className="mt-2 text-sage-700">Refreshing client evidence...</p>}
+        </div>
+      </div>
+
+      <div className="mt-5 grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
+        <CommandMetricCard
+          label="Assessment Signals"
+          value={`${summary.coverage.assessedSkills}/${summary.coverage.totalSkills}`}
+          detail={`${summary.coverage.completionPct}% scored across the current framework.`}
+          tone={summary.coverage.hasAssessmentData ? 'sage' : 'warm'}
+        />
+        <CommandMetricCard
+          label="Evidence Queue"
+          value={summary.evidenceSummary.pending}
+          detail={`${summary.evidenceSummary.totalRecommendations} canonical recommendation${summary.evidenceSummary.totalRecommendations === 1 ? '' : 's'} detected.`}
+          tone={summary.evidenceSummary.pending > 0 ? 'blue' : 'sage'}
+        />
+        <CommandMetricCard
+          label="Learning Tree Support"
+          value={`${supportedGoals}/${summary.goalEvidence.totalGoals}`}
+          detail={summary.goalEvidence.totalGoals > 0 ? `${unsupportedGoals} need clearer support.` : 'No client goals imported yet.'}
+          tone={unsupportedGoals > 0 ? 'amber' : 'sage'}
+        />
+        <CommandMetricCard
+          label="Auth Support"
+          value={summary.reports.totalReports}
+          detail={formatReportDate(summary.reports.latestReportAt)}
+          tone={summary.reports.totalReports > 0 ? 'blue' : 'warm'}
+        />
+      </div>
+
+      <div className="mt-5 grid gap-4 lg:grid-cols-[1fr_1.2fr]">
+        <div>
+          <div className="mb-2 flex items-center justify-between">
+            <h3 className="text-sm font-bold text-warm-900">Next Best Actions</h3>
+            {!hasClinicalWorkspace && hasClient && (
+              <span className="rounded-full border border-amber-200 bg-amber-50 px-2 py-0.5 text-[10px] font-semibold text-amber-700">
+                Clinical access needed
+              </span>
+            )}
+          </div>
+          <div className="space-y-2">
+            {actionRows.map((action) => (
+              <CommandActionCard key={action.id} action={action} onNavigate={onNavigate} />
+            ))}
+          </div>
+        </div>
+        <div>
+          <div className="mb-2 flex items-center justify-between">
+            <h3 className="text-sm font-bold text-warm-900">Recommendation Queue</h3>
+            {hasClinicalWorkspace && (
+              <button
+                type="button"
+                onClick={() => onNavigate('clinical-evidence')}
+                className="text-xs font-semibold text-sage-700 hover:text-sage-800"
+              >
+                Open Clinical Evidence
+              </button>
+            )}
+          </div>
+          <RecommendationPreviewList recommendations={summary.topRecommendations} />
+        </div>
+      </div>
+    </section>
+  )
+}
+
 const STORAGE_KEY = 'skillcascade_kbd_hint_seen'
 
 export default function HomeDashboard({
   assessments = {},
   snapshots = [],
+  clientId = null,
   clientName,
   onChangeView,
   onNavigateToAssess,
@@ -238,6 +433,13 @@ export default function HomeDashboard({
 }) {
   const { isPhone, isTablet } = useResponsive()
   const homeHint = useContextualHint('hint-home-sample')
+  const [clinicalWorkspace, setClinicalWorkspace] = useState({
+    loading: false,
+    programs: [],
+    decisions: [],
+    reports: [],
+    error: null,
+  })
 
   // Keyboard shortcut hint — auto-dismisses after 3 views
   const [showKbdHint, setShowKbdHint] = useState(() => {
@@ -324,6 +526,64 @@ export default function HomeDashboard({
   const quickActionVisibility = useMemo(() => buildHomeQuickActionVisibility({
     canAccessReports: canAccessView('reports'),
   }), [canAccessView])
+  const canLoadClinicalWorkspace = Boolean(hasClient && clientId && canAccessView('clinical-evidence'))
+
+  useEffect(() => {
+    let cancelled = false
+    if (!canLoadClinicalWorkspace) {
+      setClinicalWorkspace({ loading: false, programs: [], decisions: [], reports: [], error: null })
+      return () => { cancelled = true }
+    }
+
+    async function loadClinicalWorkspace() {
+      setClinicalWorkspace((prev) => ({ ...prev, loading: true, error: null }))
+      try {
+        const programsPromise = api
+          .from('client_programs')
+          .select('*')
+          .eq('client_id', clientId)
+          .order('display_order', { ascending: true })
+        const [programsResult, decisions, reports] = await Promise.all([
+          programsPromise,
+          getClientGoalDecisions(clientId),
+          canAccessView('reports') ? getReports(clientId) : Promise.resolve([]),
+        ])
+
+        if (programsResult.error) throw programsResult.error
+        if (!cancelled) {
+          setClinicalWorkspace({
+            loading: false,
+            programs: programsResult.data || [],
+            decisions,
+            reports,
+            error: null,
+          })
+        }
+      } catch (err) {
+        if (!cancelled) {
+          setClinicalWorkspace({
+            loading: false,
+            programs: [],
+            decisions: [],
+            reports: [],
+            error: err?.message || 'Clinical workspace unavailable',
+          })
+        }
+      }
+    }
+
+    loadClinicalWorkspace()
+    return () => { cancelled = true }
+  }, [canAccessView, canLoadClinicalWorkspace, clientId])
+
+  const commandCenterSummary = useMemo(() => buildBcbaCommandCenterSummary({
+    assessments,
+    snapshots,
+    programs: clinicalWorkspace.programs,
+    decisions: clinicalWorkspace.decisions,
+    reports: clinicalWorkspace.reports,
+    hasClient,
+  }), [assessments, clinicalWorkspace.decisions, clinicalWorkspace.programs, clinicalWorkspace.reports, hasClient, snapshots])
   const clientActionLabel = canCreateClients ? 'Create Client' : 'Open Clients'
   const clientActionDescription = canCreateClients
     ? 'Create a client to start your own assessments.'
@@ -338,10 +598,10 @@ export default function HomeDashboard({
           animate={{ opacity: 1, y: 0 }}
           className="text-xl sm:text-2xl font-bold text-warm-800 font-display"
         >
-          {clientName ? `${clientName}'s Profile` : 'Welcome to SkillCascade'}
+          {hasClient ? `${clientName || 'Client'}'s BCBA Command Center` : 'BCBA Command Center'}
         </motion.h1>
         <p className="text-sm text-warm-500 mt-1">
-          {clientName ? 'Assessment overview and quick actions' : 'Select a client to get started'}
+          {hasClient ? 'Assessment evidence, canonical goals, Learning Tree support, and auth readiness' : 'Select a client to start the evidence-to-goals workflow'}
         </p>
       </div>
 
@@ -376,6 +636,16 @@ export default function HomeDashboard({
         canCreateClients={canCreateClients}
         canAccessReports={canAccessView('reports')}
         onNavigate={onChangeView}
+      />
+
+      <BcbaCommandCenter
+        summary={commandCenterSummary}
+        loading={clinicalWorkspace.loading}
+        error={clinicalWorkspace.error}
+        hasClient={hasClient}
+        clientName={clientName}
+        onNavigate={onChangeView}
+        canAccessView={canAccessView}
       />
 
       {/* Get started banner when no assessments exist */}
