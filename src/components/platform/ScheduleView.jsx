@@ -150,10 +150,10 @@ function buildRecurringConflictMessage(conflict, candidate, staffNameById, clien
   const otherClientName = clientNameById[otherTemplate.client_id] || otherTemplate.client_name || 'another client'
 
   if (conflict?.kind === 'client_overlap') {
-    return `This client is already scheduled with another overlapping session on ${DAY_NAMES[candidate.day_of_week]} during ${formatDateRangeShort(otherTemplate.effective_from, otherTemplate.effective_to)}.`
+    return `This client is already scheduled with another overlapping appointment on ${DAY_NAMES[candidate.day_of_week]} during ${formatDateRangeShort(otherTemplate.effective_from, otherTemplate.effective_to)}.`
   }
 
-  return `This would double-book ${therapistName} on ${DAY_NAMES[candidate.day_of_week]} from ${formatTime(candidate.start_time)} to ${formatTime(candidate.end_time)}. ${otherClientName} is already scheduled from ${formatTime(otherTemplate.start_time)} to ${formatTime(otherTemplate.end_time)} during ${formatDateRangeShort(otherTemplate.effective_from, otherTemplate.effective_to)}.`
+  return `This would double-book ${therapistName} on ${DAY_NAMES[candidate.day_of_week]} from ${formatTime(candidate.start_time)} to ${formatTime(candidate.end_time)}. ${otherClientName} is already scheduled for another appointment from ${formatTime(otherTemplate.start_time)} to ${formatTime(otherTemplate.end_time)} during ${formatDateRangeShort(otherTemplate.effective_from, otherTemplate.effective_to)}.`
 }
 
 function buildExceptionConflictMessage(conflict, date, staffNameById, clientNameById) {
@@ -162,10 +162,10 @@ function buildExceptionConflictMessage(conflict, date, staffNameById, clientName
   const otherClientName = clientNameById[conflict?.template?.client_id] || conflict?.template?.client_name || 'another client'
 
   if (conflict?.kind === 'client_overlap') {
-    return `This change overlaps another scheduled session for the same client on ${formatDateShort(date)}.`
+    return `This change overlaps another appointment for the same client on ${formatDateShort(date)}.`
   }
 
-  return `This change would double-book ${therapistName} on ${formatDateShort(date)}. ${otherClientName} is already scheduled from ${formatTime(conflictingAppointment.start_time)} to ${formatTime(conflictingAppointment.end_time)}.`
+  return `This change would double-book ${therapistName} on ${formatDateShort(date)}. ${otherClientName} is already scheduled for another appointment from ${formatTime(conflictingAppointment.start_time)} to ${formatTime(conflictingAppointment.end_time)}.`
 }
 
 function todayStr() {
@@ -386,7 +386,7 @@ function ScheduleModal({
         {/* Header */}
         <div className="sticky top-0 bg-white z-10 flex items-center justify-between px-5 py-4 border-b border-warm-100">
           <h3 className="text-lg font-bold text-warm-800 font-display">
-            {editTemplate?.id ? 'Edit Schedule' : 'New Scheduled Session'}
+            {editTemplate?.id ? 'Edit Appointment' : 'New Appointment'}
           </h3>
           <button onClick={onClose} className="w-9 h-9 flex items-center justify-center rounded-full hover:bg-warm-100 touch-manipulation transition-colors">
             <svg className="w-5 h-5 text-warm-500" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
@@ -445,9 +445,9 @@ function ScheduleModal({
             </div>
           </div>
 
-          {/* Session Type */}
+          {/* Appointment Type */}
           <div>
-            <label className="block text-xs font-semibold text-warm-600 mb-1.5">Session Type</label>
+            <label className="block text-xs font-semibold text-warm-600 mb-1.5">Appointment Type</label>
             <div className="grid grid-cols-3 gap-2">
               {SESSION_TYPES.map(t => (
                 <button key={t.value} onClick={() => setSessionType(t.value)}
@@ -575,7 +575,7 @@ function ScheduleModal({
               || Boolean(scheduleConflictMessage)
             }
             className="flex-1 min-h-[48px] bg-sage-600 text-white text-sm font-bold rounded-xl disabled:opacity-50 hover:bg-sage-700 transition-colors shadow-sm">
-            {saving ? 'Saving...' : editTemplate?.id ? 'Update' : 'Create Schedule'}
+            {saving ? 'Saving...' : editTemplate?.id ? 'Update' : 'Create Appointment'}
           </button>
         </div>
       </div>
@@ -663,7 +663,7 @@ function ExceptionModal({
         return
       }
       if (substituteStaffId === template?.staff_id) {
-        setError('Choose a different therapist for a substitute session.')
+        setError('Choose a different therapist for this appointment.')
         return
       }
     }
@@ -706,7 +706,7 @@ function ExceptionModal({
       <div className="absolute inset-0 bg-black/40 backdrop-blur-sm" onClick={onClose} />
       <div className={`relative bg-white z-10 w-full max-h-[90vh] overflow-y-auto ${isPhone ? 'rounded-t-2xl' : 'rounded-2xl max-w-md mx-4 shadow-lg'}`}>
         <div className="sticky top-0 bg-white z-10 flex items-center justify-between px-5 py-4 border-b border-warm-100">
-          <h3 className="text-lg font-bold text-warm-800 font-display">Schedule Exception</h3>
+          <h3 className="text-lg font-bold text-warm-800 font-display">Appointment Exception</h3>
           <button onClick={onClose} className="w-9 h-9 flex items-center justify-center rounded-full hover:bg-warm-100 touch-manipulation transition-colors">
             <svg className="w-5 h-5 text-warm-500" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
               <line x1="18" y1="6" x2="6" y2="18" /><line x1="6" y1="6" x2="18" y2="18" />
@@ -722,7 +722,7 @@ function ExceptionModal({
           {/* Action type */}
           <div className="space-y-2">
             {[
-              { value: 'cancel', label: 'Cancel this session', desc: 'Mark as canceled for this date only' },
+              { value: 'cancel', label: 'Cancel this appointment', desc: 'Mark as canceled for this date only' },
               { value: 'substitute', label: 'Substitute therapist', desc: 'Different therapist for this date' },
               { value: 'reschedule', label: 'Change time', desc: 'Different time for this date only' },
             ].map(opt => (
@@ -861,7 +861,7 @@ function SessionDetailModal({ template, exception, date, staff, noteStatus, auth
       <div className={`relative bg-white z-10 w-full max-h-[90vh] overflow-y-auto ${isPhone ? 'rounded-t-2xl' : 'rounded-2xl max-w-md mx-4 shadow-lg'}`}>
         {/* Header */}
         <div className="sticky top-0 bg-white z-10 flex items-center justify-between px-5 py-4 border-b border-warm-100">
-          <h3 className="text-lg font-bold text-warm-800 font-display">Session Details</h3>
+          <h3 className="text-lg font-bold text-warm-800 font-display">Appointment Details</h3>
           <button onClick={onClose} className="w-9 h-9 flex items-center justify-center rounded-full hover:bg-warm-100 touch-manipulation transition-colors">
             <svg className="w-5 h-5 text-warm-500" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
               <line x1="18" y1="6" x2="6" y2="18" /><line x1="6" y1="6" x2="18" y2="18" />
@@ -952,23 +952,25 @@ function SessionDetailModal({ template, exception, date, staff, noteStatus, auth
           {!isCanceled && (
             <div className="flex gap-2">
               {/* Write Note / View Note */}
-              <button
-                onClick={handleWriteNote}
-                disabled={noteLoading}
-                className={`flex-1 min-h-[48px] text-sm font-bold rounded-xl transition-all touch-manipulation shadow-sm active:scale-95 flex items-center justify-center gap-2 ${
-                  noteStatus === 'none'
-                    ? 'bg-sage-600 text-white hover:bg-sage-700'
-                    : noteStatus === 'draft'
-                    ? 'bg-amber-500 text-white hover:bg-amber-600'
-                    : 'bg-warm-200 text-warm-700 hover:bg-warm-300'
-                } disabled:opacity-50`}
-              >
-                <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
-                  <path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7" />
-                  <path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z" />
-                </svg>
-                {noteLoading ? 'Loading...' : noteStatus === 'none' ? 'Write Note' : noteStatus === 'draft' ? 'Continue Note' : 'View Note'}
-              </button>
+              {onWriteNote && (
+                <button
+                  onClick={handleWriteNote}
+                  disabled={noteLoading}
+                  className={`flex-1 min-h-[48px] text-sm font-bold rounded-xl transition-all touch-manipulation shadow-sm active:scale-95 flex items-center justify-center gap-2 ${
+                    noteStatus === 'none'
+                      ? 'bg-sage-600 text-white hover:bg-sage-700'
+                      : noteStatus === 'draft'
+                      ? 'bg-amber-500 text-white hover:bg-amber-600'
+                      : 'bg-warm-200 text-warm-700 hover:bg-warm-300'
+                  } disabled:opacity-50`}
+                >
+                  <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
+                    <path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7" />
+                    <path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z" />
+                  </svg>
+                  {noteLoading ? 'Loading...' : noteStatus === 'none' ? 'Write Note' : noteStatus === 'draft' ? 'Continue Note' : 'View Note'}
+                </button>
+              )}
 
               {/* Start Session (data collection) */}
               {onStartSession && (
@@ -1002,7 +1004,7 @@ function SessionDetailModal({ template, exception, date, staff, noteStatus, auth
             <div className="flex gap-2">
               <button onClick={() => { onClose(); onEdit() }}
                 className="flex-1 min-h-[44px] bg-warm-100 text-warm-600 text-sm font-semibold rounded-xl hover:bg-warm-200 transition-colors touch-manipulation">
-                Edit Schedule
+                Edit Appointment
               </button>
               <button onClick={() => { onClose(); onException() }}
                 className="flex-1 min-h-[44px] bg-warm-100 text-warm-600 text-sm font-semibold rounded-xl hover:bg-warm-200 transition-colors touch-manipulation">
@@ -1011,7 +1013,7 @@ function SessionDetailModal({ template, exception, date, staff, noteStatus, auth
             </div>
           ) : (
             <div className="rounded-xl border border-warm-200 bg-warm-50 px-3 py-2 text-xs text-warm-600">
-              Schedule changes are limited to BCBA and admin roles.
+              Appointment changes are limited to BCBA and admin roles.
             </div>
           )}
         </div>
@@ -1099,7 +1101,7 @@ function CompactWeekView({ weekDates, getSessionsForDay, getException, staff, on
               </div>
               {d.sessions.length > 0 && (
                 <div className="text-[9px] text-warm-500 mt-0.5">
-                  {d.sessions.length} session{d.sessions.length !== 1 ? 's' : ''}
+                  {d.sessions.length} appointment{d.sessions.length !== 1 ? 's' : ''}
                 </div>
               )}
             </div>
@@ -1108,7 +1110,7 @@ function CompactWeekView({ weekDates, getSessionsForDay, getException, staff, on
             <div className="flex-1 p-1 space-y-1 overflow-y-auto">
               {d.sessions.length === 0 && (
                 <div className="flex items-center justify-center py-6">
-                  <span className="text-[10px] text-warm-500 italic">No sessions</span>
+                  <span className="text-[10px] text-warm-500 italic">No appointments</span>
                 </div>
               )}
               {d.sessions.map(t => {
@@ -1746,7 +1748,7 @@ export default function ScheduleView({ onStartSession, onWriteNote, launchContex
       {/* Header */}
       <div className="flex items-center justify-between mb-4 flex-wrap gap-2">
         <div>
-          <h2 className="text-xl font-bold text-warm-800 font-display">Schedule</h2>
+          <h2 className="text-xl font-bold text-warm-800 font-display">Appointments</h2>
           <p className="text-sm text-warm-500 mt-0.5">{dateLabel}</p>
         </div>
         <div className="flex items-center gap-2">
@@ -1776,7 +1778,7 @@ export default function ScheduleView({ onStartSession, onWriteNote, launchContex
 
       {!canManageSchedule && (
         <div className="mb-4 rounded-2xl border border-warm-200 bg-warm-50 px-4 py-3 text-sm text-warm-600">
-          Schedule editing is limited to BCBA and admin roles. Therapists can still review appointments, launch sessions, write notes, and keep their own availability current here.
+          Appointment editing is limited to BCBA and admin roles. Therapists can still review appointments and keep their own availability current here.
         </div>
       )}
 
@@ -1797,10 +1799,10 @@ export default function ScheduleView({ onStartSession, onWriteNote, launchContex
                 availabilityOverview.totalIssues > 0 ? 'text-amber-700' : 'text-sage-700'
               }`}>
                 {availabilityOverview.totalIssues > 0
-                  ? 'This view has staff setup or scheduling issues that should be corrected before they turn into missed coverage.'
+                  ? 'This view has staff setup or appointment issues that should be corrected before they turn into missed coverage.'
                   : canManageSchedule
-                    ? 'All visible scheduled staff have availability configured, and nothing in this view currently falls outside those rules.'
-                    : 'Your saved availability is active for the visible schedule window.'}
+                    ? 'All visible appointment staff have availability configured, and nothing in this view currently falls outside those rules.'
+                    : 'Your saved availability is active for the visible appointment window.'}
               </p>
             </div>
             {canManageAvailability && (

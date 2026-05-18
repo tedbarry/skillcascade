@@ -42,7 +42,7 @@ const SESSION_NOTE_TRANSITION_FIELDS = {
 }
 const SESSION_NOTE_ORG_WIDE_ROLES = new Set(['master_admin', 'admin', 'qa_admin'])
 const CLIENT_ACCESS_FILTER_TABLES = new Set(['sessions'])
-const DIRECT_CLIENT_TABLES = new Set(['assessments', 'client_programs', 'reports'])
+const DIRECT_CLIENT_TABLES = new Set(['assessments', 'client_programs', 'reports', 'client_goal_decisions'])
 const GOAL_LIBRARY_TABLES = new Set(['goal_domains', 'goal_ltgs', 'goal_stgs', 'goal_targets'])
 const GOAL_LIBRARY_PARENT_LOOKUPS = {
   goal_ltgs: { column: 'domain_id', table: 'goal_domains', label: 'Domain' },
@@ -80,6 +80,7 @@ const TABLE_CONFIG = {
   clients: { scope: 'org', orgColumn: 'org_id' },
   sessions: { scope: 'org', orgColumn: 'org_id' },
   client_programs: { scope: 'open' },
+  client_goal_decisions: { scope: 'open' },
   client_targets: { scope: 'open' },
   session_data: { scope: 'open' },
   session_programs: { scope: 'open' },

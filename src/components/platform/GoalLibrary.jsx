@@ -4,7 +4,7 @@ import useResponsive from '../../hooks/useResponsive.js'
 import usePermissions from '../../hooks/usePermissions.js'
 import { track } from '../../lib/analytics.js'
 import { CORE_GOAL_LIBRARY, CORE_GOAL_LIBRARY_NAME } from '../../data/canonicalGoalLibrary.js'
-import { getDatabaseStgId } from '../../lib/recommendationDraftAdapters.js'
+import { buildGoalCanonicalSnapshot, getDatabaseStgId } from '../../lib/recommendationDraftAdapters.js'
 
 const AddGoalDialog = lazy(() => import('./AddGoalDialog.jsx'))
 
@@ -206,7 +206,7 @@ export default function GoalLibrary({ onSelectGoal, onClose, clientId, initialTa
       : (ltg ? domains.find(d => d.id === ltg.domain_id) : null)
 
     track('feature_use', 'goal_library_select')
-    onSelectGoal({
+    const libraryGoal = {
       id: target.id,
       stg_id: getDatabaseStgId(target.stg_id),
       library_target_id: target.id,
@@ -233,6 +233,13 @@ export default function GoalLibrary({ onSelectGoal, onClose, clientId, initialTa
       medical_necessity_rationale: detail.medical_necessity || null,
       verification_summary: detail.verification_summary || null,
       verification_sources: detail.verification_sources || [],
+      provenance_status: 'canonical',
+      adaptation_reason: null,
+    }
+
+    onSelectGoal({
+      ...libraryGoal,
+      canonical_snapshot: buildGoalCanonicalSnapshot(libraryGoal),
     })
   }, [domains, ltgs, onSelectGoal, stgs])
 

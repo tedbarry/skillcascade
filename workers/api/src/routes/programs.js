@@ -67,14 +67,14 @@ app.post('/', async (c) => {
       mastery_window, mastery_criteria_text, ltg_mastery_criteria, maintenance_frequency,
       library_target_id, canonical_domain_slug, canonical_deficit_slug, source_type, source_label,
       medical_necessity_tags, medical_necessity_rationale, verification_summary, verification_sources,
-      created_by
+      provenance_status, adaptation_reason, canonical_snapshot, created_by
     ) VALUES (
       $1, $2, $3, $4, $5, $6, $7, $8,
       $9, $10, $11, $12, $13, $14,
       $15, $16, $17, $18, $19, $20,
       $21, $22, $23, $24, $25,
       $26, $27, $28, $29, $30,
-      $31, $32, $33, $34
+      $31, $32, $33, $34, $35, $36, $37
     ) RETURNING *`,
     [
       body.client_id, body.stg_id || null, body.domain || '', body.ltg_name || null,
@@ -92,6 +92,9 @@ app.post('/', async (c) => {
       body.medical_necessity_tags ? JSON.stringify(body.medical_necessity_tags) : '[]',
       body.medical_necessity_rationale || null, body.verification_summary || null,
       body.verification_sources ? JSON.stringify(body.verification_sources) : '[]',
+      body.provenance_status || (body.library_target_id ? 'canonical' : 'custom'),
+      body.adaptation_reason || null,
+      body.canonical_snapshot ? JSON.stringify(body.canonical_snapshot) : null,
       profile.id,
     ]
   )
@@ -117,7 +120,8 @@ app.patch('/:id', async (c) => {
     'baseline_date', 'mastered_at', 'display_order', 'program_type', 'data_method',
     'phase_criteria', 'min_trials', 'max_trials', 'mastery_window',
     'mastery_criteria_text', 'ltg_mastery_criteria', 'maintenance_frequency',
-    'phase_changed_at', 'session_count',
+    'phase_changed_at', 'session_count', 'provenance_status', 'adaptation_reason',
+    'canonical_snapshot',
   ]
   const updates = []
   const values = []
@@ -126,7 +130,7 @@ app.patch('/:id', async (c) => {
   for (const [key, val] of Object.entries(body)) {
     if (allowed.includes(key)) {
       updates.push(`${key} = $${i}`)
-      values.push(key === 'phase_criteria' && typeof val === 'object' ? JSON.stringify(val) : val)
+      values.push((key === 'phase_criteria' || key === 'canonical_snapshot') && typeof val === 'object' ? JSON.stringify(val) : val)
       i++
     }
   }

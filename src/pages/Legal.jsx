@@ -119,7 +119,7 @@ const LEGAL_PAGES = {
       },
       {
         heading: 'Data Minimization',
-        content: 'We collect and process only the minimum data necessary to provide our assessment and clinical intelligence services. Our AI features process assessment data in context but do not store conversation history beyond the active session.',
+        content: 'We collect and process only the data needed to provide assessment, scheduling, reporting, and clinical intelligence services. AI features process client context in-session, and certain AI workspaces may save conversation history inside your organization so teams can revisit prior clinical drafts and analyses.',
       },
       {
         heading: 'Incident Response',
@@ -127,7 +127,7 @@ const LEGAL_PAGES = {
       },
       {
         heading: 'Security Roadmap',
-        content: 'We are actively working toward full HIPAA compliance. Our roadmap includes: formal Business Associate Agreements (BAAs), designated Privacy and Security Officers, documented HIPAA policies and procedures, regular third-party security audits, and workforce HIPAA training. Contact us for details on our progress and timeline.',
+        content: 'We are continuing to harden HIPAA-aligned workflows across the platform. Current roadmap items include broader BAA-backed infrastructure coverage, designated Privacy and Security Officers, documented HIPAA policies and procedures, regular third-party security audits, and workforce HIPAA training. Contact us for details on current coverage and rollout status.',
       },
       {
         heading: 'Your Data Rights',
@@ -157,7 +157,7 @@ const LEGAL_PAGES = {
       },
       {
         heading: 'Subcontractors',
-        content: 'SkillCascade uses the following subcontractors who may process your data: Supabase (database hosting and authentication) and AI model providers (for AI assistant features). Each subcontractor is bound by contractual data protection obligations.',
+        content: 'SkillCascade uses infrastructure subcontractors that may process your data, including Supabase (authentication and data services), Cloudflare (edge delivery and API routing), AWS services such as Bedrock and managed storage, and Stripe (payments). Each subcontractor is expected to maintain contractual data protection obligations appropriate to its role.',
       },
       {
         heading: 'Term and Termination',
@@ -165,7 +165,7 @@ const LEGAL_PAGES = {
       },
       {
         heading: 'HIPAA Business Associate Agreements',
-        content: 'Formal HIPAA Business Associate Agreements (BAAs) are part of our security roadmap and are not yet available. If your organization requires a signed BAA, please contact us at legal@skillcascade.com to discuss our timeline and current security capabilities.',
+        content: 'SkillCascade uses AWS HIPAA-eligible services for key AI and managed-storage workflows under AWS\'s BAA framework. Broader HIPAA availability may still depend on your organization\'s onboarding path, configuration, and required agreements across the full stack. If your organization requires a signed BAA or implementation review, contact us at legal@skillcascade.com for current availability and scope.',
       },
     ],
   },
@@ -187,7 +187,7 @@ const LEGAL_PAGES = {
       },
       {
         heading: 'Infrastructure',
-        content: 'Our application is hosted on: Supabase (PostgreSQL database with Row-Level Security), Vercel/Netlify (static site hosting with edge CDN), and Stripe (PCI DSS Level 1 compliant payment processing). All infrastructure providers maintain SOC 2 Type II or equivalent certifications.',
+        content: 'Our application currently uses a mixed cloud stack that includes Supabase (authentication and data services), Cloudflare (frontend delivery and edge/API routing), AWS services for key AI and managed storage workflows, and Stripe (PCI DSS Level 1 compliant payment processing). We select infrastructure providers based on security controls, operational reliability, and the compliance posture required for each workflow.',
       },
       {
         heading: 'Audit Logging',

@@ -508,7 +508,7 @@ The AI panel automatically includes your current view context. If you are lookin
 
 ## Privacy
 
-All AI queries route through AWS Bedrock (HIPAA-eligible with BAA). Your API key is never exposed to the browser. Requests are rate-limited to 10 per minute. AI-generated content is NOT used to train AI models.
+All AI queries route through AWS Bedrock (HIPAA-eligible with BAA coverage on the AWS side). Platform-managed AI credentials are never exposed to the browser. Requests are rate-limited to 10 per minute. AI-generated content is NOT used to train AI models.
 
 ## Tips
 

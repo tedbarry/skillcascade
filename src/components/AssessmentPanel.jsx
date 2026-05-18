@@ -8,8 +8,10 @@ import { SKILL_PREREQUISITES, buildReversePrereqMap, getSkillTier } from '../dat
 import { TIER_LABELS, TIER_COLORS } from '../constants/tiers.js'
 import { buildAssessmentRecommendations } from '../lib/assessmentRecommendationEngine.js'
 import { buildClientProgramInsertFromLibraryGoal, getCoreLibraryTargetsForRecommendation } from '../lib/recommendationDraftAdapters.js'
+import { upsertClientGoalDecisionForImportedGoal } from '../data/storage.js'
 import { api } from '../lib/api.js'
-const GoalLibrary = lazy(() => import('./platform/GoalLibrary.jsx'))
+import { useAuth } from '../contexts/AuthContext.jsx'
+const CanonicalSourceModal = lazy(() => import('./platform/CanonicalSourceModal.jsx'))
 
 
 // Lazy-cached reverse prerequisite map (skill → skills that depend on it)
@@ -125,7 +127,7 @@ function AssessmentLibraryMatches({ matches, onViewLibraryGoal, onViewGoals, com
                   className="inline-flex items-center gap-1 rounded-full border border-blue-200 bg-blue-50 px-2.5 py-1.5 text-left text-[10px] font-semibold text-blue-700 hover:bg-blue-100 transition-colors"
                 >
                   <TargetIcon />
-                  View in Library: {target.name}
+                  View Canonical Source: {target.name}
                 </button>
               ))}
             </div>
@@ -138,6 +140,7 @@ function AssessmentLibraryMatches({ matches, onViewLibraryGoal, onViewGoals, com
 
 export default function AssessmentPanel({ assessments, onAssess, clientId, initialSubAreaId, initialIndex, onPositionChange, onDrillDown, onAssessmentComplete, onSkillGoal, onViewGoals }) {
   const { isPhone } = useResponsive()
+  const { user } = useAuth()
   const onPositionChangeRef = useRef(onPositionChange)
   onPositionChangeRef.current = onPositionChange
   const onDrillDownRef = useRef(onDrillDown)
@@ -200,9 +203,9 @@ export default function AssessmentPanel({ assessments, onAssess, clientId, initi
 
   const currentSubArea = ALL_SUB_AREAS[currentIndex]
   const currentDomain = currentSubArea.domain
+  const assessmentRecommendations = useMemo(() => buildAssessmentRecommendations(assessments), [assessments])
   const assessmentGoalMatches = useMemo(() => {
-    const recommendations = buildAssessmentRecommendations(assessments)
-    const rankedMatches = recommendations
+    const rankedMatches = assessmentRecommendations
       .map((recommendation) => ({
         recommendation,
         targets: getCoreLibraryTargetsForRecommendation(recommendation, { limit: 2 }),
@@ -213,7 +216,7 @@ export default function AssessmentPanel({ assessments, onAssess, clientId, initi
       .sort((a, b) => Number(b.isCurrentSubArea) - Number(a.isCurrentSubArea) || Number(b.isCurrentDomain) - Number(a.isCurrentDomain))
 
     return rankedMatches.slice(0, 3)
-  }, [assessments, currentDomain.name, currentSubArea.id])
+  }, [assessmentRecommendations, currentDomain.name, currentSubArea.id])
   const currentSubAreaLibraryTarget = useMemo(() => (
     assessmentGoalMatches.find((match) => match.isCurrentSubArea)?.targets?.[0] || null
   ), [assessmentGoalMatches])
@@ -374,41 +377,47 @@ export default function AssessmentPanel({ assessments, onAssess, clientId, initi
     if (!clientId) return
     setLibraryAddMessage(null)
 
-    const { error } = await api
+    const { data, error } = await api
       .from('client_programs')
       .insert(buildClientProgramInsertFromLibraryGoal(goal, clientId))
+    const newProgram = Array.isArray(data) ? data[0] : data
 
     if (error) {
       setLibraryAddMessage({ type: 'error', text: `Could not add goal: ${error.message}` })
       return
     }
 
+    try {
+      await upsertClientGoalDecisionForImportedGoal({
+        clientId,
+        goal,
+        recommendations: assessmentRecommendations,
+        status: 'imported',
+        clientProgramId: newProgram?.id || null,
+        userId: user?.id || null,
+        sourceAssessmentId: 'assessment-panel',
+        reasonCode: 'assessment_panel_import',
+        reasonText: 'BCBA imported this canonical goal from the assessment view.',
+      })
+    } catch (decisionErr) {
+      setLibraryAddMessage({ type: 'success', text: `Added "${goal.name}" to the Learning Tree. Decision persistence is waiting for the Clinical Evidence migration.` })
+      return
+    }
+
     setLibraryAddMessage({ type: 'success', text: `Added "${goal.name}" to the Learning Tree.` })
-  }, [clientId])
+  }, [assessmentRecommendations, clientId, user?.id])
 
   const libraryGoalModal = libraryTarget && (
-    <div className="fixed inset-0 z-[60] bg-black/50 backdrop-blur-sm flex items-start justify-center overflow-y-auto p-4">
-      <div className="bg-white rounded-xl shadow-lg my-4 w-full max-w-3xl max-h-[90vh] overflow-y-auto p-4">
-        {libraryAddMessage && (
-          <div className={`mb-3 rounded-xl border px-3 py-2 text-xs font-semibold ${
-            libraryAddMessage.type === 'error'
-              ? 'border-red-200 bg-red-50 text-red-700'
-              : 'border-sage-200 bg-sage-50 text-sage-700'
-          }`}>
-            {libraryAddMessage.text}
-          </div>
-        )}
-        <Suspense fallback={<div className="py-8 text-center text-warm-500">Loading library...</div>}>
-          <GoalLibrary
-            clientId={clientId}
-            onSelectGoal={clientId ? handleAddLibraryGoalToTree : undefined}
-            initialTargetId={libraryTarget.id}
-            initialSearch={libraryTarget.name}
-            onClose={() => { setLibraryTarget(null); setLibraryAddMessage(null) }}
-          />
-        </Suspense>
-      </div>
-    </div>
+    <Suspense fallback={<div className="fixed inset-0 z-[60] bg-black/50 p-8 text-center text-white">Loading canonical source...</div>}>
+      <CanonicalSourceModal
+        target={libraryTarget}
+        onAddGoal={clientId ? async (goal) => {
+          await handleAddLibraryGoalToTree(goal)
+          setLibraryTarget(null)
+        } : null}
+        onClose={() => { setLibraryTarget(null); setLibraryAddMessage(null) }}
+      />
+    </Suspense>
   )
 
   if (isPhone) {

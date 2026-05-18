@@ -3,7 +3,7 @@ import { framework, ASSESSMENT_LEVELS, ASSESSMENT_LABELS, isAssessed } from '../
 import { getBehavioralIndicator } from '../data/behavioralIndicators.js'
 import { useAuth } from '../contexts/AuthContext.jsx'
 import { getAiChats, saveAiChat, deleteAiChat } from '../data/storage.js'
-import { supabase, mergeUserSettings } from '../lib/supabase.js'
+import { supabase } from '../lib/supabase.js'
 import { safeGetItem, safeSetItem, safeRemoveItem } from '../lib/safeStorage.js'
 import { track } from '../lib/analytics.js'
 import { callAI } from '../lib/aiClient.js'
@@ -463,7 +463,7 @@ Please use this data to inform your responses. Reference specific domain scores,
 /**
  * Generate a preview response that demonstrates what the AI tool
  * would do, using actual assessment data. This is shown when no
- * API key is configured.
+ * the managed AI service is reachable.
  */
 function generatePreviewResponse(toolId, action, clientName, assessments) {
   const summary = summarizeAssessments(assessments)
@@ -487,7 +487,7 @@ function generatePreviewResponse(toolId, action, clientName, assessments) {
 - Cross-domain impact analysis based on the cascade model
 - Functional implications for daily living and learning
 
-Connect an API key in settings to generate the full clinical summary.`,
+The full clinical summary runs through the AWS-backed AI service when it is available in this environment.`,
 
       'Hypothetical observation': `Based on ${clientName}'s profile (${summary.percentAssessed}% assessed), I would construct a hypothetical observation narrative showing how the identified deficits manifest in a naturalistic setting.
 
@@ -643,7 +643,7 @@ ${summary.weakestDomains.length > 0 ? `\nContext: ${clientName}'s weakest areas 
   const toolResponses = responses[toolId]
   if (!toolResponses) return 'This tool is not yet configured for preview mode.'
 
-  return toolResponses[action] || `I'll help with "${action}" for ${clientName}. Connect an API key in settings to enable full AI responses.`
+  return toolResponses[action] || `I'll help with "${action}" for ${clientName}. When the AWS-backed AI service is available, I can generate the full response instead of this built-in preview.`
 }
 
 /* ─────────────────────────────────────────────
@@ -891,11 +891,11 @@ export default function AIAssistantPanel({ isOpen, onClose, clientName, assessme
 
   const selectedTool = AI_TOOLS.find((t) => t.id === selectedToolId)
 
-  // Check API connection status when panel opens (connected = has Supabase session)
+  // AI is available whenever the authenticated dashboard session can reach the worker proxy.
   useEffect(() => {
     if (!isOpen) return
     supabase.auth.getSession().then(({ data: { session } }) => {
-      setIsApiConnected(!!session?.access_token && !!import.meta.env.VITE_SUPABASE_URL)
+      setIsApiConnected(Boolean(session?.access_token))
     })
   }, [isOpen])
 
@@ -1183,7 +1183,7 @@ export default function AIAssistantPanel({ isOpen, onClose, clientName, assessme
       )
       const previewContent = closestAction
         ? generatePreviewResponse(selectedToolId, closestAction.label, clientName || 'this client', assessments || {})
-        : `I understand you're asking about "${text}" in the context of ${selectedTool?.name}. This is preview mode -- connect an API key below to get full AI-powered responses.`
+        : `I understand you're asking about "${text}" in the context of ${selectedTool?.name}. The live AI service is unavailable in this environment, so I'm showing the built-in preview behavior instead.`
       const aiMsg = { id: `ai-${Date.now()}`, role: 'assistant', content: previewContent }
       setMessages((prev) => [...prev, aiMsg])
     }
@@ -1260,12 +1260,6 @@ export default function AIAssistantPanel({ isOpen, onClose, clientName, assessme
   const [keyDraft, setKeyDraft] = useState('')
 
   function handleSaveKey() {
-    const key = keyDraft.trim()
-    if (key) {
-      if (userId) mergeUserSettings(userId, { ai_api_key: key })
-    } else {
-      if (userId) mergeUserSettings(userId, { ai_api_key: null })
-    }
     setShowKeyInput(false)
     setKeyDraft('')
   }
@@ -1320,7 +1314,7 @@ export default function AIAssistantPanel({ isOpen, onClose, clientName, assessme
         const errorMsg = {
           id: `error-${Date.now()}`,
           role: 'system',
-          content: `Error: ${err.message}. Check your API key in the connection bar below.`,
+          content: `Error: ${err.message}. The AWS-backed AI service may be temporarily unavailable.`,
         }
         setMessages((prev) => [...prev, errorMsg])
       } finally {
@@ -1333,7 +1327,7 @@ export default function AIAssistantPanel({ isOpen, onClose, clientName, assessme
 
       const previewContent = closestAction
         ? generatePreviewResponse(selectedToolId, closestAction.label, clientName || 'this client', assessments || {})
-        : `I understand you're asking about "${text}" in the context of ${selectedTool?.name}. This is preview mode -- connect an API key below to get full AI-powered responses.\n\nIn the meantime, try one of the quick actions above to see what this tool can do with ${clientName}'s assessment data (${assessmentProgress}% assessed).`
+        : `I understand you're asking about "${text}" in the context of ${selectedTool?.name}. The live AI service is unavailable in this environment, so I'm showing the built-in preview behavior instead.\n\nIn the meantime, try one of the quick actions above to see what this tool can do with ${clientName}'s assessment data (${assessmentProgress}% assessed).`
 
       const aiMsg = {
         id: `ai-${Date.now()}`,
@@ -1401,7 +1395,7 @@ export default function AIAssistantPanel({ isOpen, onClose, clientName, assessme
       )
       const previewContent = closestAction
         ? generatePreviewResponse(selectedToolId, closestAction.label, clientName || 'this client', assessments || {})
-        : `I understand you're asking about "${userText}" in the context of ${selectedTool?.name}. This is preview mode -- connect an API key below to get full AI-powered responses.`
+        : `I understand you're asking about "${userText}" in the context of ${selectedTool?.name}. The live AI service is unavailable in this environment, so I'm showing the built-in preview behavior instead.`
       const aiMsg = { id: `ai-${Date.now()}`, role: 'assistant', content: previewContent }
       setMessages((prev) => [...prev, aiMsg])
     }
@@ -1703,13 +1697,15 @@ export default function AIAssistantPanel({ isOpen, onClose, clientName, assessme
         }`}>
           {showKeyInput ? (
             <div className="px-4 py-3 space-y-2">
-              <label className="block text-xs font-medium text-warm-600">OpenAI API Key</label>
+              <label className="block text-xs font-medium text-warm-600">AI service status</label>
               <div className="flex gap-2">
                 <input
-                  type="password"
+                  type="text"
                   value={keyDraft}
                   onChange={(e) => setKeyDraft(e.target.value)}
-                  placeholder="sk-..."
+                  placeholder="Managed by SkillCascade"
+                  readOnly
+                  disabled
                   className="flex-1 text-xs px-3 py-1.5 rounded-lg border border-warm-200 bg-white text-warm-700 focus:outline-none focus:border-sage-400"
                   onKeyDown={(e) => e.key === 'Enter' && handleSaveKey()}
                 />
@@ -1717,7 +1713,7 @@ export default function AIAssistantPanel({ isOpen, onClose, clientName, assessme
                   onClick={handleSaveKey}
                   className="px-3 py-1.5 text-xs font-medium rounded-full bg-sage-600 text-white hover:bg-sage-700"
                 >
-                  Save
+                  Done
                 </button>
                 <button
                   onClick={() => { setShowKeyInput(false); setKeyDraft('') }}
@@ -1726,33 +1722,33 @@ export default function AIAssistantPanel({ isOpen, onClose, clientName, assessme
                   Cancel
                 </button>
               </div>
-              <p className="text-[10px] text-warm-500">Key is stored securely in your account settings.</p>
+              <p className="text-[10px] text-warm-500">SkillCascade now routes AI through the platform-managed AWS Bedrock service. Personal API keys are no longer used here.</p>
             </div>
           ) : (
             <div className="px-4 py-2.5 flex items-center gap-2">
               {isApiConnected ? (
                 <>
                   <CheckIcon />
-                  <span className="font-medium text-sage-600">Connected</span>
+                  <span className="font-medium text-sage-600">AWS-secured AI online</span>
                   <span className="text-sage-400">— AI responses enabled</span>
                   <button
                     onClick={() => setShowKeyInput(true)}
                     className="ml-auto text-[10px] text-sage-400 hover:text-sage-600 underline"
                   >
-                    Change key
+                    Service info
                   </button>
                 </>
               ) : (
                 <>
                   <WarningIcon />
                   <span className="text-warm-500">
-                    <span className="font-medium">Preview mode</span>
+                    <span className="font-medium">Preview responses only</span>
                   </span>
                   <button
                     onClick={() => setShowKeyInput(true)}
                     className="ml-auto text-[10px] font-medium text-sage-600 hover:text-sage-700 underline"
                   >
-                    Add API key
+                    Service info
                   </button>
                 </>
               )}

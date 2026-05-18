@@ -16,6 +16,8 @@ const VIEW_MAP = {
   'quick-assess': { group: 'Assess', label: 'Start Here' },
   goals: { group: 'Plan', label: 'Goals' },
   reports: { group: 'Plan', label: 'Reports' },
+  schedule: { group: 'Appointments', label: 'Appointments' },
+  'daily-agenda': { group: 'Appointments', label: 'Today' },
   milestones: { group: 'Plan', label: 'Milestones' },
   certifications: { group: 'Plan', label: 'Certifications' },
   caseload: { group: 'Team', label: 'Caseload' },

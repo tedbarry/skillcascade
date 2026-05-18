@@ -9,6 +9,7 @@
 
 import { api } from '../lib/api.js'
 import { getDatabaseStgId, getGoalProvenanceFields } from '../lib/recommendationDraftAdapters.js'
+import { buildGoalDecisionPayloadFromImport } from '../lib/clinicalEvidenceSpine.js'
 import { getSessionKey, encryptFields, decryptFields, PHI_FIELDS, logEncryption, restoreSessionKey } from '../lib/crypto.js'
 import { getLinkedSessionStatusForNoteStatus } from '../lib/sessionNoteWorkflow.js'
 
@@ -194,6 +195,43 @@ export async function getAssessments(clientId) {
     map[row.skill_id] = row.level
   }
   return map
+}
+
+export async function getClientGoalDecisions(clientId) {
+  if (!clientId) return []
+  const { data, error } = await api
+    .from('client_goal_decisions')
+    .select('*')
+    .eq('client_id', clientId)
+    .order('updated_at', { ascending: false })
+  if (error) throw error
+  return data || []
+}
+
+export async function upsertClientGoalDecision(decision) {
+  const payload = Object.fromEntries(
+    Object.entries(decision || {}).filter(([, value]) => value !== undefined)
+  )
+  const { data, error } = await api
+    .from('client_goal_decisions')
+    .upsert(payload, { onConflict: 'client_id,canonical_target_id' })
+  if (error) throw error
+  return Array.isArray(data) ? data[0] : data
+}
+
+export async function upsertClientGoalDecisionForImportedGoal(options = {}) {
+  const payload = buildGoalDecisionPayloadFromImport(options)
+  if (!payload) return null
+  return upsertClientGoalDecision(payload)
+}
+
+export async function deleteClientGoalDecision(id) {
+  if (!id) return
+  const { error } = await api
+    .from('client_goal_decisions')
+    .delete()
+    .eq('id', id)
+  if (error) throw error
 }
 
 export async function getLastAssessedDates(clientIds) {
@@ -457,6 +495,7 @@ export async function syncReportToLearningTree(clientId, reportFields) {
       if (goal.criteria && goal.criteria !== match.criteria) updates.criteria = goal.criteria
       if (goal.baseline && !match.baseline) updates.baseline = goal.baseline
       for (const [key, value] of Object.entries(provenanceFields)) {
+        if (key === 'canonical_snapshot' && match.canonical_snapshot) continue
         const hasValue = Array.isArray(value) ? value.length > 0 : value != null && value !== ''
         if (!hasValue) continue
         const current = match[key]
@@ -503,10 +542,26 @@ export async function syncReportToLearningTree(clientId, reportFields) {
 
   // Batch insert new programs (single API call)
   if (toCreate.length > 0) {
-    const { error } = await api.from('client_programs').insert(toCreate)
+    const { data: createdPrograms, error } = await api.from('client_programs').insert(toCreate)
     if (!error) {
       results.created = toCreate.length
       toCreate.forEach(p => results.details.push(`Created: ${p.name}`))
+      for (const program of (createdPrograms || [])) {
+        try {
+          await upsertClientGoalDecisionForImportedGoal({
+            clientId,
+            goal: program,
+            status: 'imported',
+            clientProgramId: program.id,
+            sourceAssessmentId: 'authorization-report-sync',
+            assessmentTool: 'Authorization Report',
+            reasonCode: 'auth_report_sync',
+            reasonText: 'Authorization report goal was synced into the Learning Tree.',
+          })
+        } catch (decisionErr) {
+          results.details.push(`Decision not persisted for ${program.name}: ${decisionErr.message}`)
+        }
+      }
     } else {
       console.error('[Sync] Batch insert failed:', error.message)
       results.details.push(`Batch insert failed: ${error.message}`)

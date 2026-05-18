@@ -10,6 +10,12 @@ export const clinicalSmokeConfigured = Boolean(
   process.env.PLAYWRIGHT_EMAIL && process.env.PLAYWRIGHT_PASSWORD
 )
 
+export const clinicalWriteSmokeConfigured = Boolean(
+  clinicalSmokeConfigured
+  && process.env.PLAYWRIGHT_ALLOW_CLINICAL_WRITES === 'true'
+  && process.env.PLAYWRIGHT_QA_CLIENT_ID
+)
+
 export async function primeReturningUserState(page) {
   await page.addInitScript((storageKey) => {
     window.localStorage.setItem(storageKey, 'true')
@@ -103,4 +109,38 @@ export async function selectQaClient(page, clientName = 'Jacob M.') {
   await expect(clientButton).toBeVisible()
   await clientButton.click()
   await expect(switchClientButton).toContainText(clientMatcher)
+}
+
+export async function getAuthTokenFromPage(page) {
+  return page.evaluate(() => {
+    for (const key of Object.keys(window.localStorage)) {
+      if (!key.startsWith('sb-') || !key.endsWith('-auth-token')) continue
+      try {
+        const parsed = JSON.parse(window.localStorage.getItem(key) || '{}')
+        if (parsed?.access_token) return parsed.access_token
+      } catch {
+        // Keep searching; malformed local storage should not hide a valid token.
+      }
+    }
+    return null
+  })
+}
+
+export async function apiDataRequest(page, table, body) {
+  const token = await getAuthTokenFromPage(page)
+  if (!token) throw new Error('No browser auth token available for API cleanup.')
+
+  const apiBase = process.env.PLAYWRIGHT_API_URL || 'https://skillcascade-api.teddybahary.workers.dev'
+  const response = await page.request.post(`${apiBase}/api/data/${table}`, {
+    headers: {
+      authorization: `Bearer ${token}`,
+      'content-type': 'application/json',
+    },
+    data: body,
+  })
+  const payload = await response.json().catch(() => ({}))
+  if (!response.ok()) {
+    throw new Error(payload.error || `${table} request failed with ${response.status()}`)
+  }
+  return payload.data ?? payload
 }

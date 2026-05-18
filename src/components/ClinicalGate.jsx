@@ -35,7 +35,7 @@ function ClinicalUpgradePrompt() {
           </h3>
 
           <p className="text-sm text-warm-500 mb-4 leading-relaxed">
-            Scheduling, session management, notes workflow, client files, and practice intelligence.
+            Appointments, authorization support, client files, and BCBA assistant workflows.
           </p>
 
           <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-sage-50 border border-sage-200 text-xs font-medium text-sage-700 mb-5">

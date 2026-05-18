@@ -79,7 +79,7 @@ const NAV_GROUPS = [
   },
   {
     id: 'schedule',
-    label: 'Schedule',
+    label: 'Appointments',
     icon: (
       <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
         <path strokeLinecap="round" strokeLinejoin="round" d="M6.75 3v2.25M17.25 3v2.25M3 18.75V7.5a2.25 2.25 0 012.25-2.25h13.5A2.25 2.25 0 0121 7.5v11.25m-18 0A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75m-18 0v-7.5A2.25 2.25 0 015.25 9h13.5A2.25 2.25 0 0121 11.25v7.5m-9-6h.008v.008H12v-.008zM12 15h.008v.008H12V15zm0 2.25h.008v.008H12v-.008zM9.75 15h.008v.008H9.75V15zm0 2.25h.008v.008H9.75v-.008zM7.5 15h.008v.008H7.5V15zm0 2.25h.008v.008H7.5v-.008zm6.75-4.5h.008v.008h-.008v-.008zm0 2.25h.008v.008h-.008V15zm0 2.25h.008v.008h-.008v-.008zm2.25-4.5h.008v.008H16.5v-.008zm0 2.25h.008v.008H16.5V15z" />
@@ -87,8 +87,8 @@ const NAV_GROUPS = [
     ),
     clinicalOnly: true,
     views: [
-      { key: 'daily-agenda', label: 'My Day' },
-      { key: 'schedule', label: 'Weekly Schedule' },
+      { key: 'daily-agenda', label: 'Today' },
+      { key: 'schedule', label: 'Appointments' },
     ],
   },
   {
@@ -102,12 +102,11 @@ const NAV_GROUPS = [
     clinicalOnly: true,
     views: [
       { key: 'reports', label: 'Auth Reports' },
+      { key: 'clinical-evidence', label: 'Clinical Evidence' },
       { key: 'authorizations', label: 'Authorizations' },
       { key: 'learning-tree', label: 'Learning Tree' },
       { key: 'goal-library', label: 'Goal Library' },
       { key: 'graph-dashboard', label: 'Graph Dashboard' },
-      { key: 'sessions', label: 'Sessions' },
-      { key: 'notes', label: 'Session Notes' },
       { key: 'client-files', label: 'Files' },
       { key: 'client-contacts', label: 'Contacts' },
     ],
@@ -126,7 +125,6 @@ const NAV_GROUPS = [
       { key: 'practice', label: 'Home Practice' },
       { key: 'messages', label: 'Messages' },
       { key: 'org-analytics', label: 'Org Analytics' },
-      { key: 'practice-intelligence', label: 'Practice Intelligence' },
     ],
   },
   {
@@ -140,7 +138,6 @@ const NAV_GROUPS = [
     ),
     views: [
       { key: 'branding', label: 'Branding' },
-      { key: 'data', label: 'Data & Export' },
       { key: 'accessibility', label: 'Accessibility' },
       { key: 'marketplace', label: 'Marketplace' },
       { key: 'pricing', label: 'Pricing' },

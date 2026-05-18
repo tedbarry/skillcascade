@@ -85,6 +85,7 @@ If this spine is weak, everything else feels impressive but unsafe.
 - organization roles and team management
 - practice analytics / operator work queues
 - authorization renewal and utilization workbenches
+- AI surface permissioning and AWS-managed product messaging
 
 ### Prototype / not replacement-grade yet
 - client file/document workflow
@@ -137,6 +138,7 @@ Since the initial takeover plan, the biggest shipped gains are:
 - care-team coverage gaps are now visible in Practice Intelligence and route directly into the targeted client contacts workflow
 - authorization renewals now surface care-team readiness blockers directly in the renewal workflow, so missing funding or caregiver coverage shows up before renewal work stalls
 - the worker generic route is materially tighter across clinical, goal-library, and org/team mutation paths
+- AI Assistant, AI search, knowledge-base AI articles, and legal/security copy now tell one Bedrock-backed story instead of mixing AWS-managed AI with old bring-your-own-key or browser-encryption language
 
 ## Workstreams
 

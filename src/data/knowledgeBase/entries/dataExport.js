@@ -80,14 +80,14 @@ Go to Data & Export in the Settings group. Choose your format and click Export. 
 
 - Business Associate Agreement (BAA) signed with infrastructure providers
 - AWS RDS with encryption at rest for all clinical data
-- PHI (Protected Health Information) is encrypted client-side using AES-256-GCM before reaching the database
+- PHI (Protected Health Information) is protected with encrypted transport, encrypted storage, access controls, and audit logging
 - Audit logging tracks data access and modifications
 - Session timeout controls for inactive sessions
 
 ## Data protection
 
 - All data is encrypted in transit (TLS 1.2+) and at rest (AES-256)
-- Client-side encryption: PHI fields (client names, DOBs, notes, report content) are encrypted in the browser before being sent to the server. The encryption key lives only in browser memory — the server never has access to plaintext PHI.
+- Platform-managed protections: PHI fields are handled through encrypted transport, encrypted storage, organization-scoped access controls, and audit logging. Personal browser-held encryption keys are no longer part of the standard workflow.
 - Authentication via Supabase with secure session management
 - Row-level security (RLS) ensures you can only access your organization's data
 - AI features powered by Claude via AWS Bedrock (HIPAA-eligible) — no client data is sent to consumer AI endpoints
@@ -152,11 +152,11 @@ Available in the Graph Dashboard. Analyzes per-program session data charts and g
 ## Privacy and security
 
 - All AI requests route through AWS Bedrock (HIPAA-eligible) — not consumer AI endpoints
-- Server-side proxy ensures your API key is never exposed to the browser
+- Server-side proxy ensures platform-managed AI credentials never reach the browser
 - Rate limited to 10 requests per minute per user
 - Maximum token limits prevent excessive data transmission
 - AI-generated content is NOT used to train AI models
-- PHI is encrypted before transmission
+- PHI is protected in transit with TLS and at rest with encrypted storage
 
 ## Accuracy
 

@@ -1,17 +1,23 @@
 import { describe, expect, it } from 'vitest'
+import { CORE_GOAL_LIBRARY } from '../../data/canonicalGoalLibrary.js'
 import {
+  GOAL_ADAPTATION_REASON_MIN_LENGTH,
   buildAssessmentRecommendationSnapshot,
   buildAuthReportGoalFromRecommendation,
   buildLearningTreeDraftFromRecommendation,
   buildClientProgramInsertFromLibraryGoal,
+  buildGoalCanonicalSnapshot,
   createAssessmentRecommendationReviewState,
   findCoreLibraryTargetForGoal,
   getDatabaseStgId,
+  getEffectiveGoalProvenanceStatus,
+  getGoalProvenanceDrift,
   getGoalProvenanceFields,
   getCoreLibraryTargetsForRecommendation,
   getCoreLibraryTargetDetail,
   getAssessmentRecommendationStatus,
   getAuthReportDomainLabel,
+  isGoalAdaptationReasonValid,
   mapLearningTreeDomainToAuthGoalDomain,
   summarizeAssessmentRecommendationReview,
 } from '../recommendationDraftAdapters.js'
@@ -38,6 +44,11 @@ describe('recommendationDraftAdapters', () => {
     expect(draft.ltgName).toBe('Safety and Community Functioning')
     expect(draft.dataMethod).toBe('percentage')
     expect(draft.sourceLabel).toBe('SkillCascade Medically Necessary Library')
+    expect(draft.provenance_status).toBe('canonical')
+    expect(draft.canonical_snapshot).toMatchObject({
+      library_target_id: 'core-target-safety_awareness_emergency_response-1',
+      name: 'Follow emergency or safety directives immediately',
+    })
     expect(draft.canonicalDeficitSlug).toBe('safety_awareness_emergency_response')
   })
 
@@ -50,7 +61,29 @@ describe('recommendationDraftAdapters', () => {
     expect(goal.program).toBe('Follow emergency or safety directives immediately')
     expect(goal.source_label).toBe('SkillCascade Medically Necessary Library')
     expect(goal.verification_sources.length).toBeGreaterThan(3)
+    expect(goal.provenance_status).toBe('canonical')
+    expect(goal.canonical_snapshot).toMatchObject({
+      library_target_id: 'core-target-safety_awareness_emergency_response-1',
+      name: 'Follow emergency or safety directives immediately',
+    })
     expect(goal.targetDate).toBe('October 2026')
+  })
+
+  it('marks non-library recommendation drafts as assessment-direct provenance', () => {
+    const orphanRecommendation = {
+      ...adaptiveRecommendation,
+      deficitSlug: 'publisher_only_low_score',
+      goalFamilyTitle: 'Publisher-only Low Score',
+    }
+
+    const learningTreeDraft = buildLearningTreeDraftFromRecommendation(orphanRecommendation)
+    const authGoal = buildAuthReportGoalFromRecommendation(orphanRecommendation, 'November 2026')
+
+    expect(learningTreeDraft.provenance_status).toBe('assessment_direct')
+    expect(learningTreeDraft.canonical_snapshot).toBeNull()
+    expect(authGoal.provenance_status).toBe('assessment_direct')
+    expect(authGoal.canonical_snapshot).toBeNull()
+    expect(authGoal.source_label).toBe('Assessment Recommendation')
   })
 
   it('finds exact built-in library targets for a recommendation family', () => {
@@ -101,6 +134,84 @@ describe('recommendationDraftAdapters', () => {
     expect(program.source_label).toBe('SkillCascade Medically Necessary Library')
     expect(program.medical_necessity_tags.length).toBeGreaterThan(0)
     expect(program.verification_sources.length).toBeGreaterThan(0)
+    expect(program.provenance_status).toBe('canonical')
+    expect(program.adaptation_reason).toBeNull()
+    expect(program.canonical_snapshot).toMatchObject({
+      library_target_id: target.id,
+      name: target.name,
+      objective: detail.objective,
+      criteria: detail.default_criteria,
+      measurement_type: detail.measurement_type,
+      goal_type: detail.goal_type,
+      domain: target.domain_name,
+      verification_summary: detail.verification_summary,
+    })
+  })
+
+  it('keeps baseline, status, mastery, and progress data out of provenance drift', () => {
+    const [target] = getCoreLibraryTargetsForRecommendation(adaptiveRecommendation, { limit: 1 })
+    const detail = getCoreLibraryTargetDetail(target)
+    const program = {
+      library_target_id: target.id,
+      name: target.name,
+      objective: detail.objective,
+      criteria: detail.default_criteria,
+      measurement_type: detail.measurement_type,
+      goal_type: detail.goal_type,
+      domain: target.domain_name,
+      provenance_status: 'canonical',
+      canonical_snapshot: buildGoalCanonicalSnapshot({ ...target, ...detail, library_target_id: target.id }),
+    }
+
+    const drift = getGoalProvenanceDrift(program, {
+      baseline: '20% with prompts',
+      current_level: '55%',
+      status: 'intervention',
+      mastered: true,
+      last_session_score: 80,
+    })
+
+    expect(drift.isDrifted).toBe(false)
+    expect(drift.changedFields).toEqual([])
+    expect(getEffectiveGoalProvenanceStatus(program, {
+      baseline: '20% with prompts',
+      status: 'intervention',
+    })).toBe('canonical')
+  })
+
+  it('marks canonical goals as adapted when protected fields differ from the immutable snapshot', () => {
+    const [target] = getCoreLibraryTargetsForRecommendation(adaptiveRecommendation, { limit: 1 })
+    const detail = getCoreLibraryTargetDetail(target)
+    const program = {
+      library_target_id: target.id,
+      name: target.name,
+      objective: detail.objective,
+      criteria: detail.default_criteria,
+      measurement_type: detail.measurement_type,
+      goal_type: detail.goal_type,
+      domain: target.domain_name,
+      provenance_status: 'canonical',
+      canonical_snapshot: buildGoalCanonicalSnapshot({ ...target, ...detail, library_target_id: target.id }),
+    }
+
+    const drift = getGoalProvenanceDrift(program, {
+      objective: `${detail.objective} with visual supports.`,
+      criteria: '90% accuracy across 4 consecutive sessions',
+      measurement_type: 'frequency',
+      name: `${target.name} - adapted`,
+    })
+
+    expect(drift.isDrifted).toBe(true)
+    expect(drift.changedFields).toEqual(expect.arrayContaining(['name', 'objective', 'criteria', 'measurement_type']))
+    expect(getEffectiveGoalProvenanceStatus(program, {
+      objective: `${detail.objective} with visual supports.`,
+    })).toBe('adapted')
+  })
+
+  it('requires a short auditable BCBA adaptation reason before saving adapted library goals', () => {
+    expect(GOAL_ADAPTATION_REASON_MIN_LENGTH).toBe(10)
+    expect(isGoalAdaptationReasonValid('too short')).toBe(false)
+    expect(isGoalAdaptationReasonValid('Client profile requires a safer response form.')).toBe(true)
   })
 
   it('normalizes provenance fields from camelCase and snake_case sources', () => {
@@ -218,5 +329,20 @@ describe('recommendationDraftAdapters', () => {
 
     expect(reviewState.excludedDeficitSlugs).toEqual(['help_seeking_self_advocacy'])
     expect(reviewState.snapshot).toHaveLength(2)
+  })
+
+  it('keeps all built-in library goals medically necessary and publicly verifiable', () => {
+    expect(CORE_GOAL_LIBRARY.targets).toHaveLength(224)
+
+    for (const target of CORE_GOAL_LIBRARY.targets) {
+      const detail = JSON.parse(target.description)
+
+      expect(detail.verification_summary, target.name).toBeTruthy()
+      expect(detail.verification_sources?.length, target.name).toBeGreaterThan(0)
+      expect(detail.medical_necessity, target.name).toBeTruthy()
+      expect(detail.medical_necessity_tags?.length, target.name).toBeGreaterThan(0)
+      expect(detail.recommended_when, target.name).toBeTruthy()
+      expect(detail.assessment_signals?.length, target.name).toBeGreaterThan(0)
+    }
   })
 })

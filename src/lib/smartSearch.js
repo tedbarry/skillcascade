@@ -132,7 +132,7 @@ export async function askSmartSearch(query, assessments = {}, clientName = '', s
   const apiUrl = import.meta.env.VITE_API_URL || 'https://skillcascade-api.teddybahary.workers.dev'
   const { data: { session } } = await supabase.auth.getSession()
 
-  if (!supabaseUrl || !session?.access_token) {
+  if (!session?.access_token) {
     throw new Error('Sign in to use AI search.')
   }
 
@@ -175,8 +175,8 @@ export async function askSmartSearch(query, assessments = {}, clientName = '', s
   if (!res.ok) {
     const err = await res.json().catch(() => ({}))
     if (res.status === 429) throw new Error('Rate limit reached. Try again in a minute.')
-    if (res.status === 400 && err.error?.includes('No API key')) {
-      throw new Error('No API key configured. Set up AI in Settings to use smart search.')
+    if ([400, 500].includes(res.status) && /no api key|ai service not configured/i.test(err.error || '')) {
+      throw new Error('AI service is not configured for this workspace. Contact support.')
     }
     throw new Error(err.error || `AI search failed (${res.status})`)
   }

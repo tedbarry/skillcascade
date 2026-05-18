@@ -13,7 +13,8 @@ import { buildSavedReportWorkbench } from '../../lib/reportWorkflow.js'
 import { buildReportAccessState } from '../../lib/reportAccess.js'
 import { safeGetItem, safeRemoveItem } from '../../lib/safeStorage.js'
 import { saveDraft, loadDraft, saveReport, loadReport, listReports, deleteReport } from '../../lib/reportStorage.js'
-import { syncReportToLearningTree } from '../../data/storage.js'
+import { syncReportToLearningTree, upsertClientGoalDecision } from '../../data/storage.js'
+import { useAuth } from '../../contexts/AuthContext.jsx'
 import { api } from '../../lib/api.js'
 import { track } from '../../lib/analytics.js'
 import {
@@ -27,10 +28,12 @@ import {
   mapLearningTreeDomainToAuthGoalDomain,
   summarizeAssessmentRecommendationReview,
 } from '../../lib/recommendationDraftAdapters.js'
+import { buildClientGoalDecisionPayload, getAuthEvidenceStatusForGoal } from '../../lib/clinicalEvidenceSpine.js'
 import { NoPermission } from '../PermissionGate.jsx'
 import ImageUpload, { compressImage } from './ImageUpload.jsx'
 import GoalReviewPanel from './GoalReviewPanel.jsx'
 const GoalLibrary = lazy(() => import('../platform/GoalLibrary.jsx'))
+const CanonicalSourceModal = lazy(() => import('../platform/CanonicalSourceModal.jsx'))
 import SmartGraphUpload from './SmartGraphUpload.jsx'
 
 // ─── Accordion Section Component ────────────────────────────────
@@ -201,6 +204,7 @@ const RECOMMENDATION_STATUS_CONFIG = {
 
 export default function AuthReportForm({ assessments, clientName, clientId, onPreview, examinerFields, launchContext = null, reportAccess = null }) {
   const { isPhone } = useResponsive()
+  const { user, profile } = useAuth()
   const { goalPrefs } = useGoalPreferences()
   const { can, loading: permissionsLoading } = usePermissions()
   const [openSections, setOpenSections] = useState(new Set(['1']))
@@ -210,6 +214,7 @@ export default function AuthReportForm({ assessments, clientName, clientId, onPr
   const [showReviewPanel, setShowReviewPanel] = useState(false)
   const [showGoalLibrary, setShowGoalLibrary] = useState(false)
   const [libraryTarget, setLibraryTarget] = useState(null)
+  const [goalDecisionRows, setGoalDecisionRows] = useState([])
   const [doneSections, setDoneSections] = useState(new Set())
   const doneProps = (sn) => ({
     done: doneSections.has(sn),
@@ -261,6 +266,49 @@ export default function AuthReportForm({ assessments, clientName, clientId, onPr
     )),
     [assessmentRecommendations, fields.assessmentRecommendationReview, fields.goals]
   )
+
+  const persistRecommendationDecision = useCallback(async (recommendation, status, reasonCode, reasonText) => {
+    if (!clientId || !recommendation) return
+    const target = getCoreLibraryTargetsForRecommendation(recommendation, { limit: 1 })[0]
+    if (!target) return
+
+    try {
+      await upsertClientGoalDecision(buildClientGoalDecisionPayload({
+        clientId,
+        recommendation,
+        target,
+        status,
+        userId: profile?.id || user?.id || null,
+        reasonCode,
+        reasonText,
+        sourceAssessmentId: 'auth-report-recommendation-review',
+        assessmentTool: 'SkillCascade Assessment',
+      }))
+    } catch (err) {
+      console.warn('[ClinicalEvidence] Auth report decision persistence skipped:', err.message)
+    }
+  }, [clientId, profile?.id, user?.id])
+
+  useEffect(() => {
+    if (!clientId) {
+      setGoalDecisionRows([])
+      return
+    }
+
+    let cancelled = false
+    api
+      .from('client_goal_decisions')
+      .select('*')
+      .eq('client_id', clientId)
+      .then(({ data, error }) => {
+        if (cancelled) return
+        setGoalDecisionRows(error ? [] : (data || []))
+      })
+
+    return () => {
+      cancelled = true
+    }
+  }, [clientId])
 
   const workflowLaunch = useMemo(() => {
     if (!launchContext) return null
@@ -927,8 +975,14 @@ SOCIALIZATION GOALS: ${socialGoals.join('; ') || 'Not specified'}` },
         }
       ),
     }))
+    void persistRecommendationDecision(
+      recommendation,
+      'excluded',
+      'auth_report_excluded',
+      'BCBA excluded this assessment recommendation while reviewing the authorization report.'
+    )
     track('feature_use', 'exclude_assessment_recommendation_from_auth_report')
-  }, [assessmentRecommendations])
+  }, [assessmentRecommendations, persistRecommendationDecision])
 
   const handleReconsiderRecommendation = useCallback((recommendation) => {
     const timestamp = new Date().toISOString()
@@ -945,8 +999,14 @@ SOCIALIZATION GOALS: ${socialGoals.join('; ') || 'Not specified'}` },
         }
       ),
     }))
+    void persistRecommendationDecision(
+      recommendation,
+      'pending',
+      'auth_report_reconsidered',
+      'BCBA reopened this assessment recommendation for review in the authorization report.'
+    )
     track('feature_use', 'reconsider_assessment_recommendation_for_auth_report')
-  }, [assessmentRecommendations])
+  }, [assessmentRecommendations, persistRecommendationDecision])
 
   // Import goals from the client's Learning Tree
   const handleImportFromTree = useCallback(async () => {
@@ -2277,7 +2337,7 @@ RULES:
                               onClick={() => setLibraryTarget(matchedLibraryTargets[0])}
                               className="min-h-[44px] rounded-lg border border-blue-200 bg-blue-50 px-3 py-2 text-[11px] font-semibold text-blue-700 transition-colors hover:bg-blue-100"
                             >
-                              View in Library
+                              View Canonical Source
                             </button>
                           ) : null}
                           {status === 'excluded' ? (
@@ -2419,12 +2479,16 @@ RULES:
           <div className="space-y-3">
             {fields.goals.map((goal, i) => {
               const coreTarget = findCoreLibraryTargetForGoal(goal)
+              const evidenceStatus = getAuthEvidenceStatusForGoal(goal, goalDecisionRows)
               return (
               <div key={goal.id || i} className="p-3 bg-white rounded-lg border border-warm-200">
                 <div className="flex items-start justify-between gap-2 mb-2">
                   <div>
                     <span className="text-[10px] px-2 py-0.5 rounded-full bg-warm-100 text-warm-500">{goal.domain ? getAuthReportDomainLabel(goal.domain) : 'Other'}</span>
                     <span className="text-[11px] font-medium text-warm-700 ml-2">{goal.program || goal.skillName}</span>
+                    <span className={`ml-2 inline-flex items-center rounded-full border px-2 py-0.5 text-[10px] font-semibold ${evidenceStatus.tone}`}>
+                      {evidenceStatus.label}
+                    </span>
                   </div>
                   <div className="flex items-center gap-1.5">
                     {coreTarget ? (
@@ -2433,7 +2497,7 @@ RULES:
                         onClick={() => setLibraryTarget(coreTarget)}
                         className="min-h-[32px] rounded-full border border-blue-200 bg-blue-50 px-2 py-1 text-[10px] font-semibold text-blue-700 hover:bg-blue-100"
                       >
-                        View in Library
+                        View Canonical Source
                       </button>
                     ) : null}
                     <button onClick={() => setFields(prev => ({ ...prev, goals: prev.goals.filter((_, j) => j !== i) }))}
@@ -2623,6 +2687,9 @@ RULES:
                     medical_necessity_rationale: goal.medical_necessity_rationale || '',
                     verification_summary: goal.verification_summary || '',
                     verification_sources: goal.verification_sources || [],
+                    provenance_status: goal.provenance_status || 'canonical',
+                    adaptation_reason: goal.adaptation_reason || null,
+                    canonical_snapshot: goal.canonical_snapshot || null,
                   }
                   setFields(prev => ({ ...prev, goals: appendUniqueGoals(prev.goals || [], [newGoal]) }))
                 }}
@@ -2633,18 +2700,12 @@ RULES:
         </div>
       )}
       {libraryTarget && (
-        <div className="fixed inset-0 z-50 bg-black/50 backdrop-blur-sm flex items-start justify-center overflow-y-auto p-4">
-          <div className="bg-white rounded-xl shadow-lg my-4 w-full max-w-3xl max-h-[90vh] overflow-y-auto p-4">
-            <Suspense fallback={<div className="py-8 text-center text-warm-500">Loading library...</div>}>
-              <GoalLibrary
-                clientId={clientId}
-                initialTargetId={libraryTarget.id}
-                initialSearch={libraryTarget.name}
-                onClose={() => setLibraryTarget(null)}
-              />
-            </Suspense>
-          </div>
-        </div>
+        <Suspense fallback={<div className="fixed inset-0 z-50 bg-black/50 p-8 text-center text-white">Loading canonical source...</div>}>
+          <CanonicalSourceModal
+            target={libraryTarget}
+            onClose={() => setLibraryTarget(null)}
+          />
+        </Suspense>
       )}
     </div>
   )

@@ -12,6 +12,8 @@ const DEFAULT_OPTIONS = {
   clusterThreshold: 2,
   fragileRatioThreshold: 0.8,
   minAssessedForFragileTrigger: 3,
+  maxRecommendations: 10,
+  maxRecommendationsPerDomain: 3,
 }
 
 const skillMeta = new Map()
@@ -172,8 +174,36 @@ function finalizeRecommendation(recommendation, profile) {
   }
 }
 
+function isFiniteCap(value) {
+  return Number.isFinite(value) && value >= 0
+}
+
+function applyRecommendationCaps(recommendations, options) {
+  const maxRecommendations = isFiniteCap(options.maxRecommendations) ? options.maxRecommendations : null
+  const maxRecommendationsPerDomain = isFiniteCap(options.maxRecommendationsPerDomain) ? options.maxRecommendationsPerDomain : null
+
+  if (maxRecommendations == null && maxRecommendationsPerDomain == null) return recommendations
+
+  const domainCounts = new Map()
+  const capped = []
+
+  for (const recommendation of recommendations) {
+    if (maxRecommendations != null && capped.length >= maxRecommendations) break
+
+    const domainSlug = recommendation.domainSlug || 'uncategorized'
+    const currentDomainCount = domainCounts.get(domainSlug) || 0
+    if (maxRecommendationsPerDomain != null && currentDomainCount >= maxRecommendationsPerDomain) continue
+
+    domainCounts.set(domainSlug, currentDomainCount + 1)
+    capped.push(recommendation)
+  }
+
+  return capped
+}
+
 export function buildAssessmentRecommendations(assessments = {}, options = {}) {
   const findings = collectAssessmentFindings(assessments, options)
+  const config = { ...DEFAULT_OPTIONS, ...options }
   const grouped = new Map()
 
   for (const finding of findings) {
@@ -208,7 +238,9 @@ export function buildAssessmentRecommendations(assessments = {}, options = {}) {
     recommendation.fragileSkillCount += finding.fragileCount
   }
 
-  return Array.from(grouped.entries())
+  const rankedRecommendations = Array.from(grouped.entries())
     .map(([deficitSlug, recommendation]) => finalizeRecommendation(recommendation, DEFICIT_PROFILES[deficitSlug]))
     .sort((a, b) => b.priorityScore - a.priorityScore || a.goalFamilyTitle.localeCompare(b.goalFamilyTitle))
+
+  return applyRecommendationCaps(rankedRecommendations, config)
 }

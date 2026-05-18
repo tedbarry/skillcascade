@@ -2,10 +2,12 @@ import { lazy, Suspense, useMemo, useState } from 'react'
 import { framework, isAssessed, ASSESSMENT_LEVELS, ASSESSMENT_LABELS } from '../data/framework.js'
 import { buildAssessmentRecommendations } from '../lib/assessmentRecommendationEngine.js'
 import { buildClientProgramInsertFromLibraryGoal, getCoreLibraryTargetsForRecommendation } from '../lib/recommendationDraftAdapters.js'
+import { upsertClientGoalDecisionForImportedGoal } from '../data/storage.js'
 import { api } from '../lib/api.js'
 import useResponsive from '../hooks/useResponsive.js'
+import { useAuth } from '../contexts/AuthContext.jsx'
 
-const GoalLibrary = lazy(() => import('./platform/GoalLibrary.jsx'))
+const CanonicalSourceModal = lazy(() => import('./platform/CanonicalSourceModal.jsx'))
 
 /**
  * Modal shown when assessment reaches 100% or a domain is fully assessed.
@@ -13,6 +15,7 @@ const GoalLibrary = lazy(() => import('./platform/GoalLibrary.jsx'))
  */
 export default function AssessmentCompletionModal({ assessments, clientId, onGenerateGoals, onViewGoals, onDismiss }) {
   const { isPhone } = useResponsive()
+  const { user } = useAuth()
   const [libraryTarget, setLibraryTarget] = useState(null)
   const [libraryAddMessage, setLibraryAddMessage] = useState(null)
 
@@ -55,15 +58,15 @@ export default function AssessmentCompletionModal({ assessments, clientId, onGen
     .sort((a, b) => b.needsWork - a.needsWork)
     .slice(0, 3)
 
+  const assessmentRecommendations = useMemo(() => buildAssessmentRecommendations(assessments), [assessments])
   const recommendationSummary = useMemo(() => {
-    const recommendations = buildAssessmentRecommendations(assessments)
-    const matchedGoalCount = recommendations.reduce((sum, recommendation) => (
+    const matchedGoalCount = assessmentRecommendations.reduce((sum, recommendation) => (
       sum + getCoreLibraryTargetsForRecommendation(recommendation).length
     ), 0)
     return {
-      total: recommendations.length,
+      total: assessmentRecommendations.length,
       matchedGoalCount,
-      topMatches: recommendations.slice(0, 3).map((recommendation) => {
+      topMatches: assessmentRecommendations.slice(0, 3).map((recommendation) => {
         const matches = getCoreLibraryTargetsForRecommendation(recommendation, { limit: 1 })
         return {
           familyTitle: recommendation.goalFamilyTitle,
@@ -72,18 +75,36 @@ export default function AssessmentCompletionModal({ assessments, clientId, onGen
         }
       }),
     }
-  }, [assessments])
+  }, [assessmentRecommendations])
 
   const handleAddLibraryGoalToTree = async (goal) => {
     if (!clientId) return
     setLibraryAddMessage(null)
 
-    const { error } = await api
+    const { data, error } = await api
       .from('client_programs')
       .insert(buildClientProgramInsertFromLibraryGoal(goal, clientId))
+    const newProgram = Array.isArray(data) ? data[0] : data
 
     if (error) {
       setLibraryAddMessage({ type: 'error', text: `Could not add goal: ${error.message}` })
+      return
+    }
+
+    try {
+      await upsertClientGoalDecisionForImportedGoal({
+        clientId,
+        goal,
+        recommendations: assessmentRecommendations,
+        status: 'imported',
+        clientProgramId: newProgram?.id || null,
+        userId: user?.id || null,
+        sourceAssessmentId: 'assessment-completion',
+        reasonCode: 'assessment_completion_import',
+        reasonText: 'BCBA imported this canonical goal after assessment completion.',
+      })
+    } catch (decisionErr) {
+      setLibraryAddMessage({ type: 'success', text: `Added "${goal.name}" to the Learning Tree. Decision persistence is waiting for the Clinical Evidence migration.` })
       return
     }
 
@@ -198,28 +219,16 @@ export default function AssessmentCompletionModal({ assessments, clientId, onGen
         </div>
       </div>
       {libraryTarget && (
-        <div className="fixed inset-0 z-[60] bg-black/50 backdrop-blur-sm flex items-start justify-center overflow-y-auto p-4">
-          <div className="bg-white rounded-xl shadow-lg my-4 w-full max-w-3xl max-h-[90vh] overflow-y-auto p-4">
-            {libraryAddMessage && (
-              <div className={`mb-3 rounded-xl border px-3 py-2 text-xs font-semibold ${
-                libraryAddMessage.type === 'error'
-                  ? 'border-red-200 bg-red-50 text-red-700'
-                  : 'border-sage-200 bg-sage-50 text-sage-700'
-              }`}>
-                {libraryAddMessage.text}
-              </div>
-            )}
-            <Suspense fallback={<div className="py-8 text-center text-warm-500">Loading library...</div>}>
-              <GoalLibrary
-                clientId={clientId}
-                onSelectGoal={clientId ? handleAddLibraryGoalToTree : undefined}
-                initialTargetId={libraryTarget.id}
-                initialSearch={libraryTarget.name}
-                onClose={() => { setLibraryTarget(null); setLibraryAddMessage(null) }}
-              />
-            </Suspense>
-          </div>
-        </div>
+        <Suspense fallback={<div className="fixed inset-0 z-[60] bg-black/50 p-8 text-center text-white">Loading canonical source...</div>}>
+          <CanonicalSourceModal
+            target={libraryTarget}
+            onAddGoal={clientId ? async (goal) => {
+              await handleAddLibraryGoalToTree(goal)
+              setLibraryTarget(null)
+            } : null}
+            onClose={() => { setLibraryTarget(null); setLibraryAddMessage(null) }}
+          />
+        </Suspense>
       )}
     </div>
   )

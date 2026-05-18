@@ -32,8 +32,8 @@ const TAB_GROUPS = {
       practice: 'Home Practice', predictions: 'Predictions', 'org-analytics': 'Org Analytics',
       messages: 'Messages', branding: 'Branding', data: 'Data', accessibility: 'Access.',
       certifications: 'Certs', marketplace: 'Marketplace', pricing: 'Pricing',
-      'learning-tree': 'Learning Tree', 'goal-library': 'Goal Library',
-      'graph-dashboard': 'Graphs', sessions: 'Sessions',
+      'clinical-evidence': 'Evidence', 'learning-tree': 'Learning Tree', 'goal-library': 'Goal Library',
+      'graph-dashboard': 'Graphs',
     },
   },
 }
@@ -85,8 +85,8 @@ function TabIcon({ tab, active }) {
   }
 }
 
-const CLINICAL_MORE_VIEWS = ['daily-agenda', 'schedule', 'reports', 'authorizations', 'sessions', 'graph-dashboard', 'goal-library', 'learning-tree']
-const CLINICAL_MORE_LABELS = { reports: 'Auth Reports', authorizations: 'Auths', 'daily-agenda': 'My Day', schedule: 'Schedule' }
+const CLINICAL_MORE_VIEWS = ['daily-agenda', 'schedule', 'reports', 'clinical-evidence', 'authorizations', 'graph-dashboard', 'goal-library', 'learning-tree']
+const CLINICAL_MORE_LABELS = { reports: 'Auth Reports', 'clinical-evidence': 'Evidence', authorizations: 'Auths', 'daily-agenda': 'Today', schedule: 'Appointments' }
 
 export default function MobileTabBar({ activeView, onChangeView, onOpenAI, canAccessView = () => true }) {
   const navigate = useNavigate()

@@ -233,21 +233,23 @@ function AgendaCard({ session, onStartSession, onWriteNote, isPhone }) {
           )}
 
           {/* Start / Resume session button */}
-          <button
-            onClick={() => onStartSession(session)}
-            disabled={launchBlocked}
-            className={`min-h-[44px] min-w-[80px] px-4 rounded-xl text-sm font-bold transition-all touch-manipulation shrink-0 shadow-sm active:scale-95 flex items-center gap-1.5 ${
-              launchBlocked
-                ? 'bg-red-100 text-red-400 shadow-none cursor-not-allowed'
-                : status === 'in_progress'
-                ? 'bg-amber-500 text-white hover:bg-amber-600 shadow-amber-200'
-                : status === 'completed' || status === 'note_written'
-                ? 'bg-warm-200 text-warm-600 hover:bg-warm-300'
-                : 'bg-blue-600 text-white hover:bg-blue-700 shadow-blue-200'
-            } disabled:active:scale-100`}>
-            <svg className="w-4 h-4" viewBox="0 0 24 24" fill="currentColor"><polygon points="5 3 19 12 5 21" /></svg>
-            {launchBlocked ? 'Blocked' : status === 'in_progress' ? 'Resume' : status === 'completed' ? 'Review' : status === 'note_written' ? 'View' : 'Start'}
-          </button>
+          {onStartSession && (
+            <button
+              onClick={() => onStartSession(session)}
+              disabled={launchBlocked}
+              className={`min-h-[44px] min-w-[80px] px-4 rounded-xl text-sm font-bold transition-all touch-manipulation shrink-0 shadow-sm active:scale-95 flex items-center gap-1.5 ${
+                launchBlocked
+                  ? 'bg-red-100 text-red-400 shadow-none cursor-not-allowed'
+                  : status === 'in_progress'
+                  ? 'bg-amber-500 text-white hover:bg-amber-600 shadow-amber-200'
+                  : status === 'completed' || status === 'note_written'
+                  ? 'bg-warm-200 text-warm-600 hover:bg-warm-300'
+                  : 'bg-blue-600 text-white hover:bg-blue-700 shadow-blue-200'
+              } disabled:active:scale-100`}>
+              <svg className="w-4 h-4" viewBox="0 0 24 24" fill="currentColor"><polygon points="5 3 19 12 5 21" /></svg>
+              {launchBlocked ? 'Blocked' : status === 'in_progress' ? 'Resume' : status === 'completed' ? 'Review' : status === 'note_written' ? 'View' : 'Start'}
+            </button>
+          )}
         </div>
       </div>
     </div>
@@ -563,7 +565,7 @@ export default function DailyAgenda({ onStartSession, onNavigateToSchedule, onWr
             <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
               <rect x="3" y="4" width="18" height="18" rx="2" /><line x1="16" y1="2" x2="16" y2="6" /><line x1="8" y1="2" x2="8" y2="6" /><line x1="3" y1="10" x2="21" y2="10" />
             </svg>
-            Full Schedule
+            All Appointments
           </button>
         )}
       </div>
@@ -591,7 +593,7 @@ export default function DailyAgenda({ onStartSession, onNavigateToSchedule, onWr
         <div className="grid grid-cols-3 gap-3 mb-5">
           <div className="bg-white rounded-xl border border-warm-200 p-3 text-center">
             <div className="text-2xl font-bold text-warm-800">{totalActive}</div>
-            <div className="text-[10px] font-semibold text-warm-500 uppercase">Sessions</div>
+            <div className="text-[10px] font-semibold text-warm-500 uppercase">Appointments</div>
           </div>
           <div className="bg-white rounded-xl border border-warm-200 p-3 text-center">
             <div className="text-2xl font-bold text-sage-600">{completedCount}/{totalActive}</div>
@@ -619,16 +621,16 @@ export default function DailyAgenda({ onStartSession, onNavigateToSchedule, onWr
               <path d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
             </svg>
           </div>
-          <p className="text-warm-600 font-semibold mb-1">No sessions scheduled</p>
+          <p className="text-warm-600 font-semibold mb-1">No appointments scheduled</p>
           <p className="text-warm-500 text-sm max-w-xs mx-auto">
             {selectedDate === todayStr()
-              ? 'You have no sessions scheduled for today. Check the full schedule to set one up.'
-              : `No sessions on ${formatDateLabel(selectedDate)}.`}
+              ? 'You have no appointments scheduled for today. Check appointments to set one up.'
+              : `No appointments on ${formatDateLabel(selectedDate)}.`}
           </p>
           {onNavigateToSchedule && (
             <button onClick={onNavigateToSchedule}
               className="mt-4 min-h-[44px] px-5 bg-sage-600 text-white text-sm font-bold rounded-xl hover:bg-sage-700 transition-colors touch-manipulation">
-              Open Schedule
+              Open Appointments
             </button>
           )}
         </div>

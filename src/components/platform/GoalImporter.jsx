@@ -237,6 +237,9 @@ export default function GoalImporter({ clientId, onClose, onImported }) {
           source_label: 'Imported goal file',
           medical_necessity_tags: [],
           verification_sources: [],
+          provenance_status: 'custom',
+          adaptation_reason: null,
+          canonical_snapshot: null,
         })
       }
 

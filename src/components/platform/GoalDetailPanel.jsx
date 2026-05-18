@@ -4,10 +4,16 @@ import { track } from '../../lib/analytics.js'
 import useResponsive from '../../hooks/useResponsive.js'
 import { checkMisplacement } from '../../lib/goalRouter.js'
 import { calculateCurrentLevel, autoSetBaseline } from '../../lib/goalCalculations.js'
-import { findCoreLibraryTargetForGoal, getCoreLibraryTargetDetail } from '../../lib/recommendationDraftAdapters.js'
+import {
+  findCoreLibraryTargetForGoal,
+  getCoreLibraryTargetDetail,
+  getGoalProvenanceBadge,
+  getGoalProvenanceDrift,
+  isGoalAdaptationReasonValid,
+} from '../../lib/recommendationDraftAdapters.js'
 
 const ProgramGraph = lazy(() => import('./ProgramGraph.jsx'))
-const GoalLibrary = lazy(() => import('./GoalLibrary.jsx'))
+const CanonicalSourceModal = lazy(() => import('./CanonicalSourceModal.jsx'))
 
 const STATUS_CONFIG = {
   inactive: { label: 'Inactive', color: '#9ca3af', bg: '#f3f4f6' },
@@ -51,6 +57,7 @@ export default function GoalDetailPanel({
   targets = [],
   onClose,
   onUpdate,
+  onUpdateFields,
   onStatusChange,
   onAddTarget,
   onDelete,
@@ -66,6 +73,9 @@ export default function GoalDetailPanel({
   const [showLibraryGoal, setShowLibraryGoal] = useState(false)
   const [misplacementSuggestion, setMisplacementSuggestion] = useState(null)
   const [calculatedLevel, setCalculatedLevel] = useState(null)
+  const [protectedDraft, setProtectedDraft] = useState({})
+  const [adaptationReason, setAdaptationReason] = useState('')
+  const [protectedSaveError, setProtectedSaveError] = useState(null)
   const panelRef = useRef(null)
   const overlayRef = useRef(null)
 
@@ -74,6 +84,17 @@ export default function GoalDetailPanel({
     requestAnimationFrame(() => setVisible(true))
     track('feature_use', 'goal_detail_panel_open')
   }, [])
+
+  useEffect(() => {
+    if (!program?.id) return
+    setProtectedDraft({
+      objective: program.objective || '',
+      criteria: program.criteria || '',
+      measurement_type: program.measurement_type || 'percentage',
+    })
+    setAdaptationReason(program.adaptation_reason || '')
+    setProtectedSaveError(null)
+  }, [program?.id])
 
   // Misplacement detection
   useEffect(() => {
@@ -154,6 +175,69 @@ export default function GoalDetailPanel({
     }
   }, [program, onUpdate])
 
+  const getProtectedOriginalValue = useCallback((field) => {
+    if (field === 'measurement_type') return program?.measurement_type || 'percentage'
+    return program?.[field] || ''
+  }, [program])
+
+  const getProtectedDraftValue = useCallback((field, value) => {
+    if (field === 'measurement_type') return value || 'percentage'
+    return value || ''
+  }, [])
+
+  const getProtectedChanges = useCallback(() => {
+    if (!program?.id) return {}
+    return Object.fromEntries(
+      Object.entries(protectedDraft).filter(([field, value]) => (
+        getProtectedOriginalValue(field) !== getProtectedDraftValue(field, value)
+      )),
+    )
+  }, [getProtectedDraftValue, getProtectedOriginalValue, program, protectedDraft])
+
+  const handleProtectedCancel = useCallback(() => {
+    setProtectedDraft({
+      objective: program.objective || '',
+      criteria: program.criteria || '',
+      measurement_type: program.measurement_type || 'percentage',
+    })
+    setAdaptationReason(program.adaptation_reason || '')
+    setProtectedSaveError(null)
+  }, [program])
+
+  const handleProtectedSave = useCallback(async () => {
+    const changes = getProtectedChanges()
+    if (Object.keys(changes).length === 0) return
+
+    const drift = getGoalProvenanceDrift(program, changes)
+    const reason = adaptationReason.trim()
+    if (drift.isDrifted && !isGoalAdaptationReasonValid(reason)) {
+      setProtectedSaveError('Add a brief clinical reason before saving an adapted library goal.')
+      return
+    }
+
+    const updates = { ...changes }
+    if (drift.isDrifted) {
+      updates.provenance_status = 'adapted'
+      updates.adaptation_reason = reason
+    }
+
+    if (onUpdateFields) {
+      const { error } = await onUpdateFields(program.id, updates)
+      if (error) {
+        setProtectedSaveError(error.message || 'Could not save goal edits.')
+        return
+      }
+    } else {
+      const { error } = await api.from('client_programs').update({ ...updates, updated_at: new Date().toISOString() }).eq('id', program.id)
+      if (error) {
+        setProtectedSaveError(error.message || 'Could not save goal edits.')
+        return
+      }
+    }
+
+    setProtectedSaveError(null)
+  }, [adaptationReason, getProtectedChanges, onUpdateFields, program])
+
   const toggleSection = (key) => {
     setCollapsedSections(prev => ({ ...prev, [key]: !prev[key] }))
   }
@@ -196,6 +280,19 @@ export default function GoalDetailPanel({
   const verificationSources = Array.isArray(coreLibraryDetail?.verification_sources)
     ? coreLibraryDetail.verification_sources.slice(0, 4)
     : []
+  const programVerificationSources = Array.isArray(program.verification_sources)
+    ? program.verification_sources.slice(0, 4)
+    : []
+  const visibleVerificationSources = programVerificationSources.length > 0
+    ? programVerificationSources
+    : verificationSources
+  const verificationSummary = program.verification_summary || coreLibraryDetail?.verification_summary
+  const medicalNecessitySummary = program.medical_necessity_rationale || coreLibraryDetail?.medical_necessity
+  const protectedChanges = getProtectedChanges()
+  const provenanceBadge = getGoalProvenanceBadge(program, protectedChanges)
+  const provenanceDrift = getGoalProvenanceDrift(program, protectedChanges)
+  const hasProtectedChanges = Object.keys(protectedChanges).length > 0
+  const canonicalSnapshot = program.canonical_snapshot || null
 
   return (
     <>
@@ -252,20 +349,18 @@ export default function GoalDetailPanel({
                   ))}
                 </select>
               </div>
-              {/* Labels placeholder */}
+              {/* Provenance badge */}
               <div className="mt-2">
-                {coreLibraryTarget ? (
-                  <span className="inline-flex items-center rounded-full border border-blue-200 bg-blue-50 px-2 py-1 text-[10px] font-semibold text-blue-700">
-                    {program.source_label || 'Medically Necessary Library'}
-                  </span>
-                ) : program.source_label ? (
-                  <span className="inline-flex items-center rounded-full border border-warm-200 bg-warm-50 px-2 py-1 text-[10px] font-semibold text-warm-600">
-                    {program.source_label}
-                  </span>
-                ) : (
-                  <button className="text-xs text-warm-500 hover:text-warm-600 transition-colors min-h-[28px]">
-                    + Add label
-                  </button>
+                <span className={`inline-flex items-center rounded-full border px-2 py-1 text-[10px] font-semibold ${
+                  provenanceBadge.tone === 'sage' ? 'border-sage-200 bg-sage-50 text-sage-700'
+                    : provenanceBadge.tone === 'amber' ? 'border-amber-200 bg-amber-50 text-amber-700'
+                      : provenanceBadge.tone === 'blue' ? 'border-blue-200 bg-blue-50 text-blue-700'
+                        : 'border-warm-200 bg-warm-50 text-warm-600'
+                }`}>
+                  {provenanceBadge.label}
+                </span>
+                {program.source_label && (
+                  <span className="ml-2 text-[10px] font-medium text-warm-500">{program.source_label}</span>
                 )}
               </div>
             </div>
@@ -296,27 +391,46 @@ export default function GoalDetailPanel({
           )}
 
           {/* ── Section 2: Program Type & Measurement ── */}
-          {coreLibraryTarget && (
+          {(coreLibraryTarget || canonicalSnapshot || program.provenance_status) && (
             <div className="mx-4 mt-3 rounded-xl border border-blue-200 bg-blue-50/70 px-4 py-3">
-              <p className="text-[10px] font-semibold uppercase tracking-wider text-blue-700">
-                Official Verification
-              </p>
-              <p className="mt-1 text-sm font-semibold text-blue-900">{coreLibraryTarget.name}</p>
-              {coreLibraryDetail?.medical_necessity && (
-                <p className="mt-1 text-xs leading-relaxed text-blue-800">
-                  {coreLibraryDetail.medical_necessity}
+              <div className="flex items-start justify-between gap-3">
+                <div>
+                  <p className="text-[10px] font-semibold uppercase tracking-wider text-blue-700">
+                    Provenance & Medical Necessity
+                  </p>
+                  <p className="mt-1 text-sm font-semibold text-blue-900">
+                    {canonicalSnapshot?.name || coreLibraryTarget?.name || program.name}
+                  </p>
+                </div>
+                <span className={`shrink-0 rounded-full border px-2 py-1 text-[10px] font-semibold ${
+                  provenanceBadge.tone === 'sage' ? 'border-sage-200 bg-white text-sage-700'
+                    : provenanceBadge.tone === 'amber' ? 'border-amber-200 bg-white text-amber-700'
+                      : provenanceBadge.tone === 'blue' ? 'border-blue-200 bg-white text-blue-700'
+                        : 'border-warm-200 bg-white text-warm-600'
+                }`}>
+                  {provenanceBadge.label}
+                </span>
+              </div>
+              {medicalNecessitySummary && (
+                <p className="mt-2 text-xs leading-relaxed text-blue-800">
+                  {medicalNecessitySummary}
                 </p>
               )}
-              {coreLibraryDetail?.verification_summary && (
+              {verificationSummary && (
                 <p className="mt-2 text-[11px] leading-relaxed text-blue-700">
-                  {coreLibraryDetail.verification_summary}
+                  {verificationSummary}
                 </p>
               )}
-              {verificationSources.length > 0 && (
+              {program.adaptation_reason && (
+                <p className="mt-2 rounded-lg border border-amber-200 bg-white/80 px-3 py-2 text-[11px] leading-relaxed text-amber-800">
+                  <span className="font-semibold">Adaptation reason:</span> {program.adaptation_reason}
+                </p>
+              )}
+              {visibleVerificationSources.length > 0 && (
                 <div className="mt-2 flex flex-wrap gap-1.5">
-                  {verificationSources.map((source) => (
+                  {visibleVerificationSources.map((source) => (
                     <a
-                      key={source.id}
+                      key={source.id || source.url || source.label}
                       href={source.url}
                       target="_blank"
                       rel="noreferrer"
@@ -327,13 +441,28 @@ export default function GoalDetailPanel({
                   ))}
                 </div>
               )}
-              <button
-                type="button"
-                onClick={() => setShowLibraryGoal(true)}
-                className="mt-3 min-h-[40px] rounded-full border border-blue-200 bg-white px-3 py-2 text-[11px] font-semibold text-blue-700 hover:bg-blue-100 transition-colors"
-              >
-                View Full Goal in Library
-              </button>
+              {canonicalSnapshot && (
+                <details className="mt-3 rounded-lg border border-blue-100 bg-white/80 px-3 py-2">
+                  <summary className="cursor-pointer text-[11px] font-semibold text-blue-700">
+                    See original library version
+                  </summary>
+                  <div className="mt-2 space-y-2 text-[11px] leading-relaxed text-warm-700">
+                    <p><span className="font-semibold text-warm-800">Objective:</span> {canonicalSnapshot.objective || 'Not captured'}</p>
+                    <p><span className="font-semibold text-warm-800">Criteria:</span> {canonicalSnapshot.criteria || 'Not captured'}</p>
+                    <p><span className="font-semibold text-warm-800">Measurement:</span> {canonicalSnapshot.measurement_type || 'Not captured'}</p>
+                    <p><span className="font-semibold text-warm-800">Domain:</span> {canonicalSnapshot.domain || 'Not captured'}</p>
+                  </div>
+                </details>
+              )}
+              {coreLibraryTarget && (
+                <button
+                  type="button"
+                  onClick={() => setShowLibraryGoal(true)}
+                  className="mt-3 min-h-[40px] rounded-full border border-blue-200 bg-white px-3 py-2 text-[11px] font-semibold text-blue-700 hover:bg-blue-100 transition-colors"
+                >
+                  View Canonical Source
+                </button>
+              )}
             </div>
           )}
 
@@ -410,8 +539,8 @@ export default function GoalDetailPanel({
               {/* Measurement type */}
               <FieldLabel label={hasData ? 'Measurement Type (locked)' : 'Measurement Type'}>
                 <select
-                  defaultValue={program.measurement_type || 'percentage'}
-                  onBlur={(e) => handleBlur('measurement_type', e.target.value)}
+                  value={protectedDraft.measurement_type || 'percentage'}
+                  onChange={(e) => setProtectedDraft((draft) => ({ ...draft, measurement_type: e.target.value }))}
                   disabled={hasData}
                   className={`w-full text-sm border border-warm-200 rounded-lg px-3 py-2 text-warm-800 min-h-[44px] ${hasData ? 'bg-warm-100 text-warm-400 cursor-not-allowed' : 'bg-warm-50'}`}
                 >
@@ -435,8 +564,8 @@ export default function GoalDetailPanel({
             onToggle={toggleSection}
           >
             <textarea
-              defaultValue={program.objective || ''}
-              onBlur={(e) => handleBlur('objective', e.target.value)}
+              value={protectedDraft.objective || ''}
+              onChange={(e) => setProtectedDraft((draft) => ({ ...draft, objective: e.target.value }))}
               placeholder="Describe the program objective..."
               rows={3}
               className="w-full text-sm border border-warm-200 rounded-lg px-3 py-2 bg-warm-50 text-warm-800 resize-y min-h-[80px]"
@@ -454,8 +583,8 @@ export default function GoalDetailPanel({
               <FieldLabel label="Mastery Criteria" span={2}>
                 <input
                   type="text"
-                  defaultValue={program.criteria || ''}
-                  onBlur={(e) => handleBlur('criteria', e.target.value)}
+                  value={protectedDraft.criteria || ''}
+                  onChange={(e) => setProtectedDraft((draft) => ({ ...draft, criteria: e.target.value }))}
                   placeholder="e.g. 80% across 5 sessions"
                   className="w-full text-sm border border-warm-200 rounded-lg px-3 py-2 bg-warm-50 text-warm-800 min-h-[44px]"
                 />
@@ -493,6 +622,57 @@ export default function GoalDetailPanel({
                 />
               </FieldLabel>
             </div>
+            {hasProtectedChanges && (
+              <div className="mt-4 rounded-xl border border-amber-200 bg-amber-50 px-3 py-3">
+                <p className="text-xs font-semibold text-amber-800">
+                  Protected goal fields are staged locally.
+                </p>
+                <p className="mt-1 text-[11px] leading-relaxed text-amber-700">
+                  Baseline, current level, status, mastery state, and progress data stay client-specific. Objective, criteria, measurement type, goal name, goal type, and domain are protected provenance fields.
+                </p>
+                {provenanceDrift.isDrifted && (
+                  <label className="mt-3 block">
+                    <span className="text-[11px] font-semibold text-amber-800">
+                      BCBA adaptation reason required
+                    </span>
+                    <textarea
+                      value={adaptationReason}
+                      onChange={(e) => setAdaptationReason(e.target.value)}
+                      rows={2}
+                      placeholder="Briefly explain why this verified library goal was adapted for this client."
+                      className="mt-1 w-full rounded-lg border border-amber-200 bg-white px-3 py-2 text-sm text-warm-800"
+                    />
+                    {!isGoalAdaptationReasonValid(adaptationReason) && (
+                      <span className="mt-1 block text-[10px] font-medium text-amber-700">
+                        Use at least 10 characters so the clinical rationale is auditable.
+                      </span>
+                    )}
+                  </label>
+                )}
+                {protectedSaveError && (
+                  <p className="mt-2 rounded-lg bg-white px-3 py-2 text-xs font-medium text-red-600">
+                    {protectedSaveError}
+                  </p>
+                )}
+                <div className="mt-3 flex flex-wrap gap-2">
+                  <button
+                    type="button"
+                    onClick={handleProtectedSave}
+                    disabled={provenanceDrift.isDrifted && !isGoalAdaptationReasonValid(adaptationReason)}
+                    className="min-h-[40px] rounded-full bg-sage-600 px-4 py-2 text-xs font-semibold text-white hover:bg-sage-700 disabled:cursor-not-allowed disabled:bg-warm-300"
+                  >
+                    Save Goal Edits
+                  </button>
+                  <button
+                    type="button"
+                    onClick={handleProtectedCancel}
+                    className="min-h-[40px] rounded-full border border-warm-200 bg-white px-4 py-2 text-xs font-semibold text-warm-600 hover:bg-warm-50"
+                  >
+                    Cancel
+                  </button>
+                </div>
+              </div>
+            )}
           </CollapsibleSection>
 
           {/* ── Section 5: Progress Graph ── */}
@@ -680,17 +860,14 @@ export default function GoalDetailPanel({
         </div>
       </div>
       {showLibraryGoal && coreLibraryTarget && (
-        <div className="fixed inset-0 z-[60] bg-black/50 backdrop-blur-sm flex items-start justify-center overflow-y-auto p-4">
-          <div className="bg-white rounded-xl shadow-lg my-4 w-full max-w-3xl max-h-[90vh] overflow-y-auto p-4">
-            <Suspense fallback={<div className="py-8 text-center text-warm-500">Loading library...</div>}>
-              <GoalLibrary
-                initialTargetId={coreLibraryTarget.id}
-                initialSearch={coreLibraryTarget.name}
-                onClose={() => setShowLibraryGoal(false)}
-              />
-            </Suspense>
-          </div>
-        </div>
+        <Suspense fallback={<div className="fixed inset-0 z-[60] bg-black/50 p-8 text-center text-white">Loading canonical source...</div>}>
+          <CanonicalSourceModal
+            target={coreLibraryTarget}
+            goal={program}
+            snapshot={canonicalSnapshot}
+            onClose={() => setShowLibraryGoal(false)}
+          />
+        </Suspense>
       )}
     </>
   )

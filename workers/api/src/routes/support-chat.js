@@ -7,6 +7,7 @@ const app = new Hono()
 const rateLimitMap = new Map()
 const DAILY_LIMIT = 30
 const DAY_MS = 86_400_000
+const SUPPORT_CHAT_MODEL_ID = 'us.anthropic.claude-haiku-4-5-20251001-v1:0'
 
 function checkRateLimit(userId) {
   const now = Date.now()
@@ -315,7 +316,7 @@ app.post('/', async (c) => {
   })
 
   const bedrockRes = await aws.fetch(
-    'https://bedrock-runtime.us-east-1.amazonaws.com/model/us.anthropic.claude-3-5-haiku-20241022-v1:0/invoke',
+    `https://bedrock-runtime.us-east-1.amazonaws.com/model/${SUPPORT_CHAT_MODEL_ID}/invoke`,
     {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
@@ -343,7 +344,7 @@ app.post('/', async (c) => {
     await dbQuery(c.env,
       `INSERT INTO audit_log (user_id, action, resource_type, metadata)
        VALUES ($1, $2, $3, $4)`,
-      [userId, 'support_chat', 'support_chatbot', JSON.stringify({ model: 'claude-haiku', via: 'bedrock' })]
+      [userId, 'support_chat', 'support_chatbot', JSON.stringify({ model: SUPPORT_CHAT_MODEL_ID, via: 'bedrock' })]
     )
   } catch {
     // Ignore audit log failures

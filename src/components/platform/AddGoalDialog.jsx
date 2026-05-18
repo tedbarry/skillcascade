@@ -182,6 +182,9 @@ export default function AddGoalDialog({
               source_label: 'Custom or fallback draft',
               medical_necessity_tags: [],
               verification_sources: [],
+              provenance_status: 'custom',
+              adaptation_reason: null,
+              canonical_snapshot: null,
             }
 
         // Create client_program

@@ -201,6 +201,7 @@ const TABLE_PERMISSION_MAP = {
   clients:                    { category: 'clients', select: 'view', insert: 'create', update: 'edit', delete: 'delete' },
   client_assignments:         { category: 'clients', select: 'view', insert: 'edit', update: 'edit', delete: 'edit' },
   client_programs:            { category: 'programs', select: 'view', insert: 'edit', update: 'edit', delete: 'edit' },
+  client_goal_decisions:      { category: 'programs', select: 'view', insert: 'edit', update: 'edit', delete: 'edit' },
   client_targets:             { category: 'programs', select: 'view', insert: 'edit', update: 'edit', delete: 'edit' },
 
   // Sessions
@@ -283,6 +284,8 @@ export function checkTablePermission(profile, table, operation) {
   const mapping = TABLE_PERMISSION_MAP[table]
   if (!mapping || !mapping.category) return true // No permission mapping = allowed (scope handles it)
 
-  const action = mapping[operation] || 'view'
+  const action = operation === 'upsert'
+    ? (mapping.upsert || mapping.update || mapping.insert || 'edit')
+    : (mapping[operation] || 'view')
   return hasPermission(profile, mapping.category, action)
 }

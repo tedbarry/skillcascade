@@ -56,6 +56,7 @@ test.describe('clinical operator smoke', () => {
     await aiToolsButton.click()
     const aiDialog = page.getByRole('dialog', { name: /ai assistant/i })
     await expect(aiDialog).toBeVisible()
+    await expect(aiDialog.getByText(/aws-secured ai online/i)).toBeVisible()
     await page.getByRole('button', { name: /close ai assistant/i }).click()
     await expect(aiDialog).toHaveClass(/translate-x-full/)
 

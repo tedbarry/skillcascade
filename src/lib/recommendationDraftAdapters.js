@@ -49,6 +49,9 @@ function normalizeGoalText(value) {
 }
 
 const DATABASE_UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i
+export const GOAL_PROVENANCE_STATUSES = ['canonical', 'adapted', 'custom', 'assessment_direct']
+export const GOAL_ADAPTATION_REASON_MIN_LENGTH = 10
+export const GOAL_PROVENANCE_PROTECTED_FIELDS = ['name', 'objective', 'criteria', 'measurement_type', 'goal_type', 'domain']
 
 export function isDatabaseUuid(value) {
   return typeof value === 'string' && DATABASE_UUID_RE.test(value)
@@ -58,9 +61,136 @@ export function getDatabaseStgId(value) {
   return isDatabaseUuid(value) ? value : null
 }
 
-export function getGoalProvenanceFields(goal = {}) {
+function normalizeProvenanceStatus(value) {
+  return GOAL_PROVENANCE_STATUSES.includes(value) ? value : null
+}
+
+function getLibraryTargetId(goal = {}) {
+  if (goal.library_target_id || goal.libraryTargetId) return goal.library_target_id || goal.libraryTargetId
+  if (typeof goal.id === 'string' && goal.id.startsWith('core-target-')) return goal.id
+  return null
+}
+
+function getCanonicalSnapshot(goal = {}) {
+  const snapshot = goal.canonical_snapshot || goal.canonicalSnapshot || null
+  return snapshot && typeof snapshot === 'object' && !Array.isArray(snapshot) ? snapshot : null
+}
+
+function normalizeProtectedValue(value) {
+  if (value == null) return ''
+  if (typeof value === 'string') return value.replace(/\s+/g, ' ').trim()
+  return String(value).replace(/\s+/g, ' ').trim()
+}
+
+function getProtectedFieldValue(goal = {}, field) {
+  switch (field) {
+    case 'measurement_type':
+      return goal.measurement_type || goal.measurementType || goal.dataMethod || goal.data_method || ''
+    case 'goal_type':
+      return goal.goal_type || goal.goalType || goal.type || ''
+    default:
+      return goal[field] || ''
+  }
+}
+
+export function inferGoalProvenanceStatus(goal = {}) {
+  const explicit = normalizeProvenanceStatus(goal.provenance_status || goal.provenanceStatus)
+  if (explicit) return explicit
+
+  if (getLibraryTargetId(goal)) return 'canonical'
+
+  const sourceType = goal.source_type || goal.sourceType || ''
+  if (
+    sourceType === 'assessment'
+    || sourceType === 'assessment_direct'
+    || sourceType === 'assessment_recommendation'
+    || (!sourceType && (goal.canonical_deficit_slug || goal.canonicalDeficitSlug))
+  ) {
+    return 'assessment_direct'
+  }
+
+  return 'custom'
+}
+
+export function buildGoalCanonicalSnapshot(goal = {}) {
+  const detail = parseCoreTargetDetail(goal)
   return {
-    library_target_id: goal.library_target_id || goal.libraryTargetId || null,
+    library_target_id: getLibraryTargetId(goal),
+    name: goal.name || goal.program || goal.skillName || '',
+    objective: detail.objective || goal.objective || goal.goalText || goal.name || '',
+    criteria: detail.default_criteria || goal.default_criteria || goal.criteria || '',
+    measurement_type: detail.measurement_type || goal.measurement_type || goal.measurementType || goal.dataMethod || goal.data_method || 'percentage',
+    goal_type: detail.goal_type || goal.goal_type || goal.goalType || goal.type || 'increase',
+    domain: goal.domain_name || goal.domain || '',
+    ltg_name: goal.ltg_name || goal.ltgName || '',
+    stg_name: goal.stg_name || goal.stgName || '',
+    canonical_domain_slug: goal.canonical_domain_slug || goal.canonicalDomainSlug || null,
+    canonical_deficit_slug: goal.canonical_deficit_slug || goal.canonicalDeficitSlug || null,
+    source_type: goal.source_type || goal.sourceType || null,
+    source_label: goal.source_label || goal.sourceLabel || null,
+    medical_necessity_tags: Array.isArray(detail.medical_necessity_tags)
+      ? detail.medical_necessity_tags
+      : Array.isArray(goal.medical_necessity_tags) ? goal.medical_necessity_tags : [],
+    medical_necessity_rationale: detail.medical_necessity || goal.medical_necessity_rationale || goal.medicalNecessityRationale || goal.medical_necessity || null,
+    verification_summary: detail.verification_summary || goal.verification_summary || goal.verificationSummary || null,
+    verification_sources: Array.isArray(detail.verification_sources)
+      ? detail.verification_sources
+      : Array.isArray(goal.verification_sources) ? goal.verification_sources : [],
+  }
+}
+
+export function getGoalProvenanceDrift(program = {}, draft = {}) {
+  const snapshot = getCanonicalSnapshot(program)
+  const candidate = { ...program, ...draft }
+
+  if (!snapshot || !getLibraryTargetId(program)) {
+    return { isDrifted: false, changedFields: [], snapshot }
+  }
+
+  const changedFields = GOAL_PROVENANCE_PROTECTED_FIELDS.filter((field) => (
+    normalizeProtectedValue(getProtectedFieldValue(candidate, field))
+      !== normalizeProtectedValue(getProtectedFieldValue(snapshot, field))
+  ))
+
+  return {
+    isDrifted: changedFields.length > 0,
+    changedFields,
+    snapshot,
+  }
+}
+
+export function isGoalAdaptationReasonValid(reason) {
+  return (reason || '').trim().length >= GOAL_ADAPTATION_REASON_MIN_LENGTH
+}
+
+export function getEffectiveGoalProvenanceStatus(program = {}, draft = {}) {
+  const status = inferGoalProvenanceStatus(program)
+  const drift = getGoalProvenanceDrift(program, draft)
+  if (status === 'canonical' && drift.isDrifted) return 'adapted'
+  return status
+}
+
+export function getGoalProvenanceBadge(program = {}, draft = {}) {
+  const status = getEffectiveGoalProvenanceStatus(program, draft)
+  switch (status) {
+    case 'canonical':
+      return { status, label: 'Library Verified', tone: 'sage' }
+    case 'adapted':
+      return { status, label: 'Adapted', tone: 'amber' }
+    case 'assessment_direct':
+      return { status, label: program.source_label || program.sourceLabel || 'Assessment Direct', tone: 'blue' }
+    case 'custom':
+    default:
+      return { status: 'custom', label: 'Custom Goal', tone: 'warm' }
+  }
+}
+
+export function getGoalProvenanceFields(goal = {}) {
+  const libraryTargetId = getLibraryTargetId(goal)
+  const canonicalSnapshot = getCanonicalSnapshot(goal) || (libraryTargetId ? buildGoalCanonicalSnapshot(goal) : null)
+
+  return {
+    library_target_id: libraryTargetId,
     canonical_domain_slug: goal.canonical_domain_slug || goal.canonicalDomainSlug || null,
     canonical_deficit_slug: goal.canonical_deficit_slug || goal.canonicalDeficitSlug || null,
     source_type: goal.source_type || goal.sourceType || null,
@@ -69,11 +199,14 @@ export function getGoalProvenanceFields(goal = {}) {
     medical_necessity_rationale: goal.medical_necessity_rationale || goal.medicalNecessityRationale || goal.medical_necessity || null,
     verification_summary: goal.verification_summary || goal.verificationSummary || null,
     verification_sources: Array.isArray(goal.verification_sources) ? goal.verification_sources : [],
+    provenance_status: inferGoalProvenanceStatus(goal),
+    adaptation_reason: goal.adaptation_reason || goal.adaptationReason || null,
+    canonical_snapshot: canonicalSnapshot,
   }
 }
 
 export function buildClientProgramInsertFromLibraryGoal(goal = {}, clientId, overrides = {}) {
-  return {
+  const base = {
     client_id: clientId,
     stg_id: getDatabaseStgId(goal.stg_id || goal.skillId),
     domain: goal.domain_name || goal.domain || 'Communication',
@@ -87,7 +220,11 @@ export function buildClientProgramInsertFromLibraryGoal(goal = {}, clientId, ove
     skill_mappings: goal.skill_mappings || null,
     status: goal.status || 'acquisition',
     display_order: goal.display_order ?? 0,
-    ...getGoalProvenanceFields(goal),
+  }
+
+  return {
+    ...base,
+    ...getGoalProvenanceFields({ ...goal, ...base }),
     ...overrides,
   }
 }
@@ -151,6 +288,17 @@ export function getPrimaryCoreLibraryTargetForRecommendation(recommendation) {
 
 export function buildLearningTreeDraftFromCoreTarget(target, recommendation = null) {
   const detail = parseCoreTargetDetail(target)
+  const canonicalSnapshot = buildGoalCanonicalSnapshot({
+    ...target,
+    objective: detail.objective || target.objective || recommendation?.recommendedObjectiveSeed || target.name,
+    default_criteria: detail.default_criteria || target.default_criteria || recommendation?.defaultCriteria,
+    measurement_type: detail.measurement_type || target.measurement_type || recommendation?.defaultMeasurementType || 'percentage',
+    goal_type: detail.goal_type || target.goal_type || 'increase',
+    medical_necessity_tags: detail.medical_necessity_tags || recommendation?.medicalNecessityTags || [],
+    medical_necessity_rationale: detail.medical_necessity || recommendation?.medicalNecessityRationale || '',
+    verification_summary: detail.verification_summary || '',
+    verification_sources: detail.verification_sources || [],
+  })
 
   return {
     name: target.name,
@@ -175,6 +323,11 @@ export function buildLearningTreeDraftFromCoreTarget(target, recommendation = nu
     medical_necessity_rationale: detail.medical_necessity || recommendation?.medicalNecessityRationale || '',
     verification_summary: detail.verification_summary || '',
     verification_sources: detail.verification_sources || [],
+    provenanceStatus: 'canonical',
+    provenance_status: 'canonical',
+    adaptation_reason: null,
+    canonicalSnapshot,
+    canonical_snapshot: canonicalSnapshot,
   }
 }
 
@@ -218,6 +371,17 @@ export function buildLearningTreeDraftFromRecommendation(recommendation) {
     goalType: 'increase',
     programType: recommendation.domainSlug === 'caregiver_support' ? 'parent_training' : 'skill_acquisition',
     dataMethod: recommendation.defaultMeasurementType || 'percentage',
+    canonicalDomainSlug: recommendation.domainSlug || null,
+    canonicalDeficitSlug: recommendation.deficitSlug || null,
+    sourceRefs: recommendation.sourceRefs || [],
+    sourceLabel: 'Assessment Recommendation',
+    source_type: 'assessment_direct',
+    source_label: 'Assessment Recommendation',
+    provenanceStatus: 'assessment_direct',
+    provenance_status: 'assessment_direct',
+    adaptation_reason: null,
+    canonicalSnapshot: null,
+    canonical_snapshot: null,
   }
 }
 
@@ -225,6 +389,17 @@ export function buildAuthReportGoalFromCoreTarget(target, recommendation = null,
   const detail = parseCoreTargetDetail(target)
   const goalType = detail.goal_type || target.goal_type || 'increase'
   const measurementType = detail.measurement_type || target.measurement_type || recommendation?.defaultMeasurementType || 'percentage'
+  const canonicalSnapshot = buildGoalCanonicalSnapshot({
+    ...target,
+    objective: detail.objective || target.objective || recommendation?.recommendedObjectiveSeed || target.name,
+    default_criteria: detail.default_criteria || target.default_criteria || recommendation?.defaultCriteria,
+    measurement_type: measurementType,
+    goal_type: goalType,
+    medical_necessity_tags: detail.medical_necessity_tags || recommendation?.medicalNecessityTags || [],
+    medical_necessity_rationale: detail.medical_necessity || recommendation?.medicalNecessityRationale || '',
+    verification_summary: detail.verification_summary || '',
+    verification_sources: detail.verification_sources || [],
+  })
 
   return {
     id: `recommendation-${target.id}`,
@@ -254,6 +429,9 @@ export function buildAuthReportGoalFromCoreTarget(target, recommendation = null,
     verification_sources: detail.verification_sources || [],
     source_type: target.source_type || 'core',
     source_label: target.source_label || CORE_GOAL_LIBRARY_NAME,
+    provenance_status: 'canonical',
+    adaptation_reason: null,
+    canonical_snapshot: canonicalSnapshot,
     requires_bcba_review: recommendation?.requiresBcbaReview ?? true,
   }
 }
@@ -286,6 +464,11 @@ export function buildAuthReportGoalFromRecommendation(recommendation, targetDate
     medical_necessity_tags: recommendation.medicalNecessityTags || [],
     medical_necessity_rationale: recommendation.medicalNecessityRationale || '',
     sourceRefs: recommendation.sourceRefs || [],
+    source_type: 'assessment_direct',
+    source_label: 'Assessment Recommendation',
+    provenance_status: 'assessment_direct',
+    adaptation_reason: null,
+    canonical_snapshot: null,
     requires_bcba_review: recommendation.requiresBcbaReview ?? true,
   }
 }

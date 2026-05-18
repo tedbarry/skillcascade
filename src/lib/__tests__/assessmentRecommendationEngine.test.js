@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import { buildAssessmentRecommendations, collectAssessmentFindings } from '../assessmentRecommendationEngine.js'
+import { framework } from '../../data/framework.js'
 
 describe('collectAssessmentFindings', () => {
   it('detects cluster findings from low-scored skills inside a sub-area', () => {
@@ -63,5 +64,25 @@ describe('buildAssessmentRecommendations', () => {
     })
 
     expect(recommendations).toEqual([])
+  })
+
+  it('caps default assessment recommendations to avoid goal-mill output', () => {
+    const broadLowAssessment = {}
+
+    for (const domain of framework) {
+      for (const subArea of domain.subAreas) {
+        const firstSkill = subArea.skillGroups.flatMap((group) => group.skills)[0]
+        if (firstSkill) broadLowAssessment[firstSkill.id] = 0
+      }
+    }
+
+    const recommendations = buildAssessmentRecommendations(broadLowAssessment)
+    const domainCounts = recommendations.reduce((counts, recommendation) => {
+      counts[recommendation.domainSlug] = (counts[recommendation.domainSlug] || 0) + 1
+      return counts
+    }, {})
+
+    expect(recommendations.length).toBeLessThanOrEqual(10)
+    expect(Math.max(...Object.values(domainCounts))).toBeLessThanOrEqual(3)
   })
 })

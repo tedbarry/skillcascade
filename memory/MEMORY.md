@@ -15,6 +15,8 @@
 ## Stabilization + Replacement Push (2026-04-05)
 - Preview frontend + preview API are active and part of the ship path
 - Public and authenticated Playwright smoke cover the live operator spine plus admin/settings access
+- AI Assistant, AI search, KB help copy, and legal/privacy copy now align with the AWS-managed Bedrock direction instead of implying bring-your-own OpenAI/API-key setup or the old browser-encryption story
+- Bedrock worker routes now use active Claude Haiku 4.5 and Sonnet 4.6 model IDs instead of the AWS Health-deprecated Claude 3.5 Haiku / Sonnet 4 IDs
 - Home dashboard quick actions, sample-mode CTA copy, and the Getting Started checklist now follow the same permission truth as the shell, so report onboarding disappears for roles without `reports.view` and client onboarding no longer says `Create Client` when the role can only open the client workspace
 - Renewal/utilization workbenches now include due-now renewal timing and stale-packet refresh guidance, alongside shipped note lock/signoff rules, org/team permission hardening, and production-safe S3 docs flow
 - `/admin` and the settings-menu admin entry now follow real permissions instead of only legacy `isAdmin`

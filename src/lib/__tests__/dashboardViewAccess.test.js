@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { canAccessDashboardView, filterDashboardViews } from '../dashboardViewAccess.js'
+import { HIDDEN_BCBA_ASSISTANT_VIEWS, canAccessDashboardView, filterDashboardViews } from '../dashboardViewAccess.js'
 
 describe('dashboardViewAccess', () => {
   it('keeps operator-only views hidden without the matching capability', () => {
@@ -24,10 +24,28 @@ describe('dashboardViewAccess', () => {
       canViewReports: true,
     })).toBe(false)
 
-    expect(canAccessDashboardView('practice-intelligence', {
+    expect(canAccessDashboardView('clinical-evidence', {
+      hasClinical: false,
+    })).toBe(false)
+
+    expect(canAccessDashboardView('authorizations', {
       hasClinical: true,
       canViewBilling: true,
     })).toBe(true)
+
+    expect(canAccessDashboardView('clinical-evidence', {
+      hasClinical: true,
+    })).toBe(true)
+  })
+
+  it('hides old-universe EMR and portability views regardless of permissions', () => {
+    for (const view of HIDDEN_BCBA_ASSISTANT_VIEWS) {
+      expect(canAccessDashboardView(view, {
+        hasClinical: true,
+        canViewBilling: true,
+        canViewClients: true,
+      })).toBe(false)
+    }
   })
 
   it('filters only the mapped views and leaves general views alone', () => {

@@ -8,6 +8,10 @@
     "dev": "npm run build:goal-artifacts && vite",
     "build": "npm run build:goal-artifacts && node scripts/clean-build-dir.mjs dist && vite build",
     "build:e2e": "npm run build:goal-artifacts && node scripts/clean-build-dir.mjs dist-e2e && vite build --outDir dist-e2e",
+    "preflight:rls": "node scripts/rls-security-preflight.mjs",
+    "migrate:rls": "node scripts/rls-security-preflight.mjs --apply",
+    "preflight:clinical-evidence": "node scripts/clinical-evidence-preflight.mjs",
+    "migrate:clinical-evidence": "node scripts/clinical-evidence-preflight.mjs --apply",
     "preview": "vite preview",
     "preview:e2e": "vite preview --outDir dist-e2e",
     "test": "npm run build:goal-artifacts && vitest",
@@ -16,6 +20,7 @@
     "e2e:headed": "playwright test --headed",
     "e2e:public": "playwright test tests/e2e/public-smoke.spec.js",
     "e2e:clinical": "playwright test tests/e2e/clinical-smoke.spec.js",
+    "e2e:clinical-evidence": "playwright test tests/e2e/clinical-evidence-smoke.spec.js",
     "e2e:install": "playwright install chromium"
   },
   "dependencies": {

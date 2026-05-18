@@ -49,6 +49,7 @@ Done when:
 Status:
 - done for the core public, clinical, files, contacts, client create/delete, admin-settings, billing outreach, and focused contact-follow-up smoke path
 - done for the authorized AI assistant + client-agent path as well, so AI entry points are now part of the browser ship gate instead of only unit-tested permission wiring
+- done for the AWS-managed AI/help/legal alignment path too, since the ship gate now proves the AI entry surfaces after the runtime/copy cleanup on preview and production
 - still expandable for deeper billing/rendering/admin-only flows
 
 ### 0.3 Define change-risk labels
@@ -81,6 +82,11 @@ Targets:
 
 Done when:
 - the codebase tells one coherent compliance story
+
+Status:
+- substantially improved in the shipped runtime/UI/help copy
+- AI assistant/search messaging, KB entries, and public legal/security copy no longer imply bring-your-own API keys or the old browser-encryption flow as the active model
+- still incomplete for true full-stack AWS migration and broader legal/compliance architecture settlement
 
 ### 1.3 Admin migration planning
 Goal:

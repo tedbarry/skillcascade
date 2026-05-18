@@ -1,5 +1,13 @@
+export const HIDDEN_BCBA_ASSISTANT_VIEWS = new Set([
+  'sessions',
+  'notes',
+  'practice-intelligence',
+  'data',
+])
+
 const VIEW_RULES = {
   reports: ({ canViewReports, hasClinical }) => Boolean(hasClinical && canViewReports),
+  'clinical-evidence': ({ hasClinical }) => Boolean(hasClinical),
   certifications: ({ canViewReports }) => Boolean(canViewReports),
   authorizations: ({ canViewBilling, hasClinical }) => Boolean(hasClinical && canViewBilling),
   'practice-intelligence': ({ canViewBilling, hasClinical }) => Boolean(hasClinical && canViewBilling),
@@ -10,6 +18,7 @@ const VIEW_RULES = {
 }
 
 export function canAccessDashboardView(view, accessState = {}) {
+  if (HIDDEN_BCBA_ASSISTANT_VIEWS.has(view)) return false
   const rule = VIEW_RULES[view]
   if (!rule) return true
   return rule(accessState)

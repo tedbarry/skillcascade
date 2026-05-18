@@ -35,7 +35,7 @@ import SubscriptionBanner from '../components/SubscriptionBanner.jsx'
 import { track } from '../lib/analytics.js'
 import { trackError } from '../lib/errorTracker.js'
 import { buildAIAccessState } from '../lib/aiAccess.js'
-import { canAccessDashboardView } from '../lib/dashboardViewAccess.js'
+import { HIDDEN_BCBA_ASSISTANT_VIEWS, canAccessDashboardView } from '../lib/dashboardViewAccess.js'
 
 // Lazy-loaded view components — each gets its own chunk, loaded on-demand
 const HomeDashboard = lazy(() => import('../components/HomeDashboard.jsx'))
@@ -76,6 +76,7 @@ const AssessmentCompletionModal = lazy(() => import('../components/AssessmentCom
 const DeficitGoalForm = lazy(() => import('../components/DeficitGoalForm.jsx'))
 const GoalLibrary = lazy(() => import('../components/platform/GoalLibrary.jsx'))
 const LearningTree = lazy(() => import('../components/platform/LearningTree.jsx'))
+const ClinicalEvidence = lazy(() => import('../components/platform/ClinicalEvidence.jsx'))
 const GraphDashboard = lazy(() => import('../components/platform/GraphDashboard.jsx'))
 const SessionManager = lazy(() => import('../components/platform/SessionManager.jsx'))
 const MapGoalsButton = lazy(() => import('../components/platform/MapGoalsButton.jsx'))
@@ -142,6 +143,7 @@ const VIEW_SKELETON = {
   'daily-agenda': 'list',
   notes: 'list',
   authorizations: 'list',
+  'clinical-evidence': 'list',
   'client-files': 'list',
   'client-contacts': 'grid',
 }
@@ -173,13 +175,14 @@ const VIEW_LABELS = {
   explorer: 'Explorer',
   'goal-library': 'Goal Library',
   'learning-tree': 'Learning Tree',
+  'clinical-evidence': 'Clinical Evidence',
   'graph-dashboard': 'Graph Dashboard',
   'sessions': 'Sessions',
   'goal-drafts': 'Fallback Drafts',
   'deficit-goals': 'Legacy Deficit Goals',
   'lesson-plan': 'Lesson Plan',
-  'schedule': 'Schedule',
-  'daily-agenda': 'My Day',
+  'schedule': 'Appointments',
+  'daily-agenda': 'Today',
   'notes': 'Session Notes',
   'authorizations': 'Authorizations',
   'client-files': 'Files',
@@ -217,6 +220,7 @@ export const VIEWS = {
   EXPLORER: 'explorer',
   GOAL_LIBRARY: 'goal-library',
   LEARNING_TREE: 'learning-tree',
+  CLINICAL_EVIDENCE: 'clinical-evidence',
   GRAPH_DASHBOARD: 'graph-dashboard',
   SESSIONS: 'sessions',
   GOAL_DRAFTS: 'goal-drafts',
@@ -233,9 +237,9 @@ export const VIEWS = {
 }
 
 // Clinical views — require clinical_access subscription add-on
-const CLINICAL_GATED_VIEWS = ['schedule', 'daily-agenda', 'sessions', 'notes', 'authorizations', 'client-files', 'client-contacts', 'practice-intelligence']
+const CLINICAL_GATED_VIEWS = ['schedule', 'daily-agenda', 'authorizations', 'client-files', 'client-contacts']
 // All clinical views (gated + ungated clinical that still need subscription check for nav redirect)
-const CLINICAL_VIEWS = ['reports', 'learning-tree', 'goal-library', 'graph-dashboard', 'sessions', 'schedule', 'daily-agenda', 'notes', 'authorizations', 'client-files', 'client-contacts', 'client-ai', 'practice-intelligence']
+const CLINICAL_VIEWS = ['reports', 'clinical-evidence', 'learning-tree', 'goal-library', 'graph-dashboard', 'schedule', 'daily-agenda', 'authorizations', 'client-files', 'client-contacts', 'client-ai']
 
 export default function Dashboard() {
   const { user, profile } = useAuth()
@@ -293,7 +297,10 @@ export default function Dashboard() {
   const setActiveView = useCallback((view) => {
     if (!permissionsLoading && !canAccessView(view)) {
       if (view !== VIEWS.HOME) {
-        showToast(`You don't have permission to open ${VIEW_LABELS[view] || 'that workspace'}.`, 'error')
+        const message = HIDDEN_BCBA_ASSISTANT_VIEWS.has(view)
+          ? `${VIEW_LABELS[view] || 'That workspace'} is being refactored into the BCBA assistant.`
+          : `You don't have permission to open ${VIEW_LABELS[view] || 'that workspace'}.`
+        showToast(message, HIDDEN_BCBA_ASSISTANT_VIEWS.has(view) ? 'info' : 'error')
       }
       navigateTo(VIEWS.HOME)
       return
@@ -333,7 +340,10 @@ export default function Dashboard() {
   useEffect(() => {
     if (permissionsLoading || activeView === VIEWS.HOME) return
     if (!canAccessView(activeView)) {
-      showToast(`You don't have permission to open ${VIEW_LABELS[activeView] || 'that workspace'}.`, 'error')
+      const message = HIDDEN_BCBA_ASSISTANT_VIEWS.has(activeView)
+        ? `${VIEW_LABELS[activeView] || 'That workspace'} is being refactored into the BCBA assistant.`
+        : `You don't have permission to open ${VIEW_LABELS[activeView] || 'that workspace'}.`
+      showToast(message, HIDDEN_BCBA_ASSISTANT_VIEWS.has(activeView) ? 'info' : 'error')
       navigateTo(VIEWS.HOME)
     }
   }, [activeView, canAccessView, navigateTo, permissionsLoading, showToast])
@@ -1033,7 +1043,7 @@ export default function Dashboard() {
   }
 
   // Assessment, tree, cascade, and timeline views are full-width — no side panels
-  const fullWidthViews = [VIEWS.HOME, VIEWS.ASSESS, VIEWS.TREE, VIEWS.CASCADE, VIEWS.EXPLORER, VIEWS.TIMELINE, VIEWS.QUICK_ASSESS, VIEWS.GOALS, VIEWS.ALERTS, VIEWS.REPORTS, VIEWS.PARENT, VIEWS.CASELOAD, VIEWS.MILESTONES, VIEWS.PRACTICE, VIEWS.ORG_ANALYTICS, VIEWS.PREDICTIONS, VIEWS.BRANDING, VIEWS.MESSAGES, VIEWS.DATA, VIEWS.ACCESSIBILITY, VIEWS.PRICING, VIEWS.MARKETPLACE, VIEWS.CERTIFICATIONS, VIEWS.COMPARE, VIEWS.GOAL_DRAFTS, VIEWS.DEFICIT_GOALS, VIEWS.LESSON_PLAN, VIEWS.GOAL_LIBRARY, VIEWS.LEARNING_TREE, VIEWS.GRAPH_DASHBOARD, VIEWS.SESSIONS, VIEWS.NOTES, VIEWS.AUTHORIZATIONS, VIEWS.CLIENT_FILES, VIEWS.CLIENT_CONTACTS, VIEWS.CLIENT_AI, VIEWS.PRACTICE_INTELLIGENCE]
+  const fullWidthViews = [VIEWS.HOME, VIEWS.ASSESS, VIEWS.TREE, VIEWS.CASCADE, VIEWS.EXPLORER, VIEWS.TIMELINE, VIEWS.QUICK_ASSESS, VIEWS.GOALS, VIEWS.ALERTS, VIEWS.REPORTS, VIEWS.PARENT, VIEWS.CASELOAD, VIEWS.MILESTONES, VIEWS.PRACTICE, VIEWS.ORG_ANALYTICS, VIEWS.PREDICTIONS, VIEWS.BRANDING, VIEWS.MESSAGES, VIEWS.DATA, VIEWS.ACCESSIBILITY, VIEWS.PRICING, VIEWS.MARKETPLACE, VIEWS.CERTIFICATIONS, VIEWS.COMPARE, VIEWS.GOAL_DRAFTS, VIEWS.DEFICIT_GOALS, VIEWS.LESSON_PLAN, VIEWS.GOAL_LIBRARY, VIEWS.LEARNING_TREE, VIEWS.CLINICAL_EVIDENCE, VIEWS.GRAPH_DASHBOARD, VIEWS.SESSIONS, VIEWS.NOTES, VIEWS.AUTHORIZATIONS, VIEWS.CLIENT_FILES, VIEWS.CLIENT_CONTACTS, VIEWS.CLIENT_AI, VIEWS.PRACTICE_INTELLIGENCE]
   const showSidePanels = !fullWidthViews.includes(activeView)
 
   // Hard gate: must have a subscription to access the dashboard
@@ -1188,6 +1198,8 @@ export default function Dashboard() {
       </div>
     )
   }
+
+  const currentViewBlocked = !permissionsLoading && activeView !== VIEWS.HOME && !canAccessView(activeView)
 
   return (
     <>
@@ -1435,6 +1447,11 @@ export default function Dashboard() {
           {/* Global loading gate — show skeleton for current view while assessments load from Supabase */}
           {assessmentsLoading ? (
             <ViewLoader view={activeView} />
+          ) : currentViewBlocked ? (
+            <LegacyRefactorPlaceholder
+              viewLabel={VIEW_LABELS[activeView] || activeView}
+              isHiddenLegacyView={HIDDEN_BCBA_ASSISTANT_VIEWS.has(activeView)}
+            />
           ) : (<>
 
           {/* Home Dashboard view */}
@@ -1889,7 +1906,23 @@ export default function Dashboard() {
                   clientId={clientId}
                   clientName={clientName}
                   assessments={assessments}
-                  onStartSession={() => launchSession()}
+                />
+              </Suspense>
+            </div>
+          )}
+
+          {/* Clinical Evidence */}
+          {activeView === VIEWS.CLINICAL_EVIDENCE && (
+            <div className="w-full h-full overflow-y-auto">
+              <Suspense fallback={<ViewLoader view={activeView} />}>
+                <ClinicalEvidence
+                  clientId={clientId}
+                  clientName={clientName}
+                  assessments={assessments}
+                  onOpenLearningTree={() => guardedSetActiveView(VIEWS.LEARNING_TREE)}
+                  onOpenGoalLibrary={() => guardedSetActiveView(VIEWS.GOAL_LIBRARY)}
+                  onOpenAuthReports={() => guardedSetActiveView(VIEWS.REPORTS)}
+                  onNavigateToAssess={() => guardedSetActiveView(VIEWS.ASSESS)}
                 />
               </Suspense>
             </div>
@@ -1987,15 +2020,6 @@ export default function Dashboard() {
               <Suspense fallback={<ViewLoader view={activeView} />}>
                 <ScheduleView
                   launchContext={scheduleLaunchContext}
-                  onStartSession={(sessionId, runId, launchContext) => {
-                    const resolvedContext = launchContext && typeof launchContext === 'object'
-                      ? launchContext
-                      : null
-                    if (resolvedContext?.clientId || clientId || sessionId) {
-                      launchSession(sessionId, runId, resolvedContext)
-                    }
-                  }}
-                  onWriteNote={openSessionNote}
                 />
               </Suspense>
             </div>
@@ -2008,16 +2032,7 @@ export default function Dashboard() {
             <div className="w-full h-full overflow-y-auto">
               <Suspense fallback={<ViewLoader view={activeView} />}>
                 <DailyAgenda
-                  onStartSession={(sessionId, runId, launchContext) => {
-                    const resolvedContext = launchContext && typeof launchContext === 'object'
-                      ? launchContext
-                      : null
-                    if (resolvedContext?.clientId || clientId || sessionId) {
-                      launchSession(sessionId, runId, resolvedContext)
-                    }
-                  }}
                   onNavigateToSchedule={() => guardedSetActiveView(VIEWS.SCHEDULE)}
-                  onWriteNote={openSessionNote}
                 />
               </Suspense>
             </div>
@@ -2484,6 +2499,24 @@ function DetailPanel({ detail, assessments, onAssess, onNavigateToAssess }) {
   }
 
   return null
+}
+
+function LegacyRefactorPlaceholder({ viewLabel, isHiddenLegacyView }) {
+  return (
+    <div className="flex min-h-[60vh] w-full items-center justify-center px-4">
+      <div className="max-w-xl rounded-2xl border border-warm-200 bg-white p-6 text-center shadow-sm">
+        <p className="text-[11px] font-semibold uppercase tracking-wider text-sage-600">
+          BCBA Assistant Refactor
+        </p>
+        <h2 className="mt-2 text-xl font-bold text-warm-900">{viewLabel}</h2>
+        <p className="mt-3 text-sm leading-relaxed text-warm-600">
+          {isHiddenLegacyView
+            ? 'This old EMR-style workspace is hidden while it is rebuilt into the BCBA super assistant.'
+            : 'This workspace is not available for the current account.'}
+        </p>
+      </div>
+    </div>
+  )
 }
 
 function SkillGroupAssessor({ skillGroup, assessments, onAssess }) {

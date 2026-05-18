@@ -15,6 +15,8 @@ import { downloadFile, csvEscape } from '../lib/fileExports.js'
 import { buildAssessmentRecommendations } from '../lib/assessmentRecommendationEngine.js'
 import { api } from '../lib/api.js'
 import { track } from '../lib/analytics.js'
+import { upsertClientGoalDecisionForImportedGoal } from '../data/storage.js'
+import { useAuth } from '../contexts/AuthContext.jsx'
 import { getSkillCeiling, computeSkillInfluence } from '../data/skillInfluence.js'
 import { getSubAreaFromId, getSkillTier } from '../data/skillDependencies.js'
 import {
@@ -25,7 +27,7 @@ import {
 import { TIER_LABELS, TIER_COLORS } from '../constants/tiers.js'
 import EmptyState from './EmptyState.jsx'
 const AddGoalDialog = lazy(() => import('./platform/AddGoalDialog.jsx'))
-const GoalLibrary = lazy(() => import('./platform/GoalLibrary.jsx'))
+const CanonicalSourceModal = lazy(() => import('./platform/CanonicalSourceModal.jsx'))
 import useResponsive from '../hooks/useResponsive.js'
 import useContextualHint from '../hooks/useContextualHint.js'
 import ContextualHint from './ContextualHint.jsx'
@@ -815,7 +817,7 @@ function RecommendationCard({ recommendation, onDraftToTree, onNavigateToAssess,
             onClick={() => matchedLibraryTargets[0] ? onViewLibraryGoal?.(matchedLibraryTargets[0]) : onDraftToTree(recommendation)}
             className="px-3 py-2 min-h-[44px] rounded-full bg-blue-600 text-white text-xs font-semibold hover:bg-blue-700 transition-colors"
           >
-            {matchedLibraryTargets.length > 0 ? 'View/Add Library Goal' : 'Draft In Learning Tree'}
+            {matchedLibraryTargets.length > 0 ? 'View/Add Canonical Goal' : 'Draft In Learning Tree'}
           </button>
         )}
         {matchedLibraryTargets[0] && (
@@ -823,7 +825,7 @@ function RecommendationCard({ recommendation, onDraftToTree, onNavigateToAssess,
             onClick={() => onViewLibraryGoal?.(matchedLibraryTargets[0])}
             className="px-3 py-2 min-h-[44px] rounded-full border border-blue-200 bg-white text-blue-700 text-xs font-medium hover:bg-blue-50 transition-colors"
           >
-            View in Library
+            View Canonical Source
           </button>
         )}
         {topSubArea && (
@@ -845,6 +847,7 @@ function RecommendationCard({ recommendation, onDraftToTree, onNavigateToAssess,
 
 export default function GoalEngine({ assessments = {}, onNavigateToAssess, focusDomain = null, onClearFocus, clientName = '', onGenerateGoals, onDeficitGoals, onLessonPlan, onSkillGoal, clientId }) {
   const { isPhone } = useResponsive()
+  const { user } = useAuth()
   const hint = useContextualHint('hint-goals')
   const [addToTreeGoal, setAddToTreeGoal] = useState(null)
   const [libraryTarget, setLibraryTarget] = useState(null)
@@ -941,17 +944,35 @@ export default function GoalEngine({ assessments = {}, onNavigateToAssess, focus
     if (!clientId) return
     setLibraryAddMessage(null)
 
-    const { error } = await api
+    const { data, error } = await api
       .from('client_programs')
       .insert(buildClientProgramInsertFromLibraryGoal(goal, clientId))
+    const newProgram = Array.isArray(data) ? data[0] : data
 
     if (error) {
       setLibraryAddMessage({ type: 'error', text: `Could not add goal: ${error.message}` })
       return
     }
 
+    try {
+      await upsertClientGoalDecisionForImportedGoal({
+        clientId,
+        goal,
+        recommendations: allMedicalRecommendations,
+        status: 'imported',
+        clientProgramId: newProgram?.id || null,
+        userId: user?.id || null,
+        sourceAssessmentId: 'goal-engine',
+        reasonCode: 'goal_engine_import',
+        reasonText: 'BCBA imported this canonical goal from the Goal Engine.',
+      })
+    } catch (decisionErr) {
+      setLibraryAddMessage({ type: 'success', text: `Added "${goal.name}" to the Learning Tree. Decision persistence is waiting for the Clinical Evidence migration.` })
+      return
+    }
+
     setLibraryAddMessage({ type: 'success', text: `Added "${goal.name}" to the Learning Tree.` })
-  }, [clientId])
+  }, [allMedicalRecommendations, clientId, user?.id])
 
   return (
     <div className="flex-1 overflow-y-auto">
@@ -1145,28 +1166,16 @@ export default function GoalEngine({ assessments = {}, onNavigateToAssess, focus
           </Suspense>
         )}
         {libraryTarget && (
-          <div className="fixed inset-0 z-50 bg-black/50 backdrop-blur-sm flex items-start justify-center overflow-y-auto p-4">
-            <div className="bg-white rounded-xl shadow-lg my-4 w-full max-w-3xl max-h-[90vh] overflow-y-auto p-4">
-              {libraryAddMessage && (
-                <div className={`mb-3 rounded-xl border px-3 py-2 text-xs font-semibold ${
-                  libraryAddMessage.type === 'error'
-                    ? 'border-red-200 bg-red-50 text-red-700'
-                    : 'border-sage-200 bg-sage-50 text-sage-700'
-                }`}>
-                  {libraryAddMessage.text}
-                </div>
-              )}
-              <Suspense fallback={<div className="py-8 text-center text-warm-500">Loading library...</div>}>
-                <GoalLibrary
-                  clientId={clientId}
-                  onSelectGoal={clientId ? handleAddLibraryGoalToTree : undefined}
-                  initialTargetId={libraryTarget.id}
-                  initialSearch={libraryTarget.name}
-                  onClose={() => { setLibraryTarget(null); setLibraryAddMessage(null) }}
-                />
-              </Suspense>
-            </div>
-          </div>
+          <Suspense fallback={<div className="fixed inset-0 z-50 bg-black/50 p-8 text-center text-white">Loading canonical source...</div>}>
+            <CanonicalSourceModal
+              target={libraryTarget}
+              onAddGoal={clientId ? async (goal) => {
+                await handleAddLibraryGoalToTree(goal)
+                setLibraryTarget(null)
+              } : null}
+              onClose={() => { setLibraryTarget(null); setLibraryAddMessage(null) }}
+            />
+          </Suspense>
         )}
       </div>
     </div>

@@ -1,10 +1,16 @@
 import { useState, useEffect, useCallback, useMemo, lazy, Suspense } from 'react'
 import { api } from '../../lib/api.js'
-import { syncSessionDataToAssessment } from '../../data/storage.js'
+import { syncSessionDataToAssessment, upsertClientGoalDecisionForImportedGoal } from '../../data/storage.js'
 import { useAuth } from '../../contexts/AuthContext.jsx'
 import useResponsive from '../../hooks/useResponsive.js'
 import { track } from '../../lib/analytics.js'
-import { buildClientProgramInsertFromLibraryGoal } from '../../lib/recommendationDraftAdapters.js'
+import { buildAssessmentRecommendations } from '../../lib/assessmentRecommendationEngine.js'
+import {
+  buildClientProgramInsertFromLibraryGoal,
+  getGoalProvenanceBadge,
+  getGoalProvenanceDrift,
+  isGoalAdaptationReasonValid,
+} from '../../lib/recommendationDraftAdapters.js'
 
 const GoalLibrary = lazy(() => import('./GoalLibrary.jsx'))
 const ProgramGraph = lazy(() => import('./ProgramGraph.jsx'))
@@ -69,12 +75,19 @@ export default function LearningTree({ clientId, clientName, assessments, onStar
   const [syncingAssessment, setSyncingAssessment] = useState(false)
   const [assessmentSyncResults, setAssessmentSyncResults] = useState(null)
   const [lastSessionData, setLastSessionData] = useState({})
+  const [programDrafts, setProgramDrafts] = useState({})
+  const [adaptationReasons, setAdaptationReasons] = useState({})
+  const [programSaveErrors, setProgramSaveErrors] = useState({})
 
   // Accordion open state
   const [openDomains, setOpenDomains] = useState(new Set())
   const [openLTGs, setOpenLTGs] = useState(new Set())
   const [openSTGs, setOpenSTGs] = useState(new Set())
   const [expandedProgram, setExpandedProgram] = useState(null)
+  const assessmentRecommendations = useMemo(
+    () => buildAssessmentRecommendations(assessments || {}),
+    [assessments],
+  )
 
   const toggle = (e, set, setter, id) => {
     e.stopPropagation()
@@ -168,13 +181,28 @@ export default function LearningTree({ clientId, clientName, assessments, onStar
       return
     }
     if (newProg) {
+      try {
+        await upsertClientGoalDecisionForImportedGoal({
+          clientId,
+          goal,
+          recommendations: assessmentRecommendations,
+          status: 'imported',
+          clientProgramId: newProg.id,
+          userId: user?.id || null,
+          sourceAssessmentId: 'learning-tree-library-import',
+          reasonCode: 'learning_tree_library_import',
+          reasonText: 'BCBA imported this canonical goal from the Learning Tree library workflow.',
+        })
+      } catch (decisionErr) {
+        console.warn('[ClinicalEvidence] Decision persistence skipped:', decisionErr.message)
+      }
       setPrograms(prev => [...prev, newProg])
       setOpenDomains(prev => new Set(prev).add(newProg.domain || 'Communication'))
       const ltgKey = `${newProg.domain || 'Communication'}::${newProg.ltg_name || 'General'}`
       setOpenLTGs(prev => new Set(prev).add(ltgKey))
       // Don't close library — let user add multiple goals
     }
-  }, [clientId, programs.length])
+  }, [assessmentRecommendations, clientId, programs.length, user?.id])
 
   // Add custom program
   const [showAddGoalDialog, setShowAddGoalDialog] = useState(false)
@@ -208,6 +236,9 @@ export default function LearningTree({ clientId, clientName, assessments, onStar
         goal_type: 'increase',
         status: 'acquisition',
         display_order: programs.length,
+        provenance_status: 'custom',
+        adaptation_reason: null,
+        canonical_snapshot: null,
       })
     const newProg = Array.isArray(newProgData) ? newProgData[0] : newProgData
 
@@ -231,6 +262,72 @@ export default function LearningTree({ clientId, clientName, assessments, onStar
     const { error } = await api.from('client_programs').update({ [field]: value, updated_at: new Date().toISOString() }).eq('id', programId)
     if (!error) setPrograms(prev => prev.map(p => p.id === programId ? { ...p, [field]: value } : p))
   }, [])
+
+  const handleUpdateProgramFields = useCallback(async (programId, updates) => {
+    const payload = { ...updates, updated_at: new Date().toISOString() }
+    const { error } = await api.from('client_programs').update(payload).eq('id', programId)
+    if (!error) {
+      setPrograms(prev => prev.map(p => p.id === programId ? { ...p, ...payload } : p))
+      setSelectedProgram(prev => prev && prev.id === programId ? { ...prev, ...payload } : prev)
+    }
+    return { error, payload }
+  }, [])
+
+  const handleDraftChange = useCallback((programId, field, value) => {
+    setProgramDrafts(prev => ({
+      ...prev,
+      [programId]: {
+        ...(prev[programId] || {}),
+        [field]: value,
+      },
+    }))
+    setProgramSaveErrors(prev => ({ ...prev, [programId]: null }))
+  }, [])
+
+  const handleCancelProgramDraft = useCallback((programId) => {
+    setProgramDrafts(prev => {
+      const next = { ...prev }
+      delete next[programId]
+      return next
+    })
+    setAdaptationReasons(prev => {
+      const next = { ...prev }
+      delete next[programId]
+      return next
+    })
+    setProgramSaveErrors(prev => ({ ...prev, [programId]: null }))
+  }, [])
+
+  const handleSaveProgramDraft = useCallback(async (program) => {
+    const draft = programDrafts[program.id] || {}
+    if (Object.keys(draft).length === 0) return
+
+    const drift = getGoalProvenanceDrift(program, draft)
+    const adaptationReason = (adaptationReasons[program.id] ?? program.adaptation_reason ?? '').trim()
+    if (drift.isDrifted && !isGoalAdaptationReasonValid(adaptationReason)) {
+      setProgramSaveErrors(prev => ({
+        ...prev,
+        [program.id]: 'Add a brief clinical reason before saving an adapted library goal.',
+      }))
+      return
+    }
+
+    const updates = { ...draft, updated_at: new Date().toISOString() }
+    if (drift.isDrifted) {
+      updates.provenance_status = 'adapted'
+      updates.adaptation_reason = adaptationReason
+    }
+
+    const { error } = await api.from('client_programs').update(updates).eq('id', program.id)
+    if (error) {
+      setProgramSaveErrors(prev => ({ ...prev, [program.id]: error.message }))
+      return
+    }
+
+    setPrograms(prev => prev.map(p => p.id === program.id ? { ...p, ...updates } : p))
+    setSelectedProgram(prev => prev && prev.id === program.id ? { ...prev, ...updates } : prev)
+    handleCancelProgramDraft(program.id)
+  }, [adaptationReasons, handleCancelProgramDraft, programDrafts])
 
   const handleDeleteProgram = useCallback(async (programId) => {
     const { error } = await api.from('client_programs').delete().eq('id', programId)
@@ -468,6 +565,14 @@ export default function LearningTree({ clientId, clientName, assessments, onStar
                               const progTargets = targets.filter(t => t.program_id === prog.id)
                               const activeTargets = progTargets.filter(t => t.status === 'acquisition').length
                               const lastData = lastSessionData[prog.id]
+                              const draft = programDrafts[prog.id] || {}
+                              const mergedProg = { ...prog, ...draft }
+                              const provenanceBadge = getGoalProvenanceBadge(prog, draft)
+                              const provenanceDrift = getGoalProvenanceDrift(prog, draft)
+                              const hasProtectedDraft = Object.keys(draft).length > 0
+                              const adaptationReason = adaptationReasons[prog.id] ?? prog.adaptation_reason ?? ''
+                              const canSaveProtectedDraft = !provenanceDrift.isDrifted || isGoalAdaptationReasonValid(adaptationReason)
+                              const canonicalSnapshot = prog.canonical_snapshot || null
 
                               return (
                                 <div key={prog.id} className="rounded-lg border border-warm-200 bg-white overflow-hidden">
@@ -483,6 +588,19 @@ export default function LearningTree({ clientId, clientName, assessments, onStar
                                     <div className="flex-1 min-w-0">
                                       <p className="text-[12px] font-medium text-warm-800 truncate">{prog.name}</p>
                                       {prog.stg_name && <p className="text-[10px] text-warm-500 truncate">{prog.stg_name}</p>}
+                                      <div className="mt-1 flex flex-wrap items-center gap-1">
+                                        <span className={`rounded-full border px-1.5 py-0.5 text-[9px] font-semibold ${
+                                          provenanceBadge.tone === 'sage' ? 'border-sage-200 bg-sage-50 text-sage-700'
+                                            : provenanceBadge.tone === 'amber' ? 'border-amber-200 bg-amber-50 text-amber-700'
+                                              : provenanceBadge.tone === 'blue' ? 'border-blue-200 bg-blue-50 text-blue-700'
+                                                : 'border-warm-200 bg-warm-50 text-warm-600'
+                                        }`}>
+                                          {provenanceBadge.label}
+                                        </span>
+                                        {prog.source_label && (
+                                          <span className="text-[9px] text-warm-500 truncate">{prog.source_label}</span>
+                                        )}
+                                      </div>
                                     </div>
 
                                     {lastData && (
@@ -520,11 +638,25 @@ export default function LearningTree({ clientId, clientName, assessments, onStar
                                   {isExpanded && (
                                     <div className="px-4 pb-4 pt-1 border-t border-warm-100 bg-warm-50/30">
                                       <div className="space-y-2 mb-3">
+                                        <div className={`rounded-lg border px-3 py-2 ${
+                                          provenanceBadge.tone === 'sage' ? 'border-sage-200 bg-sage-50'
+                                            : provenanceBadge.tone === 'amber' ? 'border-amber-200 bg-amber-50'
+                                              : provenanceBadge.tone === 'blue' ? 'border-blue-200 bg-blue-50'
+                                                : 'border-warm-200 bg-white'
+                                        }`}>
+                                          <p className="text-[10px] font-semibold uppercase tracking-wider text-warm-600">{provenanceBadge.label}</p>
+                                          {prog.verification_summary && (
+                                            <p className="mt-1 text-[10px] leading-relaxed text-warm-600">{prog.verification_summary}</p>
+                                          )}
+                                          {prog.adaptation_reason && (
+                                            <p className="mt-1 text-[10px] leading-relaxed text-amber-700">Adaptation reason: {prog.adaptation_reason}</p>
+                                          )}
+                                        </div>
                                         <div>
                                           <label className="text-[10px] font-semibold text-warm-500 uppercase tracking-wider">Objective</label>
                                           <textarea
-                                            value={prog.objective || ''}
-                                            onChange={(e) => handleUpdateProgram(prog.id, 'objective', e.target.value)}
+                                            value={mergedProg.objective || ''}
+                                            onChange={(e) => handleDraftChange(prog.id, 'objective', e.target.value)}
                                             className="w-full mt-0.5 px-2 py-1.5 text-[11px] text-warm-700 rounded border border-warm-200 focus:outline-none focus:ring-1 focus:ring-sage-300 resize-none"
                                             rows={2}
                                           />
@@ -532,7 +664,7 @@ export default function LearningTree({ clientId, clientName, assessments, onStar
                                         <div className={`grid ${isPhone ? 'grid-cols-2' : 'grid-cols-3'} gap-2`}>
                                           <div>
                                             <label className="text-[10px] font-semibold text-warm-500 uppercase tracking-wider">Criteria</label>
-                                            <input value={prog.criteria || ''} onChange={(e) => handleUpdateProgram(prog.id, 'criteria', e.target.value)} className="w-full mt-0.5 px-2 py-1.5 text-[11px] text-warm-700 rounded border border-warm-200 focus:outline-none focus:ring-1 focus:ring-sage-300" />
+                                            <input value={mergedProg.criteria || ''} onChange={(e) => handleDraftChange(prog.id, 'criteria', e.target.value)} className="w-full mt-0.5 px-2 py-1.5 text-[11px] text-warm-700 rounded border border-warm-200 focus:outline-none focus:ring-1 focus:ring-sage-300" />
                                           </div>
                                           <div>
                                             <label className="text-[10px] font-semibold text-warm-500 uppercase tracking-wider">Baseline</label>
@@ -540,7 +672,7 @@ export default function LearningTree({ clientId, clientName, assessments, onStar
                                           </div>
                                           <div>
                                             <label className="text-[10px] font-semibold text-warm-500 uppercase tracking-wider">Measurement</label>
-                                            <select value={prog.measurement_type || 'percentage'} onChange={(e) => handleUpdateProgram(prog.id, 'measurement_type', e.target.value)} className="w-full mt-0.5 px-2 py-1.5 text-[11px] text-warm-700 rounded border border-warm-200 bg-white">
+                                            <select value={mergedProg.measurement_type || 'percentage'} onChange={(e) => handleDraftChange(prog.id, 'measurement_type', e.target.value)} className="w-full mt-0.5 px-2 py-1.5 text-[11px] text-warm-700 rounded border border-warm-200 bg-white">
                                               <option value="percentage">Percentage</option>
                                               <option value="frequency">Frequency</option>
                                               <option value="duration">Duration</option>
@@ -548,6 +680,51 @@ export default function LearningTree({ clientId, clientName, assessments, onStar
                                             </select>
                                           </div>
                                         </div>
+                                        {provenanceDrift.isDrifted && (
+                                          <div className="rounded-lg border border-amber-200 bg-amber-50 px-3 py-2">
+                                            <p className="text-[10px] font-semibold text-amber-800">This library goal has been adapted for this client.</p>
+                                            <p className="mt-1 text-[10px] text-amber-700">Document the clinical reason before saving changes to protected goal wording or measurement fields.</p>
+                                            <textarea
+                                              value={adaptationReason}
+                                              onChange={(e) => setAdaptationReasons(prev => ({ ...prev, [prog.id]: e.target.value }))}
+                                              placeholder="Example: Criteria customized to match current baseline and payer authorization period."
+                                              rows={2}
+                                              className="mt-2 w-full rounded border border-amber-200 bg-white px-2 py-1.5 text-[11px] text-warm-700 focus:outline-none focus:ring-1 focus:ring-amber-300"
+                                            />
+                                          </div>
+                                        )}
+                                        {hasProtectedDraft && (
+                                          <div className="flex flex-wrap items-center gap-2">
+                                            <button
+                                              type="button"
+                                              onClick={() => handleSaveProgramDraft(prog)}
+                                              disabled={!canSaveProtectedDraft}
+                                              className="rounded-full bg-sage-600 px-3 py-1.5 text-[11px] font-semibold text-white hover:bg-sage-700 disabled:cursor-not-allowed disabled:opacity-50"
+                                            >
+                                              Save goal edits
+                                            </button>
+                                            <button
+                                              type="button"
+                                              onClick={() => handleCancelProgramDraft(prog.id)}
+                                              className="rounded-full border border-warm-200 px-3 py-1.5 text-[11px] font-semibold text-warm-600 hover:bg-warm-50"
+                                            >
+                                              Cancel
+                                            </button>
+                                            {programSaveErrors[prog.id] && (
+                                              <span className="text-[10px] font-medium text-red-600">{programSaveErrors[prog.id]}</span>
+                                            )}
+                                          </div>
+                                        )}
+                                        {canonicalSnapshot && (
+                                          <details className="rounded-lg border border-warm-200 bg-white px-3 py-2">
+                                            <summary className="cursor-pointer text-[10px] font-semibold uppercase tracking-wider text-warm-600">See original library version</summary>
+                                            <div className="mt-2 space-y-1 text-[10px] text-warm-600">
+                                              <p><span className="font-semibold">Objective:</span> {canonicalSnapshot.objective || 'Not captured'}</p>
+                                              <p><span className="font-semibold">Criteria:</span> {canonicalSnapshot.criteria || 'Not captured'}</p>
+                                              <p><span className="font-semibold">Measurement:</span> {canonicalSnapshot.measurement_type || 'Not captured'}</p>
+                                            </div>
+                                          </details>
+                                        )}
 
                                         {prog.skill_mappings?.length > 0 && (
                                           <div className="px-2 py-1.5 rounded bg-sage-50 border border-sage-100">
@@ -630,6 +807,7 @@ export default function LearningTree({ clientId, clientName, assessments, onStar
               handleUpdateProgram(progId, field, value)
               setSelectedProgram(prev => prev && prev.id === progId ? { ...prev, [field]: value } : prev)
             }}
+            onUpdateFields={handleUpdateProgramFields}
             onStatusChange={(progId, newStatus) => {
               handleStatusChange(progId, newStatus)
               setSelectedProgram(prev => prev && prev.id === progId ? { ...prev, status: newStatus } : prev)

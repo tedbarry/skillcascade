@@ -39,8 +39,8 @@ The AI automatically includes your current view context. If you are looking at t
 ## Privacy
 
 - All AI requests route through AWS Bedrock with BAA coverage
-- Your API key is never exposed to the browser
-- PHI is encrypted before transmission
+- Platform-managed AI credentials are never exposed to the browser
+- PHI is protected in transit with TLS and at rest with encrypted storage
 - Rate limited to 10 requests per minute
 - AI-generated content is NOT used to train AI models`,
     relatedIds: ['ai-client-agent', 'ai-practice-intelligence', 'ai-graph-intelligence', 'guide-ai-features'],
