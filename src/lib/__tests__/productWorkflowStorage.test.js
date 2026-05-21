@@ -62,6 +62,7 @@ import {
   syncProductWorkflowFromClientFiles,
   updateProductWorkflowJobSummary,
   upsertProductWorkflowApproval,
+  upsertProductWorkflowGoalReview,
   upsertProductWorkflowSources,
 } from '../productWorkflowStorage.js'
 
@@ -112,11 +113,12 @@ describe('productWorkflowStorage', () => {
     ])
   })
 
-  it('loads the job bundle from the four workflow tables', async () => {
+  it('loads the job bundle from the five workflow tables', async () => {
     mock.responses.push(
       { data: { id: 'job-1' }, error: null },
       { data: [{ id: 'source-1' }], error: null },
       { data: [{ id: 'approval-1' }], error: null },
+      { data: [{ id: 'goal-review-1' }], error: null },
       { data: [{ id: 'artifact-1' }], error: null },
     )
 
@@ -126,11 +128,13 @@ describe('productWorkflowStorage', () => {
       job: { id: 'job-1' },
       sources: [{ id: 'source-1' }],
       approvals: [{ id: 'approval-1' }],
+      goalReviews: [{ id: 'goal-review-1' }],
       artifacts: [{ id: 'artifact-1' }],
     })
     expect(mock.from).toHaveBeenCalledWith('product_workflow_jobs')
     expect(mock.from).toHaveBeenCalledWith('product_workflow_sources')
     expect(mock.from).toHaveBeenCalledWith('product_workflow_approvals')
+    expect(mock.from).toHaveBeenCalledWith('product_workflow_goal_reviews')
     expect(mock.from).toHaveBeenCalledWith('product_workflow_artifacts')
   })
 
@@ -226,6 +230,7 @@ describe('productWorkflowStorage', () => {
       { data: [{ id: 'source-1', source_label: 'Evaluation', source_fingerprint: 'client_file:file-1', extraction_status: 'pending' }], error: null },
       { data: [], error: null },
       { data: [], error: null },
+      { data: [], error: null },
       { data: [{ id: 'job-1', status: 'intake' }], error: null },
     )
 
@@ -271,6 +276,45 @@ describe('productWorkflowStorage', () => {
       options: { onConflict: 'job_id,gate,action_type' },
     })
     expect(mock.operations[0].data.approved_at).toBeTruthy()
+  })
+
+  it('upserts goal review decisions by job and source-goal fingerprint', async () => {
+    mock.responses.push({ data: [{ id: 'review-1', review_status: 'accepted' }], error: null })
+
+    const review = await upsertProductWorkflowGoalReview({
+      jobId: 'job-1',
+      sourceGoal: {
+        id: 'goal-1',
+        domain: 'Communication',
+        longTermGoal: 'Functional Communication',
+        shortTermGoal: 'Requesting help',
+        objective: 'The client will request help.',
+      },
+      reviewStatus: 'accepted',
+      reviewedGoal: {
+        objective: 'The client will request help or a break.',
+      },
+      reviewNotes: 'accepted with edit',
+      reviewedBy: 'user-1',
+      createdBy: 'user-1',
+    })
+
+    expect(review).toEqual({ id: 'review-1', review_status: 'accepted' })
+    expect(mock.operations[0]).toMatchObject({
+      table: 'product_workflow_goal_reviews',
+      method: 'upsert',
+      options: { onConflict: 'job_id,source_goal_fingerprint' },
+    })
+    expect(mock.operations[0].data).toMatchObject({
+      job_id: 'job-1',
+      source_goal_id: 'goal-1',
+      source_goal_fingerprint: 'goal:goal-1',
+      review_status: 'accepted',
+      reviewed_by: 'user-1',
+      created_by: 'user-1',
+    })
+    expect(mock.operations[0].data.reviewed_at).toBeTruthy()
+    expect(JSON.stringify(mock.operations[0].data)).not.toMatch(/raw_text|source_text/i)
   })
 
   it('saves review-only workflow artifacts to the artifact table', async () => {

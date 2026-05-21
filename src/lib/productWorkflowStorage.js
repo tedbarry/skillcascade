@@ -4,6 +4,7 @@ import {
   buildProductWorkflowJobRow,
   buildSourceDocumentsFromClientFiles,
 } from './productizationJobModel.js'
+import { buildGoalReviewFingerprint } from './goalReviewQueue.js'
 
 function firstRow(data) {
   return Array.isArray(data) ? data[0] : data
@@ -56,6 +57,32 @@ function firstArtifactRow(data) {
 
 function isActiveWorkflowJob(row = {}) {
   return ['draft', 'intake', 'review', 'blocked'].includes(row.status)
+}
+
+function normalizeGoalReviewRow(jobId, {
+  sourceGoal = {},
+  reviewStatus = 'pending',
+  reviewedGoal = {},
+  reviewNotes = '',
+  reviewedBy = null,
+  createdBy = null,
+} = {}) {
+  const fingerprint = buildGoalReviewFingerprint(sourceGoal)
+  const status = String(reviewStatus || 'pending').replace(/[\s-]+/g, '_')
+  const isReviewed = status !== 'pending'
+
+  return {
+    job_id: jobId,
+    source_goal_id: sourceGoal.id ? String(sourceGoal.id) : null,
+    source_goal_fingerprint: fingerprint,
+    source_goal_snapshot: sourceGoal,
+    review_status: status,
+    reviewed_goal: reviewedGoal,
+    review_notes: reviewNotes || null,
+    reviewed_by: isReviewed ? reviewedBy : null,
+    reviewed_at: isReviewed ? new Date().toISOString() : null,
+    created_by: createdBy,
+  }
 }
 
 export async function createProductWorkflowJob({
@@ -140,10 +167,11 @@ export async function updateProductWorkflowJobSummary(jobId, {
 export async function listProductWorkflowBundle(jobId) {
   requireValue(jobId, 'jobId')
 
-  const [job, sources, approvals, artifacts] = await Promise.all([
+  const [job, sources, approvals, goalReviews, artifacts] = await Promise.all([
     api.from('product_workflow_jobs').select('*').eq('id', jobId).single(),
     api.from('product_workflow_sources').select('*').eq('job_id', jobId).order('created_at', { ascending: true }),
     api.from('product_workflow_approvals').select('*').eq('job_id', jobId).order('created_at', { ascending: true }),
+    api.from('product_workflow_goal_reviews').select('*').eq('job_id', jobId).order('created_at', { ascending: true }),
     api.from('product_workflow_artifacts').select('*').eq('job_id', jobId).order('created_at', { ascending: true }),
   ])
 
@@ -151,6 +179,7 @@ export async function listProductWorkflowBundle(jobId) {
     job: throwIfError(job),
     sources: throwIfError(sources) || [],
     approvals: throwIfError(approvals) || [],
+    goalReviews: throwIfError(goalReviews) || [],
     artifacts: throwIfError(artifacts) || [],
   }
 }
@@ -221,6 +250,7 @@ export async function syncProductWorkflowFromClientFiles({
     job: refreshedJob || bundle.job || job,
     sources: bundle.sources || [],
     approvals: bundle.approvals || [],
+    goalReviews: bundle.goalReviews || [],
     artifacts: bundle.artifacts || [],
   }
 }
@@ -255,6 +285,34 @@ export async function upsertProductWorkflowApproval({
   const data = throwIfError(await api
     .from('product_workflow_approvals')
     .upsert(row, { onConflict: 'job_id,gate,action_type' }))
+
+  return firstRow(data)
+}
+
+export async function upsertProductWorkflowGoalReview({
+  jobId,
+  sourceGoal,
+  reviewStatus = 'pending',
+  reviewedGoal = sourceGoal,
+  reviewNotes = '',
+  reviewedBy = null,
+  createdBy = null,
+} = {}) {
+  requireValue(jobId, 'jobId')
+  requireValue(sourceGoal, 'sourceGoal')
+
+  const row = normalizeGoalReviewRow(jobId, {
+    sourceGoal,
+    reviewStatus,
+    reviewedGoal,
+    reviewNotes,
+    reviewedBy,
+    createdBy,
+  })
+
+  const data = throwIfError(await api
+    .from('product_workflow_goal_reviews')
+    .upsert(row, { onConflict: 'job_id,source_goal_fingerprint' }))
 
   return firstRow(data)
 }

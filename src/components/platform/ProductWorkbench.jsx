@@ -19,6 +19,7 @@ import {
   REPORT_GOAL_COLUMNS,
   buildGoalPlannerReview,
 } from '../../lib/assessmentGoalPlanner.js'
+import { buildGoalReviewQueue } from '../../lib/goalReviewQueue.js'
 import {
   buildInitialAssessmentDraftArtifact,
   buildInitialAssessmentDraftDocxBlob,
@@ -30,6 +31,7 @@ import {
   saveProductWorkflowArtifact,
   syncProductWorkflowFromClientFiles,
   upsertProductWorkflowApproval,
+  upsertProductWorkflowGoalReview,
 } from '../../lib/productWorkflowStorage.js'
 
 const SAMPLE_SOURCE_DOCUMENTS = [
@@ -400,6 +402,158 @@ function ApprovalGateCard({ gate, savingGate, workflowJobId, onSetApproval }) {
   )
 }
 
+function GoalReviewQueuePanel({
+  queue,
+  workflowJobId,
+  draftEdits,
+  savingGoalReview,
+  onChangeGoalEdit,
+  onSetGoalReview,
+}) {
+  const items = queue.items.slice(0, 30)
+
+  return (
+    <section className="rounded-[2rem] border border-warm-200 bg-white p-5 shadow-sm lg:p-6">
+      <div className="flex flex-wrap items-start justify-between gap-4">
+        <div>
+          <p className="text-[10px] font-semibold uppercase tracking-[0.22em] text-warm-500">BCBA goal review queue</p>
+          <h2 className="mt-2 text-2xl font-bold text-warm-950">Accept, edit, revise, or reject goals before report and tree use</h2>
+          <p className="mt-2 max-w-3xl text-sm leading-6 text-warm-600">
+            This queue turns imported client programs into a clinician-reviewed goal set. Accepted edits feed the report draft and CentralReach dry run; rejected goals stay out.
+          </p>
+        </div>
+        <div className="flex flex-wrap gap-2">
+          <Badge tone="border-blue-200 bg-blue-50 text-blue-800">{queue.totalGoalCount} candidates</Badge>
+          <Badge tone="border-sage-200 bg-sage-50 text-sage-800">{queue.statusCounts.accepted} accepted</Badge>
+          <Badge tone="border-amber-200 bg-amber-50 text-amber-800">{queue.statusCounts.pending} pending</Badge>
+          <Badge tone={queue.readyForGoalApproval ? 'border-sage-200 bg-sage-50 text-sage-800' : 'border-amber-200 bg-amber-50 text-amber-800'}>
+            {queue.readyForGoalApproval ? 'approval ready' : 'review needed'}
+          </Badge>
+        </div>
+      </div>
+
+      {!workflowJobId && (
+        <div className="mt-5 rounded-2xl border border-amber-200 bg-amber-50 p-4 text-sm leading-6 text-amber-900">
+          Sync or create a workflow job before saving goal review decisions. You can still inspect the candidate goals below.
+        </div>
+      )}
+
+      <div className="mt-5 space-y-4">
+        {items.length === 0 ? (
+          <div className="rounded-2xl border border-warm-200 bg-warm-50 p-5 text-sm leading-6 text-warm-600">
+            No candidate goals are available yet. Add client programs or sync goal-library selections first.
+          </div>
+        ) : items.map((item) => {
+          const edit = draftEdits[item.fingerprint] || {}
+          const saving = savingGoalReview === item.fingerprint
+          const statusTone = item.reviewStatus === 'accepted'
+            ? 'border-sage-200 bg-sage-50 text-sage-800'
+            : item.reviewStatus === 'rejected'
+              ? 'border-coral-200 bg-coral-50 text-coral-800'
+              : item.reviewStatus === 'needs_revision'
+                ? 'border-amber-200 bg-amber-50 text-amber-800'
+                : 'border-warm-200 bg-warm-50 text-warm-700'
+
+          return (
+            <div key={item.fingerprint} className="rounded-3xl border border-warm-200 bg-white p-4 shadow-sm">
+              <div className="flex flex-wrap items-start justify-between gap-3">
+                <div>
+                  <div className="flex flex-wrap gap-2">
+                    <Badge>{item.reviewedGoal.domain}</Badge>
+                    <Badge tone={statusTone}>{item.reviewStatus.replace(/_/g, ' ')}</Badge>
+                    {item.reviewedGoal.dataType === 'Frequency' && (
+                      <Badge tone="border-amber-200 bg-amber-50 text-amber-800">Frequency</Badge>
+                    )}
+                    {item.recommendedStatus === 'needs_revision' && (
+                      <Badge tone="border-amber-200 bg-amber-50 text-amber-800">revision suggested</Badge>
+                    )}
+                  </div>
+                  <h3 className="mt-3 text-lg font-bold text-warm-950">
+                    {item.reviewedGoal.longTermGoal} / {item.reviewedGoal.shortTermGoal}
+                  </h3>
+                </div>
+                <div className="flex flex-wrap gap-2">
+                  <button
+                    type="button"
+                    disabled={!workflowJobId || saving}
+                    onClick={() => onSetGoalReview(item, 'accepted', true)}
+                    className="min-h-[40px] rounded-full bg-sage-600 px-3 py-2 text-xs font-semibold text-white transition-colors hover:bg-sage-700 disabled:cursor-not-allowed disabled:bg-sage-300"
+                  >
+                    {saving ? 'Saving...' : 'Accept / save edits'}
+                  </button>
+                  <button
+                    type="button"
+                    disabled={!workflowJobId || saving}
+                    onClick={() => onSetGoalReview(item, 'needs_revision', true)}
+                    className="min-h-[40px] rounded-full border border-amber-200 bg-amber-50 px-3 py-2 text-xs font-semibold text-amber-800 transition-colors hover:bg-amber-100 disabled:cursor-not-allowed disabled:opacity-50"
+                  >
+                    Needs revision
+                  </button>
+                  <button
+                    type="button"
+                    disabled={!workflowJobId || saving}
+                    onClick={() => onSetGoalReview(item, 'rejected', false)}
+                    className="min-h-[40px] rounded-full border border-coral-200 bg-coral-50 px-3 py-2 text-xs font-semibold text-coral-800 transition-colors hover:bg-coral-100 disabled:cursor-not-allowed disabled:opacity-50"
+                  >
+                    Reject
+                  </button>
+                </div>
+              </div>
+
+              <div className="mt-4 grid gap-3 lg:grid-cols-[0.85fr_0.85fr_1.4fr]">
+                <label className="block text-xs font-semibold uppercase tracking-[0.16em] text-warm-500">
+                  Long-term goal
+                  <input
+                    value={edit.longTermGoal ?? item.reviewedGoal.longTermGoal}
+                    onChange={(event) => onChangeGoalEdit(item.fingerprint, 'longTermGoal', event.target.value)}
+                    className="mt-2 w-full rounded-2xl border border-warm-200 bg-warm-50 px-3 py-2 text-sm normal-case tracking-normal text-warm-900 outline-none focus:border-sage-300 focus:bg-white"
+                  />
+                </label>
+                <label className="block text-xs font-semibold uppercase tracking-[0.16em] text-warm-500">
+                  Short-term goal
+                  <input
+                    value={edit.shortTermGoal ?? item.reviewedGoal.shortTermGoal}
+                    onChange={(event) => onChangeGoalEdit(item.fingerprint, 'shortTermGoal', event.target.value)}
+                    className="mt-2 w-full rounded-2xl border border-warm-200 bg-warm-50 px-3 py-2 text-sm normal-case tracking-normal text-warm-900 outline-none focus:border-sage-300 focus:bg-white"
+                  />
+                </label>
+                <label className="block text-xs font-semibold uppercase tracking-[0.16em] text-warm-500">
+                  Objective
+                  <textarea
+                    value={edit.objective ?? item.reviewedGoal.objective}
+                    onChange={(event) => onChangeGoalEdit(item.fingerprint, 'objective', event.target.value)}
+                    rows={3}
+                    className="mt-2 w-full rounded-2xl border border-warm-200 bg-warm-50 px-3 py-2 text-sm normal-case leading-6 tracking-normal text-warm-900 outline-none focus:border-sage-300 focus:bg-white"
+                  />
+                </label>
+              </div>
+
+              <div className="mt-4 grid gap-3 lg:grid-cols-[1fr_1fr]">
+                <div className="rounded-2xl border border-warm-200 bg-warm-50 p-3">
+                  <p className="text-xs font-bold uppercase tracking-[0.18em] text-warm-500">Review gaps</p>
+                  <p className="mt-2 text-sm leading-6 text-warm-700">
+                    {item.blockers.length ? item.blockers.join(' ') : 'No blocking review gaps detected.'}
+                  </p>
+                </div>
+                <label className="block rounded-2xl border border-warm-200 bg-warm-50 p-3 text-xs font-semibold uppercase tracking-[0.16em] text-warm-500">
+                  Review note
+                  <textarea
+                    value={edit.reviewNotes ?? item.reviewNotes}
+                    onChange={(event) => onChangeGoalEdit(item.fingerprint, 'reviewNotes', event.target.value)}
+                    rows={2}
+                    className="mt-2 w-full rounded-xl border border-warm-200 bg-white px-3 py-2 text-sm normal-case leading-6 tracking-normal text-warm-900 outline-none focus:border-sage-300"
+                    placeholder="Optional reviewer note"
+                  />
+                </label>
+              </div>
+            </div>
+          )
+        })}
+      </div>
+    </section>
+  )
+}
+
 function GoalPlannerPanel({ review }) {
   const reportRows = review.reportRows.slice(0, 24)
   const ferbMappings = review.ferbMappings.slice(0, 12)
@@ -746,6 +900,8 @@ export default function ProductWorkbench({ clientId, clientName }) {
   const [workflowError, setWorkflowError] = useState('')
   const [syncing, setSyncing] = useState(false)
   const [savingGate, setSavingGate] = useState('')
+  const [savingGoalReview, setSavingGoalReview] = useState('')
+  const [goalDraftEdits, setGoalDraftEdits] = useState({})
   const [generatingDraft, setGeneratingDraft] = useState(false)
   const [exportingDocx, setExportingDocx] = useState(false)
   const [selectedArtifactId, setSelectedArtifactId] = useState('')
@@ -759,9 +915,14 @@ export default function ProductWorkbench({ clientId, clientName }) {
     () => clientId ? clientPrograms.map(mapClientProgramToGoalRow) : SAMPLE_GOAL_ROWS,
     [clientId, clientPrograms],
   )
+  const goalReviewQueue = useMemo(
+    () => buildGoalReviewQueue(goalRows, workflowBundle?.goalReviews || []),
+    [goalRows, workflowBundle?.goalReviews],
+  )
+  const reviewedGoalRows = goalReviewQueue.goalRowsForDraft.length ? goalReviewQueue.goalRowsForDraft : goalRows
   const goalPlannerReview = useMemo(
-    () => buildGoalPlannerReview(goalRows),
-    [goalRows],
+    () => buildGoalPlannerReview(reviewedGoalRows),
+    [reviewedGoalRows],
   )
   const persistedSourceDocuments = useMemo(
     () => workflowBundle?.sources?.length
@@ -779,10 +940,10 @@ export default function ProductWorkbench({ clientId, clientName }) {
     status: workflowBundle?.job?.status || (clientId ? 'intake' : 'draft'),
     currentPhase: workflowBundle?.job?.current_phase || 'intake',
     sourceDocuments: persistedSourceDocuments,
-    goalRows,
+    goalRows: reviewedGoalRows,
     approvals: approvalRows,
     requiredReportSections: DEFAULT_REQUIRED_REPORT_SECTIONS,
-  }), [approvalRows, clientId, clientName, goalRows, persistedSourceDocuments, selectedWorkflowJobId, workflowBundle?.job])
+  }), [approvalRows, clientId, clientName, reviewedGoalRows, persistedSourceDocuments, selectedWorkflowJobId, workflowBundle?.job])
   const phaseActions = PRODUCTIZATION_ACTIONS.filter((action) => action.phase === selectedPhase.id)
 
   const loadLiveWorkflow = useCallback(async () => {
@@ -793,6 +954,7 @@ export default function ProductWorkbench({ clientId, clientName }) {
       setWorkflowBundle(null)
       setSelectedWorkflowJobId('')
       setSelectedArtifactId('')
+      setGoalDraftEdits({})
       setWorkflowError('')
       return
     }
@@ -825,6 +987,7 @@ export default function ProductWorkbench({ clientId, clientName }) {
       const bundle = preferredJob?.id ? await listProductWorkflowBundle(preferredJob.id) : null
       setWorkflowBundle(bundle)
       setSelectedArtifactId(bundle?.artifacts?.[0]?.id || '')
+      setGoalDraftEdits({})
     } catch (err) {
       setWorkflowError(err.message || 'Could not load product workflow state.')
     } finally {
@@ -861,10 +1024,50 @@ export default function ProductWorkbench({ clientId, clientName }) {
     try {
       setWorkflowBundle(jobId ? await listProductWorkflowBundle(jobId) : null)
       setSelectedArtifactId('')
+      setGoalDraftEdits({})
     } catch (err) {
       setWorkflowError(err.message || 'Could not load the selected workflow job.')
     }
   }, [])
+
+  const handleChangeGoalEdit = useCallback((fingerprint, field, value) => {
+    setGoalDraftEdits((prev) => ({
+      ...prev,
+      [fingerprint]: {
+        ...(prev[fingerprint] || {}),
+        [field]: value,
+      },
+    }))
+  }, [])
+
+  const handleSetGoalReview = useCallback(async (item, reviewStatus, includeEdits = true) => {
+    if (!selectedWorkflowJobId) return
+    const edits = includeEdits ? goalDraftEdits[item.fingerprint] || {} : {}
+    const { reviewNotes = item.reviewNotes || '', ...goalEdits } = edits
+    const reviewedGoal = {
+      ...item.reviewedGoal,
+      ...goalEdits,
+    }
+
+    setSavingGoalReview(item.fingerprint)
+    setWorkflowError('')
+    try {
+      await upsertProductWorkflowGoalReview({
+        jobId: selectedWorkflowJobId,
+        sourceGoal: item.sourceGoal,
+        reviewStatus,
+        reviewedGoal,
+        reviewNotes,
+        reviewedBy: user?.id || null,
+        createdBy: user?.id || null,
+      })
+      await handleSelectWorkflowJob(selectedWorkflowJobId)
+    } catch (err) {
+      setWorkflowError(err.message || 'Could not save the goal review decision.')
+    } finally {
+      setSavingGoalReview('')
+    }
+  }, [goalDraftEdits, handleSelectWorkflowJob, selectedWorkflowJobId, user?.id])
 
   const handleGenerateDraftArtifact = useCallback(async () => {
     if (!selectedWorkflowJobId) return
@@ -992,6 +1195,15 @@ export default function ProductWorkbench({ clientId, clientName }) {
           syncing={syncing}
           onSync={handleSyncCurrentFiles}
           onSelectJob={handleSelectWorkflowJob}
+        />
+
+        <GoalReviewQueuePanel
+          queue={goalReviewQueue}
+          workflowJobId={selectedWorkflowJobId}
+          draftEdits={goalDraftEdits}
+          savingGoalReview={savingGoalReview}
+          onChangeGoalEdit={handleChangeGoalEdit}
+          onSetGoalReview={handleSetGoalReview}
         />
 
         <GoalPlannerPanel review={goalPlannerReview} />

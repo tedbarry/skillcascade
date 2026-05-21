@@ -5,10 +5,16 @@ import { Client } from 'pg'
 
 const ROOT = process.cwd()
 const APPLY = process.argv.includes('--apply')
-const MIGRATION = {
-  id: '20260521_product_workflow_spine',
-  path: 'supabase/migrations/20260521_product_workflow_spine.sql',
-}
+const MIGRATIONS = [
+  {
+    id: '20260521_product_workflow_spine',
+    path: 'supabase/migrations/20260521_product_workflow_spine.sql',
+  },
+  {
+    id: '20260521_product_goal_review_queue',
+    path: 'supabase/migrations/20260521_product_goal_review_queue.sql',
+  },
+]
 
 const REQUIRED_TABLES = [
   {
@@ -72,6 +78,24 @@ const REQUIRED_TABLES = [
       'artifact_status',
       'storage_ref',
       'metadata',
+      'created_by',
+      'created_at',
+      'updated_at',
+    ],
+  },
+  {
+    name: 'product_workflow_goal_reviews',
+    columns: [
+      'id',
+      'job_id',
+      'source_goal_id',
+      'source_goal_fingerprint',
+      'source_goal_snapshot',
+      'review_status',
+      'reviewed_goal',
+      'review_notes',
+      'reviewed_by',
+      'reviewed_at',
       'created_by',
       'created_at',
       'updated_at',
@@ -210,14 +234,16 @@ async function inspectState(client) {
   }
 }
 
-async function applyMigration(client) {
-  const fullPath = path.join(ROOT, MIGRATION.path)
-  if (!fs.existsSync(fullPath)) {
-    throw new Error(`Missing migration file: ${MIGRATION.path}`)
-  }
+async function applyMigrations(client) {
+  for (const migration of MIGRATIONS) {
+    const fullPath = path.join(ROOT, migration.path)
+    if (!fs.existsSync(fullPath)) {
+      throw new Error(`Missing migration file: ${migration.path}`)
+    }
 
-  console.log(`[product-workflow-preflight] applying ${MIGRATION.id}`)
-  await client.query(fs.readFileSync(fullPath, 'utf8'))
+    console.log(`[product-workflow-preflight] applying ${migration.id}`)
+    await client.query(fs.readFileSync(fullPath, 'utf8'))
+  }
 }
 
 function printState(label, state) {
@@ -243,11 +269,11 @@ try {
   printState('current schema', state)
 
   if (!state.ready && !APPLY) {
-    console.error(`[product-workflow-preflight] blocked: pending migration ${MIGRATION.id}`)
+    console.error('[product-workflow-preflight] blocked: pending product workflow migration(s)')
     console.error('Run npm run migrate:product-workflow with a production-safe DB connection to install the workflow spine.')
     process.exitCode = 1
   } else if (!state.ready && APPLY) {
-    await applyMigration(client)
+    await applyMigrations(client)
     state = await inspectState(client)
     printState('schema after migration', state)
     if (!state.ready) {

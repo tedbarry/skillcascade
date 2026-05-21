@@ -224,6 +224,7 @@ const TABLE_PERMISSION_MAP = {
   product_workflow_jobs:      { category: 'reports', select: 'view', insert: 'edit', update: 'edit', delete: 'edit' },
   product_workflow_sources:   { category: 'reports', select: 'view', insert: 'edit', update: 'edit', delete: 'edit' },
   product_workflow_approvals: { category: 'reports', select: 'view', insert: 'edit', update: 'edit', delete: 'edit' },
+  product_workflow_goal_reviews: { category: 'reports', select: 'view', insert: 'edit', update: 'edit', delete: 'edit' },
   product_workflow_artifacts: { category: 'reports', select: 'view', insert: 'edit', update: 'edit', delete: 'edit' },
 
   // Goals

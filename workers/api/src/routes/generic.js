@@ -92,6 +92,7 @@ const TABLE_CONFIG = {
   product_workflow_jobs: { scope: 'open' },
   product_workflow_sources: { scope: 'lookup', lookupTable: 'product_workflow_jobs', lookupColumn: 'job_id', lookupClientColumn: 'client_id' },
   product_workflow_approvals: { scope: 'lookup', lookupTable: 'product_workflow_jobs', lookupColumn: 'job_id', lookupClientColumn: 'client_id' },
+  product_workflow_goal_reviews: { scope: 'lookup', lookupTable: 'product_workflow_jobs', lookupColumn: 'job_id', lookupClientColumn: 'client_id' },
   product_workflow_artifacts: { scope: 'lookup', lookupTable: 'product_workflow_jobs', lookupColumn: 'job_id', lookupClientColumn: 'client_id' },
 
   goal_domains: { scope: 'open' },

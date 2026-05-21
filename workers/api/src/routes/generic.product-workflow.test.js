@@ -212,4 +212,46 @@ describe('worker generic product workflow access', () => {
     expect(db.query.mock.calls[0][1]).toContain('FROM product_workflow_jobs')
     expect(db.queryWithUser.mock.calls[0][2]).toContain('INSERT INTO product_workflow_artifacts')
   })
+
+  it('allows goal review decisions only when the parent workflow job client is accessible', async () => {
+    db.query
+      .mockResolvedValueOnce({ rows: [{ client_id: 'client-1' }] })
+      .mockResolvedValueOnce({ rows: [{ id: 'client-1' }] })
+    db.queryWithUser.mockResolvedValueOnce({
+      rows: [{
+        id: 'goal-review-1',
+        job_id: 'job-1',
+        review_status: 'accepted',
+      }],
+    })
+
+    const response = await sendGenericRequest(
+      'product_workflow_goal_reviews',
+      {
+        operation: 'upsert',
+        on_conflict: 'job_id,source_goal_fingerprint',
+        data: {
+          job_id: 'job-1',
+          source_goal_fingerprint: 'goal:goal-1',
+          source_goal_snapshot: {
+            domain: 'Communication',
+            objective: 'The client will request help.',
+          },
+          review_status: 'accepted',
+          reviewed_goal: {
+            objective: 'The client will request help.',
+          },
+        },
+      },
+    )
+    const payload = await response.json()
+
+    expect(response.status).toBe(200)
+    expect(payload.data[0]).toMatchObject({
+      job_id: 'job-1',
+      review_status: 'accepted',
+    })
+    expect(db.query.mock.calls[0][1]).toContain('FROM product_workflow_jobs')
+    expect(db.queryWithUser.mock.calls[0][2]).toContain('INSERT INTO product_workflow_goal_reviews')
+  })
 })
