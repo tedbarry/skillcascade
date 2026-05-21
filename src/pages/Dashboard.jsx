@@ -90,6 +90,7 @@ const ClientFiles = lazy(() => import('../components/platform/ClientFiles.jsx'))
 const ClientContacts = lazy(() => import('../components/platform/ClientContacts.jsx'))
 const ClientAIAgent = lazy(() => import('../components/platform/ClientAIAgent.jsx'))
 const PracticeIntelligence = lazy(() => import('../components/platform/PracticeIntelligence.jsx'))
+const ProductWorkbench = lazy(() => import('../components/platform/ProductWorkbench.jsx'))
 import { framework, toHierarchy, ASSESSMENT_LABELS, ASSESSMENT_COLORS, ASSESSMENT_LEVELS, isAssessed } from '../data/framework.js'
 import { generateSampleAssessments, generateSampleSnapshots } from '../data/sampleAssessments.js'
 import { saveSnapshot, getSnapshots, deleteSnapshot, getAssessments, saveAssessment } from '../data/storage.js'
@@ -144,6 +145,7 @@ const VIEW_SKELETON = {
   notes: 'list',
   authorizations: 'list',
   'clinical-evidence': 'list',
+  'product-workbench': 'list',
   'client-files': 'list',
   'client-contacts': 'grid',
 }
@@ -176,6 +178,7 @@ const VIEW_LABELS = {
   'goal-library': 'Goal Library',
   'learning-tree': 'Learning Tree',
   'clinical-evidence': 'Clinical Evidence',
+  'product-workbench': 'Product Workbench',
   'graph-dashboard': 'Graph Dashboard',
   'sessions': 'Sessions',
   'goal-drafts': 'Fallback Drafts',
@@ -221,6 +224,7 @@ export const VIEWS = {
   GOAL_LIBRARY: 'goal-library',
   LEARNING_TREE: 'learning-tree',
   CLINICAL_EVIDENCE: 'clinical-evidence',
+  PRODUCT_WORKBENCH: 'product-workbench',
   GRAPH_DASHBOARD: 'graph-dashboard',
   SESSIONS: 'sessions',
   GOAL_DRAFTS: 'goal-drafts',
@@ -239,7 +243,7 @@ export const VIEWS = {
 // Clinical views — require clinical_access subscription add-on
 const CLINICAL_GATED_VIEWS = ['schedule', 'daily-agenda', 'authorizations', 'client-files', 'client-contacts']
 // All clinical views (gated + ungated clinical that still need subscription check for nav redirect)
-const CLINICAL_VIEWS = ['reports', 'clinical-evidence', 'notes', 'learning-tree', 'goal-library', 'graph-dashboard', 'schedule', 'daily-agenda', 'authorizations', 'client-files', 'client-contacts', 'client-ai']
+const CLINICAL_VIEWS = ['reports', 'product-workbench', 'clinical-evidence', 'notes', 'learning-tree', 'goal-library', 'graph-dashboard', 'schedule', 'daily-agenda', 'authorizations', 'client-files', 'client-contacts', 'client-ai']
 
 export default function Dashboard() {
   const { user, profile } = useAuth()
@@ -1043,7 +1047,7 @@ export default function Dashboard() {
   }
 
   // Assessment, tree, cascade, and timeline views are full-width — no side panels
-  const fullWidthViews = [VIEWS.HOME, VIEWS.ASSESS, VIEWS.TREE, VIEWS.CASCADE, VIEWS.EXPLORER, VIEWS.TIMELINE, VIEWS.QUICK_ASSESS, VIEWS.GOALS, VIEWS.ALERTS, VIEWS.REPORTS, VIEWS.PARENT, VIEWS.CASELOAD, VIEWS.MILESTONES, VIEWS.PRACTICE, VIEWS.ORG_ANALYTICS, VIEWS.PREDICTIONS, VIEWS.BRANDING, VIEWS.MESSAGES, VIEWS.DATA, VIEWS.ACCESSIBILITY, VIEWS.PRICING, VIEWS.MARKETPLACE, VIEWS.CERTIFICATIONS, VIEWS.COMPARE, VIEWS.GOAL_DRAFTS, VIEWS.DEFICIT_GOALS, VIEWS.LESSON_PLAN, VIEWS.GOAL_LIBRARY, VIEWS.LEARNING_TREE, VIEWS.CLINICAL_EVIDENCE, VIEWS.GRAPH_DASHBOARD, VIEWS.SESSIONS, VIEWS.NOTES, VIEWS.AUTHORIZATIONS, VIEWS.CLIENT_FILES, VIEWS.CLIENT_CONTACTS, VIEWS.CLIENT_AI, VIEWS.PRACTICE_INTELLIGENCE]
+  const fullWidthViews = [VIEWS.HOME, VIEWS.ASSESS, VIEWS.TREE, VIEWS.CASCADE, VIEWS.EXPLORER, VIEWS.TIMELINE, VIEWS.QUICK_ASSESS, VIEWS.GOALS, VIEWS.ALERTS, VIEWS.REPORTS, VIEWS.PARENT, VIEWS.CASELOAD, VIEWS.MILESTONES, VIEWS.PRACTICE, VIEWS.ORG_ANALYTICS, VIEWS.PREDICTIONS, VIEWS.BRANDING, VIEWS.MESSAGES, VIEWS.DATA, VIEWS.ACCESSIBILITY, VIEWS.PRICING, VIEWS.MARKETPLACE, VIEWS.CERTIFICATIONS, VIEWS.COMPARE, VIEWS.GOAL_DRAFTS, VIEWS.DEFICIT_GOALS, VIEWS.LESSON_PLAN, VIEWS.GOAL_LIBRARY, VIEWS.LEARNING_TREE, VIEWS.CLINICAL_EVIDENCE, VIEWS.PRODUCT_WORKBENCH, VIEWS.GRAPH_DASHBOARD, VIEWS.SESSIONS, VIEWS.NOTES, VIEWS.AUTHORIZATIONS, VIEWS.CLIENT_FILES, VIEWS.CLIENT_CONTACTS, VIEWS.CLIENT_AI, VIEWS.PRACTICE_INTELLIGENCE]
   const showSidePanels = !fullWidthViews.includes(activeView)
 
   // Hard gate: must have a subscription to access the dashboard
@@ -1702,6 +1706,15 @@ export default function Dashboard() {
                   />
                 </Suspense>
               )}
+            </div>
+          )}
+
+          {/* Product Workbench */}
+          {activeView === VIEWS.PRODUCT_WORKBENCH && (
+            <div className="w-full h-full overflow-y-auto">
+              <Suspense fallback={<ViewLoader view={activeView} />}>
+                <ProductWorkbench clientId={clientId} clientName={clientName} />
+              </Suspense>
             </div>
           )}
 

@@ -42,7 +42,7 @@ const SESSION_NOTE_TRANSITION_FIELDS = {
 }
 const SESSION_NOTE_ORG_WIDE_ROLES = new Set(['master_admin', 'admin', 'qa_admin'])
 const CLIENT_ACCESS_FILTER_TABLES = new Set(['sessions'])
-const DIRECT_CLIENT_TABLES = new Set(['assessments', 'client_programs', 'reports', 'client_goal_decisions'])
+const DIRECT_CLIENT_TABLES = new Set(['assessments', 'client_programs', 'reports', 'client_goal_decisions', 'product_workflow_jobs'])
 const GOAL_LIBRARY_TABLES = new Set(['goal_domains', 'goal_ltgs', 'goal_stgs', 'goal_targets'])
 const GOAL_LIBRARY_PARENT_LOOKUPS = {
   goal_ltgs: { column: 'domain_id', table: 'goal_domains', label: 'Domain' },
@@ -89,6 +89,10 @@ const TABLE_CONFIG = {
   ai_chats: { scope: 'org', orgColumn: 'org_id' },
   auth_reports: { scope: 'open' },
   reports: { scope: 'open' },
+  product_workflow_jobs: { scope: 'open' },
+  product_workflow_sources: { scope: 'lookup', lookupTable: 'product_workflow_jobs', lookupColumn: 'job_id', lookupClientColumn: 'client_id' },
+  product_workflow_approvals: { scope: 'lookup', lookupTable: 'product_workflow_jobs', lookupColumn: 'job_id', lookupClientColumn: 'client_id' },
+  product_workflow_artifacts: { scope: 'lookup', lookupTable: 'product_workflow_jobs', lookupColumn: 'job_id', lookupClientColumn: 'client_id' },
 
   goal_domains: { scope: 'open' },
   goal_ltgs: { scope: 'open' },
@@ -526,6 +530,39 @@ async function validateProgramMutationRows(env, profile, table, rawData, program
     profile,
     programIds.length === 1 ? programIds[0] : ['in', [...new Set(programIds)]],
   )
+}
+
+async function validateLookupMutationRows(env, profile, table, rawData, config) {
+  const rows = Array.isArray(rawData) ? rawData : [rawData]
+  if (rows.length === 0) {
+    return { allowed: false, status: 400, error: 'No data provided' }
+  }
+
+  if (rows.some(row => !row?.[config.lookupColumn])) {
+    return { allowed: false, status: 400, error: `${config.lookupColumn} required for ${table}` }
+  }
+  const lookupIds = [...new Set(rows.map(row => row?.[config.lookupColumn]))]
+
+  const parent = await query(
+    env,
+    `SELECT id,
+            ${normalizeIdentifier(config.lookupClientColumn, 'lookup client column')}
+     FROM ${normalizeIdentifier(config.lookupTable, 'lookup table')}
+     WHERE id = ANY($1::uuid[])`,
+    [lookupIds],
+  )
+
+  if (parent.rows.length !== lookupIds.length) {
+    return { allowed: false, status: 404, error: 'One or more parent resources were not found' }
+  }
+
+  for (const row of parent.rows) {
+    if (!await canAccessClient(env, profile, row[config.lookupClientColumn])) {
+      return { allowed: false, status: 403, error: 'Forbidden' }
+    }
+  }
+
+  return { allowed: true }
 }
 
 async function validateSessionAccess(env, profile, sessionId) {
@@ -1628,6 +1665,12 @@ async function enforceAccess(env, profile, table, operation, body, filters, rawD
   }
 
   if (scope === 'lookup') {
+    if (operation === 'insert' || operation === 'upsert') {
+      const access = await validateLookupMutationRows(env, profile, table, rawData || body, config)
+      if (!access.allowed) return access
+      return { allowed: true, filters }
+    }
+
     const lookupId = body?.[config.lookupColumn] || filters?.[config.lookupColumn]
     if (!lookupId) {
       return { allowed: false, status: 400, error: `${config.lookupColumn} required for ${table}` }

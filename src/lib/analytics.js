@@ -13,6 +13,9 @@ let eventBuffer = []
 let flushInterval = null
 let sessionStartTime = null
 let identified = false
+let initialized = false
+let identifyPromise = null
+let analyticsDisabled = false
 
 const FLUSH_INTERVAL_MS = 30_000 // 30 seconds
 const BUFFER_LIMIT = 20
@@ -28,6 +31,9 @@ function getDeviceType() {
  * Initialize analytics session. Call once on app load.
  */
 export function initAnalytics() {
+  if (initialized) return
+  initialized = true
+
   // Reuse session ID within the same tab
   const existing = sessionStorage.getItem('sc_session_id')
   if (existing) {
@@ -53,12 +59,17 @@ export function initAnalytics() {
  * Call after login when profile is available.
  */
 export async function identify(user, traits = {}) {
-  if (!sessionId || identified) return
+  if (!sessionId || identified || analyticsDisabled) return
+  if (identifyPromise) return identifyPromise
   userId = user.id
   orgId = traits.org_id || null
+  if (sessionStorage.getItem('sc_session_identified') === sessionId) {
+    identified = true
+    return
+  }
 
-  try {
-    await api.from('usage_sessions').insert({
+  identifyPromise = (async () => {
+    const result = await api.from('usage_sessions').insert({
       id: sessionId,
       user_id: userId,
       org_id: orgId,
@@ -70,9 +81,28 @@ export async function identify(user, traits = {}) {
       screen_height: window.innerHeight,
       user_agent: navigator.userAgent.slice(0, 255),
     })
+    if (result?.error) {
+      const message = result.error.message || ''
+      if (/duplicate key|usage_sessions_pkey|unique constraint/i.test(message)) {
+        identified = true
+        sessionStorage.setItem('sc_session_identified', sessionId)
+        return
+      }
+      analyticsDisabled = true
+      return
+    }
+
     identified = true
+    sessionStorage.setItem('sc_session_identified', sessionId)
+  })()
+
+  try {
+    await identifyPromise
   } catch {
-    // Silently fail — analytics should never break the app
+    // Analytics should never break the app or create noisy retries.
+    analyticsDisabled = true
+  } finally {
+    identifyPromise = null
   }
 }
 
@@ -83,7 +113,7 @@ export async function identify(user, traits = {}) {
  * @param {object} [metadata] - Extra context (never include PHI)
  */
 export function track(eventType, eventName, metadata = {}) {
-  if (!sessionId) return
+  if (!sessionId || analyticsDisabled) return
 
   eventBuffer.push({
     session_id: sessionId,
@@ -102,19 +132,21 @@ export function track(eventType, eventName, metadata = {}) {
  * Flush buffered events to Supabase.
  */
 async function flush() {
-  if (!identified || eventBuffer.length === 0) return
+  if (!identified || analyticsDisabled || eventBuffer.length === 0) return
 
   const batch = eventBuffer.splice(0)
 
   try {
-    await api.from('usage_events').insert(batch)
+    const eventsResult = await api.from('usage_events').insert(batch)
+    if (eventsResult?.error) throw new Error(eventsResult.error.message || 'Usage events insert failed')
 
     // Update session duration (event_count derived from usage_events table)
     const elapsed = Math.round((Date.now() - (sessionStartTime || Date.now())) / 1000)
-    await api
+    const sessionResult = await api
       .from('usage_sessions')
       .update({ duration_seconds: elapsed })
       .eq('id', sessionId)
+    if (sessionResult?.error) throw new Error(sessionResult.error.message || 'Usage session update failed')
   } catch {
     // Put events back on failure so they retry next flush
     eventBuffer.unshift(...batch)
@@ -125,20 +157,21 @@ async function flush() {
  * End the current session. Call on logout.
  */
 export async function endSession() {
-  if (!sessionId || !identified) return
+  if (!sessionId || !identified || analyticsDisabled) return
 
   // Final flush
   await flush()
 
   try {
     const elapsed = Math.round((Date.now() - (sessionStartTime || Date.now())) / 1000)
-    await api
+    const result = await api
       .from('usage_sessions')
       .update({
         ended_at: new Date().toISOString(),
         duration_seconds: elapsed,
       })
       .eq('id', sessionId)
+    if (result?.error) throw new Error(result.error.message || 'Usage session end failed')
   } catch {
     // Silently fail
   }
@@ -146,11 +179,15 @@ export async function endSession() {
   // Cleanup
   if (flushInterval) clearInterval(flushInterval)
   sessionStorage.removeItem('sc_session_id')
+  sessionStorage.removeItem('sc_session_identified')
   sessionId = null
   userId = null
   orgId = null
   eventBuffer = []
   identified = false
+  initialized = false
+  identifyPromise = null
+  analyticsDisabled = false
 }
 
 /**

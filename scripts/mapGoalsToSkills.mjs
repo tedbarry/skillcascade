@@ -6,24 +6,26 @@
 import { createClient } from '@supabase/supabase-js'
 import { readFileSync } from 'fs'
 
-const SUPABASE_URL = 'https://walshlbzxyzqxbbzsrcs.supabase.co'
-const cacheFile = readFileSync(
-  new URL('file:///C:/Users/teddy/.claude/paste-cache/c491c60aaa3ec1a8.txt'),
-  'utf8'
-)
-const SERVICE_KEY = cacheFile.match(/eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9\.[A-Za-z0-9_-]+\.[A-Za-z0-9_-]+/)?.[0]
-const OPENAI_KEY = process.env.OPENAI_API_KEY || (() => {
-  // Try to get from Supabase secrets — for now use the one in the edge function
-  // We'll call the AI proxy instead
-  return null
-})()
+const SUPABASE_URL = process.env.SUPABASE_URL || 'https://walshlbzxyzqxbbzsrcs.supabase.co'
+const SERVICE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY
+const SC_EMAIL = process.env.SC_EMAIL
+const SC_PASSWORD = process.env.SC_PASSWORD
+const SKILLS_COMPACT_PATH = process.env.SKILLS_COMPACT_PATH || 'C:/Users/teddy/AppData/Local/Temp/skills_compact.txt'
+
+if (!SERVICE_KEY) {
+  throw new Error('Set SUPABASE_SERVICE_ROLE_KEY in the local shell before running mapGoalsToSkills.mjs.')
+}
+
+if (!SC_EMAIL || !SC_PASSWORD) {
+  throw new Error('Set SC_EMAIL and SC_PASSWORD in the local shell before running mapGoalsToSkills.mjs.')
+}
 
 const supabase = createClient(SUPABASE_URL, SERVICE_KEY, {
   auth: { autoRefreshToken: false, persistSession: false }
 })
 
 // Load the compact skill framework
-const skillsText = readFileSync('C:/Users/teddy/AppData/Local/Temp/skills_compact.txt', 'utf8')
+const skillsText = readFileSync(SKILLS_COMPACT_PATH, 'utf8')
 
 const SYSTEM_PROMPT = `You are an expert BCBA mapping ABA therapy goals to a developmental skill framework.
 
@@ -48,14 +50,14 @@ Return a JSON array of all mappings.`
 let authToken = null
 async function getAuthToken() {
   if (authToken) return authToken
-  // Sign in with the test account
+  // Sign in as the operator to receive an auth token for the AI proxy.
   const { data, error } = await supabase.auth.signInWithPassword({
-    email: 'teddybahary@gmail.com',
-    password: process.env.SC_PASSWORD || 'test',
+    email: SC_EMAIL,
+    password: SC_PASSWORD,
   })
   if (error) {
     console.error('Auth failed:', error.message)
-    console.error('Set SC_PASSWORD env var to your SkillCascade password')
+    console.error('Set SC_EMAIL and SC_PASSWORD env vars for a SkillCascade account')
     process.exit(1)
   }
   authToken = data.session.access_token
@@ -63,7 +65,7 @@ async function getAuthToken() {
   return authToken
 }
 
-async function callOpenAI(goals) {
+async function callAIProxy(goals) {
   const token = await getAuthToken()
   const goalsText = goals.map((g, i) => `${i + 1}. ${g.name}: ${g.objective || ''}`).join('\n')
 
@@ -114,7 +116,7 @@ async function run() {
     console.log(`\nBatch ${Math.floor(i / BATCH_SIZE) + 1}/${Math.ceil(stgs.length / BATCH_SIZE)}: ${batch.length} goals`)
 
     try {
-      const response = await callOpenAI(batch)
+      const response = await callAIProxy(batch)
 
       // Parse JSON from response
       const cleaned = response.replace(/```json\s*/gi, '').replace(/```\s*/g, '').trim()

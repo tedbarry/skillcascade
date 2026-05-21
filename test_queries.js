@@ -7,7 +7,10 @@ import pg from 'pg'
 const { Pool } = pg
 
 // Strip sslmode from connection string — we set ssl options directly
-const DATABASE_URL = 'postgresql://postgres:SkCascade2026prodRDS@skillcascade-prod.c0li86e6kdup.us-east-1.rds.amazonaws.com:5432/skillcascade'
+const DATABASE_URL = process.env.DATABASE_URL
+if (!DATABASE_URL) {
+  throw new Error('Set DATABASE_URL in the local shell before running test_queries.js.')
+}
 
 const ORG_ID = '17036737-f29e-44be-be89-edb5aa5273aa'
 const USER_ID = '82f57ac3-de9f-4040-b134-784384518bb5'

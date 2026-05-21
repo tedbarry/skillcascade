@@ -6,7 +6,10 @@
 
 const { Pool } = require('pg');
 
-const CONNECTION = 'postgresql://postgres:SkCascade2026prodRDS@skillcascade-prod.c0li86e6kdup.us-east-1.rds.amazonaws.com:5432/skillcascade';
+const CONNECTION = process.env.DATABASE_URL;
+if (!CONNECTION) {
+  throw new Error('Set DATABASE_URL in the local shell before running create_full_demo.cjs.');
+}
 const ORG_ID = 'ffb3ae44-f65f-4d3d-8be0-773b917a1a4e';
 const TEDDY_ID = '82f57ac3-de9f-4040-b134-784384518bb5';
 

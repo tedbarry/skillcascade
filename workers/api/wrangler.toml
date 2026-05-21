@@ -6,7 +6,7 @@ compatibility_flags = ["nodejs_compat"]
 [vars]
 SUPABASE_URL = "https://walshlbzxyzqxbbzsrcs.supabase.co"
 SUPABASE_ANON_KEY = "sb_publishable_oh0bvudMoPjqud7RCZ6X4Q_SXp-R_Wu"
-DATABASE_URL = "postgresql://postgres:SkCascade2026prodRDS@skillcascade-prod.c0li86e6kdup.us-east-1.rds.amazonaws.com:5432/skillcascade?sslmode=require"
+# DATABASE_URL must be configured as a Cloudflare secret, not committed here.
 
 [[hyperdrive]]
 binding = "DB"
@@ -18,7 +18,7 @@ name = "skillcascade-api-preview"
 [env.preview.vars]
 SUPABASE_URL = "https://walshlbzxyzqxbbzsrcs.supabase.co"
 SUPABASE_ANON_KEY = "sb_publishable_oh0bvudMoPjqud7RCZ6X4Q_SXp-R_Wu"
-DATABASE_URL = "postgresql://postgres:SkCascade2026prodRDS@skillcascade-prod.c0li86e6kdup.us-east-1.rds.amazonaws.com:5432/skillcascade?sslmode=require"
+# DATABASE_URL must be configured as a Cloudflare preview secret, not committed here.
 
 [[env.preview.hyperdrive]]
 binding = "DB"

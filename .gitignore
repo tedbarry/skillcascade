@@ -19,6 +19,10 @@ Thumbs.db
 .env
 .env.local
 .env.*.local
+.dev.vars
+.dev.vars.*
+workers/**/.dev.vars
+workers/**/.dev.vars.*
 
 # Supabase temp
 supabase/.temp/

@@ -5,9 +5,12 @@
 import { createClient } from '@supabase/supabase-js'
 import { readFileSync } from 'fs'
 
-const SUPABASE_URL = 'https://walshlbzxyzqxbbzsrcs.supabase.co'
-const cacheFile = readFileSync('C:/Users/teddy/.claude/paste-cache/c491c60aaa3ec1a8.txt', 'utf8')
-const SERVICE_KEY = cacheFile.match(/eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9\.[A-Za-z0-9_-]+\.[A-Za-z0-9_-]+/)?.[0]
+const SUPABASE_URL = process.env.SUPABASE_URL || 'https://walshlbzxyzqxbbzsrcs.supabase.co'
+const SERVICE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY
+
+if (!SERVICE_KEY) {
+  throw new Error('Set SUPABASE_SERVICE_ROLE_KEY in the local shell before running reseedGoalLibrary.mjs.')
+}
 
 const supabase = createClient(SUPABASE_URL, SERVICE_KEY, {
   auth: { autoRefreshToken: false, persistSession: false }

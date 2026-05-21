@@ -8,6 +8,11 @@ describe('dashboardViewAccess', () => {
       canViewReports: false,
     })).toBe(false)
 
+    expect(canAccessDashboardView('product-workbench', {
+      hasClinical: true,
+      canViewReports: false,
+    })).toBe(false)
+
     expect(canAccessDashboardView('authorizations', {
       hasClinical: true,
       canViewBilling: false,
@@ -24,6 +29,11 @@ describe('dashboardViewAccess', () => {
       canViewReports: true,
     })).toBe(false)
 
+    expect(canAccessDashboardView('product-workbench', {
+      hasClinical: false,
+      canViewReports: true,
+    })).toBe(false)
+
     expect(canAccessDashboardView('clinical-evidence', {
       hasClinical: false,
     })).toBe(false)
@@ -35,6 +45,11 @@ describe('dashboardViewAccess', () => {
     expect(canAccessDashboardView('authorizations', {
       hasClinical: true,
       canViewBilling: true,
+    })).toBe(true)
+
+    expect(canAccessDashboardView('product-workbench', {
+      hasClinical: true,
+      canViewReports: true,
     })).toBe(true)
 
     expect(canAccessDashboardView('clinical-evidence', {

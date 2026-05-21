@@ -221,6 +221,10 @@ const TABLE_PERMISSION_MAP = {
   // Reports
   reports:                    { category: 'reports', select: 'view', insert: 'edit', update: 'edit', delete: 'edit' },
   auth_reports:               { category: 'reports', select: 'view', insert: 'edit', update: 'edit', delete: 'edit' },
+  product_workflow_jobs:      { category: 'reports', select: 'view', insert: 'edit', update: 'edit', delete: 'edit' },
+  product_workflow_sources:   { category: 'reports', select: 'view', insert: 'edit', update: 'edit', delete: 'edit' },
+  product_workflow_approvals: { category: 'reports', select: 'view', insert: 'edit', update: 'edit', delete: 'edit' },
+  product_workflow_artifacts: { category: 'reports', select: 'view', insert: 'edit', update: 'edit', delete: 'edit' },
 
   // Goals
   // Shared library reads stay open; authoring is handled in checkTablePermission().

@@ -3,6 +3,7 @@ import { api } from '../../lib/api.js'
 import { useAuth } from '../../contexts/AuthContext.jsx'
 import useResponsive from '../../hooks/useResponsive.js'
 import { track } from '../../lib/analytics.js'
+import { syncProductWorkflowFromClientFiles } from '../../lib/productWorkflowStorage.js'
 import {
   canManageClientFiles,
   getRoleSlugFromProfile,
@@ -151,6 +152,14 @@ export default function ClientFiles({ clientId, clientName }) {
 
       setFiles(prev => [payload.data, ...prev])
       setStorageNotice(payload.storage_mode === 'legacy' ? (payload.storage_warning || '') : '')
+      syncProductWorkflowFromClientFiles({
+        orgId,
+        clientId,
+        createdBy: user.id,
+        clientFiles: [payload.data],
+      }).catch((err) => {
+        console.warn('Product workflow source sync skipped:', err.message)
+      })
       track('feature_use', 'client_file_upload', { type: detectFileType(file.name), storage_mode: payload.storage_mode || 'unknown' })
     } catch (err) {
       console.error('Upload failed:', err)

@@ -101,6 +101,7 @@ const NAV_GROUPS = [
     ),
     clinicalOnly: true,
     views: [
+      { key: 'product-workbench', label: 'Product Workbench' },
       { key: 'reports', label: 'Auth Reports' },
       { key: 'clinical-evidence', label: 'Clinical Evidence' },
       { key: 'notes', label: 'Clinical Notes' },

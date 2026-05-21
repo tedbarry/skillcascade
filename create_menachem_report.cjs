@@ -1,7 +1,12 @@
 const { Client } = require('pg');
 
+const DATABASE_URL = process.env.DATABASE_URL;
+if (!DATABASE_URL) {
+  throw new Error('Set DATABASE_URL in the local shell before running create_menachem_report.cjs.');
+}
+
 async function run() {
-  const c = new Client({ connectionString: 'postgresql://postgres:SkCascade2026prodRDS@skillcascade-prod.c0li86e6kdup.us-east-1.rds.amazonaws.com:5432/skillcascade', ssl: { rejectUnauthorized: false } });
+  const c = new Client({ connectionString: DATABASE_URL, ssl: { rejectUnauthorized: false } });
   await c.connect();
 
   const userId = '82f57ac3-de9f-4040-b134-784384518bb5';

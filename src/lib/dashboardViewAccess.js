@@ -6,6 +6,7 @@ export const HIDDEN_BCBA_ASSISTANT_VIEWS = new Set([
 
 const VIEW_RULES = {
   reports: ({ canViewReports, hasClinical }) => Boolean(hasClinical && canViewReports),
+  'product-workbench': ({ canViewReports, hasClinical }) => Boolean(hasClinical && canViewReports),
   'clinical-evidence': ({ hasClinical }) => Boolean(hasClinical),
   notes: ({ hasClinical }) => Boolean(hasClinical),
   certifications: ({ canViewReports }) => Boolean(canViewReports),

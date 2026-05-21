@@ -32,7 +32,7 @@ const TAB_GROUPS = {
       practice: 'Home Practice', predictions: 'Predictions', 'org-analytics': 'Org Analytics',
       messages: 'Messages', branding: 'Branding', data: 'Data', accessibility: 'Access.',
       certifications: 'Certs', marketplace: 'Marketplace', pricing: 'Pricing',
-      'clinical-evidence': 'Evidence', 'learning-tree': 'Learning Tree', 'goal-library': 'Goal Library',
+      'product-workbench': 'Product', 'clinical-evidence': 'Evidence', 'learning-tree': 'Learning Tree', 'goal-library': 'Goal Library',
       'graph-dashboard': 'Graphs',
     },
   },
@@ -85,8 +85,8 @@ function TabIcon({ tab, active }) {
   }
 }
 
-const CLINICAL_MORE_VIEWS = ['daily-agenda', 'schedule', 'reports', 'clinical-evidence', 'notes', 'authorizations', 'graph-dashboard', 'goal-library', 'learning-tree']
-const CLINICAL_MORE_LABELS = { reports: 'Auth Reports', 'clinical-evidence': 'Evidence', notes: 'Clinical Notes', authorizations: 'Auths', 'daily-agenda': 'Today', schedule: 'Appointments' }
+const CLINICAL_MORE_VIEWS = ['daily-agenda', 'schedule', 'product-workbench', 'reports', 'clinical-evidence', 'notes', 'authorizations', 'graph-dashboard', 'goal-library', 'learning-tree']
+const CLINICAL_MORE_LABELS = { 'product-workbench': 'Product', reports: 'Auth Reports', 'clinical-evidence': 'Evidence', notes: 'Clinical Notes', authorizations: 'Auths', 'daily-agenda': 'Today', schedule: 'Appointments' }
 
 export default function MobileTabBar({ activeView, onChangeView, onOpenAI, canAccessView = () => true }) {
   const navigate = useNavigate()

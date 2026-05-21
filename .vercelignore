@@ -1,0 +1,31 @@
+# Local dependencies and build artifacts
+node_modules/
+dist/
+dist-*/
+playwright-report/
+test-results/
+
+# Local/private operator artifacts
+.env
+.env.*
+!.env.example
+.dev.vars
+.dev.vars.*
+outputs/
+docs/
+Demo/
+
+# Non-frontend backend/operator workspaces
+workers/
+supabase/
+memory/
+
+# Tooling and OS noise
+.git/
+.github/
+.claude/
+.wrangler/
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db
