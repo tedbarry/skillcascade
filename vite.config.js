@@ -6,7 +6,8 @@ import { copyFileSync, existsSync, mkdirSync } from 'fs'
 
 const SPA_STATIC_ROUTES = ['features', 'framework', 'demo', 'pricing']
 
-// Cloudflare Pages SPA routing: serve index.html as 404.html
+// Cloudflare Pages SPA routing: keep known public routes deployable without
+// emitting 404.html, which disables Pages' default 200-status SPA fallback.
 function cloudflareSPA() {
   let outDir
 
@@ -18,7 +19,6 @@ function cloudflareSPA() {
     closeBundle() {
       const src = resolve(outDir, 'index.html')
       const fallbackFiles = [
-        resolve(outDir, '404.html'),
         ...SPA_STATIC_ROUTES.map((route) => resolve(outDir, route, 'index.html')),
       ]
       // Retry up to 3 times — Dropbox can briefly lock files
