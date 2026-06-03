@@ -4,9 +4,11 @@ import { AnimatePresence, motion } from 'framer-motion'
 import { AuthProvider } from './contexts/AuthContext.jsx'
 import { ToastProvider } from './components/Toast.jsx'
 import ProtectedRoute from './components/ProtectedRoute.jsx'
+import WorkflowPackGate from './components/WorkflowPackGate.jsx'
 import ErrorBoundary from './components/ErrorBoundary.jsx'
 import OfflineBanner from './components/OfflineBanner.jsx'
 import LoadingScreen from './components/LoadingScreen.jsx'
+import { WORKFLOW_PACK_IDS } from './data/workflowPacks.js'
 
 const Landing = lazy(() => import('./pages/Landing.jsx'))
 const Features = lazy(() => import('./pages/Features.jsx'))
@@ -146,7 +148,9 @@ export default function App() {
               element={
                 <motion.div {...pageFade}>
                   <ProtectedRoute>
-                    <ReportGeneratorPage />
+                    <WorkflowPackGate packId={WORKFLOW_PACK_IDS.reportGenerator}>
+                      <ReportGeneratorPage />
+                    </WorkflowPackGate>
                   </ProtectedRoute>
                 </motion.div>
               }
@@ -156,7 +160,9 @@ export default function App() {
               element={
                 <motion.div {...pageFade}>
                   <ProtectedRoute>
-                    <ReportGeneratorPage />
+                    <WorkflowPackGate packId={WORKFLOW_PACK_IDS.reportGenerator}>
+                      <ReportGeneratorPage />
+                    </WorkflowPackGate>
                   </ProtectedRoute>
                 </motion.div>
               }

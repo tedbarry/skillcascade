@@ -18,6 +18,9 @@ function createProfile(overrides = {}) {
     role: 'bcba',
     role_slug: 'bcba',
     is_super_admin: false,
+    subscription_status: 'active',
+    subscription_current_period_end: '2099-01-01T00:00:00.000Z',
+    workflow_pack_access: { 'report-generator': true },
     ...overrides,
   }
 }
@@ -46,6 +49,17 @@ describe('report-generator route contract', () => {
 
     expect(response.status).toBe(403)
     expect(payload.error).toMatch(/forbidden/i)
+  })
+
+  it('blocks module status without Report Generator workflow-pack access', async () => {
+    auth.hasPermission.mockImplementation((_profile, category, action) => category === 'reports' && action === 'view')
+
+    const response = await sendRequest('/status', createProfile({ workflow_pack_access: {} }))
+    const payload = await response.json()
+
+    expect(response.status).toBe(403)
+    expect(payload.code).toBe('workflow_pack_required')
+    expect(payload.requiredPack).toBe('report-generator')
   })
 
   it('returns local-helper module contract with reports.view', async () => {

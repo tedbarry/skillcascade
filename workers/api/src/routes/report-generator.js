@@ -1,5 +1,6 @@
 import { Hono } from 'hono'
 import { hasPermission } from '../middleware/auth.js'
+import { hasWorkflowPack, WORKFLOW_PACK_IDS } from '../lib/workflow-packs.js'
 
 const route = new Hono()
 
@@ -42,6 +43,13 @@ route.get('/status', async (c) => {
 
   if (!hasPermission(profile, 'reports', 'view')) {
     return c.json({ error: 'Forbidden' }, 403)
+  }
+  if (!hasWorkflowPack(profile, WORKFLOW_PACK_IDS.reportGenerator)) {
+    return c.json({
+      error: 'Report Generator access required.',
+      code: 'workflow_pack_required',
+      requiredPack: WORKFLOW_PACK_IDS.reportGenerator,
+    }, 403)
   }
 
   return c.json({

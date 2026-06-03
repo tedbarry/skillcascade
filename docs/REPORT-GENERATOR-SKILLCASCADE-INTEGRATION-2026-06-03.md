@@ -87,6 +87,8 @@ Current pilot:
 
 - Local source-folder reading is handled by the local helper.
 - The SkillCascade page passes local path strings only to the helper URL selected by the user.
+- The packaged-helper path now supports local SkillCascade origins and the live SkillCascade origin through a narrow CORS allowlist.
+- The helper handles `OPTIONS` preflight and returns private-network access headers for the website-to-localhost bridge.
 
 Future cloud-integrated path:
 
@@ -119,6 +121,16 @@ npx vitest run workers/api/src/routes/report-generator.test.js
 npm run build
 ```
 
+Helper verification:
+
+```text
+GET /api/local-report-pilot/status from http://127.0.0.1:5173 -> 200 with matching CORS origin
+OPTIONS /api/local-report-pilot/run from http://127.0.0.1:5173 -> 204 with private-network header
+POST /api/local-report-pilot/run from http://127.0.0.1:5173 -> 200, created local draft DOCX and review JSON
+GET /api/local-report-pilot/status from https://www.skillcascade.com -> 200 with matching CORS origin
+OPTIONS /api/local-report-pilot/run from https://www.skillcascade.com -> 204 with private-network header
+```
+
 Local route smoke:
 
 ```text
@@ -134,4 +146,4 @@ Build the customer template adapter:
 - Map required sections and goal-table columns.
 - Preserve the customer's report layout.
 - Generate a local `.docx` draft and review JSON through the helper.
-- Add CORS/local access support to the packaged helper so the SkillCascade page can call it reliably from the browser.
+- Add an installer/startup wrapper so a pilot customer can launch the helper without touching the terminal.

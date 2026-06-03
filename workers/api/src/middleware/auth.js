@@ -1,8 +1,16 @@
 import { query } from '../db.js'
+import { ensureWorkflowPackSubscriptionColumns } from '../lib/workflow-packs.js'
 
 // Cache verified tokens for 60 seconds to avoid hitting Supabase on every request
 const tokenCache = new Map()
 const CACHE_TTL = 60_000
+let subscriptionWorkflowColumnsChecked = false
+
+async function ensureSubscriptionWorkflowColumnsOnce(env) {
+  if (subscriptionWorkflowColumnsChecked) return
+  await ensureWorkflowPackSubscriptionColumns(env, query)
+  subscriptionWorkflowColumnsChecked = true
+}
 
 /**
  * Verify Supabase token by calling Supabase's auth API.
@@ -48,12 +56,19 @@ export async function authMiddleware(c, next) {
       return c.json({ error: 'Invalid user' }, 401)
     }
 
+    await ensureSubscriptionWorkflowColumnsOnce(c.env)
+
     // Get profile with org info + role permissions from RDS
     const profileResult = await query(c.env,
       `SELECT p.id, p.org_id, p.role, p.display_name, p.is_super_admin, p.role_id,
-              r.slug AS role_slug, r.name AS role_name, r.permissions AS role_permissions
+              r.slug AS role_slug, r.name AS role_name, r.permissions AS role_permissions,
+              s.plan AS subscription_plan, s.status AS subscription_status,
+              s.current_period_end AS subscription_current_period_end,
+              s.clinical_access, s.clinical_plan, s.clinical_seats,
+              COALESCE(to_jsonb(s)->'workflow_pack_access', '{}'::jsonb) AS workflow_pack_access
        FROM profiles p
        LEFT JOIN roles r ON r.id = p.role_id
+       LEFT JOIN subscriptions s ON s.user_id = p.id
        WHERE p.id = $1`,
       [user.id]
     )
@@ -101,8 +116,15 @@ export async function authMiddleware(c, next) {
         // Race condition: re-fetch with role join
         const retry = await query(c.env,
           `SELECT p.id, p.org_id, p.role, p.display_name, p.is_super_admin, p.role_id,
-                  r.slug AS role_slug, r.name AS role_name, r.permissions AS role_permissions
-           FROM profiles p LEFT JOIN roles r ON r.id = p.role_id WHERE p.id = $1`,
+                  r.slug AS role_slug, r.name AS role_name, r.permissions AS role_permissions,
+                  s.plan AS subscription_plan, s.status AS subscription_status,
+                  s.current_period_end AS subscription_current_period_end,
+                  s.clinical_access, s.clinical_plan, s.clinical_seats,
+                  COALESCE(to_jsonb(s)->'workflow_pack_access', '{}'::jsonb) AS workflow_pack_access
+           FROM profiles p
+           LEFT JOIN roles r ON r.id = p.role_id
+           LEFT JOIN subscriptions s ON s.user_id = p.id
+           WHERE p.id = $1`,
           [user.id]
         )
         profile = retry.rows[0]
@@ -121,13 +143,26 @@ export async function authMiddleware(c, next) {
         }
         // Create enterprise + clinical subscription
         await query(c.env,
-          `INSERT INTO subscriptions (user_id, plan, status, seats, clinical_access, clinical_plan, clinical_seats)
-           VALUES ($1, 'enterprise', 'active', 50, true, 'clinic_enterprise', 50)
-           ON CONFLICT (user_id) DO UPDATE SET plan = 'enterprise', status = 'active', seats = 50, clinical_access = true, clinical_plan = 'clinic_enterprise', clinical_seats = 50`,
+          `INSERT INTO subscriptions (user_id, plan, status, seats, clinical_access, clinical_plan, clinical_seats, workflow_pack_access)
+           VALUES ($1, 'enterprise', 'active', 50, true, 'clinic_enterprise', 50, '{"passage-notes":true}'::jsonb)
+           ON CONFLICT (user_id) DO UPDATE SET
+             plan = 'enterprise',
+             status = 'active',
+             seats = 50,
+             clinical_access = true,
+             clinical_plan = 'clinic_enterprise',
+             clinical_seats = 50,
+             workflow_pack_access = COALESCE(subscriptions.workflow_pack_access, '{}'::jsonb) || '{"passage-notes":true}'::jsonb`,
           [user.id]
         )
         profile.is_super_admin = true
         profile.role = 'admin'
+        profile.subscription_plan = 'enterprise'
+        profile.subscription_status = 'active'
+        profile.clinical_access = true
+        profile.clinical_plan = 'clinic_enterprise'
+        profile.clinical_seats = 50
+        profile.workflow_pack_access = { 'passage-notes': true }
         console.log('VIP account auto-upgraded:', user.email)
       }
       console.log('Auto-provisioned profile for', user.email)
