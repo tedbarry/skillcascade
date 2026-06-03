@@ -37,6 +37,18 @@ Verify it with:
 npm --prefix local-helpers/report-generator run smoke
 ```
 
+Windows helper launcher:
+
+```powershell
+powershell -NoProfile -ExecutionPolicy Bypass -File local-helpers/report-generator/scripts/start-report-helper.ps1
+```
+
+No-admin current-user startup wrapper preview:
+
+```powershell
+powershell -NoProfile -ExecutionPolicy Bypass -File local-helpers/report-generator/scripts/install-startup-wrapper.ps1 -PreviewOnly
+```
+
 ## Frontend Wiring
 
 File:
@@ -164,4 +176,4 @@ Build the customer template adapter:
 - Map required sections and goal-table columns.
 - Preserve the customer's report layout.
 - Generate a local `.docx` draft and review JSON through the helper.
-- Add an installer/startup wrapper so a pilot customer can launch the helper without touching the terminal.
+- Add customer template profiles and a guided template-intake screen so pilot setup does not require code edits.
