@@ -1,0 +1,5 @@
+node_modules/
+report-pilot-output/
+verification-output/
+*.log
+

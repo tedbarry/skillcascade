@@ -20,6 +20,23 @@ This slice adds the SkillCascade control surface for the local-first ABA report 
 
 The website coordinates the workflow and shows readiness/review gates. PHI-capable source-folder reading belongs in the local helper running on the user's workstation.
 
+The first tracked local helper package now lives inside this repo:
+
+- `local-helpers/report-generator`
+
+Run it with:
+
+```powershell
+npm --prefix local-helpers/report-generator install
+npm --prefix local-helpers/report-generator start
+```
+
+Verify it with:
+
+```powershell
+npm --prefix local-helpers/report-generator run smoke
+```
+
 ## Frontend Wiring
 
 File:
@@ -129,6 +146,7 @@ OPTIONS /api/local-report-pilot/run from http://127.0.0.1:5173 -> 204 with priva
 POST /api/local-report-pilot/run from http://127.0.0.1:5173 -> 200, created local draft DOCX and review JSON
 GET /api/local-report-pilot/status from https://www.skillcascade.com -> 200 with matching CORS origin
 OPTIONS /api/local-report-pilot/run from https://www.skillcascade.com -> 204 with private-network header
+npm --prefix local-helpers/report-generator run smoke -> status 200, preflight 204, run 200, 8 goals, local DOCX and review JSON created
 ```
 
 Local route smoke:
