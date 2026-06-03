@@ -23,6 +23,7 @@ const Legal = lazy(() => import('./pages/Legal.jsx'))
 const Contact = lazy(() => import('./pages/Contact.jsx'))
 const KnowledgeBase = lazy(() => import('./pages/KnowledgeBase.jsx'))
 const Admin = lazy(() => import('./pages/Admin.jsx'))
+const ReportGeneratorPage = lazy(() => import('./pages/ReportGeneratorPage.jsx'))
 
 function NotFound() {
   return (
@@ -92,6 +93,8 @@ export default function App() {
       || (path.startsWith('/legal/') && 'Legal — SkillCascade')
       || (path.startsWith('/kb') && 'Knowledge Base — SkillCascade')
       || (path.startsWith('/profile') && 'Profile — SkillCascade')
+      || (path.startsWith('/report-generator') && 'Report Generator - SkillCascade')
+      || (path === '/reports' && 'Report Generator - SkillCascade')
       || 'SkillCascade'
     document.title = title
   }, [location.pathname])
@@ -135,6 +138,26 @@ export default function App() {
                   <Suspense fallback={<LoadingSpinner />}>
                     <Admin />
                   </Suspense>
+                </motion.div>
+              }
+            />
+            <Route
+              path="/report-generator"
+              element={
+                <motion.div {...pageFade}>
+                  <ProtectedRoute>
+                    <ReportGeneratorPage />
+                  </ProtectedRoute>
+                </motion.div>
+              }
+            />
+            <Route
+              path="/reports"
+              element={
+                <motion.div {...pageFade}>
+                  <ProtectedRoute>
+                    <ReportGeneratorPage />
+                  </ProtectedRoute>
                 </motion.div>
               }
             />

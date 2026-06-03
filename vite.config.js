@@ -4,7 +4,7 @@ import tailwindcss from '@tailwindcss/vite'
 import { dirname, resolve } from 'path'
 import { copyFileSync, existsSync, mkdirSync } from 'fs'
 
-const SPA_STATIC_ROUTES = ['features', 'framework', 'demo', 'pricing']
+const SPA_STATIC_ROUTES = ['features', 'framework', 'demo', 'pricing', 'report-generator', 'reports']
 
 // Cloudflare Pages SPA routing: keep known public routes deployable without
 // emitting 404.html, which disables Pages' default 200-status SPA fallback.

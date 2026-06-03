@@ -22,6 +22,7 @@ import supportChat from './routes/support-chat.js'
 import stripeCheckout from './routes/stripe-checkout.js'
 import stripePortal from './routes/stripe-portal.js'
 import stripeWebhook from './routes/stripe-webhook.js'
+import reportGenerator from './routes/report-generator.js'
 
 const app = new Hono()
 
@@ -73,6 +74,7 @@ app.route('/api/ai-proxy', aiProxy)
 app.route('/api/support-chat', supportChat)
 app.route('/api/stripe-checkout', stripeCheckout)
 app.route('/api/stripe-portal', stripePortal)
+app.route('/api/report-generator', reportGenerator)
 
 // RPC-style endpoints for stored procedures
 app.post('/api/rpc/ensure_user_org', async (c) => {

@@ -1,0 +1,65 @@
+import { Hono } from 'hono'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
+
+const auth = vi.hoisted(() => ({
+  hasPermission: vi.fn(),
+}))
+
+vi.mock('../middleware/auth.js', () => ({
+  hasPermission: auth.hasPermission,
+}))
+
+import reportGeneratorApp from './report-generator.js'
+
+function createProfile(overrides = {}) {
+  return {
+    id: 'user-1',
+    org_id: 'org-1',
+    role: 'bcba',
+    role_slug: 'bcba',
+    is_super_admin: false,
+    ...overrides,
+  }
+}
+
+async function sendRequest(path, profile = createProfile()) {
+  const app = new Hono()
+  app.use('*', async (c, next) => {
+    c.set('profile', profile)
+    c.set('userId', profile.id)
+    await next()
+  })
+  app.route('/', reportGeneratorApp)
+  return app.request(path, { method: 'GET' }, {})
+}
+
+describe('report-generator route contract', () => {
+  beforeEach(() => {
+    auth.hasPermission.mockReset()
+  })
+
+  it('blocks module status without reports.view', async () => {
+    auth.hasPermission.mockReturnValue(false)
+
+    const response = await sendRequest('/status')
+    const payload = await response.json()
+
+    expect(response.status).toBe(403)
+    expect(payload.error).toMatch(/forbidden/i)
+  })
+
+  it('returns local-helper module contract with reports.view', async () => {
+    auth.hasPermission.mockImplementation((_profile, category, action) => category === 'reports' && action === 'view')
+
+    const response = await sendRequest('/status')
+    const payload = await response.json()
+
+    expect(response.status).toBe(200)
+    expect(payload.ok).toBe(true)
+    expect(payload.data.moduleId).toBe('report-generator')
+    expect(payload.data.mode).toBe('local-helper-orchestrated')
+    expect(payload.data.localHelper.uploadsSourceFilesToSkillCascade).toBe(false)
+    expect(payload.data.reviewGates).toContain('No automatic signing.')
+    expect(payload.data.userCanEdit).toBe(false)
+  })
+})
