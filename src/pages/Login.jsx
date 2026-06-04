@@ -29,7 +29,7 @@ export default function Login() {
         }
       } catch { /* non-critical */ }
 
-      navigate('/dashboard')
+      navigate('/tools')
     } catch (err) {
       if (err.message.includes('Invalid login')) {
         setError('Invalid email or password')

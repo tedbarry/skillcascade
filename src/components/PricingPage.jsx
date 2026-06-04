@@ -1,11 +1,7 @@
-import { useState, useCallback } from 'react'
+import { useCallback, useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
-import useResponsive from '../hooks/useResponsive'
 import { useAuth } from '../contexts/AuthContext.jsx'
-import useSubscription from '../hooks/useSubscription.js'
-import KBHelpIcon from './kb/KBHelpIcon.jsx'
-
-/* ── Inline SVG Icons ─────────────────────────────────────── */
+import { REPORT_CREDIT_BUNDLES, WORKFLOW_PACKS, WORKFLOW_PACK_IDS } from '../data/workflowPacks.js'
 
 function CheckIcon({ className = '' }) {
   return (
@@ -24,709 +20,332 @@ function ShieldIcon({ className = '' }) {
   )
 }
 
-function ChevronDownIcon({ className = '' }) {
+function ToolIcon({ packId }) {
+  const label = packId === WORKFLOW_PACK_IDS.passageNotes
+    ? 'PN'
+    : packId === WORKFLOW_PACK_IDS.reportGenerator
+      ? 'RG'
+      : packId === WORKFLOW_PACK_IDS.agencyOps
+        ? 'AO'
+        : 'SC'
+
   return (
-    <svg className={className} width="18" height="18" viewBox="0 0 18 18" fill="none" aria-hidden="true">
-      <path d="M4.5 6.75L9 11.25L13.5 6.75" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" />
-    </svg>
-  )
-}
-
-function XMarkIcon({ className = '' }) {
-  return (
-    <svg className={className} width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true">
-      <path d="M4 4l8 8M12 4l-8 8" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
-    </svg>
-  )
-}
-
-function LockIcon({ className = '' }) {
-  return (
-    <svg className={className} width="20" height="20" viewBox="0 0 24 24" fill="none" aria-hidden="true">
-      <rect x="5" y="11" width="14" height="10" rx="2" stroke="currentColor" strokeWidth="1.8" />
-      <path d="M8 11V7a4 4 0 018 0v4" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" />
-    </svg>
-  )
-}
-
-function ExportIcon({ className = '' }) {
-  return (
-    <svg className={className} width="20" height="20" viewBox="0 0 24 24" fill="none" aria-hidden="true">
-      <path d="M12 3v12M12 3l4 4M12 3L8 7" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" />
-      <path d="M4 17v2a2 2 0 002 2h12a2 2 0 002-2v-2" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" />
-    </svg>
-  )
-}
-
-function ClipboardIcon({ className = '' }) {
-  return (
-    <svg className={className} width="20" height="20" viewBox="0 0 24 24" fill="none" aria-hidden="true">
-      <rect x="6" y="4" width="12" height="17" rx="2" stroke="currentColor" strokeWidth="1.8" />
-      <path d="M9 2h6v3a1 1 0 01-1 1h-4a1 1 0 01-1-1V2z" stroke="currentColor" strokeWidth="1.8" />
-      <path d="M9 12h6M9 15h4" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" />
-    </svg>
-  )
-}
-
-function CalendarIcon({ className = '' }) {
-  return (
-    <svg className={className} width="20" height="20" viewBox="0 0 24 24" fill="none" aria-hidden="true">
-      <rect x="3" y="4" width="18" height="18" rx="2" stroke="currentColor" strokeWidth="1.8" />
-      <path d="M3 10h18M8 2v4M16 2v4" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" />
-    </svg>
-  )
-}
-
-function HandshakeIcon({ className = '' }) {
-  return (
-    <svg className={className} width="20" height="20" viewBox="0 0 24 24" fill="none" aria-hidden="true">
-      <path d="M2 14l5-5 4 2 5-5 5 5" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" />
-      <path d="M7 19l3-3 4 2 4-4" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" />
-    </svg>
-  )
-}
-
-/* ── Pricing Data ─────────────────────────────────────────── */
-
-const TIERS = [
-  {
-    name: 'Platform',
-    planKey: 'solo',
-    monthlyPrice: 29,
-    annualPrice: 19.99,
-    annualSavePercent: 31,
-    description: 'For individual BCBAs — assessments, goals, reports, and AI tools',
-    popular: false,
-    cta: 'Start Free Trial',
-    features: [
-      'All assessment tools (full framework, guided assessment)',
-      'All visualizations (sunburst, radar, skill tree, cascade, timeline)',
-      'AI Assistant',
-      'Goal engine & pattern alerts',
-      'Report generator (all types)',
-      'Progress prediction',
-      'Clinical intelligence & dependency explorer',
-      'Data export (CSV, JSON, HTML reports)',
-      'Secure, encrypted data storage',
-      'Email support',
-    ],
-  },
-  {
-    name: 'Clinical',
-    planKey: 'clinical',
-    monthlyPrice: 19,
-    annualPrice: 15,
-    annualSavePercent: 21,
-    perClient: true,
-    minimum: 99,
-    description: 'For clinics - appointments, authorization support, files, AI intelligence, and everything in Platform',
-    popular: true,
-    cta: 'Start Free Trial',
-    exampleNote: 'A 30-client clinic pays $570/mo with unlimited staff',
-    features: [
-      'Everything in Platform, plus:',
-      'Unlimited staff included',
-      'BCBA assistant workspace (appointments, auth support, files)',
-      'File management & client documents',
-      'Shared client management',
-      'Organization analytics',
-      'Team management & invites',
-      'Parent portal access',
-      'Home practice module',
-      'Messaging (BCBA-parent)',
-      'Priority support',
-    ],
-  },
-]
-
-const ALL_PLANS_FEATURES = [
-  { icon: ShieldIcon, label: 'Secure, encrypted storage' },
-  { icon: LockIcon, label: 'Encryption at rest & in transit' },
-  { icon: ClipboardIcon, label: 'Audit logging' },
-  { icon: ExportIcon, label: 'Data portability' },
-  { icon: CalendarIcon, label: '14-day free trial' },
-  { icon: HandshakeIcon, label: 'No long-term contracts' },
-]
-
-const FAQ_ITEMS = [
-  {
-    question: 'Is my data secure on all plans?',
-    answer:
-      'Yes. Every plan includes encrypted data storage, encryption at rest and in transit, audit logging, and session timeout controls. Security is not an add-on or enterprise-only feature \u2014 it is built into the foundation of SkillCascade from day one. We are actively working toward full HIPAA compliance. Contact us for details on our security roadmap.',
-  },
-  {
-    question: 'Can I switch plans?',
-    answer:
-      'Yes, you can upgrade or downgrade your plan at any time. When upgrading, you get immediate access to new features and we prorate the difference. When downgrading, the change takes effect at the start of your next billing cycle.',
-  },
-  {
-    question: 'What happens after the free trial?',
-    answer:
-      "Your card on file will be charged automatically when the trial ends. If you cancel before the trial ends, you won't be charged. After cancellation, your data is retained for 90 days so you can pick up where you left off.",
-  },
-  {
-    question: 'Do you offer discounts for nonprofits?',
-    answer:
-      'Yes, we offer special pricing for registered nonprofit organizations, university-affiliated clinics, and publicly funded therapy programs. Contact our sales team with proof of nonprofit status for details.',
-  },
-  {
-    question: 'Can I cancel anytime?',
-    answer:
-      'Yes, there are no long-term contracts. You can cancel your subscription at any time and retain access through the end of your current billing period. Your data remains exportable for 90 days after cancellation.',
-  },
-]
-
-/* ── Subcomponents ────────────────────────────────────────── */
-
-function BillingToggle({ isAnnual, onChange }) {
-  return (
-    <div className="mt-8 flex justify-center">
-      <div
-        className="inline-flex rounded-full bg-warm-100 p-1"
-        role="radiogroup"
-        aria-label="Billing period"
-      >
-        <button
-          type="button"
-          role="radio"
-          aria-checked={!isAnnual}
-          onClick={() => onChange(false)}
-          className={`min-h-[44px] rounded-full px-6 py-2.5 text-sm font-semibold transition-all duration-200 focus:outline-none focus-visible:ring-2 focus-visible:ring-sage-400 focus-visible:ring-offset-2 ${
-            !isAnnual
-              ? 'bg-white text-warm-900 shadow-sm'
-              : 'bg-transparent text-warm-500 hover:text-warm-700'
-          }`}
-        >
-          Monthly
-        </button>
-        <button
-          type="button"
-          role="radio"
-          aria-checked={isAnnual}
-          onClick={() => onChange(true)}
-          className={`min-h-[44px] rounded-full px-6 py-2.5 text-sm font-semibold transition-all duration-200 focus:outline-none focus-visible:ring-2 focus-visible:ring-sage-400 focus-visible:ring-offset-2 ${
-            isAnnual
-              ? 'bg-white text-warm-900 shadow-sm'
-              : 'bg-transparent text-warm-500 hover:text-warm-700'
-          }`}
-        >
-          Annual{' '}
-          <span
-            className={`inline-block transition-colors duration-200 ${
-              isAnnual ? 'text-sage-600' : 'text-warm-500'
-            }`}
-          >
-            (Save up to 31%)
-          </span>
-        </button>
-      </div>
+    <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-lg bg-sage-600 text-sm font-black text-white">
+      {label}
     </div>
   )
 }
 
-function PricingCard({ tier, isAnnual, onCheckout, checkoutLoading }) {
-  const displayPrice = isAnnual ? tier.annualPrice : tier.monthlyPrice
-  const isPerClient = tier.perClient
-
+function isSelfServeCheckout(pack) {
   return (
-    <div
-      className={`relative flex flex-col rounded-[12px] bg-white border transition-shadow duration-200 hover:shadow-xl ${
-        tier.popular
-          ? 'border-sage-500 border-2 shadow-lg'
-          : 'border-warm-200 shadow-sm'
-      }`}
-    >
-      {/* Popular badge */}
-      {tier.popular && (
-        <div className="absolute -top-3.5 left-1/2 -translate-x-1/2">
-          <span className="inline-block rounded-full bg-sage-600 px-4 py-1 text-xs font-bold tracking-wide text-white uppercase">
-            Practice Management
-          </span>
-        </div>
-      )}
-
-      <div className="p-7 pb-0">
-        {/* Tier name */}
-        <h3 className="font-display text-lg font-bold text-warm-800">
-          {tier.name}
-        </h3>
-
-        {/* Description */}
-        <p className="mt-1 text-sm text-warm-500">{tier.description}</p>
-
-        {/* Price */}
-        <div className="mt-5 flex items-baseline gap-1.5">
-          {isAnnual && (
-            <span className="text-lg text-warm-500 line-through" aria-label={`Was $${tier.monthlyPrice} per month`}>
-              ${tier.monthlyPrice}
-            </span>
-          )}
-          <span className="font-display text-4xl font-extrabold text-warm-900">
-            ${displayPrice}
-          </span>
-          <span className="text-sm text-warm-500">{isPerClient ? '/active client/mo' : '/mo'}</span>
-        </div>
-        {isAnnual && (
-          <p className="mt-1 text-xs text-sage-600 font-semibold">
-            Save {tier.annualSavePercent}% with annual billing
-          </p>
-        )}
-        {isPerClient && (
-          <p className="mt-1.5 text-xs text-warm-600">
-            Minimum ${tier.minimum}/mo
-          </p>
-        )}
-        {!isPerClient && isAnnual && (
-          <p className="mt-1 text-xs text-warm-500">
-            Billed as ${(tier.annualPrice * 12).toFixed(2)}/year
-          </p>
-        )}
-
-        {/* Unlimited staff callout for Clinical */}
-        {isPerClient && (
-          <div className="mt-3 inline-flex items-center gap-1.5 rounded-full bg-sage-50 px-3 py-1 text-xs font-semibold text-sage-700">
-            <CheckIcon className="w-3.5 h-3.5 text-sage-600" />
-            Unlimited staff included
-          </div>
-        )}
-
-        {/* Example pricing for Clinical */}
-        {tier.exampleNote && (
-          <p className="mt-3 text-xs text-warm-500 italic bg-warm-50 rounded-lg px-3 py-2">
-            {tier.exampleNote}
-          </p>
-        )}
-
-        {/* CTA */}
-        {onCheckout ? (
-          <button
-            onClick={() => onCheckout(tier.planKey, isAnnual, 1)}
-            disabled={checkoutLoading}
-            className={`mt-6 w-full rounded-full py-2.5 text-sm font-semibold transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 min-h-[44px] disabled:opacity-50 ${
-              tier.popular
-                ? 'bg-sage-600 text-white hover:bg-sage-700 focus-visible:ring-sage-500'
-                : 'bg-warm-100 text-warm-800 hover:bg-warm-200 focus-visible:ring-warm-400'
-            }`}
-          >
-            {checkoutLoading ? 'Loading...' : tier.cta}
-          </button>
-        ) : (
-          <Link
-            to={`/signup?plan=${tier.planKey}`}
-            className={`mt-6 w-full rounded-full py-2.5 text-sm font-semibold transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 block text-center min-h-[44px] ${
-              tier.popular
-                ? 'bg-sage-600 text-white hover:bg-sage-700 focus-visible:ring-sage-500'
-                : 'bg-warm-100 text-warm-800 hover:bg-warm-200 focus-visible:ring-warm-400'
-            }`}
-          >
-            {tier.cta}
-          </Link>
-        )}
-        {tier.cta !== 'Contact Sales' && (
-          <p className="mt-2 text-center text-xs text-warm-500">
-            14-day free trial. Cancel anytime.
-          </p>
-        )}
-      </div>
-
-      {/* Features */}
-      <div className="mt-4 border-t border-warm-100 px-7 py-6 flex-1">
-        <ul className="space-y-3" role="list">
-          {tier.features.map((feature) => {
-            const isHeader = feature.endsWith(':')
-            return (
-              <li
-                key={feature}
-                className={`flex items-start gap-2.5 text-sm ${
-                  isHeader ? 'font-semibold text-warm-700 mt-1' : 'text-warm-600'
-                }`}
-              >
-                {!isHeader && (
-                  <CheckIcon className="mt-0.5 shrink-0 text-sage-600" />
-                )}
-                <span>{feature}</span>
-              </li>
-            )
-          })}
-        </ul>
-      </div>
-    </div>
+    pack.id !== WORKFLOW_PACK_IDS.skillcascadeCore
+    && (pack.purchaseMode === 'checkout' || pack.purchaseMode === 'checkout-or-sales')
+    && Boolean(pack.checkoutPlan)
   )
 }
 
-/* ── Feature Comparison Data ──────────────────────────────── */
-
-const COMPARISON_FEATURES = [
-  { category: 'Assessment & Visualization' },
-  { feature: 'Full assessment framework', platform: true, clinical: true },
-  { feature: 'Guided assessment (Start Here)', platform: true, clinical: true },
-  { feature: 'All visualizations', platform: true, clinical: true },
-  { feature: 'Clinical intelligence', platform: true, clinical: true },
-  { category: 'Clinical Tools' },
-  { feature: 'AI Assistant', platform: true, clinical: true },
-  { feature: 'Goal engine', platform: true, clinical: true },
-  { feature: 'Pattern alerts', platform: true, clinical: true },
-  { feature: 'Progress prediction', platform: true, clinical: true },
-  { feature: 'Caseload dashboard', platform: true, clinical: true },
-  { category: 'Reports & Export' },
-  { feature: 'Report generator (all types)', platform: true, clinical: true },
-  { feature: 'Data export (CSV, JSON, HTML)', platform: true, clinical: true },
-  { category: 'Practice Management' },
-  { feature: 'Appointments workspace', platform: false, clinical: true },
-  { feature: 'Authorization support', platform: false, clinical: true },
-  { feature: 'File management', platform: false, clinical: true },
-  { feature: 'Unlimited staff', platform: false, clinical: true },
-  { category: 'Collaboration' },
-  { feature: 'Organization analytics', platform: false, clinical: true },
-  { feature: 'Team management & invites', platform: false, clinical: true },
-  { feature: 'Parent portal access', platform: false, clinical: true },
-  { feature: 'Messaging (BCBA-parent)', platform: false, clinical: true },
-  { category: 'Security & Support' },
-  { feature: 'Encrypted data storage', platform: true, clinical: true },
-  { feature: 'Encryption at rest & in transit', platform: true, clinical: true },
-  { feature: 'Data backup & restore', platform: true, clinical: true },
-  { feature: 'Support level', platform: 'Email', clinical: 'Priority' },
-]
-
-function ComparisonCell({ value }) {
-  if (value === true) {
-    return (
-      <span className="inline-flex items-center justify-center text-sage-600" aria-label="Included">
-        <CheckIcon />
-      </span>
-    )
-  }
-  if (value === false) {
-    return (
-      <span className="inline-flex items-center justify-center text-warm-300" aria-label="Not included">
-        <XMarkIcon />
-      </span>
-    )
-  }
-  return <span className="text-sm text-warm-700 font-medium">{value}</span>
+function primaryActionLabel({ pack, user, loading }) {
+  if (loading) return 'Opening checkout...'
+  if (user && pack.id === WORKFLOW_PACK_IDS.reportGenerator) return 'Buy credits'
+  if (user && isSelfServeCheckout(pack)) return 'Buy now'
+  if (user && pack.id === WORKFLOW_PACK_IDS.skillcascadeCore) return 'Open tools'
+  if (user) return 'Request access'
+  if (pack.purchaseMode === 'sales-led') return 'Talk to us'
+  return 'Create account'
 }
-
-function FeatureComparisonTable({ isAnnual }) {
-  const { isPhone } = useResponsive()
-  const [isOpen, setIsOpen] = useState(false)
-
-  // On desktop always show, on phone collapsible
-  const showTable = !isPhone || isOpen
-
-  return (
-    <section className="mt-16" aria-labelledby="comparison-heading">
-      {/* Toggle button — only visible on phone */}
-      {isPhone && (
-        <button
-          type="button"
-          onClick={() => setIsOpen(!isOpen)}
-          aria-expanded={isOpen}
-          className="mx-auto flex min-h-[44px] items-center gap-2 rounded-lg border border-warm-200 bg-white px-5 py-3 text-sm font-semibold text-warm-700 shadow-sm transition-colors hover:bg-warm-50 focus:outline-none focus-visible:ring-2 focus-visible:ring-sage-400 focus-visible:ring-offset-2"
-        >
-          Compare all features
-          <ChevronDownIcon
-            className={`text-warm-500 transition-transform duration-200 ${
-              isOpen ? 'rotate-180' : ''
-            }`}
-          />
-        </button>
-      )}
-
-      {showTable && (
-        <div className={isPhone ? 'mt-4' : ''}>
-          <h2
-            id="comparison-heading"
-            className="font-display text-2xl font-bold text-warm-900 text-center sm:text-3xl mb-8"
-          >
-            Feature comparison
-          </h2>
-
-          {/* Horizontal scroll wrapper for phone */}
-          <div className={isPhone ? '-mx-4 overflow-x-auto px-4 pb-4' : ''}>
-            <table
-              className={`w-full border-collapse text-left ${
-                isPhone ? 'min-w-[600px]' : ''
-              }`}
-              role="table"
-            >
-              <thead>
-                <tr className="border-b-2 border-warm-200">
-                  <th className="py-3 pr-4 text-sm font-medium text-warm-500 w-[50%]" scope="col">
-                    Feature
-                  </th>
-                  {TIERS.map((tier) => {
-                    const price = isAnnual ? tier.annualPrice : tier.monthlyPrice
-                    return (
-                      <th
-                        key={tier.name}
-                        className={`py-3 px-3 text-center text-sm font-bold w-[25%] ${
-                          tier.popular ? 'text-sage-700' : 'text-warm-800'
-                        }`}
-                        scope="col"
-                      >
-                        <div>{tier.name}</div>
-                        <div className="mt-0.5 text-xs font-medium text-warm-500">
-                          ${price}{tier.perClient ? '/client' : ''}/mo
-                        </div>
-                      </th>
-                    )
-                  })}
-                </tr>
-              </thead>
-              <tbody>
-                {COMPARISON_FEATURES.map((row, i) => {
-                  if (row.category) {
-                    return (
-                      <tr key={row.category}>
-                        <td
-                          colSpan={3}
-                          className="pt-6 pb-2 text-xs font-bold text-warm-500 uppercase tracking-wider"
-                        >
-                          {row.category}
-                        </td>
-                      </tr>
-                    )
-                  }
-                  return (
-                    <tr
-                      key={row.feature}
-                      className={`border-b border-warm-100 ${
-                        i % 2 === 0 ? 'bg-warm-50/50' : ''
-                      }`}
-                    >
-                      <td className="py-3 pr-4 text-sm text-warm-700">
-                        {row.feature}
-                      </td>
-                      <td className="py-3 px-3 text-center">
-                        <ComparisonCell value={row.platform} />
-                      </td>
-                      <td className={`py-3 px-3 text-center ${TIERS[1].popular ? 'bg-sage-50/40' : ''}`}>
-                        <ComparisonCell value={row.clinical} />
-                      </td>
-                    </tr>
-                  )
-                })}
-              </tbody>
-            </table>
-          </div>
-        </div>
-      )}
-    </section>
-  )
-}
-
-function AllPlansSection() {
-  return (
-    <section className="mt-20 text-center" aria-labelledby="all-plans-heading">
-      <div className="inline-flex items-center gap-2 rounded-full bg-sage-50 px-4 py-1.5 text-xs font-semibold text-sage-700 uppercase tracking-wider mb-4">
-        <ShieldIcon className="text-sage-600 w-4 h-4" />
-        Every plan
-      </div>
-      <h2
-        id="all-plans-heading"
-        className="font-display text-2xl font-bold text-warm-900 sm:text-3xl"
-      >
-        All plans include
-      </h2>
-      <p className="mx-auto mt-2 max-w-lg text-warm-500 text-sm">
-        Security is not a premium feature. Every SkillCascade plan
-        is built on the same enterprise-grade secure infrastructure.
-      </p>
-
-      <div className="mt-10 grid gap-6 sm:grid-cols-2 lg:grid-cols-3 max-w-4xl mx-auto">
-        {ALL_PLANS_FEATURES.map(({ icon: Icon, label }) => (
-          <div
-            key={label}
-            className="flex items-center gap-3 rounded-xl bg-white border border-warm-100 px-5 py-4 shadow-sm text-left"
-          >
-            <span className="shrink-0 text-sage-600">
-              <Icon />
-            </span>
-            <span className="text-sm font-medium text-warm-800">{label}</span>
-          </div>
-        ))}
-      </div>
-    </section>
-  )
-}
-
-function FAQItem({ item, isOpen, onToggle }) {
-  return (
-    <div className="border-b border-warm-100">
-      <button
-        type="button"
-        onClick={onToggle}
-        aria-expanded={isOpen}
-        className="flex w-full items-center justify-between py-5 text-left focus:outline-none focus-visible:ring-2 focus-visible:ring-sage-400 focus-visible:ring-offset-2 rounded"
-      >
-        <span className="text-sm font-semibold text-warm-800 pr-4">
-          {item.question}
-        </span>
-        <ChevronDownIcon
-          className={`shrink-0 text-warm-500 transition-transform duration-200 ${
-            isOpen ? 'rotate-180' : ''
-          }`}
-        />
-      </button>
-      <div
-        className={`overflow-hidden transition-all duration-200 ${
-          isOpen ? 'max-h-60 pb-5' : 'max-h-0'
-        }`}
-      >
-        <p className="text-sm leading-relaxed text-warm-600">{item.answer}</p>
-      </div>
-    </div>
-  )
-}
-
-function FAQSection() {
-  const [openIndex, setOpenIndex] = useState(null)
-
-  return (
-    <section className="mt-20 mx-auto max-w-2xl" aria-labelledby="faq-heading">
-      <h2
-        id="faq-heading"
-        className="font-display text-2xl font-bold text-warm-900 text-center sm:text-3xl"
-      >
-        Frequently asked questions
-      </h2>
-      <p className="mt-2 text-center text-sm text-warm-500">
-        Everything you need to know about SkillCascade pricing.
-      </p>
-
-      <div className="mt-8">
-        {FAQ_ITEMS.map((item, i) => (
-          <FAQItem
-            key={item.question}
-            item={item}
-            isOpen={openIndex === i}
-            onToggle={() => setOpenIndex(openIndex === i ? null : i)}
-          />
-        ))}
-      </div>
-    </section>
-  )
-}
-
-function CTABanner() {
-  return (
-    <section
-      className="mt-20 rounded-xl bg-sage-600 px-6 py-12 text-center sm:px-12"
-      aria-labelledby="cta-heading"
-    >
-      <h2
-        id="cta-heading"
-        className="font-display text-2xl font-bold text-white sm:text-3xl"
-      >
-        Ready to transform your assessment workflow?
-      </h2>
-      <p className="mx-auto mt-3 max-w-md text-sage-100 text-sm">
-        Start your 14-day free trial today. Full access to every feature.
-        Cancel anytime before the trial ends.
-      </p>
-      <div className="mt-8 flex flex-col items-center gap-3 sm:flex-row sm:justify-center">
-        <Link
-          to="/signup"
-          className="rounded-full bg-white px-8 py-3 text-sm font-semibold text-sage-700 shadow-sm transition-colors hover:bg-sage-50 focus:outline-none focus-visible:ring-2 focus-visible:ring-white focus-visible:ring-offset-2 focus-visible:ring-offset-sage-600"
-        >
-          Start Free Trial
-        </Link>
-        <Link
-          to="/signup"
-          className="rounded-full border border-white/30 bg-transparent px-8 py-3 text-sm font-semibold text-white transition-colors hover:bg-white/10 focus:outline-none focus-visible:ring-2 focus-visible:ring-white focus-visible:ring-offset-2 focus-visible:ring-offset-sage-600"
-        >
-          Talk to Sales
-        </Link>
-      </div>
-    </section>
-  )
-}
-
-/* ── Main Component ───────────────────────────────────────── */
 
 export default function PricingPage() {
-  const [isAnnual, setIsAnnual] = useState(false)
-  const [checkoutLoading, setCheckoutLoading] = useState(false)
   const { user } = useAuth()
+  const navigate = useNavigate()
+  const [billingPeriod, setBillingPeriod] = useState('monthly')
+  const [checkoutState, setCheckoutState] = useState({ packId: '', error: '' })
+  const [creditCheckoutState, setCreditCheckoutState] = useState({ bundleId: '', error: '' })
 
-  const handleCheckout = useCallback(async (planName, annual, quantity = 1) => {
-    if (!user) return // Should not happen since onCheckout is only passed when logged in
+  const handleCheckout = useCallback(async (pack) => {
+    if (!user) {
+      navigate(`/signup?pack=${pack.id}`)
+      return
+    }
 
-    setCheckoutLoading(true)
+    if (pack.id === WORKFLOW_PACK_IDS.reportGenerator) {
+      document.getElementById('report-credits')?.scrollIntoView({ behavior: 'smooth', block: 'start' })
+      return
+    }
+
+    if (!isSelfServeCheckout(pack)) {
+      navigate(pack.id === WORKFLOW_PACK_IDS.skillcascadeCore
+        ? '/tools'
+        : `/contact?subject=${encodeURIComponent(`${pack.name} Access`)}`)
+      return
+    }
+
+    setCheckoutState({ packId: pack.id, error: '' })
+
     try {
-      const supabaseUrl = import.meta.env.VITE_API_URL || 'https://skillcascade-api.teddybahary.workers.dev'
       const { supabase } = await import('../lib/supabase.js')
       const { data: { session } } = await supabase.auth.getSession()
-
       if (!session?.access_token) {
-        window.location.href = `/signup?plan=${planName}`
+        navigate(`/signup?pack=${pack.id}`)
         return
       }
 
-      const res = await fetch(`${supabaseUrl}/api/stripe-checkout`, {
+      const apiUrl = import.meta.env.VITE_API_URL || 'https://skillcascade-api.teddybahary.workers.dev'
+      const response = await fetch(`${apiUrl}/api/stripe-checkout`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
           'Authorization': `Bearer ${session.access_token}`,
         },
-        body: JSON.stringify({ plan: planName, annual, quantity }),
+        body: JSON.stringify({
+          plan: pack.checkoutPlan,
+          workflowPackId: pack.id,
+          annual: billingPeriod === 'annual',
+          quantity: 1,
+        }),
       })
 
-      if (!res.ok) {
-        const err = await res.json().catch(() => ({}))
-        // Fallback to signup page
-        window.location.href = `/signup?plan=${planName}`
+      const payload = await response.json().catch(() => ({}))
+      if (!response.ok || !payload?.url) {
+        if (payload?.contactUrl) {
+          navigate(payload.contactUrl)
+          return
+        }
+        throw new Error(payload?.error || 'Checkout did not return a Stripe URL.')
+      }
+
+      window.location.href = payload.url
+    } catch (error) {
+      setCheckoutState({
+        packId: '',
+        error: error.message || 'Could not open checkout.',
+      })
+    }
+  }, [billingPeriod, navigate, user])
+
+  const handleReportCreditCheckout = useCallback(async (bundle) => {
+    if (!user) {
+      navigate(`/signup?pack=${WORKFLOW_PACK_IDS.reportGenerator}`)
+      return
+    }
+
+    setCreditCheckoutState({ bundleId: bundle.id, error: '' })
+
+    try {
+      const { supabase } = await import('../lib/supabase.js')
+      const { data: { session } } = await supabase.auth.getSession()
+      if (!session?.access_token) {
+        navigate(`/signup?pack=${WORKFLOW_PACK_IDS.reportGenerator}`)
         return
       }
 
-      const { url } = await res.json()
-      if (url) window.location.href = url
-    } catch {
-      window.location.href = `/signup?plan=${planName}`
-    } finally {
-      setCheckoutLoading(false)
+      const apiUrl = import.meta.env.VITE_API_URL || 'https://skillcascade-api.teddybahary.workers.dev'
+      const response = await fetch(`${apiUrl}/api/stripe-checkout`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${session.access_token}`,
+        },
+        body: JSON.stringify({
+          productType: 'report_credits',
+          bundleId: bundle.id,
+        }),
+      })
+
+      const payload = await response.json().catch(() => ({}))
+      if (!response.ok || !payload?.url) {
+        throw new Error(payload?.error || 'Report credit checkout did not return a Stripe URL.')
+      }
+
+      window.location.href = payload.url
+    } catch (error) {
+      setCreditCheckoutState({
+        bundleId: '',
+        error: error.message || 'Could not open report credit checkout.',
+      })
     }
-  }, [user])
+  }, [navigate, user])
 
   return (
     <div className="min-h-screen bg-warm-50 px-4 py-16 sm:px-6 lg:px-8">
-      <div className="mx-auto max-w-6xl">
-        {/* ── Hero ──────────────────────────────────────── */}
+      <div className="mx-auto max-w-7xl">
         <section className="text-center" aria-labelledby="pricing-heading">
-          <div className="inline-flex items-center gap-1.5 rounded-full bg-sage-50 px-3.5 py-1 text-xs font-semibold text-sage-700 uppercase tracking-wider mb-5">
-            <ShieldIcon className="w-3.5 h-3.5 text-sage-600" />
-            Secure on every plan
+          <div className="mb-5 inline-flex items-center gap-1.5 rounded-full bg-sage-50 px-3.5 py-1 text-xs font-bold uppercase tracking-wider text-sage-700">
+            <ShieldIcon className="h-3.5 w-3.5 text-sage-600" />
+            Workflow tools
           </div>
-          <h1
-            id="pricing-heading"
-            className="font-display text-4xl font-extrabold tracking-tight text-warm-900 sm:text-5xl"
-          >
-            Simple, transparent pricing <KBHelpIcon term="view-pricing" />
+          <h1 id="pricing-heading" className="font-display text-4xl font-extrabold tracking-tight text-warm-900 sm:text-5xl">
+            Choose the SkillCascade tool you need
           </h1>
-          <p className="mx-auto mt-4 max-w-xl text-warm-500 text-base sm:text-lg">
-            Every plan includes enterprise-grade security and encrypted data storage. No hidden fees.
+          <p className="mx-auto mt-4 max-w-2xl text-base leading-7 text-warm-600 sm:text-lg">
+            SkillCascade is sold as focused workflow modules. Start with notes, reports, operations, or the broader platform without buying an obsolete bundle.
           </p>
-          <BillingToggle isAnnual={isAnnual} onChange={setIsAnnual} />
+
+          <div className="mt-8 flex justify-center">
+            <div className="inline-flex rounded-full bg-warm-100 p-1" role="radiogroup" aria-label="Billing period">
+              {[
+                ['monthly', 'Monthly'],
+                ['annual', 'Annual'],
+              ].map(([value, label]) => (
+                <button
+                  key={value}
+                  type="button"
+                  role="radio"
+                  aria-checked={billingPeriod === value}
+                  onClick={() => setBillingPeriod(value)}
+                  className={`min-h-[44px] rounded-full px-6 py-2.5 text-sm font-semibold transition-all focus:outline-none focus-visible:ring-2 focus-visible:ring-sage-400 focus-visible:ring-offset-2 ${
+                    billingPeriod === value
+                      ? 'bg-white text-warm-900 shadow-sm'
+                      : 'bg-transparent text-warm-500 hover:text-warm-700'
+                  }`}
+                >
+                  {label}
+                </button>
+              ))}
+            </div>
+          </div>
+
+          {checkoutState.error ? (
+            <div className="mx-auto mt-5 max-w-xl rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm font-semibold text-red-800">
+              {checkoutState.error}
+            </div>
+          ) : null}
         </section>
 
-        {/* ── Pricing Cards ────────────────────────────── */}
-        <div className="mt-14 grid gap-8 lg:grid-cols-2 max-w-4xl mx-auto items-start">
-          {TIERS.map((tier) => (
-            <PricingCard key={tier.name} tier={tier} isAnnual={isAnnual} onCheckout={user ? handleCheckout : null} checkoutLoading={checkoutLoading} />
+        <section id="workflow-packs" className="mt-12 grid gap-4 lg:grid-cols-4" aria-label="Workflow tool pricing">
+          {WORKFLOW_PACKS.map((pack) => (
+            <article
+              key={pack.id}
+              className={`flex min-h-[390px] flex-col rounded-lg border bg-white p-5 shadow-sm ${
+                pack.id === WORKFLOW_PACK_IDS.passageNotes ? 'border-sage-300 ring-1 ring-sage-100' : 'border-warm-200'
+              }`}
+            >
+              <div className="flex items-start gap-3">
+                <ToolIcon packId={pack.id} />
+                <div className="min-w-0">
+                  <p className="text-xs font-black uppercase text-sage-700">{pack.eyebrow}</p>
+                  <h2 className="mt-1 text-xl font-black text-warm-950">{pack.name}</h2>
+                </div>
+              </div>
+
+              <div className="mt-5">
+                <p className="text-2xl font-black text-warm-950">
+                  {billingPeriod === 'annual' && pack.annualPriceLabel ? pack.annualPriceLabel : pack.priceLabel}
+                </p>
+                <p className="mt-1 text-xs font-semibold uppercase text-warm-500">
+                  {pack.purchaseMode === 'sales-led' ? 'Pilot / sales-led setup' : isSelfServeCheckout(pack) ? 'Online checkout available' : 'Account setup required'}
+                </p>
+              </div>
+
+              <p className="mt-4 flex-1 text-sm leading-6 text-warm-600">
+                {pack.buyerSummary}
+              </p>
+
+              <div className="mt-4 space-y-2">
+                {pack.outputs.slice(0, 3).map((output) => (
+                  <div key={output} className="flex gap-2 text-sm font-semibold text-warm-800">
+                    <CheckIcon className="mt-0.5 h-4 w-4 shrink-0 text-sage-600" />
+                    <span>{output}</span>
+                  </div>
+                ))}
+              </div>
+
+              <div className="mt-4 rounded-lg border border-warm-200 bg-warm-50 p-3">
+                <p className="text-xs font-black uppercase text-warm-500">Guardrails</p>
+                <p className="mt-1 text-xs leading-5 text-warm-600">{pack.boundaries.join(' | ')}</p>
+              </div>
+
+              <div className="mt-5 grid gap-2">
+                <button
+                  type="button"
+                  disabled={checkoutState.packId === pack.id}
+                  onClick={() => handleCheckout(pack)}
+                  className="inline-flex min-h-11 items-center justify-center rounded-md bg-sage-600 px-4 text-sm font-bold text-white transition-colors hover:bg-sage-700 disabled:opacity-60"
+                >
+                  {primaryActionLabel({ pack, user, loading: checkoutState.packId === pack.id })}
+                </button>
+                <Link
+                  to={pack.id === WORKFLOW_PACK_IDS.skillcascadeCore ? '/dashboard' : pack.onboardingRoute || pack.route}
+                  className="inline-flex min-h-11 items-center justify-center rounded-md border border-warm-200 bg-white px-4 text-sm font-bold text-warm-800 transition-colors hover:bg-warm-50"
+                >
+                  {pack.id === WORKFLOW_PACK_IDS.skillcascadeCore ? 'See platform' : 'See setup'}
+                </Link>
+              </div>
+            </article>
           ))}
-        </div>
+        </section>
 
-        {/* ── Feature Comparison ───────────────────────── */}
-        <FeatureComparisonTable isAnnual={isAnnual} />
+        <section id="report-credits" className="mt-10 rounded-lg border border-blue-200 bg-blue-50 p-6">
+          <div className="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
+            <div>
+              <p className="text-xs font-black uppercase text-blue-700">Report Generator credits</p>
+              <h2 className="mt-2 text-2xl font-black text-blue-950">Buy reports one draft at a time</h2>
+              <p className="mt-2 max-w-3xl text-sm leading-6 text-blue-900">
+                Report Generator uses credits instead of a monthly subscription. One generated Word draft consumes one credit after the local helper creates it.
+              </p>
+            </div>
+            <Link
+              to={user ? '/report-generator' : '/signup?pack=report-generator'}
+              className="inline-flex min-h-11 items-center justify-center rounded-md border border-blue-200 bg-white px-4 text-sm font-bold text-blue-900 hover:bg-blue-100"
+            >
+              {user ? 'Open Report Generator' : 'Create account'}
+            </Link>
+          </div>
 
-        {/* ── All Plans Include ────────────────────────── */}
-        <AllPlansSection />
+          {creditCheckoutState.error ? (
+            <div className="mt-5 rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm font-semibold text-red-800">
+              {creditCheckoutState.error}
+            </div>
+          ) : null}
 
-        {/* ── FAQ ──────────────────────────────────────── */}
-        <FAQSection />
+          <div className="mt-5 grid gap-4 md:grid-cols-3">
+            {REPORT_CREDIT_BUNDLES.map((bundle) => (
+              <article key={bundle.id} className="rounded-lg border border-blue-200 bg-white p-5">
+                <div className="flex items-start justify-between gap-3">
+                  <div>
+                    <h3 className="text-lg font-black text-warm-950">{bundle.name}</h3>
+                    <p className="mt-1 text-sm font-semibold text-warm-600">{bundle.description}</p>
+                  </div>
+                  {bundle.savingsLabel ? (
+                    <span className="rounded-full bg-sage-600 px-2.5 py-1 text-xs font-black uppercase text-white">
+                      {bundle.savingsLabel}
+                    </span>
+                  ) : null}
+                </div>
+                <p className="mt-5 text-3xl font-black text-warm-950">{bundle.priceLabel}</p>
+                <p className="mt-1 text-xs font-bold uppercase text-warm-500">{bundle.unitPriceLabel}</p>
+                <button
+                  type="button"
+                  onClick={() => handleReportCreditCheckout(bundle)}
+                  disabled={creditCheckoutState.bundleId === bundle.id}
+                  className="mt-5 inline-flex min-h-11 w-full items-center justify-center rounded-md bg-blue-700 px-4 text-sm font-bold text-white hover:bg-blue-800 disabled:opacity-60"
+                >
+                  {creditCheckoutState.bundleId === bundle.id ? 'Opening checkout...' : user ? 'Buy credits' : 'Create account to buy'}
+                </button>
+              </article>
+            ))}
+          </div>
+        </section>
 
-        {/* ── CTA Banner ───────────────────────────────── */}
-        <CTABanner />
+        <section className="mt-12 rounded-lg border border-warm-200 bg-white p-6 text-center">
+          <h2 className="text-2xl font-black text-warm-950">Not sure which one fits?</h2>
+          <p className="mx-auto mt-2 max-w-2xl text-sm leading-6 text-warm-600">
+            Tell us your workflow, platform, and note/report volume. We can turn on only the tool you need instead of selling a generic plan.
+          </p>
+          <div className="mt-5 flex flex-col justify-center gap-3 sm:flex-row">
+            <Link
+              to="/contact?subject=SkillCascade%20Tool%20Recommendation"
+              className="inline-flex min-h-11 items-center justify-center rounded-md bg-sage-600 px-5 text-sm font-bold text-white hover:bg-sage-700"
+            >
+              Ask what to buy
+            </Link>
+            <Link
+              to={user ? '/tools' : '/login'}
+              className="inline-flex min-h-11 items-center justify-center rounded-md border border-warm-200 bg-white px-5 text-sm font-bold text-warm-800 hover:bg-warm-50"
+            >
+              {user ? 'Open your tools' : 'Sign in'}
+            </Link>
+          </div>
+        </section>
       </div>
     </div>
   )

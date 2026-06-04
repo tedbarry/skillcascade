@@ -76,6 +76,12 @@ export default function Admin() {
               <p className="text-xs text-warm-500">{profile?.organizations?.name || 'Organization'}</p>
             </div>
           </div>
+          <Link
+            to="/workflow-packs"
+            className="inline-flex min-h-[44px] items-center rounded-lg border border-sage-200 bg-sage-50 px-3 text-xs font-bold text-sage-700 transition-colors hover:bg-sage-100"
+          >
+            Workflow packs
+          </Link>
         </div>
       </header>
 

@@ -58,6 +58,7 @@ function buildCorsHeaders(req) {
     'access-control-allow-origin': origin,
     'access-control-allow-methods': 'GET, POST, OPTIONS',
     'access-control-allow-headers': req.headers['access-control-request-headers'] || 'content-type, authorization',
+    'access-control-allow-credentials': 'true',
     'access-control-max-age': '86400',
     'access-control-allow-private-network': 'true',
     vary: 'Origin',

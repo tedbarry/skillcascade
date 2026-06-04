@@ -2,28 +2,15 @@ import { useState, useEffect, useMemo, useRef } from 'react'
 import { Link, useNavigate, useSearchParams } from 'react-router-dom'
 import { useAuth } from '../contexts/AuthContext.jsx'
 import { supabase } from '../lib/supabase.js'
-import { safeSetItem } from '../lib/safeStorage.js'
 import { captureUtmParams, getStoredUtmParams } from '../lib/utmCapture.js'
 import { track } from '../lib/analytics.js'
-
-const VALID_PLANS = ['solo', 'practice', 'enterprise']
-
-const PLAN_INFO = {
-  solo: { name: 'Solo', price: '$29/mo', desc: '1 user, 15 clients' },
-  practice: { name: 'Practice', price: '$19/user/mo', desc: '3-9 users, 30 clients/user' },
-  enterprise: { name: 'Enterprise', price: '$14/user/mo', desc: '10-49 users, unlimited clients' },
-}
 
 // Maintenance mode — set to true to block signups
 const MAINTENANCE_MODE = false
 
 export default function Signup() {
   const [searchParams] = useSearchParams()
-  const preselectedPlan = useMemo(() => {
-    const p = searchParams.get('plan')?.toLowerCase()
-    return VALID_PLANS.includes(p) ? p : null
-  }, [searchParams])
-  const [selectedPlan, setSelectedPlan] = useState(preselectedPlan || 'solo')
+  const requestedPack = useMemo(() => searchParams.get('pack') || '', [searchParams])
 
   if (MAINTENANCE_MODE) {
     return (
@@ -195,11 +182,8 @@ export default function Signup() {
           .eq('token', invite.token)
       }
 
-      // Always persist selected plan — user must go through Stripe checkout after email confirm
-      safeSetItem('skillcascade_pending_plan', selectedPlan)
-
       // Track confirmation email sent
-      track('signup', 'confirmation_email_sent', { email })
+      track('signup', 'confirmation_email_sent', { email, requested_pack: requestedPack })
 
       // Set success BEFORE any auth state change can cause re-render issues.
       // The useEffect above will sign out if auto-confirm happened.
@@ -228,7 +212,7 @@ export default function Signup() {
               Click it to activate your account.
             </p>
             <p className="text-xs text-warm-500 mb-6">
-              After confirming, you'll set up your {PLAN_INFO[selectedPlan]?.name || 'Solo'} plan with a 14-day free trial. No charge until the trial ends.
+              After confirming, sign in and choose the SkillCascade tool you want to activate.
             </p>
             <Link
               to="/login"
@@ -380,38 +364,14 @@ export default function Signup() {
             </div>
           )}
 
-          {/* Plan selector — hidden when joining via invite (inherits org plan) */}
+          {/* Tool selection happens after email confirmation. */}
           {!invite && (
-            <div>
-              <label className="block text-xs font-medium text-warm-600 mb-2">
-                Choose your plan
-              </label>
-              <div className="space-y-2">
-                {VALID_PLANS.map((p) => (
-                  <button
-                    key={p}
-                    type="button"
-                    onClick={() => setSelectedPlan(p)}
-                    className={`w-full flex items-center justify-between px-3 py-2.5 rounded-lg border-2 text-sm transition-all ${
-                      selectedPlan === p
-                        ? 'border-sage-400 bg-sage-50'
-                        : 'border-warm-200 hover:border-warm-300'
-                    }`}
-                  >
-                    <div className="text-left">
-                      <span className={`font-medium ${selectedPlan === p ? 'text-sage-700' : 'text-warm-700'}`}>
-                        {PLAN_INFO[p].name}
-                      </span>
-                      <span className="text-warm-500 ml-2 text-xs">{PLAN_INFO[p].desc}</span>
-                    </div>
-                    <span className={`text-xs font-semibold ${selectedPlan === p ? 'text-sage-600' : 'text-warm-500'}`}>
-                      {PLAN_INFO[p].price}
-                    </span>
-                  </button>
-                ))}
-              </div>
-              <p className="text-[11px] text-warm-500 mt-1.5">
-                14-day free trial on all plans. You won't be charged until the trial ends.
+            <div className="rounded-lg border border-sage-200 bg-sage-50 px-4 py-3">
+              <p className="text-sm font-semibold text-sage-800">
+                Account first, tool second.
+              </p>
+              <p className="mt-1 text-xs leading-5 text-sage-700">
+                After email confirmation, you will land on the tools page where you can activate Passage Runner, Report Generator, Agency Ops, or the core platform.
               </p>
             </div>
           )}
@@ -421,7 +381,7 @@ export default function Signup() {
             disabled={loading || inviteLoading || !!inviteError}
             className="w-full py-2.5 min-h-[44px] rounded-full bg-sage-600 text-white text-sm font-semibold hover:bg-sage-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
           >
-            {loading ? 'Creating account...' : invite ? `Join ${invite.orgName || 'Organization'}` : `Start Free Trial — ${PLAN_INFO[selectedPlan]?.name || 'Solo'}`}
+            {loading ? 'Creating account...' : invite ? `Join ${invite.orgName || 'Organization'}` : 'Create Account'}
           </button>
         </form>
 

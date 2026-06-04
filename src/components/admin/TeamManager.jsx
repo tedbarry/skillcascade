@@ -1,10 +1,12 @@
 import { useState, useEffect, useCallback } from 'react'
+import { Link } from 'react-router-dom'
 import { api } from '../../lib/api.js'
 import { useAuth } from '../../contexts/AuthContext.jsx'
 import useSubscription from '../../hooks/useSubscription.js'
 import usePermissions from '../../hooks/usePermissions.js'
 import { assignClientToUser, unassignClientFromUser } from '../../data/storage.js'
 import { buildTeamAdminAccess } from '../../lib/teamAdminAccess.js'
+import { WORKFLOW_PACKS, WORKFLOW_PACK_IDS, canAccessWorkflowPack, parseWorkflowPackAccess } from '../../data/workflowPacks.js'
 
 // Legacy role options (still used for profiles.role column)
 const LEGACY_ROLE_OPTIONS = [
@@ -27,6 +29,12 @@ const PERMISSION_LABELS = {
   ai: 'AI Tools',
   clinical: 'Clinical Tools',
 }
+
+const ADMIN_WORKFLOW_PACKS = WORKFLOW_PACKS.filter((pack) => (
+  pack.id === WORKFLOW_PACK_IDS.passageNotes
+  || pack.id === WORKFLOW_PACK_IDS.reportGenerator
+  || pack.id === WORKFLOW_PACK_IDS.agencyOps
+))
 
 export default function TeamManager() {
   const { user, profile } = useAuth()
@@ -52,6 +60,10 @@ export default function TeamManager() {
   const [editingRole, setEditingRole] = useState(null)
   // Permissions viewer
   const [viewingPerms, setViewingPerms] = useState(null)
+  // Product/workflow pack access
+  const [workflowPackRows, setWorkflowPackRows] = useState([])
+  const [workflowPackLoading, setWorkflowPackLoading] = useState(false)
+  const [workflowPackSaving, setWorkflowPackSaving] = useState(null)
 
   const teamAccess = buildTeamAdminAccess({
     profile,
@@ -59,6 +71,7 @@ export default function TeamManager() {
     canEditTeam: can('team', 'edit'),
   })
   const canManageTeam = teamAccess.canManageTeam
+  const canManageWorkflowPacks = teamAccess.canManageOrgRoles
 
   // Load org roles
   const loadRoles = useCallback(async () => {
@@ -102,6 +115,21 @@ export default function TeamManager() {
     }
   }, [profile?.org_id])
 
+  const loadWorkflowPackAccess = useCallback(async () => {
+    if (!profile?.org_id || !canManageWorkflowPacks) return
+    setWorkflowPackLoading(true)
+    try {
+      const res = await api.fetch('/api/subscriptions/org')
+      const body = await res.json().catch(() => ({}))
+      if (!res.ok) throw new Error(body.error || 'Failed to load workflow pack access')
+      setWorkflowPackRows(body.data || [])
+    } catch (e) {
+      console.error('Failed to load workflow pack access:', e)
+    } finally {
+      setWorkflowPackLoading(false)
+    }
+  }, [profile?.org_id, canManageWorkflowPacks])
+
   // Load all org clients + all assignments (admin only)
   const loadClientsAndAssignments = useCallback(async () => {
     if (!profile?.org_id || !canManageTeam) return
@@ -126,6 +154,7 @@ export default function TeamManager() {
   useEffect(() => { loadRoles() }, [loadRoles])
   useEffect(() => { loadMembers() }, [loadMembers])
   useEffect(() => { loadClientsAndAssignments() }, [loadClientsAndAssignments])
+  useEffect(() => { loadWorkflowPackAccess() }, [loadWorkflowPackAccess])
 
   const getRoleName = (roleId) => {
     const role = orgRoles.find(r => r.id === roleId)
@@ -209,6 +238,25 @@ export default function TeamManager() {
       setMembers(prev => prev.filter(m => m.id !== memberId))
     } catch (e) {
       console.error('Failed to remove member:', e)
+    }
+  }
+
+  const handleWorkflowPackToggle = async (memberId, packId, enabled) => {
+    const saveKey = `${memberId}:${packId}`
+    setWorkflowPackSaving(saveKey)
+    setError(null)
+    try {
+      const res = await api.fetch(`/api/subscriptions/${memberId}/workflow-pack`, {
+        method: 'PATCH',
+        body: JSON.stringify({ packId, enabled }),
+      })
+      const body = await res.json().catch(() => ({}))
+      if (!res.ok) throw new Error(body.error || 'Failed to update workflow pack access')
+      await loadWorkflowPackAccess()
+    } catch (e) {
+      setError(e.message || 'Failed to update workflow pack access')
+    } finally {
+      setWorkflowPackSaving(null)
     }
   }
 
@@ -434,6 +482,15 @@ export default function TeamManager() {
         />
       )}
 
+      {canManageWorkflowPacks && (
+        <WorkflowPackAccessPanel
+          rows={workflowPackRows}
+          loading={workflowPackLoading}
+          savingKey={workflowPackSaving}
+          onToggle={handleWorkflowPackToggle}
+        />
+      )}
+
       {/* Members list */}
       <div className="bg-white rounded-xl border border-warm-200 overflow-hidden">
         <div className="px-5 py-3 border-b border-warm-100 bg-warm-50 flex items-center justify-between">
@@ -565,6 +622,129 @@ export default function TeamManager() {
 /**
  * Compact permissions grid — shows what a role can/can't do
  */
+function WorkflowPackAccessPanel({ rows, loading, savingKey, onToggle }) {
+  return (
+    <div className="bg-white rounded-xl border border-warm-200 overflow-hidden">
+      <div className="px-5 py-3 border-b border-warm-100 bg-warm-50">
+        <div className="flex flex-col gap-1 sm:flex-row sm:items-center sm:justify-between">
+          <div>
+            <h3 className="text-sm font-semibold text-warm-700">Workflow Pack Access</h3>
+            <p className="mt-1 text-xs text-warm-500">
+              Product access is separate from role permissions. Roles decide what a user can do; packs decide which paid tools appear.
+            </p>
+          </div>
+          <div className="flex flex-wrap gap-2">
+            <Link
+              to="/workflow-packs"
+              className="inline-flex min-h-9 items-center rounded-md border border-sage-200 bg-sage-50 px-3 text-xs font-bold text-sage-700 hover:bg-sage-100"
+            >
+              Open console
+            </Link>
+            <span className="inline-flex w-fit items-center rounded-full border border-sage-200 bg-sage-50 px-2.5 py-1 text-xs font-semibold text-sage-700">
+              Enforced now
+            </span>
+          </div>
+        </div>
+      </div>
+
+      {loading ? (
+        <div className="p-5 text-sm text-warm-500">Loading workflow access...</div>
+      ) : rows.length === 0 ? (
+        <div className="p-5 text-sm text-warm-500">No team members found.</div>
+      ) : (
+        <div className="divide-y divide-warm-100">
+          {rows.map((row) => (
+            <WorkflowPackAccessRow
+              key={row.user_id}
+              row={row}
+              savingKey={savingKey}
+              onToggle={onToggle}
+            />
+          ))}
+        </div>
+      )}
+
+      <div className="border-t border-warm-100 bg-warm-50 px-5 py-3 text-xs leading-5 text-warm-500">
+        Pack toggles control product access. Role permissions still decide what actions a user can take after a pack is open.
+      </div>
+    </div>
+  )
+}
+
+function WorkflowPackAccessRow({ row, savingKey, onToggle }) {
+  return (
+    <div className="px-5 py-4">
+      <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
+        <div className="min-w-0">
+          <div className="flex flex-wrap items-center gap-2">
+            <p className="text-sm font-semibold text-warm-800">{row.display_name || 'Unnamed'}</p>
+            {row.is_super_admin && (
+              <span className="rounded bg-amber-50 px-1.5 py-0.5 text-[10px] font-bold text-amber-700">OWNER</span>
+            )}
+          </div>
+          <p className="mt-1 text-xs text-warm-500">
+            {row.plan || 'free'} / {row.status || 'no_subscription'}
+            {row.clinical_access ? ' - legacy clinical access' : ''}
+          </p>
+        </div>
+
+        <div className="grid gap-2 sm:grid-cols-2 xl:grid-cols-3 lg:min-w-[560px]">
+          {ADMIN_WORKFLOW_PACKS.map((pack) => {
+            const access = getWorkflowPackAccessState(row, pack.id)
+            const saveKey = `${row.user_id}:${pack.id}`
+            const saving = savingKey === saveKey
+            return (
+              <label
+                key={pack.id}
+                className="flex min-h-[52px] items-center justify-between gap-3 rounded-lg border border-warm-200 bg-warm-50 px-3 py-2"
+              >
+                <span className="min-w-0">
+                  <span className="block text-sm font-semibold text-warm-800">{pack.name}</span>
+                  <span className="block text-xs text-warm-500">
+                    {access.source === 'explicit'
+                      ? 'Explicit pack setting'
+                      : access.source === 'owner'
+                        ? 'Owner access'
+                        : access.source === 'plan'
+                          ? 'Included in plan'
+                          : access.source === 'legacy'
+                            ? 'Allowed by old clinical access'
+                            : 'No pack access'}
+                  </span>
+                </span>
+                <input
+                  type="checkbox"
+                  checked={access.enabled}
+                  disabled={saving || row.is_super_admin}
+                  onChange={(event) => onToggle(row.user_id, pack.id, event.target.checked)}
+                  className="h-5 w-5 rounded border-warm-300 text-sage-600 focus:ring-sage-400 disabled:opacity-40"
+                />
+              </label>
+            )
+          })}
+        </div>
+      </div>
+    </div>
+  )
+}
+
+function getWorkflowPackAccessState(row, packId) {
+  if (row.is_super_admin) {
+    return { enabled: true, source: 'owner' }
+  }
+  const explicitAccess = parseWorkflowPackAccess(row.workflow_pack_access)
+  if (Object.prototype.hasOwnProperty.call(explicitAccess, packId)) {
+    return { enabled: explicitAccess[packId] === true, source: 'explicit' }
+  }
+  if (packId === WORKFLOW_PACK_IDS.passageNotes && row.clinical_access === true) {
+    return { enabled: true, source: 'legacy' }
+  }
+  if (canAccessWorkflowPack(packId, { subscription: row })) {
+    return { enabled: true, source: 'plan' }
+  }
+  return { enabled: false, source: 'none' }
+}
+
 function PermissionsGrid({ permissions }) {
   if (!permissions) return <p className="text-xs text-warm-500">No permissions defined</p>
 

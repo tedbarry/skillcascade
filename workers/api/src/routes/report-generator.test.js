@@ -193,6 +193,66 @@ describe('report-generator route contract', () => {
     expect(payload.data.safety.rejectedFieldsInclude).toContain('source folder paths')
   })
 
+  it('returns report credit balance and bundles', async () => {
+    auth.hasPermission.mockImplementation((_profile, category, action) => category === 'reports' && action === 'view')
+    db.query.mockImplementation(async (_env, sql) => {
+      const statement = String(sql)
+      if (statement.includes('COALESCE(SUM(credits_delta)')) return { rows: [{ balance: 3 }] }
+      if (statement.includes('SELECT id, credits_delta, event_type')) return { rows: [] }
+      return { rows: [] }
+    })
+
+    const response = await sendRequest('/credits/status')
+    const payload = await response.json()
+
+    expect(response.status).toBe(200)
+    expect(payload.ok).toBe(true)
+    expect(payload.data.balance).toBe(3)
+    expect(payload.data.bundles).toContainEqual(expect.objectContaining({
+      id: 'report-credit-1',
+      credits: 1,
+      amountCents: 5000,
+    }))
+  })
+
+  it('consumes one report credit with an idempotency key', async () => {
+    auth.hasPermission.mockImplementation((_profile, category, action) => (
+      category === 'reports' && ['view', 'edit'].includes(action)
+    ))
+    db.query.mockImplementation(async (_env, sql, params = []) => {
+      const statement = String(sql)
+      if (statement.includes('WHERE external_event_id = $1')) return { rows: [] }
+      if (statement.includes('COALESCE(SUM(credits_delta)')) return { rows: [{ balance: 2 }] }
+      if (statement.includes('INSERT INTO report_generator_credit_ledger')) {
+        return {
+          rows: [{
+            id: 'credit-entry-1',
+            user_id: 'user-1',
+            credits_delta: params[2],
+            event_type: 'consume',
+            external_event_id: params[3],
+          }],
+        }
+      }
+      return { rows: [] }
+    })
+
+    const response = await sendRequest('/credits/consume', createProfile(), {
+      method: 'POST',
+      body: {
+        externalEventId: 'safe-credit-event-1',
+        helperVersion: '0.1.0',
+        templateMode: 'default',
+      },
+    })
+    const payload = await response.json()
+
+    expect(response.status).toBe(200)
+    expect(payload.ok).toBe(true)
+    expect(payload.data.consumed).toBe(1)
+    expect(db.query.mock.calls.some((call) => String(call[1]).includes('INSERT INTO report_generator_credit_ledger'))).toBe(true)
+  })
+
   it('rejects PHI-like fields from install seat claims before database writes', async () => {
     auth.hasPermission.mockImplementation((_profile, category, action) => category === 'reports' && action === 'view')
 

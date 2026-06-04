@@ -248,7 +248,7 @@ const CLINICAL_VIEWS = ['reports', 'product-workbench', 'clinical-evidence', 'no
 export default function Dashboard() {
   const { user, profile } = useAuth()
   const { showToast } = useToast()
-  const { hasFeature, hasClinical, plan, isActive, loading: subLoading, needsSubscription, isExpired, startCheckout, openBillingPortal, refreshSubscription } = useSubscription()
+  const { hasFeature, hasClinical, plan, isActive, loading: subLoading, needsSubscription, isExpired, openBillingPortal, refreshSubscription } = useSubscription()
   const { can, loading: permissionsLoading } = usePermissions()
   const { isPhone, isTablet, isDesktop } = useResponsive()
   const sunburstHint = useContextualHint('hint-sunburst')
@@ -643,20 +643,6 @@ export default function Dashboard() {
     }
   }, []) // eslint-disable-line react-hooks/exhaustive-deps
 
-  // Auto-checkout for pending plan (user selected plan during signup, confirmed email, logged in)
-  useEffect(() => {
-    if (subLoading) return
-    const pendingPlan = safeGetItem('skillcascade_pending_plan')
-    safeRemoveItem('skillcascade_pending_plan')
-    if (pendingPlan && needsSubscription) {
-      startCheckout(pendingPlan).then((url) => {
-        if (url) window.location.href = url
-      }).catch(() => {
-        showToast('Could not start checkout. Try upgrading from the pricing page.', 'error')
-      })
-    }
-  }, [subLoading]) // eslint-disable-line react-hooks/exhaustive-deps
-
   // Global keyboard shortcuts (number keys for views, ? for help, p for print, / for search)
   useEffect(() => {
     function handleGlobalShortcut(e) {
@@ -1050,10 +1036,6 @@ export default function Dashboard() {
   const fullWidthViews = [VIEWS.HOME, VIEWS.ASSESS, VIEWS.TREE, VIEWS.CASCADE, VIEWS.EXPLORER, VIEWS.TIMELINE, VIEWS.QUICK_ASSESS, VIEWS.GOALS, VIEWS.ALERTS, VIEWS.REPORTS, VIEWS.PARENT, VIEWS.CASELOAD, VIEWS.MILESTONES, VIEWS.PRACTICE, VIEWS.ORG_ANALYTICS, VIEWS.PREDICTIONS, VIEWS.BRANDING, VIEWS.MESSAGES, VIEWS.DATA, VIEWS.ACCESSIBILITY, VIEWS.PRICING, VIEWS.MARKETPLACE, VIEWS.CERTIFICATIONS, VIEWS.COMPARE, VIEWS.GOAL_DRAFTS, VIEWS.DEFICIT_GOALS, VIEWS.LESSON_PLAN, VIEWS.GOAL_LIBRARY, VIEWS.LEARNING_TREE, VIEWS.CLINICAL_EVIDENCE, VIEWS.PRODUCT_WORKBENCH, VIEWS.GRAPH_DASHBOARD, VIEWS.SESSIONS, VIEWS.NOTES, VIEWS.AUTHORIZATIONS, VIEWS.CLIENT_FILES, VIEWS.CLIENT_CONTACTS, VIEWS.CLIENT_AI, VIEWS.PRACTICE_INTELLIGENCE]
   const showSidePanels = !fullWidthViews.includes(activeView)
 
-  // Hard gate: must have a subscription to access the dashboard
-  const [checkoutError, setCheckoutError] = useState(null)
-  const [checkoutLoading, setCheckoutLoading] = useState(false)
-
   // Show loading screen while waiting for Stripe webhook after checkout
   if (checkoutPending) {
     return (
@@ -1082,52 +1064,23 @@ export default function Dashboard() {
             <h1 className="text-2xl font-bold text-warm-800 font-display mb-2">
               Skill<span className="text-sage-500">Cascade</span>
             </h1>
-            <h2 className="text-lg font-semibold text-warm-700 mb-3">Choose a plan to get started</h2>
-            <p className="text-sm text-warm-500 mb-6">
-              Every plan includes a 14-day free trial. You won't be charged until the trial ends.
+            <h2 className="text-lg font-semibold text-warm-700 mb-3">Choose a current tool to get started</h2>
+            <p className="text-sm text-warm-500 mb-5">
+              SkillCascade is now organized by workflow pack: Passage Runner, Report Generator, Agency Ops, and the core platform.
             </p>
-            {checkoutError && (
-              <div className="mb-4 px-4 py-3 rounded-lg bg-red-50 border border-red-200 text-sm text-red-700">
-                {checkoutError}
-              </div>
-            )}
-            <div className="space-y-2 mb-6">
-              {[
-                { key: 'solo', name: 'Solo', price: '$29/mo', desc: '1 user, 15 clients' },
-                { key: 'practice', name: 'Practice', price: '$19/user/mo', desc: '3–9 users' },
-                { key: 'enterprise', name: 'Enterprise', price: '$14/user/mo', desc: '10–49 users' },
-              ].map((p) => (
-                <button
-                  key={p.key}
-                  disabled={checkoutLoading}
-                  onClick={async () => {
-                    setCheckoutError(null)
-                    setCheckoutLoading(true)
-                    try {
-                      const url = await startCheckout(p.key)
-                      if (url) {
-                        window.location.href = url
-                      } else {
-                        setCheckoutError('No checkout URL returned. Please try again.')
-                      }
-                    } catch (err) {
-                      setCheckoutError(err.message || 'Could not start checkout. Please try again.')
-                    } finally {
-                      setCheckoutLoading(false)
-                    }
-                  }}
-                  className="w-full flex items-center justify-between px-4 py-3 rounded-lg border-2 border-warm-200 hover:border-sage-400 hover:bg-sage-50 transition-all text-sm min-h-[44px] disabled:opacity-50"
-                >
-                  <div className="text-left">
-                    <span className="font-semibold text-warm-800">{p.name}</span>
-                    <span className="text-warm-500 ml-2 text-xs">{p.desc}</span>
-                  </div>
-                  <span className="text-xs font-semibold text-sage-600">{p.price}</span>
-                </button>
-              ))}
+            <div className="rounded-lg border border-sage-200 bg-sage-50 px-4 py-3 text-left mb-6">
+              <p className="text-sm font-semibold text-sage-800">No old app tiers here.</p>
+              <p className="mt-1 text-xs leading-5 text-sage-700">
+                Pricing and activation now happen from the tool shelf, so buyers only see the products we actually sell now.
+              </p>
             </div>
-            <p className="text-xs text-warm-500">Cancel anytime during your trial. No commitment.</p>
-            <p className="text-xs text-warm-500 mt-1">
+            <Link
+              to="/pricing"
+              className="inline-flex w-full items-center justify-center rounded-full bg-sage-600 px-5 py-2.5 text-sm font-semibold text-white transition-colors hover:bg-sage-700"
+            >
+              View current tools
+            </Link>
+            <p className="text-xs text-warm-500 mt-4">
               Need help?{' '}
               <a href="mailto:support@skillcascade.com" className="text-sage-500 hover:text-sage-600">
                 support@skillcascade.com
@@ -1149,50 +1102,38 @@ export default function Dashboard() {
               Skill<span className="text-sage-500">Cascade</span>
             </h1>
             <h2 className="text-lg font-semibold text-red-700 mb-3">Your subscription has ended</h2>
-            <p className="text-sm text-warm-500 mb-6">
-              Your data is saved for 90 days. Resubscribe to regain full access.
+            <p className="text-sm text-warm-500 mb-5">
+              Your data is saved for 90 days. Choose a current tool or open billing to restore access.
             </p>
-            {checkoutError && (
-              <div className="mb-4 px-4 py-3 rounded-lg bg-red-50 border border-red-200 text-sm text-red-700">
-                {checkoutError}
-              </div>
-            )}
-            <div className="space-y-2 mb-6">
-              {[
-                { key: 'solo', name: 'Solo', price: '$29/mo', desc: '1 user, 15 clients' },
-                { key: 'practice', name: 'Practice', price: '$19/user/mo', desc: '3–9 users' },
-                { key: 'enterprise', name: 'Enterprise', price: '$14/user/mo', desc: '10–49 users' },
-              ].map((p) => (
-                <button
-                  key={p.key}
-                  disabled={checkoutLoading}
-                  onClick={async () => {
-                    setCheckoutError(null)
-                    setCheckoutLoading(true)
-                    try {
-                      const url = await startCheckout(p.key)
-                      if (url) {
-                        window.location.href = url
-                      } else {
-                        setCheckoutError('No checkout URL returned. Please try again.')
-                      }
-                    } catch (err) {
-                      setCheckoutError(err.message || 'Could not start checkout. Please try again.')
-                    } finally {
-                      setCheckoutLoading(false)
-                    }
-                  }}
-                  className="w-full flex items-center justify-between px-4 py-3 rounded-lg border-2 border-warm-200 hover:border-sage-400 hover:bg-sage-50 transition-all text-sm min-h-[44px] disabled:opacity-50"
-                >
-                  <div className="text-left">
-                    <span className="font-semibold text-warm-800">{p.name}</span>
-                    <span className="text-warm-500 ml-2 text-xs">{p.desc}</span>
-                  </div>
-                  <span className="text-xs font-semibold text-sage-600">{p.price}</span>
-                </button>
-              ))}
+            <div className="rounded-lg border border-red-100 bg-red-50 px-4 py-3 text-left mb-6">
+              <p className="text-sm font-semibold text-red-800">Legacy plans are retired.</p>
+              <p className="mt-1 text-xs leading-5 text-red-700">
+                Resubscription now routes through the current workflow-pack pricing page instead of retired core-plan checkout.
+              </p>
             </div>
-            <p className="text-xs text-warm-500">Questions? Contact{' '}
+            <div className="flex flex-col gap-2">
+              <Link
+                to="/pricing"
+                className="inline-flex w-full items-center justify-center rounded-full bg-sage-600 px-5 py-2.5 text-sm font-semibold text-white transition-colors hover:bg-sage-700"
+              >
+                View current tools
+              </Link>
+              <button
+                type="button"
+                onClick={async () => {
+                  try {
+                    const url = await openBillingPortal()
+                    if (url) window.location.href = url
+                  } catch (err) {
+                    showToast(err.message || 'Could not open billing portal.', 'error')
+                  }
+                }}
+                className="inline-flex w-full items-center justify-center rounded-full border border-warm-300 px-5 py-2.5 text-sm font-semibold text-warm-700 transition-colors hover:bg-warm-50"
+              >
+                Open billing portal
+              </button>
+            </div>
+            <p className="text-xs text-warm-500 mt-4">Questions? Contact{' '}
               <a href="mailto:support@skillcascade.com" className="text-sage-500 hover:text-sage-600">
                 support@skillcascade.com
               </a>

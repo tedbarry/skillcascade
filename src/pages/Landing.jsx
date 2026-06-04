@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom'
 import { captureUtmParams } from '../lib/utmCapture.js'
 
 const PricingPage = lazy(() => import('../components/PricingPage.jsx'))
+const MARKETING_BUILD_TAG = 'workflow-packs-2026-06-04'
 
 /* ── Inline SVG Icons ─────────────────────────────────────── */
 
@@ -685,7 +686,7 @@ function MarketingPage({ page = 'home' }) {
   }, [])
 
   return (
-    <div className="min-h-screen bg-warm-50 overflow-x-hidden">
+    <div className="min-h-screen bg-warm-50 overflow-x-hidden" data-build={MARKETING_BUILD_TAG}>
 
       {/* ────────────────────────────────────────────────────────
           1. Sticky Nav
@@ -790,10 +791,10 @@ function MarketingPage({ page = 'home' }) {
               {/* CTAs — pill shaped per Lovart */}
               <div className="flex flex-col sm:flex-row gap-4 mb-10">
                 <Link
-                  to="/signup"
+                  to="/pricing"
                   className="bg-sage-600 text-white px-8 py-4 rounded-full hover:bg-sage-700 transition-all text-lg font-semibold shadow-lg shadow-sage-600/20 hover:shadow-xl hover:shadow-sage-600/25 text-center"
                 >
-                  Start Free Trial
+                  Choose Your Tool
                 </Link>
                 <Link
                   to="/demo"

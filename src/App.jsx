@@ -20,12 +20,17 @@ const Signup = lazy(() => import('./pages/Signup.jsx'))
 const ForgotPassword = lazy(() => import('./pages/ForgotPassword.jsx'))
 const ResetPassword = lazy(() => import('./pages/ResetPassword.jsx'))
 const Dashboard = lazy(() => import('./pages/Dashboard.jsx'))
+const ToolsHome = lazy(() => import('./pages/ToolsHome.jsx'))
 const Profile = lazy(() => import('./pages/Profile.jsx'))
 const Legal = lazy(() => import('./pages/Legal.jsx'))
 const Contact = lazy(() => import('./pages/Contact.jsx'))
 const KnowledgeBase = lazy(() => import('./pages/KnowledgeBase.jsx'))
 const Admin = lazy(() => import('./pages/Admin.jsx'))
+const PassageRunner = lazy(() => import('./pages/PassageRunner.jsx'))
+const AgencyOps = lazy(() => import('./pages/AgencyOps.jsx'))
 const ReportGeneratorPage = lazy(() => import('./pages/ReportGeneratorPage.jsx'))
+const WorkflowPackOnboarding = lazy(() => import('./pages/WorkflowPackOnboarding.jsx'))
+const WorkflowPacksConsole = lazy(() => import('./pages/WorkflowPacksConsole.jsx'))
 
 function NotFound() {
   return (
@@ -71,6 +76,7 @@ const pageFade = {
 }
 
 const PAGE_TITLES = {
+  '/tools': 'Tools - SkillCascade',
   '/features': 'Features - SkillCascade',
   '/framework': 'Framework - SkillCascade',
   '/demo': 'Demo - SkillCascade',
@@ -84,6 +90,7 @@ const PAGE_TITLES = {
   '/profile': 'Profile — SkillCascade',
   '/contact': 'Contact Us — SkillCascade',
   '/admin': 'Admin — SkillCascade',
+  '/agency-ops': 'Agency Ops — SkillCascade',
 }
 
 export default function App() {
@@ -95,7 +102,9 @@ export default function App() {
       || (path.startsWith('/legal/') && 'Legal — SkillCascade')
       || (path.startsWith('/kb') && 'Knowledge Base — SkillCascade')
       || (path.startsWith('/profile') && 'Profile — SkillCascade')
+      || (path.startsWith('/agency-ops') && 'Agency Ops — SkillCascade')
       || (path.startsWith('/report-generator') && 'Report Generator - SkillCascade')
+      || (path.startsWith('/workflow-packs') && 'Workflow Pack Setup - SkillCascade')
       || (path === '/reports' && 'Report Generator - SkillCascade')
       || 'SkillCascade'
     document.title = title
@@ -124,11 +133,65 @@ export default function App() {
             <Route path="/kb" element={<motion.div {...pageFade}><KnowledgeBase /></motion.div>} />
             <Route path="/kb/:slug" element={<motion.div {...pageFade}><KnowledgeBase /></motion.div>} />
             <Route
+              path="/tools"
+              element={
+                <motion.div {...pageFade}>
+                  <ProtectedRoute>
+                    <ToolsHome />
+                  </ProtectedRoute>
+                </motion.div>
+              }
+            />
+            <Route
               path="/dashboard"
               element={
                 <motion.div {...pageFade}>
                   <ProtectedRoute>
                     <Dashboard />
+                  </ProtectedRoute>
+                </motion.div>
+              }
+            />
+            <Route
+              path="/workflow-packs"
+              element={
+                <motion.div {...pageFade}>
+                  <ProtectedRoute>
+                    <WorkflowPacksConsole />
+                  </ProtectedRoute>
+                </motion.div>
+              }
+            />
+            <Route
+              path="/workflow-packs/:packId/onboarding"
+              element={
+                <motion.div {...pageFade}>
+                  <ProtectedRoute>
+                    <WorkflowPackOnboarding />
+                  </ProtectedRoute>
+                </motion.div>
+              }
+            />
+            <Route
+              path="/passage-runner"
+              element={
+                <motion.div {...pageFade}>
+                  <ProtectedRoute>
+                    <WorkflowPackGate packId={WORKFLOW_PACK_IDS.passageNotes}>
+                      <PassageRunner />
+                    </WorkflowPackGate>
+                  </ProtectedRoute>
+                </motion.div>
+              }
+            />
+            <Route
+              path="/agency-ops/:packId?"
+              element={
+                <motion.div {...pageFade}>
+                  <ProtectedRoute>
+                    <WorkflowPackGate packId={WORKFLOW_PACK_IDS.agencyOps}>
+                      <AgencyOps />
+                    </WorkflowPackGate>
                   </ProtectedRoute>
                 </motion.div>
               }

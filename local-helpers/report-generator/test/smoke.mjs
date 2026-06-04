@@ -108,6 +108,7 @@ try {
   })
   assert.equal(statusResponse.status, 200)
   assert.equal(statusResponse.headers.get('access-control-allow-origin'), origin)
+  assert.equal(statusResponse.headers.get('access-control-allow-credentials'), 'true')
   const statusPayload = await statusResponse.json()
   assert.equal(statusPayload.localOnly, true)
   assert.equal(statusPayload.helperUrl, baseUrl)
@@ -164,6 +165,7 @@ try {
   })
   assert.equal(preflightResponse.status, 204)
   assert.equal(preflightResponse.headers.get('access-control-allow-private-network'), 'true')
+  assert.equal(preflightResponse.headers.get('access-control-allow-credentials'), 'true')
 
   const { sourceFolder, outputDir, templatePath, aliasTemplatePath } = await createSourceFixture()
 

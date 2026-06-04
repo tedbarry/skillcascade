@@ -83,15 +83,49 @@ export function AuthProvider({ children }) {
   // Initialize analytics on mount
   useEffect(() => { initAnalytics() }, [])
 
-  // Fetch profile on mount if we have a user (background, non-blocking)
+  // Confirm/refresh the stored Supabase session before trusting localStorage.
   useEffect(() => {
-    if (user) {
-      fetchProfile(user.id).then((p) => {
+    let active = true
+
+    async function restoreSession() {
+      try {
+        const { data: { session } } = await supabase.auth.getSession()
+        if (!active) return
+
+        if (!session?.user) {
+          setUser(null)
+          setProfile(null)
+          setLoading(false)
+          return
+        }
+
+        setUser(session.user)
+        const p = await fetchProfile(session.user.id)
+        if (!active) return
         setProfile(p)
-        if (p) identifyUser(user, { role: p.role, org_id: p.org_id, plan: p.is_super_admin ? 'enterprise' : 'free' })
-      }).catch(() => setProfile(null))
+        if (p) identifyUser(session.user, { role: p.role, org_id: p.org_id, plan: p.is_super_admin ? 'enterprise' : 'free' })
+      } catch {
+        if (!active) return
+        setUser(null)
+        setProfile(null)
+      } finally {
+        if (active) setLoading(false)
+      }
     }
-  }, []) // eslint-disable-line react-hooks/exhaustive-deps
+
+    restoreSession()
+    return () => { active = false }
+  }, [fetchProfile])
+
+  useEffect(() => {
+    const handleAuthInvalid = () => {
+      setUser(null)
+      setProfile(null)
+      setLoading(false)
+    }
+    window.addEventListener('skillcascade:auth-invalid', handleAuthInvalid)
+    return () => window.removeEventListener('skillcascade:auth-invalid', handleAuthInvalid)
+  }, [])
 
   // Listen to auth state changes — handles token refresh, sign-in, sign-out.
   // NOT used for initial session restore (that's handled synchronously above).

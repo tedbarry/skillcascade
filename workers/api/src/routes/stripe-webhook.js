@@ -1,5 +1,12 @@
 import { Hono } from 'hono'
 import Stripe from 'stripe'
+import {
+  ensureWorkflowPackSubscriptionColumns,
+  findWorkflowPackByPriceId,
+  findWorkflowPackCheckout,
+  WORKFLOW_PACK_IDS,
+} from '../lib/workflow-packs.js'
+import { findReportCreditBundle, grantReportCredits } from '../lib/report-credits.js'
 
 const app = new Hono()
 
@@ -38,7 +45,7 @@ app.post('/', async (c) => {
   const { query: dbQuery } = await import('../db.js')
 
   // Reverse lookup: price ID → plan name
-  function planFromPriceId(priceId) {
+  function corePlanFromPriceId(priceId) {
     const priceMap = {
       [c.env.STRIPE_SOLO_PRICE_ID || '']: 'solo',
       [c.env.STRIPE_SOLO_ANNUAL_PRICE_ID || '']: 'solo',
@@ -56,7 +63,15 @@ app.post('/', async (c) => {
 
     // Determine plan from price ID first (handles upgrades), fall back to metadata
     const currentPriceId = subscription.items?.data?.[0]?.price?.id || ''
-    const plan = planFromPriceId(currentPriceId) || subscription.metadata.plan || 'solo'
+    await ensureWorkflowPackSubscriptionColumns(c.env, dbQuery)
+
+    const workflowPack = findWorkflowPackByPriceId(c.env, currentPriceId)
+      || findWorkflowPackCheckout({
+        workflowPackId: subscription.metadata.workflow_pack_id,
+        plan: subscription.metadata.plan,
+      })
+    const corePlan = corePlanFromPriceId(currentPriceId)
+    const plan = workflowPack ? workflowPack.checkoutPlan : corePlan || subscription.metadata.plan || 'solo'
     const status = subscription.status
     const currentPeriodEnd = new Date(subscription.current_period_end * 1000).toISOString()
     const cancelAtPeriodEnd = subscription.cancel_at_period_end
@@ -66,7 +81,7 @@ app.post('/', async (c) => {
       : null
 
     // Enforce minimum seats per plan
-    const minSeats = MIN_SEATS[plan] || 1
+    const minSeats = workflowPack ? 1 : MIN_SEATS[plan] || 1
     if (seats < minSeats && subscription.items?.data?.[0]?.id) {
       console.log(`Enforcing minimum seats: ${plan} requires ${minSeats}, has ${seats}. Correcting...`)
       try {
@@ -87,18 +102,57 @@ app.post('/', async (c) => {
     }
 
     // Also update subscription metadata with current plan (for future reference)
-    if (subscription.metadata.plan !== plan) {
+    if (
+      subscription.metadata.plan !== plan
+      || (workflowPack && subscription.metadata.workflow_pack_id !== workflowPack.id)
+      || (workflowPack && subscription.metadata.product_type !== 'workflow_pack')
+    ) {
       try {
         await stripe.subscriptions.update(subscription.id, {
-          metadata: { ...subscription.metadata, plan },
+          metadata: {
+            ...subscription.metadata,
+            plan,
+            product_type: workflowPack ? 'workflow_pack' : 'core_plan',
+            workflow_pack_id: workflowPack?.id || '',
+          },
         })
       } catch { /* non-critical, don't block upsert */ }
     }
 
     const finalSeats = Math.max(seats, minSeats)
+    let storedPlan = plan
+    if (workflowPack) {
+      const existing = await dbQuery(c.env,
+        "SELECT plan FROM subscriptions WHERE user_id = $1 LIMIT 1",
+        [userId]
+      )
+      const existingPlan = existing.rows[0]?.plan
+      storedPlan = ['solo', 'practice', 'enterprise'].includes(existingPlan)
+        ? existingPlan
+        : 'workflow_packs'
+    }
+    const workflowPackAccess = workflowPack ? JSON.stringify({ [workflowPack.id]: true }) : '{}'
+    const clinicalAccess = workflowPack?.clinicalAccess === true
+    const clinicalPlan = workflowPack?.clinicalPlan || null
+    const clinicalSeats = clinicalAccess ? finalSeats : 0
     const { rowCount } = await dbQuery(c.env,
-      `INSERT INTO subscriptions (user_id, stripe_customer_id, stripe_subscription_id, plan, status, current_period_end, cancel_at_period_end, seats, trial_ends_at, updated_at)
-       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, NOW())
+      `INSERT INTO subscriptions (
+         user_id,
+         stripe_customer_id,
+         stripe_subscription_id,
+         plan,
+         status,
+         current_period_end,
+         cancel_at_period_end,
+         seats,
+         trial_ends_at,
+         clinical_access,
+         clinical_plan,
+         clinical_seats,
+         workflow_pack_access,
+         updated_at
+       )
+       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13::jsonb, NOW())
        ON CONFLICT (user_id) DO UPDATE SET
          stripe_customer_id = EXCLUDED.stripe_customer_id,
          stripe_subscription_id = EXCLUDED.stripe_subscription_id,
@@ -108,39 +162,131 @@ app.post('/', async (c) => {
          cancel_at_period_end = EXCLUDED.cancel_at_period_end,
          seats = EXCLUDED.seats,
          trial_ends_at = EXCLUDED.trial_ends_at,
+         clinical_access = subscriptions.clinical_access OR EXCLUDED.clinical_access,
+         clinical_plan = COALESCE(EXCLUDED.clinical_plan, subscriptions.clinical_plan),
+         clinical_seats = GREATEST(subscriptions.clinical_seats, EXCLUDED.clinical_seats),
+         workflow_pack_access = COALESCE(subscriptions.workflow_pack_access, '{}'::jsonb) || EXCLUDED.workflow_pack_access,
          updated_at = NOW()`,
       [
         userId,
         subscription.customer,
         subscription.id,
-        plan,
+        storedPlan,
         status,
         currentPeriodEnd,
         cancelAtPeriodEnd,
         finalSeats,
         trialEndsAt,
+        clinicalAccess,
+        clinicalPlan,
+        clinicalSeats,
+        workflowPackAccess,
       ]
     )
 
     if (rowCount > 0) {
-      console.log('Subscription upserted for user:', userId, 'plan:', plan, 'status:', status, 'seats:', finalSeats)
+      console.log('Subscription upserted for user:', userId, 'plan:', storedPlan, 'status:', status, 'seats:', finalSeats, 'pack:', workflowPack?.id || '')
     } else {
       console.error('Failed to upsert subscription for user:', userId)
     }
   }
 
+  async function grantReportCreditCheckout(session) {
+    const userId = session.metadata?.user_id || session.client_reference_id
+    if (!userId) return
+
+    const bundle = findReportCreditBundle(session.metadata?.bundle_id)
+    if (!bundle) {
+      console.error('Unknown report credit bundle:', session.metadata?.bundle_id)
+      return
+    }
+    if (session.payment_status && session.payment_status !== 'paid') {
+      console.log('Report credit checkout completed without paid status:', session.id, session.payment_status)
+      return
+    }
+
+    await ensureWorkflowPackSubscriptionColumns(c.env, dbQuery)
+    const profileResult = await dbQuery(c.env,
+      'SELECT id, org_id FROM profiles WHERE id = $1 LIMIT 1',
+      [userId]
+    )
+    const orgId = profileResult.rows[0]?.org_id || null
+
+    await grantReportCredits({
+      env: c.env,
+      dbQuery,
+      userId,
+      orgId,
+      bundle,
+      stripeCheckoutSessionId: session.id,
+      stripePaymentIntentId: session.payment_intent || '',
+      metadata: {
+        checkoutSessionId: session.id,
+        customer: session.customer || '',
+        amountTotal: session.amount_total || bundle.amountCents,
+      },
+    })
+
+    await dbQuery(c.env,
+      `INSERT INTO subscriptions (
+         user_id,
+         stripe_customer_id,
+         plan,
+         status,
+         seats,
+         workflow_pack_access,
+         updated_at
+       )
+       VALUES ($1, $2, 'workflow_packs', 'active', 1, $3::jsonb, NOW())
+       ON CONFLICT (user_id) DO UPDATE SET
+         stripe_customer_id = COALESCE(subscriptions.stripe_customer_id, EXCLUDED.stripe_customer_id),
+         plan = CASE
+           WHEN subscriptions.plan IS NULL OR subscriptions.plan IN ('free', 'no_subscription')
+             THEN 'workflow_packs'
+           ELSE subscriptions.plan
+         END,
+         status = CASE
+           WHEN subscriptions.status IS NULL OR subscriptions.status IN ('no_subscription', 'canceled', 'expired')
+             THEN 'active'
+           ELSE subscriptions.status
+         END,
+         workflow_pack_access = COALESCE(subscriptions.workflow_pack_access, '{}'::jsonb) || EXCLUDED.workflow_pack_access,
+         updated_at = NOW()`,
+      [
+        userId,
+        session.customer || null,
+        JSON.stringify({ [WORKFLOW_PACK_IDS.reportGenerator]: true }),
+      ]
+    )
+
+    console.log('Report credits granted for user:', userId, 'bundle:', bundle.id, 'credits:', bundle.credits)
+  }
+
   switch (event.type) {
     case 'checkout.session.completed': {
       const session = event.data.object
+      if (session.metadata?.product_type === 'report_credits') {
+        await grantReportCreditCheckout(session)
+        break
+      }
+
       if (session.subscription) {
         const subscription = await stripe.subscriptions.retrieve(session.subscription)
         // Copy user_id from session metadata to subscription metadata
         if (session.client_reference_id && !subscription.metadata.user_id) {
           await stripe.subscriptions.update(subscription.id, {
-            metadata: { ...subscription.metadata, user_id: session.client_reference_id, plan: session.metadata?.plan || 'solo' },
+            metadata: {
+              ...subscription.metadata,
+              user_id: session.client_reference_id,
+              plan: session.metadata?.plan || 'solo',
+              product_type: session.metadata?.product_type || 'core_plan',
+              workflow_pack_id: session.metadata?.workflow_pack_id || '',
+            },
           })
           subscription.metadata.user_id = session.client_reference_id
           subscription.metadata.plan = session.metadata?.plan || 'solo'
+          subscription.metadata.product_type = session.metadata?.product_type || 'core_plan'
+          subscription.metadata.workflow_pack_id = session.metadata?.workflow_pack_id || ''
         }
         await upsertSubscription(subscription)
       }
@@ -158,10 +304,29 @@ app.post('/', async (c) => {
       const subscription = event.data.object
       const userId = subscription.metadata.user_id
       if (userId) {
-        await dbQuery(c.env,
-          "UPDATE subscriptions SET status = 'canceled', updated_at = NOW() WHERE user_id = $1",
-          [userId]
-        )
+        const workflowPack = findWorkflowPackCheckout({
+          workflowPackId: subscription.metadata.workflow_pack_id,
+          plan: subscription.metadata.plan,
+        })
+        if (workflowPack) {
+          await ensureWorkflowPackSubscriptionColumns(c.env, dbQuery)
+          await dbQuery(c.env,
+            `UPDATE subscriptions
+             SET workflow_pack_access = COALESCE(workflow_pack_access, '{}'::jsonb) || $2::jsonb,
+                 status = CASE
+                   WHEN plan IN ('solo', 'practice', 'enterprise') THEN status
+                   ELSE 'canceled'
+                 END,
+                 updated_at = NOW()
+             WHERE user_id = $1`,
+            [userId, JSON.stringify({ [workflowPack.id]: false })]
+          )
+        } else {
+          await dbQuery(c.env,
+            "UPDATE subscriptions SET status = 'canceled', updated_at = NOW() WHERE user_id = $1",
+            [userId]
+          )
+        }
       }
       break
     }

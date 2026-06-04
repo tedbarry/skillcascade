@@ -29,11 +29,16 @@ function checkRateLimit(userId: string): boolean {
 }
 
 // Map frontend model names to Bedrock model IDs
+const HAIKU_MODEL_ID = 'us.anthropic.claude-haiku-4-5-20251001-v1:0'
+const SONNET_MODEL_ID = 'us.anthropic.claude-sonnet-4-6'
+
 const MODEL_MAP: Record<string, string> = {
-  'gpt-4o-mini': 'us.anthropic.claude-3-5-haiku-20241022-v1:0',
-  'gpt-4o': 'us.anthropic.claude-sonnet-4-20250514-v1:0',
-  'claude-haiku': 'us.anthropic.claude-3-5-haiku-20241022-v1:0',
-  'claude-sonnet': 'us.anthropic.claude-sonnet-4-20250514-v1:0',
+  'gpt-4o-mini': HAIKU_MODEL_ID,
+  'gpt-4o': SONNET_MODEL_ID,
+  'claude-haiku': HAIKU_MODEL_ID,
+  'claude-sonnet': SONNET_MODEL_ID,
+  'claude-haiku-4-5': HAIKU_MODEL_ID,
+  'claude-sonnet-4-6': SONNET_MODEL_ID,
 }
 
 // Convert OpenAI-style messages to Bedrock/Claude format

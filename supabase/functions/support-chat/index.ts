@@ -9,6 +9,8 @@
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
 import { getCorsHeaders } from '../_shared/cors.ts'
 
+const SUPPORT_CHAT_MODEL_ID = 'us.anthropic.claude-haiku-4-5-20251001-v1:0'
+
 // Simple in-memory rate limiter: max 30 messages per user per day
 const rateLimitMap = new Map<string, { count: number; resetAt: number }>()
 const DAILY_LIMIT = 30
@@ -366,7 +368,7 @@ Deno.serve(async (req) => {
     })
 
     const bedrockRes = await aws.fetch(
-      'https://bedrock-runtime.us-east-1.amazonaws.com/model/us.anthropic.claude-3-5-haiku-20241022-v1:0/invoke',
+      `https://bedrock-runtime.us-east-1.amazonaws.com/model/${SUPPORT_CHAT_MODEL_ID}/invoke`,
       {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -397,7 +399,7 @@ Deno.serve(async (req) => {
         user_id: user.id,
         action: 'support_chat',
         resource_type: 'support_chatbot',
-        metadata: { model: 'claude-haiku', via: 'bedrock' },
+        metadata: { model: SUPPORT_CHAT_MODEL_ID, via: 'bedrock' },
       })
     } catch {
       // Ignore audit log failures

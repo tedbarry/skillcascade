@@ -5,7 +5,7 @@ test.describe('public smoke', () => {
     await page.goto('/')
 
     await expect(page.getByRole('link', { name: /^sign in$/i }).first()).toBeVisible()
-    await expect(page.getByRole('link', { name: /start free trial/i }).first()).toBeVisible()
+    await expect(page.getByRole('link', { name: /choose your tool/i }).first()).toBeVisible()
     await expect(page.getByText('260+', { exact: true })).toBeVisible()
     await expect(page.getByRole('heading', { name: /explore skillcascade by page/i })).toBeVisible()
     await expect(page.getByRole('heading', { name: /^goal engine$/i })).toHaveCount(0)
@@ -32,7 +32,7 @@ test.describe('public smoke', () => {
       ['/features', /everything you need/i],
       ['/framework', /9 domains/i],
       ['/demo', /see what/i],
-      ['/pricing', /simple, transparent pricing/i],
+      ['/pricing', /choose the skillcascade tool you need/i],
     ]
 
     for (const [path, heading] of pages) {

@@ -128,9 +128,14 @@ async function fetchHelperJson(helperBase, endpoint, options = {}) {
   const paths = [`${HELPER_API_PREFIX}${endpoint}`, `${LEGACY_HELPER_API_PREFIX}${endpoint}`]
   const { timeoutMs, ...requestOptions } = options
   let lastError = null
+  const isLoopbackHelper = /^https?:\/\/(127\.0\.0\.1|localhost|\[::1\])(?::\d+)?$/i.test(helperBase)
 
   for (const path of paths) {
     const fetchOptions = { ...requestOptions }
+    if (isLoopbackHelper) {
+      fetchOptions.credentials = fetchOptions.credentials || 'include'
+      fetchOptions.targetAddressSpace = fetchOptions.targetAddressSpace || 'local'
+    }
     try {
       const response = await withTimeout(fetch(`${helperBase}${path}`, fetchOptions), timeoutMs)
       const payload = await response.json().catch(() => null)

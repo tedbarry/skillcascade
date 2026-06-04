@@ -8,8 +8,9 @@
  */
 
 const API_BASE = import.meta.env.VITE_API_URL || 'https://skillcascade-api.teddybahary.workers.dev'
+const TOKEN_REFRESH_SKEW_SECONDS = 60
 
-function getAuthToken() {
+function getStoredSessionInfo() {
   try {
     const url = import.meta.env.VITE_SUPABASE_URL
     if (!url) return null
@@ -18,10 +19,78 @@ function getAuthToken() {
     const raw = localStorage.getItem(key)
     if (!raw) return null
     const parsed = JSON.parse(raw)
-    return parsed?.access_token ?? null
+    return { key, session: parsed, supabaseUrl: url }
   } catch {
     return null
   }
+}
+
+function isTokenFresh(token) {
+  try {
+    const payload = token.split('.')[1]
+    if (!payload) return Boolean(token)
+    const normalized = payload.replace(/-/g, '+').replace(/_/g, '/')
+    const padded = normalized.padEnd(normalized.length + ((4 - normalized.length % 4) % 4), '=')
+    const parsed = JSON.parse(atob(padded))
+    if (!parsed?.exp) return Boolean(token)
+    return parsed.exp - Math.floor(Date.now() / 1000) > TOKEN_REFRESH_SKEW_SECONDS
+  } catch {
+    return Boolean(token)
+  }
+}
+
+function emitAuthInvalid() {
+  if (typeof window === 'undefined') return
+  window.dispatchEvent(new CustomEvent('skillcascade:auth-invalid'))
+}
+
+function emitAuthRefreshed() {
+  if (typeof window === 'undefined') return
+  window.dispatchEvent(new CustomEvent('skillcascade:auth-refreshed'))
+}
+
+async function refreshAuthToken() {
+  const info = getStoredSessionInfo()
+  const refreshToken = info?.session?.refresh_token
+  const anonKey = import.meta.env.VITE_SUPABASE_ANON_KEY
+  if (!info?.supabaseUrl || !anonKey || !refreshToken) return null
+
+  try {
+    const response = await fetch(`${info.supabaseUrl}/auth/v1/token?grant_type=refresh_token`, {
+      method: 'POST',
+      headers: {
+        apikey: anonKey,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({ refresh_token: refreshToken }),
+    })
+    if (!response.ok) {
+      emitAuthInvalid()
+      return null
+    }
+
+    const refreshed = await response.json()
+    if (!refreshed?.access_token) return null
+    const nextSession = {
+      ...info.session,
+      ...refreshed,
+      user: refreshed.user || info.session.user,
+    }
+    if (!nextSession.expires_at && nextSession.expires_in) {
+      nextSession.expires_at = Math.floor(Date.now() / 1000) + Number(nextSession.expires_in)
+    }
+    localStorage.setItem(info.key, JSON.stringify(nextSession))
+    emitAuthRefreshed()
+    return nextSession.access_token
+  } catch {
+    return null
+  }
+}
+
+async function getAuthToken({ forceRefresh = false } = {}) {
+  const token = getStoredSessionInfo()?.session?.access_token ?? null
+  if (token && !forceRefresh && isTokenFresh(token)) return token
+  return await refreshAuthToken() || token
 }
 
 function buildRequestHeaders(token, options = {}) {
@@ -39,12 +108,12 @@ function buildRequestHeaders(token, options = {}) {
 }
 
 async function apiFetch(path, options = {}, _retry = 0) {
-  let token = getAuthToken()
+  let token = await getAuthToken()
 
   // If no token yet (session restoring), wait briefly and retry
   if (!token && _retry < 3) {
     await new Promise(r => setTimeout(r, 500 * (_retry + 1)))
-    token = getAuthToken()
+    token = await getAuthToken()
     if (!token) return apiFetch(path, options, _retry + 1)
   }
 
@@ -53,10 +122,14 @@ async function apiFetch(path, options = {}, _retry = 0) {
   try {
     const res = await fetch(`${API_BASE}${path}`, { ...options, headers })
 
-    // Retry on 401 if token might not have been ready
+    // Retry once with a forced Supabase refresh if the stored access token expired.
     if (res.status === 401 && _retry < 2) {
-      await new Promise(r => setTimeout(r, 1000))
-      return apiFetch(path, options, _retry + 1)
+      const refreshedToken = await getAuthToken({ forceRefresh: true })
+      if (refreshedToken && refreshedToken !== token) {
+        await new Promise(r => setTimeout(r, 250))
+        return apiFetch(path, options, _retry + 1)
+      }
+      emitAuthInvalid()
     }
 
     return res

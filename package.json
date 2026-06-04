@@ -14,6 +14,13 @@
     "migrate:clinical-evidence": "node scripts/clinical-evidence-preflight.mjs --apply",
     "preflight:product-workflow": "node scripts/product-workflow-preflight.mjs",
     "migrate:product-workflow": "node scripts/product-workflow-preflight.mjs --apply",
+    "preflight:passage-runner": "node scripts/passage-runner-db-preflight.mjs",
+    "migrate:passage-runner": "node scripts/passage-runner-db-preflight.mjs --apply",
+    "preflight:workflow-pack-billing": "node scripts/workflow-pack-billing-preflight.mjs",
+    "migrate:workflow-pack-billing": "node scripts/workflow-pack-billing-preflight.mjs --apply",
+    "smoke:workflow-pack-billing": "node scripts/workflow-pack-live-billing-smoke.mjs",
+    "smoke:workflow-pack-checkout": "node scripts/workflow-pack-live-billing-smoke.mjs --checkout-smoke",
+    "preflight:workflow-pack-contract": "node scripts/workflow-pack-contract-guardrails.mjs",
     "preflight:productization": "node scripts/productization-guardrails.mjs",
     "preview": "vite preview",
     "preview:e2e": "vite preview --outDir dist-e2e",
@@ -39,6 +46,7 @@
     "react-dom": "^19.0.0",
     "react-router-dom": "^7.1.0",
     "recharts": "^2.15.0",
+    "stripe": "^22.2.0",
     "three": "^0.183.1"
   },
   "devDependencies": {

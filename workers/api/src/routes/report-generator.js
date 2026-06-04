@@ -8,6 +8,12 @@ import {
   findUnsafeReportGeneratorPayloadFields,
   listReportGeneratorInstallClaims,
 } from '../lib/report-generator-pilot.js'
+import {
+  REPORT_CREDIT_BUNDLES,
+  consumeReportCredit,
+  getReportCreditBalance,
+  listReportCreditLedger,
+} from '../lib/report-credits.js'
 
 const route = new Hono()
 const REPORT_HELPER_FILENAME = 'SkillCascadeReportHelper-release-20260604-demo.zip'
@@ -176,6 +182,86 @@ route.get('/onboarding', async (c) => {
       userCanEdit: hasPermission(profile, 'reports', 'edit'),
     }),
   })
+})
+
+route.get('/credits/status', async (c) => {
+  const accessError = getAccessError(c)
+  if (accessError) return c.json(accessError.payload, accessError.status)
+
+  const profile = c.get('profile')
+  const balance = await getReportCreditBalance({
+    env: c.env,
+    dbQuery: query,
+    userId: profile.id,
+  })
+  const ledger = await listReportCreditLedger({
+    env: c.env,
+    dbQuery: query,
+    userId: profile.id,
+    limit: 10,
+  })
+
+  return c.json({
+    ok: true,
+    data: {
+      balance,
+      unit: 'report_credit',
+      bundles: REPORT_CREDIT_BUNDLES,
+      ledger,
+      checkedAt: new Date().toISOString(),
+    },
+  })
+})
+
+route.post('/credits/consume', async (c) => {
+  const accessError = getAccessError(c, 'edit')
+  if (accessError) return c.json(accessError.payload, accessError.status)
+
+  const body = await getJsonBody(c)
+  const unsafeResponse = rejectUnsafeSeatClaim(c, body)
+  if (unsafeResponse) return unsafeResponse
+
+  try {
+    const profile = c.get('profile')
+    const result = await consumeReportCredit({
+      env: c.env,
+      dbQuery: query,
+      userId: profile.id,
+      orgId: profile.org_id || null,
+      credits: 1,
+      externalEventId: String(body.externalEventId || ''),
+      description: 'Report draft generated',
+      metadata: {
+        helperVersion: String(body.helperVersion || ''),
+        templateMode: String(body.templateMode || ''),
+      },
+    })
+    const balance = await getReportCreditBalance({
+      env: c.env,
+      dbQuery: query,
+      userId: profile.id,
+    })
+    return c.json({
+      ok: true,
+      data: {
+        balance,
+        consumed: result.alreadyRecorded ? 0 : 1,
+        alreadyRecorded: result.alreadyRecorded,
+      },
+    })
+  } catch (error) {
+    if (error.code === 'insufficient_report_credits') {
+      return c.json({
+        error: error.message,
+        code: error.code,
+        balance: error.balance || 0,
+      }, 402)
+    }
+    return c.json({
+      error: error.message || 'Could not consume report credit.',
+      code: 'report_credit_consume_failed',
+    }, 400)
+  }
 })
 
 route.get('/helper/status', async (c) => {

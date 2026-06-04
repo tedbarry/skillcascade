@@ -982,52 +982,44 @@ Practitioners can submit their own templates and tools for review. Approved cont
     id: 'view-pricing',
     title: 'Pricing & Plans',
     category: 'views',
-    tags: ['pricing', 'plans', 'subscription', 'billing', 'free', 'solo', 'practice', 'enterprise', 'stripe'],
-    summary: 'Compare the Platform and Clinical plans — simple, transparent pricing with a 14-day free trial.',
-    body: `The Pricing page shows SkillCascade's two subscription tiers. Both plans include enterprise-grade security and a 14-day free trial.
+    tags: ['pricing', 'plans', 'subscription', 'billing', 'workflow packs', 'passage runner', 'report credits', 'stripe'],
+    summary: 'Choose the SkillCascade workflow pack you need: Passage Runner, Report Generator credits, Agency Ops, or the broader platform.',
+    body: `The Pricing page now sells SkillCascade as workflow packs instead of one generic subscription ladder. Each pack has its own access, setup path, and safety boundaries.
 
-## Platform plan — for individual BCBAs
+## Passage Runner
 
-- **$29/mo monthly** or **$19.99/mo annual** (save 31%)
-- All assessment tools (full framework, guided assessment)
-- All visualizations (Sunburst, Radar, Skill Tree, Cascade Intelligence, Explorer, Timeline)
-- AI Assistant with 14+ clinical tools
-- Goal engine and pattern alerts
-- Report generator (all types)
-- Progress prediction
-- Clinical intelligence and dependency explorer
-- Data export (CSV, JSON, HTML reports)
-- Secure, encrypted data storage
-- Email support
+- **$1,500/mo pilot**
+- Prepares Passage notes as saved drafts
+- Opens review queues for the clinician
+- Requires the local helper
+- Never signs notes
 
-## Clinical plan — for clinics and practices
+## Report Generator
 
-- **$19/active client/mo monthly** or **$15/active client/mo annual** (save 21%)
-- **$99/mo minimum**
-- **Unlimited staff included**
-- Everything in Platform, plus:
-- Scheduling (weekly calendar, My Day daily agenda, session creation, exceptions)
-- Learning Tree (client programs by domain, 4-tier hierarchy, 8 phase statuses, Smart Goal Router, Add Goal dialog, PDF import)
-- 4-domain Goal Library with Behavior, Communication, Social, and Parent Training
-- Session Data Collection (trial-by-trial recording, offline-first, haptic feedback)
-- Graph Dashboard (per-program charts with mastery lines, AI analysis)
-- Session Notes (5 CPT code templates, AI narratives, approval workflow)
-- Client Files and Contacts management
-- Auth Reports (26-section builder with AI refinement)
-- Organization analytics and Practice Intelligence
-- Team management and invites
-- Parent portal access and messaging
-- Priority support
+- **$50/report** for a single report credit
+- **$225** for 5 report credits ($45/report)
+- **$400** for 10 report credits ($40/report)
+- One generated Word draft consumes one credit after the local helper creates it
+- BCBA review and approval are still required
 
-Example: A 30-client clinic pays $570/mo with unlimited staff included.
+## Agency Ops
+
+- **$799/mo pilot**
+- Scoping workflow pack for note QA, handoffs, scheduling, onboarding, and admin reconciliation
+- Sold module by module as each workflow becomes verified
+
+## SkillCascade Platform
+
+- Custom access
+- Broader assessment, goal, visualization, report, and clinical evidence workspace
+- Kept separate from note automation while the platform strategy settles
 
 ## Billing
 
-- 14-day free trial on all plans
-- No long-term contracts — cancel anytime
-- Subscriptions managed through Stripe
-- Upgrade or downgrade at any time
-- Data retained for 90 days after cancellation`,
+- Stripe handles checkout for configured self-serve packs
+- Report Generator uses one-time credit purchases instead of a monthly subscription
+- Workflow-pack access appears in Tools after checkout or admin provisioning
+- Human review remains required for clinical outputs`,
     relatedIds: ['guide-quick-start', 'view-settings', 'guide-data-privacy'],
     source: 'manual',
   },
