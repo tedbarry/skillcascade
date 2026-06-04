@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { api } from '../lib/api.js'
 import { useAuth } from '../contexts/AuthContext.jsx'
+import { REPORT_CREDIT_BUNDLES } from '../data/workflowPacks.js'
 
 const DEFAULT_HELPER_URL = import.meta.env.VITE_REPORT_GENERATOR_HELPER_URL || 'http://127.0.0.1:4181'
 const HELPER_DISCOVERY_HOST = '127.0.0.1'
@@ -96,13 +97,31 @@ async function saveResponseAsDownload(response, fallbackFilename) {
 
 function readHelperError(error) {
   if (!error) return ''
-  if (error.name === 'AbortError') {
+  if (error.name === 'AbortError' || /helper_probe_timeout/i.test(error.message || '')) {
     return 'Local helper check timed out. Make sure the helper is running on this computer.'
   }
   if (/Failed to fetch|NetworkError|Load failed/i.test(error.message || '')) {
     return 'Local helper was not reachable from the browser. Start the helper on this machine, or confirm its CORS/local access setting.'
   }
   return error.message || 'Local helper request failed.'
+}
+
+function withTimeout(promise, timeoutMs) {
+  if (!timeoutMs) return promise
+
+  return new Promise((resolve, reject) => {
+    const timeoutId = window.setTimeout(() => reject(new Error('helper_probe_timeout')), timeoutMs)
+    promise.then(
+      (value) => {
+        window.clearTimeout(timeoutId)
+        resolve(value)
+      },
+      (error) => {
+        window.clearTimeout(timeoutId)
+        reject(error)
+      },
+    )
+  })
 }
 
 async function fetchHelperJson(helperBase, endpoint, options = {}) {
@@ -112,15 +131,8 @@ async function fetchHelperJson(helperBase, endpoint, options = {}) {
 
   for (const path of paths) {
     const fetchOptions = { ...requestOptions }
-    let timeoutId = null
-    if (timeoutMs && !fetchOptions.signal) {
-      const controller = new AbortController()
-      fetchOptions.signal = controller.signal
-      timeoutId = window.setTimeout(() => controller.abort(), timeoutMs)
-    }
-
     try {
-      const response = await fetch(`${helperBase}${path}`, fetchOptions)
+      const response = await withTimeout(fetch(`${helperBase}${path}`, fetchOptions), timeoutMs)
       const payload = await response.json().catch(() => null)
       if (response.ok && payload?.ok) return payload
 
@@ -131,8 +143,6 @@ async function fetchHelperJson(helperBase, endpoint, options = {}) {
       lastError = error
       if (path === paths[0]) continue
       throw error
-    } finally {
-      if (timeoutId) window.clearTimeout(timeoutId)
     }
   }
 
@@ -634,6 +644,8 @@ export default function ReportGeneratorPage() {
   const [templateState, setTemplateState] = useState({ loading: false, profile: null, error: '' })
   const [savedTemplatesState, setSavedTemplatesState] = useState({ loading: false, saving: false, result: null, error: '', message: '' })
   const [seatClaimState, setSeatClaimState] = useState({ loading: false, data: null, error: '' })
+  const [creditState, setCreditState] = useState({ loading: true, data: null, error: '' })
+  const [creditCheckoutState, setCreditCheckoutState] = useState({ bundleId: '', error: '' })
   const [preflightState, setPreflightState] = useState({ loading: false, result: null, error: '' })
   const [runState, setRunState] = useState({ loading: false, result: null, error: '' })
   const [form, setForm] = useState({
@@ -656,6 +668,8 @@ export default function ReportGeneratorPage() {
       .map((tag) => ({ tag, label: tag }))
   }, [helperStatus.data, moduleStatus.data])
   const userCanEdit = moduleStatus.data?.userCanEdit === true
+  const creditBalance = Number(creditState.data?.balance || 0)
+  const reportCreditBundles = creditState.data?.bundles?.length ? creditState.data.bundles : REPORT_CREDIT_BUNDLES
 
   useEffect(() => {
     let active = true
@@ -663,11 +677,13 @@ export default function ReportGeneratorPage() {
       setModuleStatus({ loading: true, data: null, error: '' })
       setOnboardingState({ loading: true, data: null, error: '' })
       setHelperPackageState({ loading: true, ok: false, data: null, error: '', message: '' })
+      setCreditState({ loading: true, data: null, error: '' })
       try {
-        const [response, onboardingResponse, helperPackageResponse] = await Promise.all([
+        const [response, onboardingResponse, helperPackageResponse, creditResponse] = await Promise.all([
           api.fetch('/api/report-generator/status'),
           api.fetch('/api/report-generator/onboarding'),
           api.fetch('/api/report-generator/helper/status'),
+          api.fetch('/api/report-generator/credits/status'),
         ])
         const payload = await response.json().catch(() => null)
         if (!response.ok || !payload?.ok) {
@@ -678,6 +694,7 @@ export default function ReportGeneratorPage() {
           throw new Error(onboardingPayload?.error || 'Report Generator onboarding unavailable.')
         }
         const helperPackagePayload = await helperPackageResponse.json().catch(() => null)
+        const creditPayload = await creditResponse.json().catch(() => null)
         if (active) {
           setModuleStatus({ loading: false, data: payload.data, error: '' })
           setOnboardingState({ loading: false, data: onboardingPayload.data, error: '' })
@@ -692,12 +709,16 @@ export default function ReportGeneratorPage() {
               message: '',
             })
           }
+          setCreditState(creditResponse.ok && creditPayload?.ok
+            ? { loading: false, data: creditPayload.data, error: '' }
+            : { loading: false, data: null, error: creditPayload?.error || 'Report credit status unavailable.' })
         }
       } catch (error) {
         if (active) {
           setModuleStatus({ loading: false, data: null, error: error.message })
           setOnboardingState({ loading: false, data: null, error: error.message })
           setHelperPackageState({ loading: false, ok: false, data: null, error: error.message, message: '' })
+          setCreditState({ loading: false, data: null, error: error.message })
         }
       }
     }
@@ -716,6 +737,40 @@ export default function ReportGeneratorPage() {
       setHelperPackageState({ loading: false, ok: true, data: payload, error: '', message: 'Helper package is ready to download.' })
     } catch (error) {
       setHelperPackageState({ loading: false, ok: false, data: null, error: error.message || 'Helper package is not available yet.', message: '' })
+    }
+  }
+
+  async function loadReportCredits() {
+    setCreditState((prev) => ({ ...prev, loading: true, error: '' }))
+    try {
+      const response = await api.fetch('/api/report-generator/credits/status')
+      const payload = await response.json().catch(() => null)
+      if (!response.ok || !payload?.ok) {
+        throw new Error(payload?.error || 'Report credit status unavailable.')
+      }
+      setCreditState({ loading: false, data: payload.data, error: '' })
+    } catch (error) {
+      setCreditState((prev) => ({ ...prev, loading: false, error: error.message || 'Report credit status unavailable.' }))
+    }
+  }
+
+  async function buyReportCredits(bundle) {
+    setCreditCheckoutState({ bundleId: bundle.id, error: '' })
+    try {
+      const response = await api.fetch('/api/stripe-checkout', {
+        method: 'POST',
+        body: JSON.stringify({
+          productType: 'report_credits',
+          bundleId: bundle.id,
+        }),
+      })
+      const payload = await response.json().catch(() => null)
+      if (!response.ok || !payload?.url) {
+        throw new Error(payload?.error || 'Report credit checkout did not return a Stripe URL.')
+      }
+      window.location.href = payload.url
+    } catch (error) {
+      setCreditCheckoutState({ bundleId: '', error: error.message || 'Could not open report credit checkout.' })
     }
   }
 
@@ -881,7 +936,12 @@ export default function ReportGeneratorPage() {
       setRunState({ loading: false, result: null, error: 'Enter a local source folder first.' })
       return
     }
+    if (creditBalance <= 0) {
+      setRunState({ loading: false, result: null, error: 'Buy at least one report credit before generating a draft.' })
+      return
+    }
 
+    const creditEventId = globalThis.crypto?.randomUUID?.() || `report-run-${Date.now()}-${Math.random().toString(16).slice(2)}`
     setRunState({ loading: true, result: null, error: '' })
     try {
       const payload = await fetchHelperJson(helperBase, '/run', {
@@ -900,7 +960,27 @@ export default function ReportGeneratorPage() {
       if (payload.result?.templateProfile) {
         setTemplateState({ loading: false, profile: payload.result.templateProfile, error: '' })
       }
-      setRunState({ loading: false, result: payload.result, error: '' })
+      let creditResult = null
+      let creditWarning = ''
+      try {
+        const consumeResponse = await api.fetch('/api/report-generator/credits/consume', {
+          method: 'POST',
+          body: JSON.stringify({
+            externalEventId: creditEventId,
+            helperVersion: helperStatus.data?.helperVersion || helperStatus.data?.version || '',
+            templateMode: payload.result?.templateMode || '',
+          }),
+        })
+        const consumePayload = await consumeResponse.json().catch(() => null)
+        if (!consumeResponse.ok || !consumePayload?.ok) {
+          throw new Error(consumePayload?.error || 'Credit consumption failed.')
+        }
+        creditResult = consumePayload.data
+        await loadReportCredits()
+      } catch (creditError) {
+        creditWarning = creditError.message || 'Draft was generated, but the credit balance could not be updated.'
+      }
+      setRunState({ loading: false, result: { ...payload.result, creditResult, creditWarning }, error: '' })
     } catch (error) {
       setRunState({ loading: false, result: null, error: readHelperError(error) })
     }
@@ -950,6 +1030,9 @@ export default function ReportGeneratorPage() {
           <div className="flex flex-wrap gap-2">
             <StatusBadge tone="green">Private files stay local</StatusBadge>
             <StatusBadge>Review only</StatusBadge>
+            <StatusBadge tone={creditBalance > 0 ? 'green' : 'warm'}>
+              {creditState.loading ? 'Checking credits' : `${creditBalance} report credit${creditBalance === 1 ? '' : 's'}`}
+            </StatusBadge>
           </div>
         </div>
       </header>
@@ -1123,13 +1206,16 @@ export default function ReportGeneratorPage() {
               <button
                 type="button"
                 onClick={runLocalDraft}
-                disabled={runState.loading || !userCanEdit}
+                disabled={runState.loading || !userCanEdit || creditBalance <= 0}
                 className="min-h-[44px] rounded-full bg-sage-600 px-5 py-2 text-sm font-semibold text-white shadow-sm hover:bg-sage-700 disabled:cursor-not-allowed disabled:bg-warm-300"
               >
                 {runState.loading ? 'Creating draft...' : 'Create Word draft'}
               </button>
               {!userCanEdit ? (
                 <span className="text-xs font-semibold text-amber-700">This role can view but not generate report drafts.</span>
+              ) : null}
+              {userCanEdit && creditBalance <= 0 ? (
+                <span className="text-xs font-semibold text-amber-700">Buy a report credit before generating a draft.</span>
               ) : null}
             </div>
 
@@ -1231,7 +1317,15 @@ export default function ReportGeneratorPage() {
                   <p><span className="font-semibold">Goals:</span> {runState.result.goalPlan?.goals?.length || 0}</p>
                   <p><span className="font-semibold">Missing fields:</span> {runState.result.clinicalProfile?.missingFields?.length || 0}</p>
                   <p><span className="font-semibold">Template mode:</span> {runState.result.templateMode}</p>
+                  {runState.result.creditResult ? (
+                    <p><span className="font-semibold">Credits left:</span> {runState.result.creditResult.balance}</p>
+                  ) : null}
                 </div>
+                {runState.result.creditWarning ? (
+                  <div className="mt-3 rounded-lg border border-amber-200 bg-white px-3 py-2 text-xs font-semibold leading-5 text-amber-800">
+                    {runState.result.creditWarning}
+                  </div>
+                ) : null}
                 {runState.result.qa?.warnings?.length ? (
                   <div className="mt-3 rounded-lg border border-amber-200 bg-white px-3 py-2">
                     <p className="text-xs font-semibold uppercase tracking-wide text-amber-700">Review warnings</p>
@@ -1248,6 +1342,52 @@ export default function ReportGeneratorPage() {
         </section>
 
         <aside className="space-y-5">
+          <section className="rounded-2xl border border-blue-200 bg-blue-50 p-5 shadow-sm">
+            <div className="flex items-start justify-between gap-3">
+              <div>
+                <p className="text-xs font-semibold uppercase tracking-wide text-blue-700">Report credits</p>
+                <h2 className="mt-2 text-lg font-bold text-blue-950">
+                  {creditState.loading ? 'Checking balance' : `${creditBalance} available`}
+                </h2>
+                <p className="mt-2 text-sm leading-6 text-blue-900">
+                  One generated Word draft uses one credit. Credits are added after Stripe payment succeeds.
+                </p>
+              </div>
+              <button
+                type="button"
+                onClick={loadReportCredits}
+                disabled={creditState.loading}
+                className="min-h-9 rounded-md border border-blue-200 bg-white px-3 text-xs font-bold text-blue-800 hover:bg-blue-100 disabled:opacity-60"
+              >
+                {creditState.loading ? 'Refreshing' : 'Refresh'}
+              </button>
+            </div>
+            {creditState.error ? (
+              <div className="mt-4 rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-xs font-semibold leading-5 text-red-800">
+                {creditState.error}
+              </div>
+            ) : null}
+            {creditCheckoutState.error ? (
+              <div className="mt-4 rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-xs font-semibold leading-5 text-red-800">
+                {creditCheckoutState.error}
+              </div>
+            ) : null}
+            <div className="mt-4 grid gap-2">
+              {reportCreditBundles.map((bundle) => (
+                <button
+                  key={bundle.id}
+                  type="button"
+                  onClick={() => buyReportCredits(bundle)}
+                  disabled={creditCheckoutState.bundleId === bundle.id}
+                  className="flex min-h-11 items-center justify-between rounded-lg border border-blue-200 bg-white px-3 text-left text-sm font-bold text-blue-950 hover:bg-blue-100 disabled:opacity-60"
+                >
+                  <span>{bundle.name}</span>
+                  <span>{bundle.priceLabel}</span>
+                </button>
+              ))}
+            </div>
+          </section>
+
           <OnboardingChecklistPanel state={onboardingState} />
 
           <section className="rounded-2xl border border-warm-200 bg-white p-5 shadow-sm">
