@@ -129,11 +129,21 @@ export function buildReportGeneratorOnboarding({ profile, userCanEdit = false } 
     helper: {
       defaultUrl: 'http://127.0.0.1:4181',
       requiredEndpoints: [
+        '/api/local-report-generator/status',
+        '/api/local-report-generator/install-state',
+        '/api/local-report-generator/license-readiness',
+        '/api/local-report-generator/template-profile',
+        '/api/local-report-generator/template-profiles',
+        '/api/local-report-generator/preflight',
+        '/api/local-report-generator/run',
+      ],
+      legacyEndpoints: [
         '/api/local-report-pilot/status',
         '/api/local-report-pilot/install-state',
         '/api/local-report-pilot/license-readiness',
         '/api/local-report-pilot/template-profile',
         '/api/local-report-pilot/template-profiles',
+        '/api/local-report-pilot/preflight',
         '/api/local-report-pilot/run',
       ],
       cloudUploadsSourceFiles: false,

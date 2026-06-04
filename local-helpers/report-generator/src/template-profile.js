@@ -170,7 +170,7 @@ export async function profileTemplate({ templatePath } = {}) {
   if (!templatePath) throw new Error('templatePath is required')
   const resolvedPath = resolve(templatePath)
   if (extname(resolvedPath).toLowerCase() !== '.docx') {
-    throw new Error('Only .docx templates are supported in this pilot.')
+    throw new Error('Only .docx templates are supported.')
   }
 
   const content = await readFile(resolvedPath)

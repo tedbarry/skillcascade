@@ -55,10 +55,10 @@ Build a buyer package:
 powershell -NoProfile -ExecutionPolicy Bypass -File local-helpers/report-generator/scripts/build-windows-package.ps1 -ReuseInstalledDependencies
 ```
 
-Build a buyer pilot handoff bundle:
+Build a buyer release handoff bundle:
 
 ```powershell
-powershell -NoProfile -ExecutionPolicy Bypass -File local-helpers/report-generator/scripts/build-pilot-buyer-bundle.ps1 -ReuseInstalledDependencies
+powershell -NoProfile -ExecutionPolicy Bypass -File local-helpers/report-generator/scripts/build-release-bundle.ps1 -ReuseInstalledDependencies
 ```
 
 ## Frontend Wiring
@@ -129,7 +129,7 @@ Endpoint:
 Behavior:
 
 - Requires `reports.view`.
-- Returns module contract, local-helper endpoint expectations, review gates, supported pilot source types, and current edit permission.
+- Returns module contract, local-helper endpoint expectations, review gates, supported source types, and current edit permission.
 - Returns the local helper template-profile endpoint and supported placeholder tags.
 - Returns the local helper license-readiness endpoint and the rule that the helper can identify an install but cannot grant access.
 - Records only non-PHI helper install fingerprints and readiness metadata for the signed-in user/org.
@@ -139,22 +139,22 @@ Behavior:
 
 ## Shared File / Source Intake
 
-Current pilot:
+Current release:
 
 - Local source-folder reading is handled by the local helper.
 - The SkillCascade page passes local path strings only to the helper URL selected by the user.
-- Local preflight is handled by `/api/local-report-pilot/preflight` and returns counts, blockers, and warnings only.
+- Local preflight is handled by `/api/local-report-generator/preflight` and returns counts, blockers, and warnings only.
 - Source evidence excerpts are written to the local evidence ledger and are not returned to the browser response.
-- Local template profiling is handled by the local helper through `/api/local-report-pilot/template-profile`.
-- Reusable template profile setup is handled by the local helper through `/api/local-report-pilot/template-profiles`.
+- Local template profiling is handled by the local helper through `/api/local-report-generator/template-profile`.
+- Reusable template profile setup is handled by the local helper through `/api/local-report-generator/template-profiles`.
 - Customer placeholder alias maps are saved with the local template profile and applied during helper-side `.docx` rendering.
 - The frontend alias editor preloads suggested mappings, lets the user change them, and sends the selected map to the helper.
-- Helper version, package build manifest, local data policy, and licensing boundary are handled by `/api/local-report-pilot/install-state`.
-- Local install fingerprint and future seat-claim readiness are handled by `/api/local-report-pilot/license-readiness`.
+- Helper version, package build manifest, local data policy, and licensing boundary are handled by `/api/local-report-generator/install-state`.
+- Local install fingerprint and future seat-claim readiness are handled by `/api/local-report-generator/license-readiness`.
 - Server-side install claiming is handled by `/api/report-generator/seat-claims`; accepted fields are limited to helper readiness metadata.
 - Saved template profiles are stored on the workstation in the helper data folder, not in SkillCascade cloud data.
 - The packaged-helper path now supports local SkillCascade origins and the live SkillCascade origin through a narrow CORS allowlist.
-- The buyer pilot bundle includes only non-PHI installation artifacts: helper zip, checksum, manifest, README-first instructions, route/helper URLs, PHI boundary, and review gates.
+- The buyer release bundle includes only non-PHI installation artifacts: helper zip, checksum, release manifest, README-first instructions, route/helper URLs, PHI boundary, and review gates.
 - The helper handles `OPTIONS` preflight and returns private-network access headers for the website-to-localhost bridge.
 
 Future cloud-integrated path:
@@ -191,11 +191,11 @@ npm run build
 Helper verification:
 
 ```text
-GET /api/local-report-pilot/status from http://127.0.0.1:5173 -> 200 with matching CORS origin
-OPTIONS /api/local-report-pilot/run from http://127.0.0.1:5173 -> 204 with private-network header
-POST /api/local-report-pilot/run from http://127.0.0.1:5173 -> 200, created local draft DOCX and review JSON
-GET /api/local-report-pilot/status from https://www.skillcascade.com -> 200 with matching CORS origin
-OPTIONS /api/local-report-pilot/run from https://www.skillcascade.com -> 204 with private-network header
+GET /api/local-report-generator/status from http://127.0.0.1:5173 -> 200 with matching CORS origin
+OPTIONS /api/local-report-generator/run from http://127.0.0.1:5173 -> 204 with private-network header
+POST /api/local-report-generator/run from http://127.0.0.1:5173 -> 200, created local draft DOCX and review JSON
+GET /api/local-report-generator/status from https://www.skillcascade.com -> 200 with matching CORS origin
+OPTIONS /api/local-report-generator/run from https://www.skillcascade.com -> 204 with private-network header
 npm --prefix local-helpers/report-generator run smoke -> status 200, preflight 204, run 200, 8 goals, local DOCX and review JSON created
 npm --prefix local-helpers/report-generator run smoke -> install-state 200, update-safe data policy, SkillCascade licensing authority
 npm --prefix local-helpers/report-generator run smoke -> license-readiness 200, persistent local fingerprint, no helper access-grant authority
@@ -207,8 +207,8 @@ npm --prefix local-helpers/report-generator run smoke -> evidence ledger created
 build-windows-package.ps1 -> distributable helper folder and zip with bundled node.exe and Install-ReportGeneratorHelper.exe
 packaged start-report-helper.ps1 -Smoke -NoInstall -> passed
 Install-ReportGeneratorHelper.exe -PreviewOnly -> shows install/update/startup actions without writing
-build-pilot-buyer-bundle.ps1 -NoSmoke -> buyer handoff folder, helper zip, checksum, manifest, and README-FIRST created
-build-pilot-buyer-bundle.ps1 -> buyer handoff folder created and packaged-helper smoke passed
+build-release-bundle.ps1 -NoSmoke -> buyer handoff folder, helper zip, checksum, manifest, and README-FIRST created
+build-release-bundle.ps1 -> buyer handoff folder created and packaged-helper smoke passed
 ```
 
 Local route smoke:

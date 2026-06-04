@@ -39,7 +39,8 @@ export async function helperInstallState() {
       autoUpdateEnabled: false,
     },
     licensingPolicy: {
-      readinessEndpoint: '/api/local-report-pilot/license-readiness',
+      readinessEndpoint: '/api/local-report-generator/license-readiness',
+      legacyReadinessEndpoint: '/api/local-report-pilot/license-readiness',
       localHelperStoresBillingSecrets: false,
       skillCascadeWorkflowPackIsAuthority: true,
       localHelperCanReportReadinessOnly: true,

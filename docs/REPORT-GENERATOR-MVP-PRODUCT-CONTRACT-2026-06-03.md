@@ -1,4 +1,4 @@
-# Report Generator MVP Product Contract
+# Report Generator Controlled Release Product Contract
 
 Date: 2026-06-03
 
@@ -19,7 +19,7 @@ This is not a generic chatbot and not a cloud file uploader. The product promise
 - Local install identity: stores a persistent non-secret helper fingerprint for future SkillCascade seat checks.
 - Server install claim: records the non-PHI helper fingerprint for the signed-in user/org as the first licensing primitive.
 - Onboarding contract: exposes the buyer setup checklist and safety boundaries through the protected API.
-- Pilot buyer bundle: creates a customer handoff folder containing the helper zip, checksum, manifest, README-first instructions, PHI boundary, and review-gate contract.
+- Release buyer bundle: creates a customer handoff folder containing the helper zip, checksum, manifest, README-first instructions, PHI boundary, and review-gate contract.
 - Source packet: recursively scans supported local source files and excludes generated output folders.
 - Local preflight: validates source folder, output folder, source file counts, and template readiness before generation.
 - Clinical draft: creates report sections and goals from source-supported evidence only.
@@ -50,10 +50,10 @@ Custom product layer:
 - Worker onboarding and install-claim endpoints for the sellable workflow-pack setup path.
 - Local evidence ledger artifact and sanitized response references.
 - Local preflight endpoint and UI gate before draft generation.
-- Pilot buyer bundle builder that packages the helper through a short Windows staging directory and emits buyer-facing verification artifacts.
+- Release buyer bundle builder that packages the helper through a short Windows staging directory and emits buyer-facing verification artifacts.
 - Buyer-facing Report Generator workflow UI.
 
-## MVP Acceptance Gates
+## Controlled Release Acceptance Gates
 
 - The protected SkillCascade page is available at `/report-generator` and `/reports`.
 - The route requires Report Generator workflow-pack access.
@@ -68,7 +68,7 @@ Custom product layer:
 - The helper run endpoint generates a local evidence ledger with source excerpts for BCBA review.
 - The helper response strips source evidence excerpts and returns only evidence references plus local artifact paths.
 - The helper has a Windows package builder that bundles the helper, dependencies, Node runtime, install script, startup wrapper, and double-click installer launcher EXE.
-- The pilot buyer bundle builder creates a handoff folder with the helper zip, checksum, manifest, README-first instructions, and optional packaged-helper smoke.
+- The release buyer bundle builder creates a handoff folder with the helper zip, checksum, manifest, README-first instructions, and optional packaged-helper smoke.
 - The helper reports install state, helper version, build manifest, local data policy, and licensing boundary through a PHI-free local endpoint.
 - The helper reports a persistent local install fingerprint for future server-side seat checks while storing no billing secrets and granting no access locally.
 - The Worker exposes a PHI-free onboarding checklist and install-claim endpoint for non-secret helper readiness metadata.
@@ -78,7 +78,7 @@ Custom product layer:
 - Smoke tests prove no live write, auto-sign, or auto-submit flags.
 - SkillCascade tests and production build pass.
 
-## Not In This MVP
+## Not In This Release
 
 - Cloud PHI upload.
 - Automated payer, CentralReach, Passage, email, or Word Online writes.

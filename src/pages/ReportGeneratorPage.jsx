@@ -4,6 +4,8 @@ import { api } from '../lib/api.js'
 import { useAuth } from '../contexts/AuthContext.jsx'
 
 const DEFAULT_HELPER_URL = import.meta.env.VITE_REPORT_GENERATOR_HELPER_URL || 'http://127.0.0.1:4181'
+const HELPER_API_PREFIX = '/api/local-report-generator'
+const LEGACY_HELPER_API_PREFIX = '/api/local-report-pilot'
 
 const workflowSteps = [
   {
@@ -69,6 +71,29 @@ function readHelperError(error) {
     return 'Local helper was not reachable from the browser. Start the helper on this machine, or confirm its CORS/local access setting.'
   }
   return error.message || 'Local helper request failed.'
+}
+
+async function fetchHelperJson(helperBase, endpoint, options = {}) {
+  const paths = [`${HELPER_API_PREFIX}${endpoint}`, `${LEGACY_HELPER_API_PREFIX}${endpoint}`]
+  let lastError = null
+
+  for (const path of paths) {
+    try {
+      const response = await fetch(`${helperBase}${path}`, options)
+      const payload = await response.json().catch(() => null)
+      if (response.ok && payload?.ok) return payload
+
+      const message = payload?.error || `Local helper request failed at ${path}.`
+      if (response.status !== 404) throw new Error(message)
+      lastError = new Error(message)
+    } catch (error) {
+      lastError = error
+      if (path === paths[0]) continue
+      throw error
+    }
+  }
+
+  throw lastError || new Error('Local helper request failed.')
 }
 
 function TemplateProfilePanel({ profile }) {
@@ -308,7 +333,7 @@ function HelperInstallStatePanel({ installState, licenseReadiness }) {
         <div className="rounded-lg border border-white/70 bg-white px-3 py-3">
           <p className="text-xs font-semibold uppercase tracking-wide text-warm-500">Updates</p>
           <p className="mt-2 text-sm leading-6 text-warm-700">
-            Auto-update is off in this MVP. Replacement requires user approval and preserves local customer data.
+            Auto-update is off for this release. Replacement requires user approval and preserves local customer data.
           </p>
         </div>
         <div className="rounded-lg border border-white/70 bg-white px-3 py-3">
@@ -392,7 +417,7 @@ function OnboardingChecklistPanel({ state }) {
   return (
     <section className="rounded-2xl border border-warm-200 bg-white p-5 shadow-sm">
       <p className="text-xs font-semibold uppercase tracking-wide text-sage-700">Buyer setup</p>
-      <h2 className="mt-2 text-lg font-bold text-warm-900">Pilot readiness checklist</h2>
+      <h2 className="mt-2 text-lg font-bold text-warm-900">Release readiness checklist</h2>
       {state.error ? (
         <div className="mt-3 rounded-xl border border-amber-200 bg-amber-50 px-3 py-2 text-sm text-amber-800">
           {state.error}
@@ -509,11 +534,7 @@ export default function ReportGeneratorPage() {
   async function checkHelper() {
     setHelperStatus({ checked: true, loading: true, ok: false, data: null, error: '' })
     try {
-      const response = await fetch(`${helperBase}/api/local-report-pilot/status`)
-      const payload = await response.json().catch(() => null)
-      if (!response.ok || !payload?.ok) {
-        throw new Error(payload?.error || 'Local helper status unavailable.')
-      }
+      const payload = await fetchHelperJson(helperBase, '/status')
       setHelperStatus({ checked: true, loading: false, ok: true, data: payload, error: '' })
       await loadSavedTemplates({ silent: true })
     } catch (error) {
@@ -564,7 +585,7 @@ export default function ReportGeneratorPage() {
 
     setPreflightState({ loading: true, result: null, error: '' })
     try {
-      const response = await fetch(`${helperBase}/api/local-report-pilot/preflight`, {
+      const payload = await fetchHelperJson(helperBase, '/preflight', {
         method: 'POST',
         headers: { 'content-type': 'application/json' },
         body: JSON.stringify({
@@ -574,10 +595,6 @@ export default function ReportGeneratorPage() {
           templateProfileId: form.templateProfileId,
         }),
       })
-      const payload = await response.json().catch(() => null)
-      if (!response.ok || !payload?.ok) {
-        throw new Error(payload?.error || 'Local preflight failed.')
-      }
       setPreflightState({ loading: false, result: payload.result, error: '' })
     } catch (error) {
       setPreflightState({ loading: false, result: null, error: readHelperError(error) })
@@ -587,11 +604,7 @@ export default function ReportGeneratorPage() {
   async function loadSavedTemplates({ silent = false } = {}) {
     setSavedTemplatesState((prev) => ({ ...prev, loading: true, error: '', message: silent ? prev.message : '' }))
     try {
-      const response = await fetch(`${helperBase}/api/local-report-pilot/template-profiles`)
-      const payload = await response.json().catch(() => null)
-      if (!response.ok || !payload?.ok) {
-        throw new Error(payload?.error || 'Saved template profiles unavailable.')
-      }
+      const payload = await fetchHelperJson(helperBase, '/template-profiles')
       setSavedTemplatesState((prev) => ({ ...prev, loading: false, result: payload.result, error: '' }))
     } catch (error) {
       setSavedTemplatesState((prev) => ({ ...prev, loading: false, error: readHelperError(error) }))
@@ -606,7 +619,7 @@ export default function ReportGeneratorPage() {
 
     setSavedTemplatesState((prev) => ({ ...prev, saving: true, error: '', message: '' }))
     try {
-      const response = await fetch(`${helperBase}/api/local-report-pilot/template-profiles`, {
+      const payload = await fetchHelperJson(helperBase, '/template-profiles', {
         method: 'POST',
         headers: { 'content-type': 'application/json' },
         body: JSON.stringify({
@@ -616,10 +629,6 @@ export default function ReportGeneratorPage() {
           fieldAliases: form.fieldAliases,
         }),
       })
-      const payload = await response.json().catch(() => null)
-      if (!response.ok || !payload?.ok) {
-        throw new Error(payload?.error || 'Template profile could not be saved.')
-      }
       setForm((prev) => ({
         ...prev,
         templateProfileId: payload.result.id,
@@ -663,7 +672,7 @@ export default function ReportGeneratorPage() {
 
     setRunState({ loading: true, result: null, error: '' })
     try {
-      const response = await fetch(`${helperBase}/api/local-report-pilot/run`, {
+      const payload = await fetchHelperJson(helperBase, '/run', {
         method: 'POST',
         headers: { 'content-type': 'application/json' },
         body: JSON.stringify({
@@ -676,10 +685,6 @@ export default function ReportGeneratorPage() {
           templateFieldAliases: form.fieldAliases,
         }),
       })
-      const payload = await response.json().catch(() => null)
-      if (!response.ok || !payload?.ok) {
-        throw new Error(payload?.error || 'Local report generation failed.')
-      }
       if (payload.result?.templateProfile) {
         setTemplateState({ loading: false, profile: payload.result.templateProfile, error: '' })
       }
@@ -697,15 +702,11 @@ export default function ReportGeneratorPage() {
 
     setTemplateState({ loading: true, profile: null, error: '' })
     try {
-      const response = await fetch(`${helperBase}/api/local-report-pilot/template-profile`, {
+      const payload = await fetchHelperJson(helperBase, '/template-profile', {
         method: 'POST',
         headers: { 'content-type': 'application/json' },
         body: JSON.stringify({ templatePath: form.templatePath.trim() }),
       })
-      const payload = await response.json().catch(() => null)
-      if (!response.ok || !payload?.ok) {
-        throw new Error(payload?.error || 'Template profile failed.')
-      }
       const suggestedAliases = Object.fromEntries((payload.profile.unsupportedTags || [])
         .filter((item) => item.suggestedTag)
         .map((item) => [item.tag, item.suggestedTag]))
@@ -781,7 +782,7 @@ export default function ReportGeneratorPage() {
             <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
               <div>
                 <p className="text-xs font-semibold uppercase tracking-wide text-sage-700">Local helper</p>
-                <h2 className="mt-2 text-xl font-bold text-warm-900">Run the local report pilot</h2>
+                <h2 className="mt-2 text-xl font-bold text-warm-900">Generate a release-ready local draft</h2>
                 <p className="mt-2 text-sm leading-6 text-warm-600">
                   Use this only after the local helper is running on the workstation that has access to the report source folder.
                 </p>

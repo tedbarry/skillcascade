@@ -87,11 +87,12 @@ describe('report-generator route contract', () => {
     expect(payload.data.moduleId).toBe('report-generator')
     expect(payload.data.mode).toBe('local-helper-orchestrated')
     expect(payload.data.localHelper.uploadsSourceFilesToSkillCascade).toBe(false)
-    expect(payload.data.localHelper.installStateEndpoint).toBe('/api/local-report-pilot/install-state')
-    expect(payload.data.localHelper.licenseReadinessEndpoint).toBe('/api/local-report-pilot/license-readiness')
-    expect(payload.data.localHelper.templateProfileEndpoint).toBe('/api/local-report-pilot/template-profile')
-    expect(payload.data.localHelper.templateProfilesEndpoint).toBe('/api/local-report-pilot/template-profiles')
-    expect(payload.data.localHelper.preflightEndpoint).toBe('/api/local-report-pilot/preflight')
+    expect(payload.data.localHelper.installStateEndpoint).toBe('/api/local-report-generator/install-state')
+    expect(payload.data.localHelper.licenseReadinessEndpoint).toBe('/api/local-report-generator/license-readiness')
+    expect(payload.data.localHelper.templateProfileEndpoint).toBe('/api/local-report-generator/template-profile')
+    expect(payload.data.localHelper.templateProfilesEndpoint).toBe('/api/local-report-generator/template-profiles')
+    expect(payload.data.localHelper.preflightEndpoint).toBe('/api/local-report-generator/preflight')
+    expect(payload.data.localHelper.legacyEndpoints.installState).toBe('/api/local-report-pilot/install-state')
     expect(payload.data.installAndLicensing.helperReportsLocalInstallFingerprint).toBe(true)
     expect(payload.data.installAndLicensing.helperCanGrantAccess).toBe(false)
     expect(payload.data.installAndLicensing.helperStoresBillingSecrets).toBe(false)
@@ -118,6 +119,8 @@ describe('report-generator route contract', () => {
     expect(payload.data.dataMode).toBe('non_phi_onboarding_contract')
     expect(payload.data.user.canGenerateDrafts).toBe(true)
     expect(payload.data.helper.cloudUploadsSourceFiles).toBe(false)
+    expect(payload.data.helper.requiredEndpoints).toContain('/api/local-report-generator/run')
+    expect(payload.data.helper.legacyEndpoints).toContain('/api/local-report-pilot/run')
     expect(payload.data.serverEndpoints.claimInstall).toBe('/api/report-generator/seat-claims')
     expect(payload.data.safety.acceptsPhi).toBe(false)
     expect(payload.data.safety.rejectedFieldsInclude).toContain('source folder paths')
@@ -172,7 +175,7 @@ describe('report-generator route contract', () => {
       body: {
         installFingerprint: 'safeinstall123',
         helperVersion: '0.1.0',
-        packageVersion: 'pilot-1',
+        packageVersion: 'release-1',
         helperUrl: 'http://127.0.0.1:4181',
         readinessStatus: 'ready-for-skillcascade-license-check',
         templateProfileCount: 1,
@@ -202,7 +205,7 @@ describe('report-generator route contract', () => {
             user_id: 'user-1',
             install_fingerprint: 'safeinstall123',
             helper_version: '0.1.0',
-            package_version: 'pilot-1',
+            package_version: 'release-1',
             helper_url: 'http://127.0.0.1:4181',
             status: 'claimed',
             first_claimed_at: '2026-06-04T00:00:00.000Z',

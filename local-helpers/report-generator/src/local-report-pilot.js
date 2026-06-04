@@ -20,7 +20,9 @@ import { profileTemplate } from './template-profile.js'
 import { getTemplateProfile } from './template-profile-store.js'
 
 const SUPPORTED_SOURCE_EXTENSIONS = new Set(['.docx', '.txt', '.md'])
-const SKIP_DIRECTORY_NAMES = new Set(['.git', 'node_modules', 'report-pilot-output', 'verification-output'])
+const DEFAULT_OUTPUT_DIRECTORY_NAME = 'report-generator-output'
+const LEGACY_OUTPUT_DIRECTORY_NAMES = ['report-pilot-output']
+const SKIP_DIRECTORY_NAMES = new Set(['.git', 'node_modules', DEFAULT_OUTPUT_DIRECTORY_NAME, ...LEGACY_OUTPUT_DIRECTORY_NAMES, 'verification-output'])
 
 const SECTION_RULES = [
   {
@@ -255,7 +257,7 @@ export async function scanLocalSourceFolder(sourceFolder, options = {}) {
       path: filePath,
       relativePath: relative(resolvedFolder, filePath),
       extension: extname(filePath).toLowerCase() || '(none)',
-      reason: 'not-extracted-by-local-pilot-v1',
+      reason: 'not-extracted-by-local-helper-v1',
     })),
     sources,
   }
@@ -292,7 +294,7 @@ export async function preflightLocalReportPilot({
   }
 
   const resolvedSourceFolder = sourceFolder ? resolve(sourceFolder) : ''
-  const resolvedOutputDir = sourceFolder ? resolve(outputDir || join(sourceFolder, 'report-pilot-output')) : ''
+  const resolvedOutputDir = sourceFolder ? resolve(outputDir || join(sourceFolder, DEFAULT_OUTPUT_DIRECTORY_NAME)) : ''
   const sourceStatus = resolvedSourceFolder ? await directoryStatus(resolvedSourceFolder) : null
   if (sourceStatus && !sourceStatus.exists) blockers.push('Source folder does not exist.')
   if (sourceStatus?.exists && !sourceStatus.isDirectory) blockers.push('Source folder path is not a directory.')
@@ -376,7 +378,7 @@ export function buildLocalClinicalProfile({ clientLabel, sources }) {
 
   return {
     id: 'local-clinical-profile',
-    clientLabel: clientLabel || 'Local Pilot Client',
+    clientLabel: clientLabel || 'Local Report Client',
     generatedAt: new Date().toISOString(),
     localOnly: true,
     sections,
@@ -495,7 +497,7 @@ async function writeGeneratedDocx({ outputPath, job }) {
           }),
           paragraph(`Client: ${job.clientLabel}`, { spacing: { after: 180 } }),
           paragraph(`Generated locally: ${job.generatedAt}`, { spacing: { after: 300 } }),
-          paragraph('Review status: Draft for BCBA review. This local pilot does not sign, submit, or finalize reports.', { spacing: { after: 300 } }),
+          paragraph('Review status: Draft for BCBA review. This local helper does not sign, submit, or finalize reports.', { spacing: { after: 300 } }),
           ...job.clinicalProfile.sections.flatMap((section) => [
             new Paragraph({ text: section.label, heading: HeadingLevel.HEADING_2 }),
             paragraph(section.text, { spacing: { after: 120 } }),
@@ -680,14 +682,14 @@ function sanitizeGoalPlanForResponse(goalPlan) {
 export async function runLocalReportPilot({
   sourceFolder,
   outputDir,
-  clientLabel = 'Local Pilot Client',
+  clientLabel = 'Local Report Client',
   reportTitle = 'ABA Initial Assessment Draft',
   templatePath = '',
   templateProfileId = '',
   templateFieldAliases = {},
 } = {}) {
   if (!sourceFolder) throw new Error('sourceFolder is required')
-  const resolvedOutputDir = resolve(outputDir || join(sourceFolder, 'report-pilot-output'))
+  const resolvedOutputDir = resolve(outputDir || join(sourceFolder, DEFAULT_OUTPUT_DIRECTORY_NAME))
   await mkdir(resolvedOutputDir, { recursive: true })
 
   const sourcePacket = await scanLocalSourceFolder(sourceFolder, { excludePaths: [resolvedOutputDir] })

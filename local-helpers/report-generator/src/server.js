@@ -22,6 +22,20 @@ const configuredAllowedOrigins = (process.env.REPORT_HELPER_ALLOWED_ORIGINS || '
   .map((origin) => origin.trim())
   .filter(Boolean)
 const allowedOrigins = new Set([...defaultAllowedOrigins, ...configuredAllowedOrigins])
+const helperApiPrefix = '/api/local-report-generator'
+const legacyHelperApiPrefix = '/api/local-report-pilot'
+
+function isHelperEndpoint(pathname, endpoint) {
+  return pathname === `${helperApiPrefix}${endpoint}` || pathname === `${legacyHelperApiPrefix}${endpoint}`
+}
+
+function helperEndpoint(endpoint) {
+  return `${helperApiPrefix}${endpoint}`
+}
+
+function legacyHelperEndpoint(endpoint) {
+  return `${legacyHelperApiPrefix}${endpoint}`
+}
 
 const contentTypes = {
   '.html': 'text/html; charset=utf-8',
@@ -87,13 +101,13 @@ createServer(async (req, res) => {
       return
     }
 
-    if (pathname === '/api/local-report-pilot/status') {
+    if (isHelperEndpoint(pathname, '/status')) {
       const installState = await helperInstallState()
       const licenseReadiness = await localLicenseReadiness()
       sendJson(res, {
         ok: true,
         localOnly: true,
-        mode: 'skillcascade-report-helper-v1',
+        mode: 'skillcascade-report-generator-release-v1',
         helperVersion: installState.helperVersion,
         installState,
         licenseReadiness,
@@ -102,12 +116,20 @@ createServer(async (req, res) => {
         unsupportedFileBehavior: 'warn-do-not-extract',
         output: 'editable-docx',
         endpoints: {
-          installState: '/api/local-report-pilot/install-state',
-          licenseReadiness: '/api/local-report-pilot/license-readiness',
-          templateProfile: '/api/local-report-pilot/template-profile',
-          templateProfiles: '/api/local-report-pilot/template-profiles',
-          preflight: '/api/local-report-pilot/preflight',
-          run: '/api/local-report-pilot/run',
+          installState: helperEndpoint('/install-state'),
+          licenseReadiness: helperEndpoint('/license-readiness'),
+          templateProfile: helperEndpoint('/template-profile'),
+          templateProfiles: helperEndpoint('/template-profiles'),
+          preflight: helperEndpoint('/preflight'),
+          run: helperEndpoint('/run'),
+        },
+        legacyEndpoints: {
+          installState: legacyHelperEndpoint('/install-state'),
+          licenseReadiness: legacyHelperEndpoint('/license-readiness'),
+          templateProfile: legacyHelperEndpoint('/template-profile'),
+          templateProfiles: legacyHelperEndpoint('/template-profiles'),
+          preflight: legacyHelperEndpoint('/preflight'),
+          run: legacyHelperEndpoint('/run'),
         },
         supportedTemplateFields: SUPPORTED_TEMPLATE_FIELDS,
         safety: {
@@ -124,7 +146,7 @@ createServer(async (req, res) => {
       return
     }
 
-    if (pathname === '/api/local-report-pilot/install-state' && method === 'GET') {
+    if (isHelperEndpoint(pathname, '/install-state') && method === 'GET') {
       try {
         const result = await helperInstallState()
         sendJson(res, { ok: true, result }, corsHeaders)
@@ -134,7 +156,7 @@ createServer(async (req, res) => {
       return
     }
 
-    if (pathname === '/api/local-report-pilot/license-readiness' && method === 'GET') {
+    if (isHelperEndpoint(pathname, '/license-readiness') && method === 'GET') {
       try {
         const result = await localLicenseReadiness()
         sendJson(res, { ok: true, result }, corsHeaders)
@@ -144,7 +166,7 @@ createServer(async (req, res) => {
       return
     }
 
-    if (pathname === '/api/local-report-pilot/template-profile' && method === 'POST') {
+    if (isHelperEndpoint(pathname, '/template-profile') && method === 'POST') {
       try {
         const body = await readJsonBody(req)
         const profile = await profileTemplate(body)
@@ -155,7 +177,7 @@ createServer(async (req, res) => {
       return
     }
 
-    if (pathname === '/api/local-report-pilot/template-profiles' && method === 'GET') {
+    if (isHelperEndpoint(pathname, '/template-profiles') && method === 'GET') {
       try {
         const result = await listTemplateProfiles()
         sendJson(res, { ok: true, result }, corsHeaders)
@@ -165,7 +187,7 @@ createServer(async (req, res) => {
       return
     }
 
-    if (pathname === '/api/local-report-pilot/template-profiles' && method === 'POST') {
+    if (isHelperEndpoint(pathname, '/template-profiles') && method === 'POST') {
       try {
         const body = await readJsonBody(req)
         const result = await saveTemplateProfile(body)
@@ -176,7 +198,7 @@ createServer(async (req, res) => {
       return
     }
 
-    if (pathname === '/api/local-report-pilot/preflight' && method === 'POST') {
+    if (isHelperEndpoint(pathname, '/preflight') && method === 'POST') {
       try {
         const body = await readJsonBody(req)
         const result = await preflightLocalReportPilot(body)
@@ -187,7 +209,7 @@ createServer(async (req, res) => {
       return
     }
 
-    if (pathname === '/api/local-report-pilot/run' && method === 'POST') {
+    if (isHelperEndpoint(pathname, '/run') && method === 'POST') {
       try {
         const body = await readJsonBody(req)
         const result = await runLocalReportPilot(body)

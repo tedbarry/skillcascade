@@ -13,6 +13,8 @@ const port = Number(process.env.REPORT_HELPER_SMOKE_PORT || 4199)
 const baseUrl = `http://127.0.0.1:${port}`
 const origin = 'http://127.0.0.1:5173'
 const dataDir = mkdtempSync(join(tmpdir(), 'skillcascade-report-helper-data-'))
+const helperApi = '/api/local-report-generator'
+const legacyHelperApi = '/api/local-report-pilot'
 
 function startServer() {
   const child = spawn(process.execPath, ['src/server.js'], {
@@ -31,7 +33,7 @@ async function waitForStatus() {
   let lastError
   for (let i = 0; i < 40; i += 1) {
     try {
-      const response = await fetch(`${baseUrl}/api/local-report-pilot/status`)
+      const response = await fetch(`${baseUrl}${helperApi}/status`)
       if (response.ok) return
     } catch (error) {
       lastError = error
@@ -101,7 +103,7 @@ const server = startServer()
 try {
   await waitForStatus()
 
-  const statusResponse = await fetch(`${baseUrl}/api/local-report-pilot/status`, {
+  const statusResponse = await fetch(`${baseUrl}${helperApi}/status`, {
     headers: { Origin: origin },
   })
   assert.equal(statusResponse.status, 200)
@@ -112,26 +114,28 @@ try {
   assert.ok(statusPayload.helperVersion)
   assert.equal(statusPayload.installState.localDataPolicy.updatesPreserveCustomerData, true)
   assert.equal(statusPayload.installState.licensingPolicy.skillCascadeWorkflowPackIsAuthority, true)
-  assert.equal(statusPayload.endpoints.licenseReadiness, '/api/local-report-pilot/license-readiness')
+  assert.equal(statusPayload.endpoints.licenseReadiness, `${helperApi}/license-readiness`)
+  assert.equal(statusPayload.legacyEndpoints.licenseReadiness, `${legacyHelperApi}/license-readiness`)
   assert.equal(statusPayload.licenseReadiness.localOnly, true)
   assert.equal(statusPayload.licenseReadiness.authority.localHelperStoresBillingSecrets, false)
   assert.equal(statusPayload.licenseReadiness.authority.localHelperCanGrantAccess, false)
   assert.ok(statusPayload.licenseReadiness.installFingerprint)
 
-  const installStateResponse = await fetch(`${baseUrl}/api/local-report-pilot/install-state`, {
+  const installStateResponse = await fetch(`${baseUrl}${helperApi}/install-state`, {
     headers: { Origin: origin },
   })
   assert.equal(installStateResponse.status, 200)
   const installStatePayload = await installStateResponse.json()
   assert.equal(installStatePayload.ok, true)
   assert.equal(installStatePayload.result.updatePolicy.autoUpdateEnabled, false)
-  assert.equal(installStatePayload.result.licensingPolicy.readinessEndpoint, '/api/local-report-pilot/license-readiness')
+  assert.equal(installStatePayload.result.licensingPolicy.readinessEndpoint, `${helperApi}/license-readiness`)
+  assert.equal(installStatePayload.result.licensingPolicy.legacyReadinessEndpoint, `${legacyHelperApi}/license-readiness`)
   if (installStatePayload.result.buildManifest) {
     assert.equal(installStatePayload.result.buildManifest.updatesPreserveCustomerData, true)
     assert.ok(installStatePayload.result.buildManifest.packageVersion)
   }
 
-  const licenseReadinessResponse = await fetch(`${baseUrl}/api/local-report-pilot/license-readiness`, {
+  const licenseReadinessResponse = await fetch(`${baseUrl}${helperApi}/license-readiness`, {
     headers: { Origin: origin },
   })
   assert.equal(licenseReadinessResponse.status, 200)
@@ -144,7 +148,7 @@ try {
   assert.equal(licenseReadinessPayload.result.authority.localHelperCanGrantAccess, false)
   assert.equal(licenseReadinessPayload.result.seatClaim.recommendedKey, licenseReadinessPayload.result.installFingerprint)
 
-  const preflightResponse = await fetch(`${baseUrl}/api/local-report-pilot/run`, {
+  const preflightResponse = await fetch(`${baseUrl}${helperApi}/run`, {
     method: 'OPTIONS',
     headers: {
       Origin: origin,
@@ -158,7 +162,15 @@ try {
 
   const { sourceFolder, outputDir, templatePath, aliasTemplatePath } = await createSourceFixture()
 
-  const templateProfileResponse = await fetch(`${baseUrl}/api/local-report-pilot/template-profile`, {
+  const legacyStatusResponse = await fetch(`${baseUrl}${legacyHelperApi}/status`, {
+    headers: { Origin: origin },
+  })
+  assert.equal(legacyStatusResponse.status, 200)
+  const legacyStatusPayload = await legacyStatusResponse.json()
+  assert.equal(legacyStatusPayload.ok, true)
+  assert.equal(legacyStatusPayload.endpoints.run, `${helperApi}/run`)
+
+  const templateProfileResponse = await fetch(`${baseUrl}${helperApi}/template-profile`, {
     method: 'POST',
     headers: {
       Origin: origin,
@@ -175,7 +187,7 @@ try {
   assert.ok(templateProfilePayload.profile.supportedTags.includes('client_label'))
   assert.ok(templateProfilePayload.profile.supportedTags.includes('goals.objective'))
 
-  const saveTemplateProfileResponse = await fetch(`${baseUrl}/api/local-report-pilot/template-profiles`, {
+  const saveTemplateProfileResponse = await fetch(`${baseUrl}${helperApi}/template-profiles`, {
     method: 'POST',
     headers: {
       Origin: origin,
@@ -199,7 +211,7 @@ try {
   assert.ok(saveTemplateProfilePayload.result.aliasSummary.mappedUnsupportedTags.some((item) => item.tag === 'client_name'))
   assert.ok(saveTemplateProfilePayload.result.aliasSummary.mappedUnsupportedTags.some((item) => item.tag === 'goals.goal_text'))
 
-  const savedTemplateProfilesResponse = await fetch(`${baseUrl}/api/local-report-pilot/template-profiles`, {
+  const savedTemplateProfilesResponse = await fetch(`${baseUrl}${helperApi}/template-profiles`, {
     headers: { Origin: origin },
   })
   assert.equal(savedTemplateProfilesResponse.status, 200)
@@ -208,7 +220,7 @@ try {
   assert.equal(savedTemplateProfilesPayload.result.profileCount, 1)
   assert.equal(savedTemplateProfilesPayload.result.profiles[0].id, saveTemplateProfilePayload.result.id)
 
-  const localPreflightResponse = await fetch(`${baseUrl}/api/local-report-pilot/preflight`, {
+  const localPreflightResponse = await fetch(`${baseUrl}${helperApi}/preflight`, {
     method: 'POST',
     headers: {
       Origin: origin,
@@ -229,7 +241,7 @@ try {
   assert.equal(localPreflightPayload.result.sourceSummary.unsupportedFileCount, 1)
   assert.equal(localPreflightPayload.result.templateSummary.savedTemplateProfileId, saveTemplateProfilePayload.result.id)
 
-  const runResponse = await fetch(`${baseUrl}/api/local-report-pilot/run`, {
+  const runResponse = await fetch(`${baseUrl}${helperApi}/run`, {
     method: 'POST',
     headers: {
       Origin: origin,
@@ -238,7 +250,7 @@ try {
     body: JSON.stringify({
       sourceFolder,
       outputDir,
-      clientLabel: 'Pilot Client',
+      clientLabel: 'Release Client',
       reportTitle: 'SkillCascade Local Helper Smoke Draft',
       templateProfileId: saveTemplateProfilePayload.result.id,
     }),
@@ -276,7 +288,7 @@ try {
     goal.sourceEvidence.some((item) => Object.prototype.hasOwnProperty.call(item, 'text') || Object.prototype.hasOwnProperty.call(item, 'excerpt'))
   )), false)
   const renderedOutput = await mammoth.extractRawText({ path: runPayload.result.outputPath })
-  assert.match(renderedOutput.value, /Client: Pilot Client/)
+  assert.match(renderedOutput.value, /Client: Release Client/)
   assert.equal(renderedOutput.value.includes('REVIEW_UNSUPPORTED_TEMPLATE_FIELD'), false)
 
   console.log(JSON.stringify({

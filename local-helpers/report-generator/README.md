@@ -65,15 +65,15 @@ powershell -NoProfile -ExecutionPolicy Bypass -File local-helpers/report-generat
 
 The smoke test starts the helper on a temporary port, calls status, preflight, and run endpoints with a SkillCascade local-dev origin, then verifies that a local draft `.docx`, review `.json`, and evidence-ledger `.json` were created without live-write, auto-sign, or auto-submit flags.
 
-The smoke test also creates a temporary `.docx` template, profiles it through `/api/local-report-pilot/template-profile`, saves it through `/api/local-report-pilot/template-profiles`, lists the saved profile, then generates the draft from the saved profile ID in template mode.
+The smoke test also creates a temporary `.docx` template, profiles it through `/api/local-report-generator/template-profile`, saves it through `/api/local-report-generator/template-profiles`, lists the saved profile, then generates the draft from the saved profile ID in template mode.
 
-The smoke test verifies `/api/local-report-pilot/install-state`, including helper version, update-safe local data policy, and the rule that SkillCascade workflow-pack access remains the licensing authority.
+The smoke test verifies `/api/local-report-generator/install-state`, including helper version, update-safe local data policy, and the rule that SkillCascade workflow-pack access remains the licensing authority.
 
-The smoke test verifies `/api/local-report-pilot/license-readiness`, including the persistent local install fingerprint, no local billing-secret storage, and no local helper authority to grant access.
+The smoke test verifies `/api/local-report-generator/license-readiness`, including the persistent local install fingerprint, no local billing-secret storage, and no local helper authority to grant access.
 
 The smoke test verifies that evidence excerpts are stored in the local evidence ledger while the helper response contains only sanitized evidence references.
 
-The smoke test verifies `/api/local-report-pilot/preflight`, including source file counts, unsupported file counts, template-profile readiness, and no source text in the response.
+The smoke test verifies `/api/local-report-generator/preflight`, including source file counts, unsupported file counts, template-profile readiness, and no source text in the response.
 
 ## Template Placeholders
 
@@ -113,7 +113,7 @@ The helper supports this goal loop:
 Profile a local template before running a draft:
 
 ```http
-POST http://127.0.0.1:4181/api/local-report-pilot/template-profile
+POST http://127.0.0.1:4181/api/local-report-generator/template-profile
 Content-Type: application/json
 
 {
@@ -134,13 +134,13 @@ Saved template profiles let a customer template be profiled once and reused on l
 List saved profiles:
 
 ```http
-GET http://127.0.0.1:4181/api/local-report-pilot/template-profiles
+GET http://127.0.0.1:4181/api/local-report-generator/template-profiles
 ```
 
 Save or update a profile:
 
 ```http
-POST http://127.0.0.1:4181/api/local-report-pilot/template-profiles
+POST http://127.0.0.1:4181/api/local-report-generator/template-profiles
 Content-Type: application/json
 
 {
@@ -160,7 +160,7 @@ On the SkillCascade `/report-generator` page, the alias editor shows unsupported
 Run from a saved profile:
 
 ```http
-POST http://127.0.0.1:4181/api/local-report-pilot/run
+POST http://127.0.0.1:4181/api/local-report-generator/run
 Content-Type: application/json
 
 {
@@ -174,7 +174,7 @@ Content-Type: application/json
 Run preflight before generating a draft:
 
 ```http
-POST http://127.0.0.1:4181/api/local-report-pilot/preflight
+POST http://127.0.0.1:4181/api/local-report-generator/preflight
 Content-Type: application/json
 
 {
@@ -191,7 +191,7 @@ Preflight validates the local source folder, counts supported and unsupported fi
 The helper has a local install identity that can be claimed by SkillCascade in a future seat-check flow:
 
 ```http
-GET http://127.0.0.1:4181/api/local-report-pilot/license-readiness
+GET http://127.0.0.1:4181/api/local-report-generator/license-readiness
 ```
 
 The endpoint returns:
@@ -263,40 +263,44 @@ The package includes:
 - `Start-ReportGeneratorHelper.cmd` for manual startup.
 - Current-user startup wrapper support.
 
-## Pilot Buyer Bundle
+## Release Buyer Bundle
 
-Build the buyer-facing pilot handoff folder from the SkillCascade repo:
+Build the buyer-facing release folder from the SkillCascade repo:
 
 ```powershell
-powershell -NoProfile -ExecutionPolicy Bypass -File local-helpers/report-generator/scripts/build-pilot-buyer-bundle.ps1 -ReuseInstalledDependencies
+powershell -NoProfile -ExecutionPolicy Bypass -File local-helpers/report-generator/scripts/build-release-bundle.ps1 -ReuseInstalledDependencies
 ```
 
 This creates:
 
 ```text
-local-helpers/report-generator/dist/SkillCascadeReportGeneratorPilot-<version>/
+local-helpers/report-generator/dist/SkillCascadeReportGeneratorRelease-<version>/
 ```
 
-The pilot bundle contains:
+The release bundle contains:
 
 - The helper `.zip`.
 - `checksums.sha256.txt` for the helper zip.
-- `pilot-manifest.json` with the route, helper URL, smoke flag, PHI boundary, and review gates.
+- `release-manifest.json` with the route, helper URL, smoke flag, PHI boundary, and review gates.
 - `README-FIRST.txt` with the buyer setup sequence.
 
 Run a full packaged-helper smoke while building the bundle:
 
 ```powershell
-powershell -NoProfile -ExecutionPolicy Bypass -File local-helpers/report-generator/scripts/build-pilot-buyer-bundle.ps1 -ReuseInstalledDependencies
+powershell -NoProfile -ExecutionPolicy Bypass -File local-helpers/report-generator/scripts/build-release-bundle.ps1 -ReuseInstalledDependencies
 ```
 
 Skip the packaged smoke only for a fast packaging check:
 
 ```powershell
-powershell -NoProfile -ExecutionPolicy Bypass -File local-helpers/report-generator/scripts/build-pilot-buyer-bundle.ps1 -ReuseInstalledDependencies -NoSmoke
+powershell -NoProfile -ExecutionPolicy Bypass -File local-helpers/report-generator/scripts/build-release-bundle.ps1 -ReuseInstalledDependencies -NoSmoke
 ```
 
 The bundle builder stages the helper package in a short temporary directory before copying the final zip into the buyer folder. That avoids Windows long-path failures when dependencies are copied into a nested package tree.
+
+The older `build-pilot-buyer-bundle.ps1` script remains only for compatibility with earlier internal packaging checks. Use `build-release-bundle.ps1` for buyer testing and release handoff.
+
+The helper still accepts legacy `/api/local-report-pilot/...` endpoints so older local installs can be updated without breaking the web workflow.
 
 Preview the EXE installer without writing files:
 

@@ -1,4 +1,4 @@
-# Report Generator MVP Verification
+# Report Generator Controlled Release Verification
 
 Date: 2026-06-03
 
@@ -36,16 +36,16 @@ Windows package build:
 powershell -NoProfile -ExecutionPolicy Bypass -File local-helpers/report-generator/scripts/build-windows-package.ps1 -ReuseInstalledDependencies
 ```
 
-Pilot buyer bundle build with packaged-helper smoke:
+Release buyer bundle build with packaged-helper smoke:
 
 ```powershell
-powershell -NoProfile -ExecutionPolicy Bypass -File local-helpers/report-generator/scripts/build-pilot-buyer-bundle.ps1 -ReuseInstalledDependencies
+powershell -NoProfile -ExecutionPolicy Bypass -File local-helpers/report-generator/scripts/build-release-bundle.ps1 -ReuseInstalledDependencies
 ```
 
-Fast pilot buyer bundle build without packaged-helper smoke:
+Fast release buyer bundle build without packaged-helper smoke:
 
 ```powershell
-powershell -NoProfile -ExecutionPolicy Bypass -File local-helpers/report-generator/scripts/build-pilot-buyer-bundle.ps1 -ReuseInstalledDependencies -NoSmoke
+powershell -NoProfile -ExecutionPolicy Bypass -File local-helpers/report-generator/scripts/build-release-bundle.ps1 -ReuseInstalledDependencies -NoSmoke
 ```
 
 ## Real Proof Points
@@ -65,9 +65,9 @@ powershell -NoProfile -ExecutionPolicy Bypass -File local-helpers/report-generat
 - Helper response strips evidence excerpt text and returns sanitized evidence references.
 - Windows package builder creates a distributable helper folder and `.zip` with bundled `node.exe` and `Install-ReportGeneratorHelper.exe`.
 - Packaged launcher smoke passes from the generated helper package.
-- Pilot buyer bundle builder creates a buyer handoff folder with helper zip, `checksums.sha256.txt`, `pilot-manifest.json`, and `README-FIRST.txt`.
-- Pilot buyer bundle builder runs the packaged-helper smoke by default and reports `smokeRun: true`.
-- Pilot buyer bundle builder stages the package in a short temp directory so Windows dependency copying does not fail from nested long paths.
+- Release buyer bundle builder creates a buyer handoff folder with helper zip, `checksums.sha256.txt`, `release-manifest.json`, and `README-FIRST.txt`.
+- Release buyer bundle builder runs the packaged-helper smoke by default and reports `smokeRun: true`.
+- Release buyer bundle builder stages the package in a short temp directory so Windows dependency copying does not fail from nested long paths.
 - `Install-ReportGeneratorHelper.exe -PreviewOnly` shows install, smoke, and startup-wrapper actions without writing files.
 - API response strips source text from `sourcePacket.sources`.
 - QA flags stay false for `liveWriteAttempted`, `autoSignAttempted`, and `autoSubmitAttempted`.
@@ -88,8 +88,8 @@ powershell -NoProfile -ExecutionPolicy Bypass -File local-helpers/report-generat
 - Do not count alias mapping as complete unless a real `.docx` fixture with unsupported customer placeholder names renders through saved aliases without unsupported-field markers.
 - Do not count the alias editor as complete unless the production frontend build passes after the mapping UI is added.
 - Do not count the install path as complete unless the package builder creates a package and the packaged launcher smoke passes.
-- Do not count the buyer handoff as complete unless the pilot bundle includes checksum, manifest, README-first instructions, and a helper zip built through the package builder.
-- Do not count Windows packaging as reliable unless the pilot bundle can run from a normal output directory while dependency copying happens in a short staging path.
+- Do not count the buyer handoff as complete unless the release bundle includes checksum, manifest, README-first instructions, and a helper zip built through the package builder.
+- Do not count Windows packaging as reliable unless the release bundle can run from a normal output directory while dependency copying happens in a short staging path.
 - Do not count licensing as designed unless SkillCascade remains the workflow-pack authority, the helper stores no billing secrets, and the helper cannot grant access locally.
 - Do not count seat readiness as complete unless the license-readiness endpoint returns the same local install fingerprint across status and direct endpoint checks.
 - Do not count server-side seat claiming as complete unless PHI-like fields are rejected and a safe install fingerprint can be upserted for the signed-in user.
