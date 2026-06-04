@@ -45,11 +45,27 @@ $RuntimeDir = Join-Path $PackageRoot 'runtime'
 $ScriptsDir = Join-Path $PackageRoot 'scripts'
 New-Item -ItemType Directory -Force -Path $AppDir,$RuntimeDir,$ScriptsDir | Out-Null
 
+$HelperPackageJson = Get-Content -Raw (Join-Path $HelperRoot 'package.json') | ConvertFrom-Json
+$BuiltAt = (Get-Date).ToUniversalTime().ToString('o')
+
 Copy-Item -LiteralPath (Join-Path $HelperRoot 'package.json') -Destination $AppDir
 Copy-Item -LiteralPath (Join-Path $HelperRoot 'package-lock.json') -Destination $AppDir
 Copy-Item -LiteralPath (Join-Path $HelperRoot 'README.md') -Destination $AppDir
 Copy-Item -LiteralPath (Join-Path $HelperRoot 'src') -Destination $AppDir -Recurse
 Copy-Item -LiteralPath (Join-Path $HelperRoot 'test') -Destination $AppDir -Recurse
+
+Set-Content -LiteralPath (Join-Path $AppDir 'helper-build-manifest.json') -Encoding ASCII -Value (@{
+  packageName = $PackageName
+  packageVersion = $Version
+  helperVersion = $HelperPackageJson.version
+  builtAt = $BuiltAt
+  localOnly = $true
+  bundledNodeRuntime = $true
+  installerLauncher = 'Install-ReportGeneratorHelper.exe'
+  appInstallDir = '%LOCALAPPDATA%\SkillCascade\ReportGeneratorHelper'
+  customerDataDir = '%USERPROFILE%\.skillcascade\report-generator-helper'
+  updatesPreserveCustomerData = $true
+} | ConvertTo-Json -Depth 3)
 
 foreach ($scriptName in @('start-report-helper.ps1', 'install-startup-wrapper.ps1', 'install-packaged-helper.ps1')) {
   Copy-Item -LiteralPath (Join-Path $ScriptDir $scriptName) -Destination $ScriptsDir
@@ -223,6 +239,7 @@ FILE1="install-from-iexpress.cmd"
   packageRoot = $PackageRoot
   zipPath = $ZipPath
   launcherExePath = $LauncherExe
+  buildManifestPath = Join-Path $AppDir 'helper-build-manifest.json'
   installerExePath = if ($CreateInstallerExe) { $InstallerExePath } else { '' }
   dataPreservedAt = Join-Path $env:USERPROFILE '.skillcascade\report-generator-helper'
 } | ConvertTo-Json -Depth 3

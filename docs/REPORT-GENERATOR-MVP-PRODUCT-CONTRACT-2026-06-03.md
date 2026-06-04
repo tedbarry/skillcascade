@@ -48,6 +48,7 @@ Custom product layer:
 - The helper can save, list, and reuse a local customer template profile without uploading it to SkillCascade.
 - The helper run endpoint generates a local `.docx` draft and local review JSON.
 - The helper has a Windows package builder that bundles the helper, dependencies, Node runtime, install script, startup wrapper, and double-click installer launcher EXE.
+- The helper reports install state, helper version, build manifest, local data policy, and licensing boundary through a PHI-free local endpoint.
 - The browser API response does not return extracted source text.
 - Smoke tests prove no live write, auto-sign, or auto-submit flags.
 - SkillCascade tests and production build pass.
@@ -58,5 +59,5 @@ Custom product layer:
 - Automated payer, CentralReach, Passage, email, or Word Online writes.
 - One-click signing or submission.
 - Full AI clinical reasoning parity with the manual Codex workflow.
-- Signed/self-extracting installer, auto-update, and licensing enforcement.
+- Signed/self-extracting installer, auto-update execution, and payment-secret handling inside the helper.
 - Agency-specific alias/mapping editor beyond saved placeholder profiles.

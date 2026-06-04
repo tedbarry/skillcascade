@@ -127,6 +127,7 @@ Current pilot:
 - The SkillCascade page passes local path strings only to the helper URL selected by the user.
 - Local template profiling is handled by the local helper through `/api/local-report-pilot/template-profile`.
 - Reusable template profile setup is handled by the local helper through `/api/local-report-pilot/template-profiles`.
+- Helper version, package build manifest, local data policy, and licensing boundary are handled by `/api/local-report-pilot/install-state`.
 - Saved template profiles are stored on the workstation in the helper data folder, not in SkillCascade cloud data.
 - The packaged-helper path now supports local SkillCascade origins and the live SkillCascade origin through a narrow CORS allowlist.
 - The helper handles `OPTIONS` preflight and returns private-network access headers for the website-to-localhost bridge.
@@ -171,6 +172,7 @@ POST /api/local-report-pilot/run from http://127.0.0.1:5173 -> 200, created loca
 GET /api/local-report-pilot/status from https://www.skillcascade.com -> 200 with matching CORS origin
 OPTIONS /api/local-report-pilot/run from https://www.skillcascade.com -> 204 with private-network header
 npm --prefix local-helpers/report-generator run smoke -> status 200, preflight 204, run 200, 8 goals, local DOCX and review JSON created
+npm --prefix local-helpers/report-generator run smoke -> install-state 200, update-safe data policy, SkillCascade licensing authority
 npm --prefix local-helpers/report-generator run smoke -> template profile 200, template status ready, detected goals.objective
 npm --prefix local-helpers/report-generator run smoke -> saved template profile count 1, draft generated from saved profile ID
 build-windows-package.ps1 -> distributable helper folder and zip with bundled node.exe and Install-ReportGeneratorHelper.exe

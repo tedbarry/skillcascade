@@ -12,6 +12,7 @@ const REPORT_GENERATOR_CONTRACT = {
   localHelper: {
     defaultUrl: 'http://127.0.0.1:4181',
     statusEndpoint: '/api/local-report-pilot/status',
+    installStateEndpoint: '/api/local-report-pilot/install-state',
     templateProfileEndpoint: '/api/local-report-pilot/template-profile',
     templateProfilesEndpoint: '/api/local-report-pilot/template-profiles',
     runEndpoint: '/api/local-report-pilot/run',
@@ -52,6 +53,13 @@ const REPORT_GENERATOR_CONTRACT = {
     ],
     unsupportedTagBehavior: 'Flag in local profile and render review markers for unmapped placeholders.',
     savedProfileBehavior: 'Customer template paths and profile summaries are saved only in the local helper data folder.',
+  },
+  installAndLicensing: {
+    helperReportsVersion: true,
+    helperStoresBillingSecrets: false,
+    skillCascadeWorkflowPackIsAuthority: true,
+    updatesPreserveCustomerData: true,
+    autoUpdateEnabledInMvp: false,
   },
   reviewGates: [
     'BCBA review required before report finalization.',

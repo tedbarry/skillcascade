@@ -94,6 +94,21 @@ try {
   const statusPayload = await statusResponse.json()
   assert.equal(statusPayload.localOnly, true)
   assert.equal(statusPayload.safety.cloudUpload, false)
+  assert.ok(statusPayload.helperVersion)
+  assert.equal(statusPayload.installState.localDataPolicy.updatesPreserveCustomerData, true)
+  assert.equal(statusPayload.installState.licensingPolicy.skillCascadeWorkflowPackIsAuthority, true)
+
+  const installStateResponse = await fetch(`${baseUrl}/api/local-report-pilot/install-state`, {
+    headers: { Origin: origin },
+  })
+  assert.equal(installStateResponse.status, 200)
+  const installStatePayload = await installStateResponse.json()
+  assert.equal(installStatePayload.ok, true)
+  assert.equal(installStatePayload.result.updatePolicy.autoUpdateEnabled, false)
+  if (installStatePayload.result.buildManifest) {
+    assert.equal(installStatePayload.result.buildManifest.updatesPreserveCustomerData, true)
+    assert.ok(installStatePayload.result.buildManifest.packageVersion)
+  }
 
   const preflightResponse = await fetch(`${baseUrl}/api/local-report-pilot/run`, {
     method: 'OPTIONS',
@@ -186,6 +201,7 @@ try {
   console.log(JSON.stringify({
     ok: true,
     statusCode: statusResponse.status,
+    installStateCode: installStateResponse.status,
     preflightCode: preflightResponse.status,
     templateProfileCode: templateProfileResponse.status,
     templateProfileStatus: templateProfilePayload.profile.status,

@@ -65,6 +65,8 @@ The smoke test starts the helper on a temporary port, calls status, preflight, a
 
 The smoke test also creates a temporary `.docx` template, profiles it through `/api/local-report-pilot/template-profile`, saves it through `/api/local-report-pilot/template-profiles`, lists the saved profile, then generates the draft from the saved profile ID in template mode.
 
+The smoke test verifies `/api/local-report-pilot/install-state`, including helper version, update-safe local data policy, and the rule that SkillCascade workflow-pack access remains the licensing authority.
+
 ## Template Placeholders
 
 The helper supports these scalar placeholders:
@@ -198,6 +200,7 @@ The package includes:
 
 - The helper app and locked dependencies.
 - A bundled `node.exe` runtime.
+- `helper-build-manifest.json` with package version, helper version, build time, and update-safe data policy.
 - `Install-ReportGeneratorHelper.exe` for double-click setup after extracting the zip.
 - `Install-ReportGeneratorHelper.cmd` for nontechnical setup.
 - `Start-ReportGeneratorHelper.cmd` for manual startup.
