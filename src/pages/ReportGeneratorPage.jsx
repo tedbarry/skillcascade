@@ -7,6 +7,7 @@ const DEFAULT_HELPER_URL = import.meta.env.VITE_REPORT_GENERATOR_HELPER_URL || '
 const HELPER_DISCOVERY_HOST = '127.0.0.1'
 const HELPER_DISCOVERY_START_PORT = 4181
 const HELPER_DISCOVERY_END_PORT = 4199
+const HELPER_DISCOVERY_TIMEOUT_MS = 1200
 const HELPER_API_PREFIX = '/api/local-report-generator'
 const LEGACY_HELPER_API_PREFIX = '/api/local-report-pilot'
 
@@ -95,6 +96,9 @@ async function saveResponseAsDownload(response, fallbackFilename) {
 
 function readHelperError(error) {
   if (!error) return ''
+  if (error.name === 'AbortError') {
+    return 'Local helper check timed out. Make sure the helper is running on this computer.'
+  }
   if (/Failed to fetch|NetworkError|Load failed/i.test(error.message || '')) {
     return 'Local helper was not reachable from the browser. Start the helper on this machine, or confirm its CORS/local access setting.'
   }
@@ -103,11 +107,20 @@ function readHelperError(error) {
 
 async function fetchHelperJson(helperBase, endpoint, options = {}) {
   const paths = [`${HELPER_API_PREFIX}${endpoint}`, `${LEGACY_HELPER_API_PREFIX}${endpoint}`]
+  const { timeoutMs, ...requestOptions } = options
   let lastError = null
 
   for (const path of paths) {
+    const fetchOptions = { ...requestOptions }
+    let timeoutId = null
+    if (timeoutMs && !fetchOptions.signal) {
+      const controller = new AbortController()
+      fetchOptions.signal = controller.signal
+      timeoutId = window.setTimeout(() => controller.abort(), timeoutMs)
+    }
+
     try {
-      const response = await fetch(`${helperBase}${path}`, options)
+      const response = await fetch(`${helperBase}${path}`, fetchOptions)
       const payload = await response.json().catch(() => null)
       if (response.ok && payload?.ok) return payload
 
@@ -118,6 +131,8 @@ async function fetchHelperJson(helperBase, endpoint, options = {}) {
       lastError = error
       if (path === paths[0]) continue
       throw error
+    } finally {
+      if (timeoutId) window.clearTimeout(timeoutId)
     }
   }
 
@@ -149,7 +164,7 @@ async function discoverHelperStatus(currentUrl) {
 
   for (const url of urls) {
     try {
-      const payload = await fetchHelperJson(url, '/status')
+      const payload = await fetchHelperJson(url, '/status', { timeoutMs: HELPER_DISCOVERY_TIMEOUT_MS })
       return { url, payload }
     } catch (error) {
       lastError = error
