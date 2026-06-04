@@ -45,7 +45,21 @@ async function sendRequest(path, profile = createProfile(), options = {}) {
     method: options.method || 'GET',
     headers: options.body ? { 'Content-Type': 'application/json' } : undefined,
     body: options.body ? JSON.stringify(options.body) : undefined,
-  }, {})
+  }, options.env || {})
+}
+
+function createArtifactBucket() {
+  const uploaded = new Date('2026-06-04T00:00:00.000Z')
+  const object = {
+    size: 1234,
+    uploaded,
+    httpMetadata: { contentType: 'application/zip' },
+    body: new Blob(['zip-content'], { type: 'application/zip' }),
+  }
+  return {
+    head: vi.fn(async () => ({ size: object.size, uploaded })),
+    get: vi.fn(async () => object),
+  }
 }
 
 describe('report-generator route contract', () => {
@@ -94,6 +108,8 @@ describe('report-generator route contract', () => {
     expect(payload.data.localHelper.preflightEndpoint).toBe('/api/local-report-generator/preflight')
     expect(payload.data.localHelper.legacyEndpoints.installState).toBe('/api/local-report-pilot/install-state')
     expect(payload.data.installAndLicensing.helperReportsLocalInstallFingerprint).toBe(true)
+    expect(payload.data.installAndLicensing.helperPackageStatusEndpoint).toBe('/api/report-generator/helper/status')
+    expect(payload.data.installAndLicensing.helperPackageDownloadEndpoint).toBe('/api/report-generator/helper/download')
     expect(payload.data.installAndLicensing.helperCanGrantAccess).toBe(false)
     expect(payload.data.installAndLicensing.helperStoresBillingSecrets).toBe(false)
     expect(payload.data.installAndLicensing.skillCascadeWorkflowPackIsAuthority).toBe(true)
@@ -103,6 +119,54 @@ describe('report-generator route contract', () => {
     expect(payload.data.templateProfile.supportedTemplateTags).toContain('goals.objective')
     expect(payload.data.reviewGates).toContain('No automatic signing.')
     expect(payload.data.userCanEdit).toBe(false)
+    expect(payload.data.helperPackage.filename).toMatch(/SkillCascadeReportHelper/)
+  })
+
+  it('returns protected helper package status for authorized users', async () => {
+    auth.hasPermission.mockImplementation((_profile, category, action) => category === 'reports' && action === 'view')
+    const bucket = createArtifactBucket()
+
+    const response = await sendRequest('/helper/status', createProfile(), {
+      env: { CONNECTOR_ARTIFACTS: bucket },
+    })
+    const payload = await response.json()
+
+    expect(response.status).toBe(200)
+    expect(payload.ok).toBe(true)
+    expect(payload.filename).toMatch(/SkillCascadeReportHelper/)
+    expect(payload.downloadPath).toBe('/api/report-generator/helper/download')
+    expect(payload.installSteps).toContain('Download the helper package.')
+    expect(bucket.head).toHaveBeenCalled()
+  })
+
+  it('downloads the protected helper package as a zip', async () => {
+    auth.hasPermission.mockImplementation((_profile, category, action) => category === 'reports' && action === 'view')
+    const bucket = createArtifactBucket()
+
+    const response = await sendRequest('/helper/download', createProfile(), {
+      env: { CONNECTOR_ARTIFACTS: bucket },
+    })
+
+    expect(response.status).toBe(200)
+    expect(response.headers.get('content-type')).toBe('application/zip')
+    expect(response.headers.get('content-disposition')).toMatch(/SkillCascadeReportHelper/)
+    expect(response.headers.get('cache-control')).toBe('private, no-store')
+    expect(response.headers.get('x-skillcascade-report-helper-version')).toBe('release-20260604-demo')
+    expect(bucket.get).toHaveBeenCalled()
+  })
+
+  it('does not expose helper downloads without workflow-pack access', async () => {
+    auth.hasPermission.mockImplementation((_profile, category, action) => category === 'reports' && action === 'view')
+    const bucket = createArtifactBucket()
+
+    const response = await sendRequest('/helper/download', createProfile({ workflow_pack_access: {} }), {
+      env: { CONNECTOR_ARTIFACTS: bucket },
+    })
+    const payload = await response.json()
+
+    expect(response.status).toBe(403)
+    expect(payload.code).toBe('workflow_pack_required')
+    expect(bucket.get).not.toHaveBeenCalled()
   })
 
   it('returns a PHI-free onboarding contract for the buyer setup flow', async () => {

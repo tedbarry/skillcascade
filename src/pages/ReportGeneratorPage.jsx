@@ -9,29 +9,28 @@ const LEGACY_HELPER_API_PREFIX = '/api/local-report-pilot'
 
 const workflowSteps = [
   {
-    title: 'Local source packet',
-    detail: 'Select the client source folder on the installed helper. The website coordinates the run, but source documents stay on the workstation.',
+    title: 'Choose files',
+    detail: 'Pick the folder that contains the client documents for the report.',
   },
   {
-    title: 'Template profile',
-    detail: 'Check the customer Word template for supported placeholders, goal-loop fields, unsupported tags, and missing review fields.',
+    title: 'Choose template',
+    detail: 'Use the default report format or connect the agency Word template once.',
   },
   {
-    title: 'Evidence-backed draft',
-    detail: 'Generate report sections and goals only from source support, marking missing fields instead of inventing facts.',
+    title: 'Create draft',
+    detail: 'Generate an editable Word draft and review checklist on the workstation.',
   },
   {
-    title: 'BCBA review gate',
-    detail: 'Open the Word draft and review JSON locally. Final signing, submission, and platform writes remain manual.',
+    title: 'Review',
+    detail: 'The BCBA reviews the draft before using, signing, or submitting anything.',
   },
 ]
 
-const integrationRows = [
-  ['App route', 'Mounted through src/App.jsx as /report-generator and /reports.'],
-  ['Shared auth', 'Wrapped in ProtectedRoute and backed by the existing Supabase session/API bearer token flow.'],
-  ['Shared API client', 'Uses api.fetch for /api/report-generator/status, so Worker auth and report permissions are reused.'],
-  ['Shared file/source intake', 'Template profiling and PHI-capable folder reads stay in the local helper; future cloud source intake should reuse client-files and clinical evidence records.'],
-  ['Audit/review gates', 'No sign, submit, external write, or final report state without explicit BCBA review and approval.'],
+const setupSteps = [
+  'Download the helper package.',
+  'Unzip it on the Windows computer with the report files.',
+  'Run Install-ReportGeneratorHelper.exe from the unzipped folder.',
+  'Return here and click Check setup.',
 ]
 
 function StatusBadge({ children, tone = 'warm' }) {
@@ -50,7 +49,7 @@ function StatusBadge({ children, tone = 'warm' }) {
   )
 }
 
-function Field({ label, value, onChange, placeholder }) {
+function Field({ label, value, onChange, placeholder, help }) {
   return (
     <label className="block">
       <span className="text-xs font-semibold uppercase tracking-wide text-warm-500">{label}</span>
@@ -61,8 +60,34 @@ function Field({ label, value, onChange, placeholder }) {
         placeholder={placeholder}
         className="mt-1 min-h-[44px] w-full rounded-lg border border-warm-200 bg-white px-3 py-2 text-sm text-warm-800 shadow-sm outline-none transition-colors focus:border-sage-400"
       />
+      {help ? <span className="mt-1 block text-xs leading-5 text-warm-500">{help}</span> : null}
     </label>
   )
+}
+
+function formatFileSize(size = 0) {
+  const numericSize = Number(size) || 0
+  if (numericSize < 1024) return `${numericSize} B`
+  if (numericSize < 1024 * 1024) return `${Math.round(numericSize / 1024)} KB`
+  return `${(numericSize / 1024 / 1024).toFixed(1)} MB`
+}
+
+function getDownloadFilename(response, fallback) {
+  const disposition = response.headers.get('content-disposition') || ''
+  const match = disposition.match(/filename="?([^"]+)"?/i)
+  return match?.[1] || fallback
+}
+
+async function saveResponseAsDownload(response, fallbackFilename) {
+  const blob = await response.blob()
+  const url = URL.createObjectURL(blob)
+  const link = document.createElement('a')
+  link.href = url
+  link.download = getDownloadFilename(response, fallbackFilename)
+  document.body.appendChild(link)
+  link.click()
+  link.remove()
+  URL.revokeObjectURL(url)
 }
 
 function readHelperError(error) {
@@ -107,26 +132,26 @@ function TemplateProfilePanel({ profile }) {
     <div className={`mt-5 rounded-xl border p-4 ${ready ? 'border-sage-200 bg-sage-50' : 'border-amber-200 bg-amber-50'}`}>
       <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
         <div>
-          <p className={`text-xs font-semibold uppercase tracking-wide ${ready ? 'text-sage-700' : 'text-amber-700'}`}>Template profile</p>
+          <p className={`text-xs font-semibold uppercase tracking-wide ${ready ? 'text-sage-700' : 'text-amber-700'}`}>Template check</p>
           <h3 className={`mt-1 text-base font-bold ${ready ? 'text-sage-950' : 'text-amber-950'}`}>
             {profile.filename || 'Word template'} is {ready ? 'ready to draft' : 'ready for review'}
           </h3>
           <p className={`mt-1 text-sm leading-6 ${ready ? 'text-sage-800' : 'text-amber-900'}`}>
-            {profile.tagCount || 0} placeholders found. Goal loop: {profile.goalLoop?.detected ? 'detected' : 'not detected'}.
+            {profile.tagCount || 0} fillable fields found. Goals table: {profile.goalLoop?.detected ? 'ready' : 'needs review'}.
           </p>
         </div>
         <StatusBadge tone={ready ? 'green' : 'warm'}>{profile.status}</StatusBadge>
       </div>
 
       <div className="mt-4 grid gap-3 md:grid-cols-3">
-        <TemplateTagList title="Supported tags" items={supported.slice(0, 12)} empty="No supported tags detected." />
+        <TemplateTagList title="Ready fields" items={supported.slice(0, 12)} empty="No ready fields detected." />
         <TemplateTagList
-          title="Unsupported tags"
+          title="Needs matching"
           items={unsupported.map((item) => item.suggestedTag ? `${item.tag} -> ${item.suggestedTag}` : item.tag)}
-          empty="No unsupported tags."
+          empty="No fields need matching."
         />
         <TemplateTagList
-          title="Missing useful tags"
+          title="Useful fields not found"
           items={[...requiredMissing, ...missingRecommended].slice(0, 12).map((item) => item.required ? `${item.tag} (important)` : item.tag)}
           empty="No missing useful tags."
         />
@@ -134,7 +159,7 @@ function TemplateProfilePanel({ profile }) {
 
       {profile.warnings?.length ? (
         <div className="mt-3 rounded-lg border border-white/70 bg-white px-3 py-2">
-          <p className="text-xs font-semibold uppercase tracking-wide text-amber-700">Template warnings</p>
+          <p className="text-xs font-semibold uppercase tracking-wide text-amber-700">Template notes</p>
           <ul className="mt-2 space-y-1 text-xs text-amber-800">
             {profile.warnings.map((warning) => (
               <li key={warning}>{warning}</li>
@@ -153,10 +178,10 @@ function SavedTemplateProfilesPanel({ state, activeId, onRefresh, onSelect }) {
     <div className="mt-5 rounded-xl border border-blue-200 bg-blue-50 p-4">
       <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
         <div>
-          <p className="text-xs font-semibold uppercase tracking-wide text-blue-700">Saved local templates</p>
-          <h3 className="mt-1 text-base font-bold text-blue-950">Reusable customer template profiles</h3>
+          <p className="text-xs font-semibold uppercase tracking-wide text-blue-700">Saved templates</p>
+          <h3 className="mt-1 text-base font-bold text-blue-950">Reusable Word templates</h3>
           <p className="mt-1 text-sm leading-6 text-blue-900">
-            Saved profiles stay on this workstation and let the same customer template be reused without profiling from scratch each run.
+            Save a customer template once and reuse it for later drafts on this computer.
           </p>
         </div>
         <button
@@ -192,14 +217,14 @@ function SavedTemplateProfilesPanel({ state, activeId, onRefresh, onSelect }) {
               <span className="block text-sm font-bold">{saved.label}</span>
               <span className="mt-1 block break-all text-xs leading-5 text-blue-800">{saved.templatePath}</span>
               <span className="mt-2 inline-flex rounded-full border border-blue-100 bg-blue-50 px-2 py-1 text-[11px] font-semibold text-blue-800">
-                {saved.status} - {saved.tagCount || 0} tags - {saved.aliasSummary?.aliasCount || 0} aliases
+                {saved.status} - {saved.tagCount || 0} fields - {saved.aliasSummary?.aliasCount || 0} matched
               </span>
             </button>
           ))}
         </div>
       ) : (
         <p className="mt-3 rounded-lg border border-blue-100 bg-white/80 px-3 py-3 text-sm leading-6 text-blue-900">
-          No saved customer template profiles yet. Profile a Word template, then save it here.
+          No saved templates yet. Check a Word template, then save it here.
         </p>
       )}
     </div>
@@ -216,9 +241,9 @@ function TemplateAliasEditor({ profile, fieldAliases, supportedFields, onChange 
   if (!aliasTags.length) {
     return (
       <div className="mt-5 rounded-xl border border-sage-200 bg-sage-50 p-4">
-        <p className="text-xs font-semibold uppercase tracking-wide text-sage-700">Alias editor</p>
+        <p className="text-xs font-semibold uppercase tracking-wide text-sage-700">Template matching</p>
         <p className="mt-2 text-sm leading-6 text-sage-800">
-          This template has no unsupported placeholders that need alias mapping.
+          This template is ready. No field matching is needed.
         </p>
       </div>
     )
@@ -242,13 +267,13 @@ function TemplateAliasEditor({ profile, fieldAliases, supportedFields, onChange 
     <div className="mt-5 rounded-xl border border-blue-200 bg-blue-50 p-4">
       <div className="flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between">
         <div>
-          <p className="text-xs font-semibold uppercase tracking-wide text-blue-700">Alias editor</p>
-          <h3 className="mt-1 text-base font-bold text-blue-950">Map customer placeholders to report fields</h3>
+          <p className="text-xs font-semibold uppercase tracking-wide text-blue-700">Template matching</p>
+          <h3 className="mt-1 text-base font-bold text-blue-950">Match template fields to report fields</h3>
           <p className="mt-1 text-sm leading-6 text-blue-900">
-            Aliases let a customer template keep its own field names while the helper fills them from supported report data.
+            Match any customer template field names that SkillCascade does not recognize automatically.
           </p>
         </div>
-        <StatusBadge tone="blue">{Object.keys(fieldAliases || {}).length} aliases</StatusBadge>
+        <StatusBadge tone="blue">{Object.keys(fieldAliases || {}).length} matched</StatusBadge>
       </div>
 
       <div className="mt-4 space-y-3">
@@ -259,20 +284,20 @@ function TemplateAliasEditor({ profile, fieldAliases, supportedFields, onChange 
             <div key={tag} className="rounded-lg border border-blue-100 bg-white px-3 py-3">
               <div className="grid gap-3 md:grid-cols-[minmax(0,1fr)_minmax(220px,320px)_auto] md:items-end">
                 <div>
-                  <p className="text-xs font-semibold uppercase tracking-wide text-warm-500">Customer placeholder</p>
+                  <p className="text-xs font-semibold uppercase tracking-wide text-warm-500">Template field</p>
                   <p className="mt-1 break-all text-sm font-bold text-warm-900">{tag}</p>
                   {info.suggestedTag ? (
                     <p className="mt-1 text-xs text-blue-800">Suggested: {info.suggestedTag}</p>
                   ) : null}
                 </div>
                 <label className="block">
-                  <span className="text-xs font-semibold uppercase tracking-wide text-warm-500">Supported report field</span>
+                  <span className="text-xs font-semibold uppercase tracking-wide text-warm-500">Report field</span>
                   <select
                     value={current}
                     onChange={(event) => setAlias(tag, event.target.value)}
                     className="mt-1 min-h-[44px] w-full rounded-lg border border-warm-200 bg-white px-3 py-2 text-sm text-warm-800 shadow-sm outline-none transition-colors focus:border-sage-400"
                   >
-                    <option value="">Leave as review marker</option>
+                    <option value="">Leave for review</option>
                     {supportedFields.map((field) => (
                       <option key={field.tag} value={field.tag}>
                         {field.label ? `${field.label} (${field.tag})` : field.tag}
@@ -297,6 +322,94 @@ function TemplateAliasEditor({ profile, fieldAliases, supportedFields, onChange 
   )
 }
 
+function HelperPackagePanel({ packageState, downloadState, helperStatus, onRefresh, onDownload, onCheck }) {
+  const readyToDownload = packageState.ok && !downloadState.loading
+  const packageLabel = packageState.data?.filename || 'Report Generator helper'
+  const sizeLabel = packageState.data?.size ? ` (${formatFileSize(packageState.data.size)})` : ''
+
+  return (
+    <section className="rounded-2xl border border-sage-200 bg-sage-50 p-5 shadow-sm">
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+        <div>
+          <p className="text-xs font-semibold uppercase tracking-wide text-sage-700">Setup</p>
+          <h2 className="mt-2 text-xl font-bold text-sage-950">Install the local helper</h2>
+          <p className="mt-2 max-w-3xl text-sm leading-6 text-sage-800">
+            Install this small helper on the Windows computer that has access to the report files. Then come back here and check setup.
+          </p>
+        </div>
+        <StatusBadge tone={helperStatus.ok ? 'green' : packageState.ok ? 'blue' : packageState.loading ? 'warm' : 'red'}>
+          {helperStatus.ok ? 'Setup ready' : packageState.ok ? 'Download ready' : packageState.loading ? 'Checking package' : 'Package unavailable'}
+        </StatusBadge>
+      </div>
+
+      <div className="mt-4 grid gap-3 md:grid-cols-4">
+        {setupSteps.map((step, index) => (
+          <article key={step} className="rounded-xl border border-sage-100 bg-white px-3 py-3">
+            <span className="inline-flex h-7 w-7 items-center justify-center rounded-lg bg-sage-600 text-xs font-bold text-white">
+              {index + 1}
+            </span>
+            <p className="mt-2 text-sm leading-6 text-sage-900">{step}</p>
+          </article>
+        ))}
+      </div>
+
+      <div className="mt-5 flex flex-wrap items-center gap-3">
+        <button
+          type="button"
+          onClick={onDownload}
+          disabled={!readyToDownload}
+          className="min-h-[44px] rounded-full bg-sage-600 px-5 py-2 text-sm font-semibold text-white shadow-sm hover:bg-sage-700 disabled:cursor-not-allowed disabled:bg-warm-300"
+        >
+          {downloadState.loading ? 'Preparing download...' : `Download helper${sizeLabel}`}
+        </button>
+        <button
+          type="button"
+          onClick={onCheck}
+          className="min-h-[44px] rounded-full border border-sage-200 bg-white px-5 py-2 text-sm font-semibold text-sage-800 shadow-sm hover:bg-sage-100"
+        >
+          {helperStatus.loading ? 'Checking setup...' : 'Check setup'}
+        </button>
+        <button
+          type="button"
+          onClick={onRefresh}
+          className="min-h-[44px] rounded-full border border-sage-200 bg-sage-50 px-5 py-2 text-sm font-semibold text-sage-800 hover:bg-sage-100"
+        >
+          Refresh package
+        </button>
+      </div>
+
+      {packageState.message ? (
+        <p className="mt-3 text-xs font-semibold text-sage-800">{packageState.message}</p>
+      ) : null}
+      {packageState.error ? (
+        <div className="mt-3 rounded-xl border border-amber-200 bg-amber-50 px-3 py-2 text-sm text-amber-800">
+          {packageState.error}
+        </div>
+      ) : null}
+      {downloadState.error ? (
+        <div className="mt-3 rounded-xl border border-amber-200 bg-amber-50 px-3 py-2 text-sm text-amber-800">
+          {downloadState.error}
+        </div>
+      ) : null}
+      {helperStatus.error ? (
+        <div className="mt-3 rounded-xl border border-amber-200 bg-amber-50 px-3 py-2 text-sm text-amber-800">
+          {helperStatus.error}
+        </div>
+      ) : null}
+      {helperStatus.ok ? (
+        <div className="mt-3 rounded-xl border border-sage-200 bg-white px-3 py-2 text-sm font-semibold text-sage-800">
+          Setup is connected. You can create a report draft below.
+        </div>
+      ) : null}
+      {packageState.ok ? (
+        <p className="mt-3 text-xs leading-5 text-sage-700">
+          Package: {packageLabel}. Only download and setup information is handled here; client documents stay on the workstation.
+        </p>
+      ) : null}
+    </section>
+  )
+}
+
 function HelperInstallStatePanel({ installState, licenseReadiness }) {
   const buildManifest = installState.buildManifest
   const fingerprint = licenseReadiness?.installFingerprint
@@ -306,42 +419,34 @@ function HelperInstallStatePanel({ installState, licenseReadiness }) {
       <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
         <div>
           <p className="text-xs font-semibold uppercase tracking-wide text-sage-700">Install readiness</p>
-          <h3 className="mt-1 text-base font-bold text-sage-950">Local helper is update-safe</h3>
+          <h3 className="mt-1 text-base font-bold text-sage-950">Setup is ready</h3>
           <p className="mt-1 text-sm leading-6 text-sage-800">
             Helper version {installState.helperVersion || 'unknown'}{buildManifest?.packageVersion ? `, package ${buildManifest.packageVersion}` : ''}.
           </p>
         </div>
         <div className="flex flex-wrap gap-2">
-          <StatusBadge tone="green">PHI local</StatusBadge>
-          {fingerprint ? <StatusBadge tone="blue">Seat ready</StatusBadge> : null}
+          <StatusBadge tone="green">Connected</StatusBadge>
+          {fingerprint ? <StatusBadge tone="blue">Account ready</StatusBadge> : null}
         </div>
       </div>
 
-      <div className="mt-4 grid gap-3 md:grid-cols-4">
+      <div className="mt-4 grid gap-3 md:grid-cols-3">
         <div className="rounded-lg border border-white/70 bg-white px-3 py-3">
-          <p className="text-xs font-semibold uppercase tracking-wide text-warm-500">Customer data</p>
+          <p className="text-xs font-semibold uppercase tracking-wide text-warm-500">Saved settings</p>
           <p className="mt-2 text-sm leading-6 text-warm-700">
-            Saved template profiles stay outside the app install folder and are preserved during helper replacement.
+            Template settings are preserved when the helper is replaced.
           </p>
         </div>
         <div className="rounded-lg border border-white/70 bg-white px-3 py-3">
-          <p className="text-xs font-semibold uppercase tracking-wide text-warm-500">Licensing authority</p>
+          <p className="text-xs font-semibold uppercase tracking-wide text-warm-500">Account access</p>
           <p className="mt-2 text-sm leading-6 text-warm-700">
-            SkillCascade workflow-pack access remains the authority; the local helper stores no billing secrets.
+            SkillCascade confirms the account has access before drafts can be generated.
           </p>
         </div>
         <div className="rounded-lg border border-white/70 bg-white px-3 py-3">
           <p className="text-xs font-semibold uppercase tracking-wide text-warm-500">Updates</p>
           <p className="mt-2 text-sm leading-6 text-warm-700">
-            Auto-update is off for this release. Replacement requires user approval and preserves local customer data.
-          </p>
-        </div>
-        <div className="rounded-lg border border-white/70 bg-white px-3 py-3">
-          <p className="text-xs font-semibold uppercase tracking-wide text-warm-500">Seat readiness</p>
-          <p className="mt-2 text-sm leading-6 text-warm-700">
-            {fingerprint
-              ? `Local install fingerprint ${fingerprint.slice(0, 12)}... is ready for a SkillCascade seat check.`
-              : 'No local install fingerprint reported yet.'}
+            Helper replacement requires user approval and keeps saved settings.
           </p>
         </div>
       </div>
@@ -362,10 +467,10 @@ function SeatClaimPanel({ licenseReadiness, installState, savedTemplatesState, s
     <div className="mt-5 rounded-xl border border-blue-200 bg-blue-50 p-4">
       <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
         <div>
-          <p className="text-xs font-semibold uppercase tracking-wide text-blue-700">Seat claim</p>
-          <h3 className="mt-1 text-base font-bold text-blue-950">Connect this helper install to SkillCascade</h3>
+          <p className="text-xs font-semibold uppercase tracking-wide text-blue-700">Account connection</p>
+          <h3 className="mt-1 text-base font-bold text-blue-950">Connect this computer to the account</h3>
           <p className="mt-1 text-sm leading-6 text-blue-900">
-            This sends only the non-secret install fingerprint and readiness metadata. It does not send source folders, template paths, client names, or document text.
+            This confirms the helper is installed for this SkillCascade account. It does not send client files or report text.
           </p>
         </div>
         <StatusBadge tone={claimed ? 'green' : 'blue'}>{claimed ? 'Claimed' : 'Ready'}</StatusBadge>
@@ -373,16 +478,16 @@ function SeatClaimPanel({ licenseReadiness, installState, savedTemplatesState, s
 
       <div className="mt-3 grid gap-3 md:grid-cols-3">
         <div className="rounded-lg border border-blue-100 bg-white px-3 py-3">
-          <p className="text-xs font-semibold uppercase tracking-wide text-warm-500">Install fingerprint</p>
-          <p className="mt-2 break-all text-sm font-bold text-warm-900">{fingerprint ? `${fingerprint.slice(0, 16)}...` : 'Not reported'}</p>
+          <p className="text-xs font-semibold uppercase tracking-wide text-warm-500">Computer</p>
+          <p className="mt-2 text-sm font-bold text-warm-900">{fingerprint ? 'Ready to connect' : 'Not ready yet'}</p>
         </div>
         <div className="rounded-lg border border-blue-100 bg-white px-3 py-3">
-          <p className="text-xs font-semibold uppercase tracking-wide text-warm-500">Helper version</p>
+          <p className="text-xs font-semibold uppercase tracking-wide text-warm-500">Installed version</p>
           <p className="mt-2 text-sm text-warm-700">{licenseReadiness.helperVersion || installState.helperVersion || 'unknown'}</p>
         </div>
         <div className="rounded-lg border border-blue-100 bg-white px-3 py-3">
-          <p className="text-xs font-semibold uppercase tracking-wide text-warm-500">Local profiles</p>
-          <p className="mt-2 text-sm text-warm-700">{profileCount} saved, {aliasCount} aliases</p>
+          <p className="text-xs font-semibold uppercase tracking-wide text-warm-500">Templates</p>
+          <p className="mt-2 text-sm text-warm-700">{profileCount} saved, {aliasCount} field matches</p>
         </div>
       </div>
 
@@ -393,11 +498,11 @@ function SeatClaimPanel({ licenseReadiness, installState, savedTemplatesState, s
           disabled={!fingerprint || state.loading}
           className="min-h-[44px] rounded-full border border-blue-200 bg-white px-5 py-2 text-sm font-semibold text-blue-800 shadow-sm hover:bg-blue-100 disabled:cursor-not-allowed disabled:bg-warm-100 disabled:text-warm-400"
         >
-          {state.loading ? 'Claiming install...' : claimed ? 'Refresh claim' : 'Claim local install'}
+          {state.loading ? 'Connecting...' : claimed ? 'Refresh connection' : 'Connect this computer'}
         </button>
         {claimed ? (
           <span className="text-xs font-semibold text-sage-800">
-            Claimed as {claimed.status || 'claimed'}{claimed.lastSeenAt ? `, last seen ${claimed.lastSeenAt}` : ''}.
+            Connected{claimed.lastSeenAt ? `, last checked ${claimed.lastSeenAt}` : ''}.
           </span>
         ) : null}
       </div>
@@ -416,25 +521,20 @@ function OnboardingChecklistPanel({ state }) {
 
   return (
     <section className="rounded-2xl border border-warm-200 bg-white p-5 shadow-sm">
-      <p className="text-xs font-semibold uppercase tracking-wide text-sage-700">Buyer setup</p>
-      <h2 className="mt-2 text-lg font-bold text-warm-900">Release readiness checklist</h2>
+      <p className="text-xs font-semibold uppercase tracking-wide text-sage-700">Quick start</p>
+      <h2 className="mt-2 text-lg font-bold text-warm-900">What to do first</h2>
       {state.error ? (
         <div className="mt-3 rounded-xl border border-amber-200 bg-amber-50 px-3 py-2 text-sm text-amber-800">
           {state.error}
         </div>
       ) : null}
       {state.loading ? (
-        <p className="mt-3 text-sm leading-6 text-warm-600">Loading onboarding contract...</p>
+        <p className="mt-3 text-sm leading-6 text-warm-600">Loading setup steps...</p>
       ) : (
         <div className="mt-4 space-y-2">
-          {(data?.steps || []).map((step) => (
+          {(data?.steps || []).slice(0, 5).map((step, index) => (
             <div key={step.id} className="rounded-xl border border-warm-200 bg-warm-50 px-3 py-3">
-              <div className="flex items-center justify-between gap-3">
-                <p className="text-sm font-bold text-warm-900">{step.label}</p>
-                <span className="rounded-full border border-warm-200 bg-white px-2 py-1 text-[11px] font-semibold uppercase tracking-wide text-warm-500">
-                  {step.owner}
-                </span>
-              </div>
+              <p className="text-sm font-bold text-warm-900">{index + 1}. {step.label}</p>
               <p className="mt-1 text-xs leading-5 text-warm-600">{step.description}</p>
             </div>
           ))}
@@ -442,7 +542,7 @@ function OnboardingChecklistPanel({ state }) {
       )}
       {data?.safety ? (
         <p className="mt-3 text-xs leading-5 text-warm-500">
-          Server claim accepts only helper readiness metadata; PHI fields are rejected.
+          Client documents, names, and report text should stay on the workstation.
         </p>
       ) : null}
     </section>
@@ -471,6 +571,10 @@ export default function ReportGeneratorPage() {
   const [moduleStatus, setModuleStatus] = useState({ loading: true, data: null, error: '' })
   const [onboardingState, setOnboardingState] = useState({ loading: true, data: null, error: '' })
   const [helperUrl, setHelperUrl] = useState(DEFAULT_HELPER_URL)
+  const [showAdvancedSetup, setShowAdvancedSetup] = useState(false)
+  const [showTemplateSettings, setShowTemplateSettings] = useState(false)
+  const [helperPackageState, setHelperPackageState] = useState({ loading: true, ok: false, data: null, error: '', message: '' })
+  const [downloadState, setDownloadState] = useState({ loading: false, error: '' })
   const [helperStatus, setHelperStatus] = useState({ checked: false, loading: false, ok: false, data: null, error: '' })
   const [templateState, setTemplateState] = useState({ loading: false, profile: null, error: '' })
   const [savedTemplatesState, setSavedTemplatesState] = useState({ loading: false, saving: false, result: null, error: '', message: '' })
@@ -503,10 +607,12 @@ export default function ReportGeneratorPage() {
     async function loadStatus() {
       setModuleStatus({ loading: true, data: null, error: '' })
       setOnboardingState({ loading: true, data: null, error: '' })
+      setHelperPackageState({ loading: true, ok: false, data: null, error: '', message: '' })
       try {
-        const [response, onboardingResponse] = await Promise.all([
+        const [response, onboardingResponse, helperPackageResponse] = await Promise.all([
           api.fetch('/api/report-generator/status'),
           api.fetch('/api/report-generator/onboarding'),
+          api.fetch('/api/report-generator/helper/status'),
         ])
         const payload = await response.json().catch(() => null)
         if (!response.ok || !payload?.ok) {
@@ -516,20 +622,62 @@ export default function ReportGeneratorPage() {
         if (!onboardingResponse.ok || !onboardingPayload?.ok) {
           throw new Error(onboardingPayload?.error || 'Report Generator onboarding unavailable.')
         }
+        const helperPackagePayload = await helperPackageResponse.json().catch(() => null)
         if (active) {
           setModuleStatus({ loading: false, data: payload.data, error: '' })
           setOnboardingState({ loading: false, data: onboardingPayload.data, error: '' })
+          if (helperPackageResponse.ok && helperPackagePayload?.ok) {
+            setHelperPackageState({ loading: false, ok: true, data: helperPackagePayload, error: '', message: '' })
+          } else {
+            setHelperPackageState({
+              loading: false,
+              ok: false,
+              data: helperPackagePayload,
+              error: helperPackagePayload?.error || 'Helper package is not available yet.',
+              message: '',
+            })
+          }
         }
       } catch (error) {
         if (active) {
           setModuleStatus({ loading: false, data: null, error: error.message })
           setOnboardingState({ loading: false, data: null, error: error.message })
+          setHelperPackageState({ loading: false, ok: false, data: null, error: error.message, message: '' })
         }
       }
     }
     loadStatus()
     return () => { active = false }
   }, [])
+
+  async function loadHelperPackageStatus() {
+    setHelperPackageState((prev) => ({ ...prev, loading: true, error: '', message: '' }))
+    try {
+      const response = await api.fetch('/api/report-generator/helper/status')
+      const payload = await response.json().catch(() => null)
+      if (!response.ok || !payload?.ok) {
+        throw new Error(payload?.error || 'Helper package is not available yet.')
+      }
+      setHelperPackageState({ loading: false, ok: true, data: payload, error: '', message: 'Helper package is ready to download.' })
+    } catch (error) {
+      setHelperPackageState({ loading: false, ok: false, data: null, error: error.message || 'Helper package is not available yet.', message: '' })
+    }
+  }
+
+  async function downloadHelperPackage() {
+    setDownloadState({ loading: true, error: '' })
+    try {
+      const response = await api.fetch('/api/report-generator/helper/download')
+      if (!response.ok) {
+        const payload = await response.json().catch(() => null)
+        throw new Error(payload?.error || 'Helper download failed.')
+      }
+      await saveResponseAsDownload(response, helperPackageState.data?.filename || 'SkillCascadeReportHelper.zip')
+      setDownloadState({ loading: false, error: '' })
+    } catch (error) {
+      setDownloadState({ loading: false, error: error.message || 'Helper download failed.' })
+    }
+  }
 
   async function checkHelper() {
     setHelperStatus({ checked: true, loading: true, ok: false, data: null, error: '' })
@@ -732,12 +880,11 @@ export default function ReportGeneratorPage() {
             </Link>
             <h1 className="mt-2 text-3xl font-bold text-warm-900">Report Generator</h1>
             <p className="mt-2 max-w-3xl text-sm leading-6 text-warm-600">
-              Local-first ABA report drafting for source folders, customer Word templates, goals, QA, and BCBA review.
+              Create editable ABA report drafts from local client documents, with BCBA review before anything is used.
             </p>
           </div>
           <div className="flex flex-wrap gap-2">
-            <StatusBadge tone="green">Protected route</StatusBadge>
-            <StatusBadge tone="blue">Local helper model</StatusBadge>
+            <StatusBadge tone="green">Private files stay local</StatusBadge>
             <StatusBadge>Review only</StatusBadge>
           </div>
         </div>
@@ -751,7 +898,7 @@ export default function ReportGeneratorPage() {
                 <p className="text-xs font-semibold uppercase tracking-wide text-sage-700">Workflow</p>
                 <h2 className="mt-2 text-xl font-bold text-warm-900">Source folder to editable Word draft</h2>
                 <p className="mt-2 max-w-3xl text-sm leading-6 text-warm-600">
-                  This page is the SkillCascade control surface. The actual source-folder scan runs on the local helper so private client files do not upload through the website.
+                  Install the helper once, choose the client document folder, and generate a draft for BCBA review.
                 </p>
               </div>
               <StatusBadge tone={moduleStatus.error ? 'red' : moduleStatus.loading ? 'warm' : 'green'}>
@@ -778,61 +925,136 @@ export default function ReportGeneratorPage() {
             </div>
           </section>
 
+          <HelperPackagePanel
+            packageState={helperPackageState}
+            downloadState={downloadState}
+            helperStatus={helperStatus}
+            onRefresh={loadHelperPackageStatus}
+            onDownload={downloadHelperPackage}
+            onCheck={checkHelper}
+          />
+
           <section className="rounded-2xl border border-warm-200 bg-white p-5 shadow-sm">
             <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
               <div>
-                <p className="text-xs font-semibold uppercase tracking-wide text-sage-700">Local helper</p>
-                <h2 className="mt-2 text-xl font-bold text-warm-900">Generate a release-ready local draft</h2>
+                <p className="text-xs font-semibold uppercase tracking-wide text-sage-700">Create draft</p>
+                <h2 className="mt-2 text-xl font-bold text-warm-900">Choose the client folder</h2>
                 <p className="mt-2 text-sm leading-6 text-warm-600">
-                  Use this only after the local helper is running on the workstation that has access to the report source folder.
+                  Paste the local folder paths from File Explorer. The draft will be saved on this computer for review.
                 </p>
               </div>
-              <button
-                type="button"
-                onClick={checkHelper}
-                className="min-h-[44px] rounded-full border border-sage-200 bg-sage-50 px-4 py-2 text-sm font-semibold text-sage-700 hover:bg-sage-100"
-              >
-                {helperStatus.loading ? 'Checking...' : 'Check helper'}
-              </button>
+              <StatusBadge tone={helperStatus.ok ? 'green' : helperStatus.checked ? 'red' : 'warm'}>
+                {helperStatus.loading ? 'Checking setup' : helperStatus.ok ? 'Setup ready' : helperStatus.checked ? 'Setup needed' : 'Setup not checked'}
+              </StatusBadge>
             </div>
 
             <div className="mt-5 grid gap-4 md:grid-cols-2">
-              <Field label="Helper URL" value={helperUrl} onChange={setHelperUrl} placeholder="http://127.0.0.1:4181" />
-              <Field label="Client label" value={form.clientLabel} onChange={(value) => setForm((prev) => ({ ...prev, clientLabel: value }))} placeholder="Initials or internal label" />
-              <Field label="Local source folder" value={form.sourceFolder} onChange={(value) => setForm((prev) => ({ ...prev, sourceFolder: value }))} placeholder="C:\\path\\to\\client\\Assessment\\Initial" />
-              <Field label="Local output folder" value={form.outputDir} onChange={(value) => setForm((prev) => ({ ...prev, outputDir: value }))} placeholder="C:\\path\\to\\draft-output" />
+              <Field
+                label="Client initials or label"
+                value={form.clientLabel}
+                onChange={(value) => setForm((prev) => ({ ...prev, clientLabel: value }))}
+                placeholder="Example: Client A"
+                help="Use initials or an internal label. Do not enter a full client name unless your agency allows it."
+              />
+              <Field
+                label="Where to save the draft"
+                value={form.outputDir}
+                onChange={(value) => setForm((prev) => ({ ...prev, outputDir: value }))}
+                placeholder="C:\\Reports\\Drafts"
+                help="Leave blank to let the helper use its default draft folder."
+              />
               <div className="md:col-span-2">
-                <Field label="Optional Word template path" value={form.templatePath} onChange={(value) => setForm((prev) => ({ ...prev, templatePath: value, templateProfileId: '', fieldAliases: {} }))} placeholder="C:\\path\\to\\customer-template.docx" />
-              </div>
-              <div className="md:col-span-2">
-                <Field label="Saved template profile label" value={form.templateProfileLabel} onChange={(value) => setForm((prev) => ({ ...prev, templateProfileLabel: value }))} placeholder="Agency initial assessment template" />
+                <Field
+                  label="Client document folder"
+                  value={form.sourceFolder}
+                  onChange={(value) => setForm((prev) => ({ ...prev, sourceFolder: value }))}
+                  placeholder="C:\\path\\to\\client\\Assessment\\Initial"
+                  help="This should be the folder that contains the assessment, old reports, and other source documents."
+                />
               </div>
             </div>
 
+            <div className="mt-4 flex flex-wrap gap-3">
+              <button
+                type="button"
+                onClick={() => setShowTemplateSettings((value) => !value)}
+                className="min-h-[40px] rounded-full border border-blue-200 bg-blue-50 px-4 py-2 text-xs font-semibold text-blue-800 hover:bg-blue-100"
+              >
+                {showTemplateSettings ? 'Hide Word template options' : 'Use a Word template'}
+              </button>
+              <button
+                type="button"
+                onClick={() => setShowAdvancedSetup((value) => !value)}
+                className="min-h-[40px] rounded-full border border-warm-200 bg-warm-50 px-4 py-2 text-xs font-semibold text-warm-700 hover:bg-warm-100"
+              >
+                {showAdvancedSetup ? 'Hide advanced setup' : 'Advanced setup'}
+              </button>
+            </div>
+
+            {showTemplateSettings ? (
+              <div className="mt-4 rounded-xl border border-blue-100 bg-blue-50 p-4">
+                <div className="grid gap-4 md:grid-cols-2">
+                  <div className="md:col-span-2">
+                    <Field
+                      label="Word template file"
+                      value={form.templatePath}
+                      onChange={(value) => setForm((prev) => ({ ...prev, templatePath: value, templateProfileId: '', fieldAliases: {} }))}
+                      placeholder="C:\\path\\to\\customer-template.docx"
+                      help="Optional. Use this when the agency wants the draft placed into its own report template."
+                    />
+                  </div>
+                  <div className="md:col-span-2">
+                    <Field
+                      label="Template nickname"
+                      value={form.templateProfileLabel}
+                      onChange={(value) => setForm((prev) => ({ ...prev, templateProfileLabel: value }))}
+                      placeholder="Agency initial assessment template"
+                      help="Optional. Save the template once so it can be reused later."
+                    />
+                  </div>
+                </div>
+
+                <div className="mt-4 flex flex-wrap items-center gap-3">
+                  <button
+                    type="button"
+                    onClick={profileTemplate}
+                    disabled={templateState.loading || !form.templatePath.trim()}
+                    className="min-h-[44px] rounded-full border border-warm-300 bg-white px-5 py-2 text-sm font-semibold text-warm-800 shadow-sm hover:bg-warm-50 disabled:cursor-not-allowed disabled:bg-warm-100 disabled:text-warm-400"
+                  >
+                    {templateState.loading ? 'Checking template...' : 'Check Word template'}
+                  </button>
+                  <button
+                    type="button"
+                    onClick={saveCurrentTemplateProfile}
+                    disabled={savedTemplatesState.saving || !form.templatePath.trim()}
+                    className="min-h-[44px] rounded-full border border-blue-200 bg-white px-5 py-2 text-sm font-semibold text-blue-800 shadow-sm hover:bg-blue-100 disabled:cursor-not-allowed disabled:bg-warm-100 disabled:text-warm-400"
+                  >
+                    {savedTemplatesState.saving ? 'Saving template...' : form.templateProfileId ? 'Update saved template' : 'Save template for reuse'}
+                  </button>
+                </div>
+              </div>
+            ) : null}
+
+            {showAdvancedSetup ? (
+              <div className="mt-4 rounded-xl border border-warm-200 bg-warm-50 p-4">
+                <Field
+                  label="Helper address"
+                  value={helperUrl}
+                  onChange={setHelperUrl}
+                  placeholder="http://127.0.0.1:4181"
+                  help="Only change this if support tells you to use a different local helper address."
+                />
+              </div>
+            ) : null}
+
             <div className="mt-5 flex flex-wrap items-center gap-3">
-              <button
-                type="button"
-                onClick={profileTemplate}
-                disabled={templateState.loading || !form.templatePath.trim()}
-                className="min-h-[44px] rounded-full border border-warm-300 bg-white px-5 py-2 text-sm font-semibold text-warm-800 shadow-sm hover:bg-warm-50 disabled:cursor-not-allowed disabled:bg-warm-100 disabled:text-warm-400"
-              >
-                {templateState.loading ? 'Profiling template...' : 'Profile Word template'}
-              </button>
-              <button
-                type="button"
-                onClick={saveCurrentTemplateProfile}
-                disabled={savedTemplatesState.saving || !form.templatePath.trim()}
-                className="min-h-[44px] rounded-full border border-blue-200 bg-blue-50 px-5 py-2 text-sm font-semibold text-blue-800 shadow-sm hover:bg-blue-100 disabled:cursor-not-allowed disabled:bg-warm-100 disabled:text-warm-400"
-              >
-                {savedTemplatesState.saving ? 'Saving profile...' : form.templateProfileId ? 'Update saved profile' : 'Save template profile'}
-              </button>
               <button
                 type="button"
                 onClick={runLocalPreflight}
                 disabled={preflightState.loading || !form.sourceFolder.trim()}
                 className="min-h-[44px] rounded-full border border-sage-200 bg-sage-50 px-5 py-2 text-sm font-semibold text-sage-800 shadow-sm hover:bg-sage-100 disabled:cursor-not-allowed disabled:bg-warm-100 disabled:text-warm-400"
               >
-                {preflightState.loading ? 'Checking locally...' : 'Run local preflight'}
+                {preflightState.loading ? 'Checking files...' : 'Check files'}
               </button>
               <button
                 type="button"
@@ -840,30 +1062,29 @@ export default function ReportGeneratorPage() {
                 disabled={runState.loading || !userCanEdit}
                 className="min-h-[44px] rounded-full bg-sage-600 px-5 py-2 text-sm font-semibold text-white shadow-sm hover:bg-sage-700 disabled:cursor-not-allowed disabled:bg-warm-300"
               >
-                {runState.loading ? 'Generating locally...' : 'Generate local DOCX draft'}
+                {runState.loading ? 'Creating draft...' : 'Create Word draft'}
               </button>
-              <StatusBadge tone={helperStatus.ok ? 'green' : helperStatus.checked ? 'red' : 'warm'}>
-                {helperStatus.loading ? 'Helper checking' : helperStatus.ok ? 'Helper ready' : helperStatus.checked ? 'Helper not ready' : 'Helper not checked'}
-              </StatusBadge>
               {!userCanEdit ? (
                 <span className="text-xs font-semibold text-amber-700">This role can view but not generate report drafts.</span>
               ) : null}
             </div>
 
-            <SavedTemplateProfilesPanel
-              state={savedTemplatesState}
-              activeId={form.templateProfileId}
-              onRefresh={loadSavedTemplates}
-              onSelect={selectSavedTemplate}
-            />
+            {showTemplateSettings || savedTemplatesState.result?.profiles?.length ? (
+              <SavedTemplateProfilesPanel
+                state={savedTemplatesState}
+                activeId={form.templateProfileId}
+                onRefresh={loadSavedTemplates}
+                onSelect={selectSavedTemplate}
+              />
+            ) : null}
 
-            {templateState.error ? (
+            {showTemplateSettings && templateState.error ? (
               <div className="mt-4 rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-800">
                 {templateState.error}
               </div>
             ) : null}
 
-            {templateState.profile ? (
+            {showTemplateSettings && templateState.profile ? (
               <>
                 <TemplateProfilePanel profile={templateState.profile} />
                 <TemplateAliasEditor
@@ -963,24 +1184,11 @@ export default function ReportGeneratorPage() {
         </section>
 
         <aside className="space-y-5">
-          <section className="rounded-2xl border border-warm-200 bg-white p-5 shadow-sm">
-            <p className="text-xs font-semibold uppercase tracking-wide text-sage-700">Module contract</p>
-            <h2 className="mt-2 text-lg font-bold text-warm-900">How it plugs in</h2>
-            <div className="mt-4 space-y-3">
-              {integrationRows.map(([label, detail]) => (
-                <div key={label} className="rounded-xl border border-warm-200 bg-warm-50 px-3 py-3">
-                  <p className="text-xs font-semibold uppercase tracking-wide text-warm-500">{label}</p>
-                  <p className="mt-1 text-sm leading-6 text-warm-700">{detail}</p>
-                </div>
-              ))}
-            </div>
-          </section>
-
           <OnboardingChecklistPanel state={onboardingState} />
 
           <section className="rounded-2xl border border-warm-200 bg-white p-5 shadow-sm">
             <p className="text-xs font-semibold uppercase tracking-wide text-sage-700">Boundaries</p>
-            <h2 className="mt-2 text-lg font-bold text-warm-900">What stays locked</h2>
+            <h2 className="mt-2 text-lg font-bold text-warm-900">Safety rules</h2>
             <div className="mt-4 space-y-2 text-sm leading-6 text-warm-700">
               {(moduleStatus.data?.reviewGates || [
                 'No automatic signing.',
@@ -995,9 +1203,9 @@ export default function ReportGeneratorPage() {
           </section>
 
           <section className="rounded-2xl border border-blue-200 bg-blue-50 p-5">
-            <p className="text-xs font-semibold uppercase tracking-wide text-blue-700">Signed in context</p>
+            <p className="text-xs font-semibold uppercase tracking-wide text-blue-700">Account</p>
             <p className="mt-2 text-sm leading-6 text-blue-900">
-              Organization context is inherited from the shared profile. Current role: <span className="font-semibold">{profile?.role_slug || profile?.role || 'unknown'}</span>.
+              Signed in as role: <span className="font-semibold">{profile?.role_slug || profile?.role || 'unknown'}</span>.
             </p>
           </section>
         </aside>

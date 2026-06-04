@@ -10,6 +10,9 @@ import {
 } from '../lib/report-generator-pilot.js'
 
 const route = new Hono()
+const REPORT_HELPER_FILENAME = 'SkillCascadeReportHelper-release-20260604-demo.zip'
+const REPORT_HELPER_OBJECT_KEY = `report-generator/${REPORT_HELPER_FILENAME}`
+const REPORT_HELPER_VERSION = 'release-20260604-demo'
 
 const REPORT_GENERATOR_CONTRACT = {
   moduleId: 'report-generator',
@@ -78,6 +81,8 @@ const REPORT_GENERATOR_CONTRACT = {
     helperReportsVersion: true,
     helperReportsLocalInstallFingerprint: true,
     serverSeatClaimEndpoint: '/api/report-generator/seat-claims',
+    helperPackageStatusEndpoint: '/api/report-generator/helper/status',
+    helperPackageDownloadEndpoint: '/api/report-generator/helper/download',
     licenseReadinessMode: 'helper-identifies-install-skillcascade-authorizes-access',
     helperStoresBillingSecrets: false,
     helperCanGrantAccess: false,
@@ -148,6 +153,12 @@ route.get('/status', async (c) => {
     data: {
       ...REPORT_GENERATOR_CONTRACT,
       userCanEdit: hasPermission(profile, 'reports', 'edit'),
+      helperPackage: {
+        filename: REPORT_HELPER_FILENAME,
+        version: REPORT_HELPER_VERSION,
+        statusPath: '/api/report-generator/helper/status',
+        downloadPath: '/api/report-generator/helper/download',
+      },
       checkedAt: new Date().toISOString(),
     },
   })
@@ -165,6 +176,71 @@ route.get('/onboarding', async (c) => {
       userCanEdit: hasPermission(profile, 'reports', 'edit'),
     }),
   })
+})
+
+route.get('/helper/status', async (c) => {
+  const accessError = getAccessError(c)
+  if (accessError) return c.json(accessError.payload, accessError.status)
+
+  const bucket = c.env.CONNECTOR_ARTIFACTS
+  if (!bucket) {
+    return c.json({
+      ok: false,
+      code: 'helper_bucket_missing',
+      filename: REPORT_HELPER_FILENAME,
+      version: REPORT_HELPER_VERSION,
+      error: 'Helper package storage is not configured.',
+    }, 503)
+  }
+
+  const head = await bucket.head(REPORT_HELPER_OBJECT_KEY)
+  return c.json({
+    ok: Boolean(head),
+    filename: REPORT_HELPER_FILENAME,
+    version: REPORT_HELPER_VERSION,
+    size: head?.size || 0,
+    uploadedAt: head?.uploaded?.toISOString?.() || '',
+    downloadPath: '/api/report-generator/helper/download',
+    installSteps: [
+      'Download the helper package.',
+      'Unzip it on the Windows computer that has the report files.',
+      'Run Install-ReportGeneratorHelper.exe from the unzipped folder.',
+      'Return to SkillCascade and click Check setup.',
+    ],
+    error: head ? '' : 'Helper package is not available yet.',
+  }, head ? 200 : 404)
+})
+
+route.get('/helper/download', async (c) => {
+  const accessError = getAccessError(c)
+  if (accessError) return c.json(accessError.payload, accessError.status)
+
+  const bucket = c.env.CONNECTOR_ARTIFACTS
+  if (!bucket) {
+    return c.json({
+      ok: false,
+      code: 'helper_bucket_missing',
+      error: 'Helper package storage is not configured.',
+    }, 503)
+  }
+
+  const object = await bucket.get(REPORT_HELPER_OBJECT_KEY)
+  if (!object) {
+    return c.json({
+      ok: false,
+      code: 'helper_package_missing',
+      filename: REPORT_HELPER_FILENAME,
+      error: 'Helper package was not found.',
+    }, 404)
+  }
+
+  const headers = new Headers()
+  headers.set('Content-Type', object.httpMetadata?.contentType || 'application/zip')
+  headers.set('Content-Disposition', `attachment; filename="${REPORT_HELPER_FILENAME}"`)
+  headers.set('Cache-Control', 'private, no-store')
+  headers.set('X-SkillCascade-Report-Helper-Version', REPORT_HELPER_VERSION)
+  if (object.size) headers.set('Content-Length', String(object.size))
+  return new Response(object.body, { headers })
 })
 
 route.get('/seat-claims', async (c) => {
