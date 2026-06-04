@@ -39,6 +39,14 @@ http://127.0.0.1:4181
 
 The SkillCascade page at `/report-generator` defaults to this helper URL.
 
+Port safety:
+
+- The helper uses localhost only; it does not expose the service on the network.
+- The default address is `http://127.0.0.1:4181` so the browser knows where to find it.
+- Setup and startup check the chosen port before launching.
+- If another local app is already using that port, the helper refuses to start and prints the owning process when Windows exposes it.
+- To use a different port, start the helper with `-Port <port>` and enter the matching helper address in Advanced setup on the Report Generator page.
+
 Windows launcher:
 
 ```powershell

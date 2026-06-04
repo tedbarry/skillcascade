@@ -78,6 +78,7 @@ try {
     smokeRun = (-not $NoSmoke)
     skillCascadeRoute = 'https://www.skillcascade.com/report-generator'
     localHelperDefaultUrl = 'http://127.0.0.1:4181'
+    portCollisionPolicy = 'The helper checks the chosen localhost port before install/startup and refuses to take over a port already used by another local app.'
     helperApiPrefix = '/api/local-report-generator'
     legacyHelperApiPrefix = '/api/local-report-pilot'
     phiBoundary = 'Source folders, templates, generated drafts, review JSON, and evidence ledgers stay on the buyer workstation.'
@@ -127,6 +128,12 @@ Local files created by the helper:
 - Review summary JSON
 - Evidence ledger JSON
 - Saved template profile JSON
+
+Port safety:
+- The helper defaults to http://127.0.0.1:4181.
+- Setup checks the chosen local port before installing the startup launcher.
+- If another local app is already using that port, setup stops with a clear message instead of taking over the port.
+- A different port can be used only if the same address is entered in Advanced setup on the SkillCascade Report Generator page.
 
 Privacy boundary:
 - Source folders, template paths, output folders, client names, document text, generated drafts, review JSON, and evidence ledgers stay local.

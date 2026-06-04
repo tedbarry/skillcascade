@@ -65,6 +65,7 @@ Set-Content -LiteralPath (Join-Path $AppDir 'helper-build-manifest.json') -Encod
   appInstallDir = '%LOCALAPPDATA%\SkillCascade\ReportGeneratorHelper'
   customerDataDir = '%USERPROFILE%\.skillcascade\report-generator-helper'
   updatesPreserveCustomerData = $true
+  portCollisionPolicy = 'refuse-to-take-over-existing-local-port'
 } | ConvertTo-Json -Depth 3)
 
 foreach ($scriptName in @('start-report-helper.ps1', 'install-startup-wrapper.ps1', 'install-packaged-helper.ps1')) {

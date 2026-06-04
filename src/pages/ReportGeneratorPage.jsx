@@ -334,7 +334,7 @@ function HelperPackagePanel({ packageState, downloadState, helperStatus, onRefre
           <p className="text-xs font-semibold uppercase tracking-wide text-sage-700">Setup</p>
           <h2 className="mt-2 text-xl font-bold text-sage-950">Install the local helper</h2>
           <p className="mt-2 max-w-3xl text-sm leading-6 text-sage-800">
-            Install this small helper on the Windows computer that has access to the report files. Then come back here and check setup.
+            Install this small helper on the Windows computer that has access to the report files. It runs only on this computer and refuses to take over a local port already used by another app. Then come back here and check setup.
           </p>
         </div>
         <StatusBadge tone={helperStatus.ok ? 'green' : packageState.ok ? 'blue' : packageState.loading ? 'warm' : 'red'}>

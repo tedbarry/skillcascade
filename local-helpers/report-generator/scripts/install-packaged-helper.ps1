@@ -19,6 +19,42 @@ if (-not (Test-Path -LiteralPath (Join-Path $AppSource 'src\server.js'))) {
   throw "Packaged app source not found: $AppSource"
 }
 
+function Get-PortOwnerDescription {
+  param([int]$PortToCheck)
+
+  try {
+    $connection = Get-NetTCPConnection -LocalPort $PortToCheck -State Listen -ErrorAction Stop | Select-Object -First 1
+    if ($connection) {
+      $process = Get-Process -Id $connection.OwningProcess -ErrorAction SilentlyContinue
+      if ($process) {
+        return "$($process.ProcessName) (PID $($connection.OwningProcess))"
+      }
+      return "PID $($connection.OwningProcess)"
+    }
+  } catch {
+    return 'another local process'
+  }
+
+  return 'another local process'
+}
+
+function Assert-LoopbackPortAvailable {
+  param([int]$PortToCheck)
+
+  $listener = $null
+  try {
+    $listener = [System.Net.Sockets.TcpListener]::new([System.Net.IPAddress]::Loopback, $PortToCheck)
+    $listener.Start()
+  } catch {
+    $owner = Get-PortOwnerDescription -PortToCheck $PortToCheck
+    throw "Port $PortToCheck is already in use by $owner. SkillCascade will not take over a port that another local app is using. Close that app, restart the computer, or rerun setup with a different port and update Advanced setup on the Report Generator page."
+  } finally {
+    if ($listener) {
+      $listener.Stop()
+    }
+  }
+}
+
 function Copy-PackageFolder {
   param(
     [string]$Source,
@@ -36,6 +72,7 @@ function Copy-PackageFolder {
 
 Write-Host "Installing SkillCascade Report Generator Helper to: $InstallDir"
 Write-Host 'Saved customer template profiles remain in the user data folder and are not removed by updates.'
+Assert-LoopbackPortAvailable -PortToCheck $Port
 
 Copy-PackageFolder -Source $AppSource -Destination (Join-Path $InstallDir 'app')
 Copy-PackageFolder -Source $RuntimeSource -Destination (Join-Path $InstallDir 'runtime')
