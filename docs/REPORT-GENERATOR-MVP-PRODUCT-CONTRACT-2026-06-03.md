@@ -22,6 +22,7 @@ This is not a generic chatbot and not a cloud file uploader. The product promise
 - Source packet: recursively scans supported local source files and excludes generated output folders.
 - Clinical draft: creates report sections and goals from source-supported evidence only.
 - Review summary: writes a local JSON QA artifact with source filenames, unsupported files, missing fields, template warnings, and safety flags.
+- Evidence ledger: writes local section/goal evidence excerpts for BCBA review while keeping excerpts out of the browser response.
 - Human review gate: BCBA reviews, edits, signs, submits, and performs external writes manually.
 
 ## Build Vs Reuse
@@ -45,6 +46,7 @@ Custom product layer:
 - Frontend alias editor that turns template-profile warnings into editable field mappings.
 - Local license-readiness envelope that identifies the helper install while keeping SkillCascade as the entitlement authority.
 - Worker onboarding and install-claim endpoints for the sellable workflow-pack setup path.
+- Local evidence ledger artifact and sanitized response references.
 - Buyer-facing Report Generator workflow UI.
 
 ## MVP Acceptance Gates
@@ -58,6 +60,8 @@ Custom product layer:
 - Saved profiles can map customer placeholder aliases and still leave unmapped unsupported fields visible for review.
 - The Report Generator page lets a user configure and save unsupported customer placeholder mappings through a visual alias editor.
 - The helper run endpoint generates a local `.docx` draft and local review JSON.
+- The helper run endpoint generates a local evidence ledger with source excerpts for BCBA review.
+- The helper response strips source evidence excerpts and returns only evidence references plus local artifact paths.
 - The helper has a Windows package builder that bundles the helper, dependencies, Node runtime, install script, startup wrapper, and double-click installer launcher EXE.
 - The helper reports install state, helper version, build manifest, local data policy, and licensing boundary through a PHI-free local endpoint.
 - The helper reports a persistent local install fingerprint for future server-side seat checks while storing no billing secrets and granting no access locally.

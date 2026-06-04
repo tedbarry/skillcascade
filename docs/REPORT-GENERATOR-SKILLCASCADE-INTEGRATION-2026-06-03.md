@@ -85,7 +85,7 @@ Responsibilities:
 - Loads the protected onboarding checklist from `/api/report-generator/onboarding`.
 - Sends the helper install fingerprint to `/api/report-generator/seat-claims` only after local helper readiness is confirmed.
 - Sends local source folder, output folder, optional template path, and client label only to the local helper URL.
-- Displays template readiness, supported tags, unsupported tags, missing useful tags, local output path, review JSON path, goal count, missing-field count, and QA warnings returned by the helper.
+- Displays template readiness, supported tags, unsupported tags, missing useful tags, local output path, review JSON path, evidence ledger path, goal count, missing-field count, and QA warnings returned by the helper.
 
 ## Shared Auth
 
@@ -136,6 +136,7 @@ Current pilot:
 
 - Local source-folder reading is handled by the local helper.
 - The SkillCascade page passes local path strings only to the helper URL selected by the user.
+- Source evidence excerpts are written to the local evidence ledger and are not returned to the browser response.
 - Local template profiling is handled by the local helper through `/api/local-report-pilot/template-profile`.
 - Reusable template profile setup is handled by the local helper through `/api/local-report-pilot/template-profiles`.
 - Customer placeholder alias maps are saved with the local template profile and applied during helper-side `.docx` rendering.
@@ -192,6 +193,7 @@ npm --prefix local-helpers/report-generator run smoke -> license-readiness 200, 
 npm --prefix local-helpers/report-generator run smoke -> template profile 200, template status ready, detected goals.objective
 npm --prefix local-helpers/report-generator run smoke -> alias count 2, customer placeholder aliases rendered without unsupported-field markers
 npm --prefix local-helpers/report-generator run smoke -> saved template profile count 1, draft generated from saved profile ID
+npm --prefix local-helpers/report-generator run smoke -> evidence ledger created, excerpts local only, helper response sanitized
 build-windows-package.ps1 -> distributable helper folder and zip with bundled node.exe and Install-ReportGeneratorHelper.exe
 packaged start-report-helper.ps1 -Smoke -NoInstall -> passed
 Install-ReportGeneratorHelper.exe -PreviewOnly -> shows install/update/startup actions without writing

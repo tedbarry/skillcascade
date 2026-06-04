@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict'
 import { spawn } from 'node:child_process'
 import { mkdtempSync } from 'node:fs'
-import { mkdir, mkdtemp, stat, writeFile } from 'node:fs/promises'
+import { mkdir, mkdtemp, readFile, stat, writeFile } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
 import { dirname, join } from 'node:path'
 import { fileURLToPath } from 'node:url'
@@ -239,8 +239,21 @@ try {
 
   const outputStats = await stat(runPayload.result.outputPath)
   const reviewStats = await stat(runPayload.result.reviewPath)
+  const evidenceLedgerStats = await stat(runPayload.result.evidenceLedgerPath)
   assert.ok(outputStats.size > 1000)
   assert.ok(reviewStats.size > 100)
+  assert.ok(evidenceLedgerStats.size > 100)
+  const evidenceLedger = JSON.parse(await readFile(runPayload.result.evidenceLedgerPath, 'utf8'))
+  assert.equal(evidenceLedger.localOnly, true)
+  assert.equal(evidenceLedger.containsPhi, true)
+  assert.equal(evidenceLedger.dataPolicy.browserResponseContainsExcerpts, false)
+  assert.ok(evidenceLedger.sections.some((section) => section.evidence.some((item) => item.excerpt)))
+  assert.equal(runPayload.result.clinicalProfile.sections.some((section) => (
+    section.sourceEvidence.some((item) => Object.prototype.hasOwnProperty.call(item, 'text') || Object.prototype.hasOwnProperty.call(item, 'excerpt'))
+  )), false)
+  assert.equal(runPayload.result.goalPlan.goals.some((goal) => (
+    goal.sourceEvidence.some((item) => Object.prototype.hasOwnProperty.call(item, 'text') || Object.prototype.hasOwnProperty.call(item, 'excerpt'))
+  )), false)
   const renderedOutput = await mammoth.extractRawText({ path: runPayload.result.outputPath })
   assert.match(renderedOutput.value, /Client: Pilot Client/)
   assert.equal(renderedOutput.value.includes('REVIEW_UNSUPPORTED_TEMPLATE_FIELD'), false)
@@ -260,6 +273,7 @@ try {
     goalCount: runPayload.result.goalPlan.goals.length,
     outputCreated: true,
     reviewCreated: true,
+    evidenceLedgerCreated: true,
     liveWriteAttempted: runPayload.result.qa.liveWriteAttempted,
     autoSignAttempted: runPayload.result.qa.autoSignAttempted,
     autoSubmitAttempted: runPayload.result.qa.autoSubmitAttempted,

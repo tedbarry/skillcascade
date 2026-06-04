@@ -871,6 +871,7 @@ export default function ReportGeneratorPage() {
                 <div className="mt-3 grid gap-2 text-sm text-sage-800">
                   <p><span className="font-semibold">Report:</span> {runState.result.outputPath}</p>
                   <p><span className="font-semibold">Review JSON:</span> {runState.result.reviewPath}</p>
+                  <p><span className="font-semibold">Evidence ledger:</span> {runState.result.evidenceLedgerPath}</p>
                   <p><span className="font-semibold">Goals:</span> {runState.result.goalPlan?.goals?.length || 0}</p>
                   <p><span className="font-semibold">Missing fields:</span> {runState.result.clinicalProfile?.missingFields?.length || 0}</p>
                   <p><span className="font-semibold">Template mode:</span> {runState.result.templateMode}</p>

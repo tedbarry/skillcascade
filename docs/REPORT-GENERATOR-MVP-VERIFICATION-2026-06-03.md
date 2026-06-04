@@ -48,6 +48,8 @@ powershell -NoProfile -ExecutionPolicy Bypass -File local-helpers/report-generat
 - Frontend build includes the alias editor that maps unsupported customer placeholders to supported helper fields before saving a profile or running a draft.
 - Run endpoint returns `templateMode: placeholder-template` when a saved template profile is supplied.
 - Draft `.docx` and review `.json` are written locally.
+- Evidence-ledger `.json` is written locally and stores section/goal excerpts for BCBA review.
+- Helper response strips evidence excerpt text and returns sanitized evidence references.
 - Windows package builder creates a distributable helper folder and `.zip` with bundled `node.exe` and `Install-ReportGeneratorHelper.exe`.
 - Packaged launcher smoke passes from the generated helper package.
 - `Install-ReportGeneratorHelper.exe -PreviewOnly` shows install, smoke, and startup-wrapper actions without writing files.
@@ -63,6 +65,7 @@ powershell -NoProfile -ExecutionPolicy Bypass -File local-helpers/report-generat
 - Do not count the UI as complete unless the helper smoke passes.
 - Do not count a report draft as complete unless an actual `.docx` file exists on disk and is larger than 1000 bytes.
 - Do not count review as complete unless an actual `.json` file exists on disk and is larger than 100 bytes.
+- Do not count evidence review as complete unless an actual evidence-ledger `.json` exists on disk and the helper response does not return excerpt text.
 - Do not count template support as complete unless the helper profiles a real `.docx` and detects the goal loop.
 - Do not count buyer template setup as complete unless the helper saves, lists, and runs from a saved profile ID.
 - Do not count alias mapping as complete unless a real `.docx` fixture with unsupported customer placeholder names renders through saved aliases without unsupported-field markers.

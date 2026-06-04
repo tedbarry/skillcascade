@@ -503,6 +503,82 @@ async function writePlaceholderTemplateDocx({ templatePath, outputPath, job, fie
   await writeFile(outputPath, buffer)
 }
 
+function evidenceLedgerItem(item) {
+  return {
+    sourceId: item.sourceId,
+    filename: item.filename,
+    excerpt: item.text || '',
+    excerptCharacterCount: String(item.text || '').length,
+  }
+}
+
+function responseEvidenceItem(item) {
+  return {
+    sourceId: item.sourceId,
+    filename: item.filename,
+    excerptStoredLocallyOnly: Boolean(item.text),
+  }
+}
+
+function buildEvidenceLedger(job) {
+  return {
+    id: `${job.id}-evidence-ledger`,
+    jobId: job.id,
+    generatedAt: job.generatedAt,
+    localOnly: true,
+    containsPhi: true,
+    dataPolicy: {
+      storedLocallyOnly: true,
+      returnedToSkillCascade: false,
+      browserResponseContainsExcerpts: false,
+    },
+    sourceFiles: job.sourcePacket.sources.map((source) => ({
+      id: source.id,
+      filename: source.filename,
+      relativePath: source.relativePath,
+      extension: source.extension,
+      characterCount: source.characterCount,
+    })),
+    sections: job.clinicalProfile.sections.map((section) => ({
+      id: section.id,
+      label: section.label,
+      status: section.status,
+      missing: section.missing,
+      evidence: section.sourceEvidence.map(evidenceLedgerItem),
+    })),
+    goals: job.goalPlan.goals.map((goal) => ({
+      id: goal.id,
+      domain: goal.domain,
+      longTermGoalName: goal.longTermGoalName,
+      shortTermGoalName: goal.shortTermGoalName,
+      objective: goal.objective,
+      centralReachDataType: goal.centralReachDataType,
+      evidence: goal.sourceEvidence.map(evidenceLedgerItem),
+    })),
+    missingFields: job.clinicalProfile.missingFields,
+  }
+}
+
+function sanitizeClinicalProfileForResponse(clinicalProfile) {
+  return {
+    ...clinicalProfile,
+    sections: clinicalProfile.sections.map((section) => ({
+      ...section,
+      sourceEvidence: section.sourceEvidence.map(responseEvidenceItem),
+    })),
+  }
+}
+
+function sanitizeGoalPlanForResponse(goalPlan) {
+  return {
+    ...goalPlan,
+    goals: goalPlan.goals.map((goal) => ({
+      ...goal,
+      sourceEvidence: goal.sourceEvidence.map(responseEvidenceItem),
+    })),
+  }
+}
+
 export async function runLocalReportPilot({
   sourceFolder,
   outputDir,
@@ -527,6 +603,7 @@ export async function runLocalReportPilot({
   const safeClient = clientLabel.replace(/[^a-z0-9]+/gi, '-').replace(/^-|-$/g, '') || 'client'
   const outputPath = join(resolvedOutputDir, `${safeClient}-report-draft.docx`)
   const reviewPath = join(resolvedOutputDir, `${safeClient}-review-summary.json`)
+  const evidenceLedgerPath = join(resolvedOutputDir, `${safeClient}-evidence-ledger.json`)
 
   const job = {
     id: `local-report-${Date.now()}`,
@@ -572,6 +649,9 @@ export async function runLocalReportPilot({
     await writeGeneratedDocx({ outputPath, job })
   }
 
+  const evidenceLedger = buildEvidenceLedger(job)
+  await writeFile(evidenceLedgerPath, JSON.stringify(evidenceLedger, null, 2))
+
   await writeFile(reviewPath, JSON.stringify({
     id: job.id,
     generatedAt,
@@ -599,6 +679,12 @@ export async function runLocalReportPilot({
     missingFields: clinicalProfile.missingFields,
     goalCount: goalPlan.goals.length,
     goalsByDomain: goalPlan.domains,
+    evidenceLedgerPath,
+    evidenceSummary: {
+      sectionEvidenceCount: evidenceLedger.sections.reduce((total, section) => total + section.evidence.length, 0),
+      goalEvidenceCount: evidenceLedger.goals.reduce((total, goal) => total + goal.evidence.length, 0),
+      excerptTextStoredLocallyOnly: true,
+    },
     qa: job.qa,
     outputPath,
   }, null, 2))
@@ -606,6 +692,9 @@ export async function runLocalReportPilot({
   return {
     ...job,
     reviewPath,
+    evidenceLedgerPath,
+    clinicalProfile: sanitizeClinicalProfileForResponse(job.clinicalProfile),
+    goalPlan: sanitizeGoalPlanForResponse(job.goalPlan),
     sourcePacket: {
       ...sourcePacket,
       sources: sourcePacket.sources.map((source) => ({

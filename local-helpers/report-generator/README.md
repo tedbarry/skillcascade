@@ -10,7 +10,8 @@ It exists so the SkillCascade web app can coordinate a report-generation workflo
 
 - Source documents are read locally only.
 - Extracted source text is not returned by the API response.
-- Generated `.docx` drafts and review JSON files are written locally only.
+- Generated `.docx` drafts, review JSON files, and evidence ledgers are written locally only.
+- Source evidence excerpts are written to the local evidence ledger, not returned in the browser response.
 - No CentralReach, Passage, payer, email, Word Online, or other external live write is attempted.
 - No signing, submission, or final clinical approval is automated.
 - Missing facts are flagged for BCBA review instead of invented.
@@ -62,13 +63,15 @@ Or through the Windows launcher:
 powershell -NoProfile -ExecutionPolicy Bypass -File local-helpers/report-generator/scripts/start-report-helper.ps1 -Smoke
 ```
 
-The smoke test starts the helper on a temporary port, calls status, preflight, and run endpoints with a SkillCascade local-dev origin, then verifies that a local draft `.docx` and review `.json` were created without live-write, auto-sign, or auto-submit flags.
+The smoke test starts the helper on a temporary port, calls status, preflight, and run endpoints with a SkillCascade local-dev origin, then verifies that a local draft `.docx`, review `.json`, and evidence-ledger `.json` were created without live-write, auto-sign, or auto-submit flags.
 
 The smoke test also creates a temporary `.docx` template, profiles it through `/api/local-report-pilot/template-profile`, saves it through `/api/local-report-pilot/template-profiles`, lists the saved profile, then generates the draft from the saved profile ID in template mode.
 
 The smoke test verifies `/api/local-report-pilot/install-state`, including helper version, update-safe local data policy, and the rule that SkillCascade workflow-pack access remains the licensing authority.
 
 The smoke test verifies `/api/local-report-pilot/license-readiness`, including the persistent local install fingerprint, no local billing-secret storage, and no local helper authority to grant access.
+
+The smoke test verifies that evidence excerpts are stored in the local evidence ledger while the helper response contains only sanitized evidence references.
 
 ## Template Placeholders
 
