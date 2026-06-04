@@ -14,11 +14,16 @@ const origin = 'http://127.0.0.1:5173'
 const dataDir = mkdtempSync(join(tmpdir(), 'skillcascade-report-helper-data-'))
 
 function startServer() {
-  return spawn(process.execPath, ['src/server.js'], {
+  const child = spawn(process.execPath, ['src/server.js'], {
     cwd: packageRoot,
     env: { ...process.env, PORT: String(port), REPORT_HELPER_DATA_DIR: dataDir },
     stdio: ['ignore', 'pipe', 'pipe'],
   })
+  child.stdoutText = ''
+  child.stderrText = ''
+  child.stdout.on('data', (chunk) => { child.stdoutText += chunk.toString('utf8') })
+  child.stderr.on('data', (chunk) => { child.stderrText += chunk.toString('utf8') })
+  return child
 }
 
 async function waitForStatus() {
@@ -32,7 +37,12 @@ async function waitForStatus() {
     }
     await new Promise((resolve) => setTimeout(resolve, 250))
   }
-  throw lastError || new Error('helper did not become ready')
+  throw new Error([
+    'helper did not become ready',
+    `lastError: ${lastError?.message || 'none'}`,
+    `stdout:\n${server.stdoutText || '(empty)'}`,
+    `stderr:\n${server.stderrText || '(empty)'}`,
+  ].join('\n'))
 }
 
 async function createSourceFixture() {

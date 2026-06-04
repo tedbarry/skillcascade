@@ -49,6 +49,12 @@ No-admin current-user startup wrapper preview:
 powershell -NoProfile -ExecutionPolicy Bypass -File local-helpers/report-generator/scripts/install-startup-wrapper.ps1 -PreviewOnly
 ```
 
+Build a buyer package:
+
+```powershell
+powershell -NoProfile -ExecutionPolicy Bypass -File local-helpers/report-generator/scripts/build-windows-package.ps1 -ReuseInstalledDependencies
+```
+
 ## Frontend Wiring
 
 File:
@@ -167,6 +173,9 @@ OPTIONS /api/local-report-pilot/run from https://www.skillcascade.com -> 204 wit
 npm --prefix local-helpers/report-generator run smoke -> status 200, preflight 204, run 200, 8 goals, local DOCX and review JSON created
 npm --prefix local-helpers/report-generator run smoke -> template profile 200, template status ready, detected goals.objective
 npm --prefix local-helpers/report-generator run smoke -> saved template profile count 1, draft generated from saved profile ID
+build-windows-package.ps1 -> distributable helper folder and zip with bundled node.exe and Install-ReportGeneratorHelper.exe
+packaged start-report-helper.ps1 -Smoke -NoInstall -> passed
+Install-ReportGeneratorHelper.exe -PreviewOnly -> shows install/update/startup actions without writing
 ```
 
 Local route smoke:
@@ -181,4 +190,4 @@ http://127.0.0.1:5173/reports -> 200 app shell
 Build the next customer template manager layer:
 
 - Add saved agency mappings, aliases, and template versions after the first buyer's exact template is profiled.
-- Add a packaged installer/update/licensing layer after the local helper workflow is stable.
+- Add signed/self-extracting installer, auto-update, and licensing checks after the local helper workflow is stable.

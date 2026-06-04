@@ -177,6 +177,52 @@ Uninstall:
 powershell -NoProfile -ExecutionPolicy Bypass -File local-helpers/report-generator/scripts/install-startup-wrapper.ps1 -Uninstall
 ```
 
+## Windows Buyer Package
+
+Build a distributable local-helper package from the SkillCascade repo:
+
+```powershell
+powershell -NoProfile -ExecutionPolicy Bypass -File local-helpers/report-generator/scripts/build-windows-package.ps1 -ReuseInstalledDependencies
+```
+
+This creates:
+
+```text
+local-helpers/report-generator/dist/SkillCascadeReportHelper-<version>/
+local-helpers/report-generator/dist/SkillCascadeReportHelper-<version>.zip
+```
+
+The verified buyer path is: send the zip, extract it, then run `Install-ReportGeneratorHelper.exe`. A signed/self-extracting installer remains a later packaging step.
+
+The package includes:
+
+- The helper app and locked dependencies.
+- A bundled `node.exe` runtime.
+- `Install-ReportGeneratorHelper.exe` for double-click setup after extracting the zip.
+- `Install-ReportGeneratorHelper.cmd` for nontechnical setup.
+- `Start-ReportGeneratorHelper.cmd` for manual startup.
+- Current-user startup wrapper support.
+
+Preview the EXE installer without writing files:
+
+```powershell
+.\Install-ReportGeneratorHelper.exe -PreviewOnly
+```
+
+Installed app files live under:
+
+```text
+%LOCALAPPDATA%\SkillCascade\ReportGeneratorHelper
+```
+
+Saved template profiles stay outside the app install folder:
+
+```text
+%USERPROFILE%\.skillcascade\report-generator-helper\template-profiles.json
+```
+
+That separation is intentional. Replacing or updating the installed helper does not wipe customer template profiles.
+
 ## Browser Origins
 
 Allowed by default:
