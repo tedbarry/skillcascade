@@ -127,6 +127,30 @@ function Find-AvailableLoopbackPort {
   throw "No safe local helper port is available. SkillCascade checked $PortRangeStart-$PortRangeEnd without taking over any existing local app. Preferred port $PreferredPort is being used by $owner. Close an unused local app or contact support."
 }
 
+function Get-ReportHelperStatus {
+  param([int]$PortToCheck)
+
+  $client = $null
+  try {
+    Add-Type -AssemblyName System.Net.Http -ErrorAction Stop
+    $client = New-Object System.Net.Http.HttpClient
+    $client.Timeout = [TimeSpan]::FromMilliseconds(500)
+    $response = $client.GetAsync("http://127.0.0.1:$PortToCheck/api/local-report-generator/status").GetAwaiter().GetResult()
+    if (-not $response.IsSuccessStatusCode) {
+      return $null
+    }
+
+    $body = $response.Content.ReadAsStringAsync().GetAwaiter().GetResult()
+    return $body | ConvertFrom-Json
+  } catch {
+    return $null
+  } finally {
+    if ($client) {
+      $client.Dispose()
+    }
+  }
+}
+
 function Find-RunningSkillCascadeHelper {
   param(
     [int]$PortRangeStart,
@@ -134,15 +158,17 @@ function Find-RunningSkillCascadeHelper {
   )
 
   for ($candidate = $PortRangeStart; $candidate -le $PortRangeEnd; $candidate += 1) {
-    try {
-      $status = Invoke-RestMethod -Uri "http://127.0.0.1:$candidate/api/local-report-generator/status" -Method Get -TimeoutSec 1 -ErrorAction Stop
-      if (($status.ok -eq $true) -and ($status.mode -eq 'skillcascade-report-generator-release-v1')) {
-        return [pscustomobject]@{
-          Port = $candidate
-          HelperUrl = if ($status.helperUrl) { $status.helperUrl } else { "http://127.0.0.1:$candidate" }
-        }
+    if (Test-LoopbackPortAvailable -PortToCheck $candidate) {
+      continue
+    }
+
+    $status = Get-ReportHelperStatus -PortToCheck $candidate
+    if (($status.ok -eq $true) -and ($status.mode -eq 'skillcascade-report-generator-release-v1')) {
+      return [pscustomobject]@{
+        Port = $candidate
+        HelperUrl = if ($status.helperUrl) { $status.helperUrl } else { "http://127.0.0.1:$candidate" }
       }
-    } catch {}
+    }
   }
 
   return $null
