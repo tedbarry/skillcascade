@@ -14,6 +14,7 @@ It exists so the SkillCascade web app can coordinate a report-generation workflo
 - No CentralReach, Passage, payer, email, Word Online, or other external live write is attempted.
 - No signing, submission, or final clinical approval is automated.
 - Missing facts are flagged for BCBA review instead of invented.
+- The helper can identify the local install for a future SkillCascade seat check, but it cannot grant access and stores no billing secrets.
 
 ## Install
 
@@ -66,6 +67,8 @@ The smoke test starts the helper on a temporary port, calls status, preflight, a
 The smoke test also creates a temporary `.docx` template, profiles it through `/api/local-report-pilot/template-profile`, saves it through `/api/local-report-pilot/template-profiles`, lists the saved profile, then generates the draft from the saved profile ID in template mode.
 
 The smoke test verifies `/api/local-report-pilot/install-state`, including helper version, update-safe local data policy, and the rule that SkillCascade workflow-pack access remains the licensing authority.
+
+The smoke test verifies `/api/local-report-pilot/license-readiness`, including the persistent local install fingerprint, no local billing-secret storage, and no local helper authority to grant access.
 
 ## Template Placeholders
 
@@ -158,6 +161,30 @@ Content-Type: application/json
   "templateProfileId": "tpl-agency-initial-assessment-template-123"
 }
 ```
+
+## License Readiness
+
+The helper has a local install identity that can be claimed by SkillCascade in a future seat-check flow:
+
+```http
+GET http://127.0.0.1:4181/api/local-report-pilot/license-readiness
+```
+
+The endpoint returns:
+
+- A persistent random local `installId`.
+- A short `installFingerprint` that can be sent to SkillCascade as the seat key.
+- Helper version and non-PHI machine context.
+- A policy block confirming that SkillCascade workflow-pack access is the authority.
+- A policy block confirming that the helper stores no billing secrets and cannot grant access by itself.
+
+This state is stored in:
+
+```text
+%USERPROFILE%\.skillcascade\report-generator-helper\license-readiness.json
+```
+
+Replacing the installed helper preserves this file because it lives in the customer data folder, not the app install folder.
 
 ## No-Admin Startup Wrapper
 

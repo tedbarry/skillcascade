@@ -112,6 +112,11 @@ try {
   assert.ok(statusPayload.helperVersion)
   assert.equal(statusPayload.installState.localDataPolicy.updatesPreserveCustomerData, true)
   assert.equal(statusPayload.installState.licensingPolicy.skillCascadeWorkflowPackIsAuthority, true)
+  assert.equal(statusPayload.endpoints.licenseReadiness, '/api/local-report-pilot/license-readiness')
+  assert.equal(statusPayload.licenseReadiness.localOnly, true)
+  assert.equal(statusPayload.licenseReadiness.authority.localHelperStoresBillingSecrets, false)
+  assert.equal(statusPayload.licenseReadiness.authority.localHelperCanGrantAccess, false)
+  assert.ok(statusPayload.licenseReadiness.installFingerprint)
 
   const installStateResponse = await fetch(`${baseUrl}/api/local-report-pilot/install-state`, {
     headers: { Origin: origin },
@@ -120,10 +125,24 @@ try {
   const installStatePayload = await installStateResponse.json()
   assert.equal(installStatePayload.ok, true)
   assert.equal(installStatePayload.result.updatePolicy.autoUpdateEnabled, false)
+  assert.equal(installStatePayload.result.licensingPolicy.readinessEndpoint, '/api/local-report-pilot/license-readiness')
   if (installStatePayload.result.buildManifest) {
     assert.equal(installStatePayload.result.buildManifest.updatesPreserveCustomerData, true)
     assert.ok(installStatePayload.result.buildManifest.packageVersion)
   }
+
+  const licenseReadinessResponse = await fetch(`${baseUrl}/api/local-report-pilot/license-readiness`, {
+    headers: { Origin: origin },
+  })
+  assert.equal(licenseReadinessResponse.status, 200)
+  const licenseReadinessPayload = await licenseReadinessResponse.json()
+  assert.equal(licenseReadinessPayload.ok, true)
+  assert.equal(licenseReadinessPayload.result.localOnly, true)
+  assert.equal(licenseReadinessPayload.result.installFingerprint, statusPayload.licenseReadiness.installFingerprint)
+  assert.equal(licenseReadinessPayload.result.authority.requiredWorkflowPack, 'report-generator')
+  assert.equal(licenseReadinessPayload.result.authority.localHelperStoresBillingSecrets, false)
+  assert.equal(licenseReadinessPayload.result.authority.localHelperCanGrantAccess, false)
+  assert.equal(licenseReadinessPayload.result.seatClaim.recommendedKey, licenseReadinessPayload.result.installFingerprint)
 
   const preflightResponse = await fetch(`${baseUrl}/api/local-report-pilot/run`, {
     method: 'OPTIONS',
@@ -230,6 +249,8 @@ try {
     ok: true,
     statusCode: statusResponse.status,
     installStateCode: installStateResponse.status,
+    licenseReadinessCode: licenseReadinessResponse.status,
+    licenseReady: licenseReadinessPayload.result.status,
     preflightCode: preflightResponse.status,
     templateProfileCode: templateProfileResponse.status,
     templateProfileStatus: templateProfilePayload.profile.status,

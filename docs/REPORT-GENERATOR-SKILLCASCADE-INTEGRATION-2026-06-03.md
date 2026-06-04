@@ -80,7 +80,7 @@ Responsibilities:
 - Profiles the local customer `.docx` template through the helper before draft generation.
 - Saves and selects reusable local customer template profiles through the helper.
 - Supports saved field aliases so customer placeholder names can map to supported report fields.
-- Displays helper version, update-safe data policy, and licensing authority after the local helper check succeeds.
+- Displays helper version, update-safe data policy, licensing authority, and local seat-readiness fingerprint after the local helper check succeeds.
 - Sends local source folder, output folder, optional template path, and client label only to the local helper URL.
 - Displays template readiness, supported tags, unsupported tags, missing useful tags, local output path, review JSON path, goal count, missing-field count, and QA warnings returned by the helper.
 
@@ -118,6 +118,7 @@ Behavior:
 - Requires `reports.view`.
 - Returns module contract, local-helper endpoint expectations, review gates, supported pilot source types, and current edit permission.
 - Returns the local helper template-profile endpoint and supported placeholder tags.
+- Returns the local helper license-readiness endpoint and the rule that the helper can identify an install but cannot grant access.
 - Does not accept or process source documents.
 - Does not send PHI to SkillCascade.
 
@@ -131,6 +132,7 @@ Current pilot:
 - Reusable template profile setup is handled by the local helper through `/api/local-report-pilot/template-profiles`.
 - Customer placeholder alias maps are saved with the local template profile and applied during helper-side `.docx` rendering.
 - Helper version, package build manifest, local data policy, and licensing boundary are handled by `/api/local-report-pilot/install-state`.
+- Local install fingerprint and future seat-claim readiness are handled by `/api/local-report-pilot/license-readiness`.
 - Saved template profiles are stored on the workstation in the helper data folder, not in SkillCascade cloud data.
 - The packaged-helper path now supports local SkillCascade origins and the live SkillCascade origin through a narrow CORS allowlist.
 - The helper handles `OPTIONS` preflight and returns private-network access headers for the website-to-localhost bridge.
@@ -176,6 +178,7 @@ GET /api/local-report-pilot/status from https://www.skillcascade.com -> 200 with
 OPTIONS /api/local-report-pilot/run from https://www.skillcascade.com -> 204 with private-network header
 npm --prefix local-helpers/report-generator run smoke -> status 200, preflight 204, run 200, 8 goals, local DOCX and review JSON created
 npm --prefix local-helpers/report-generator run smoke -> install-state 200, update-safe data policy, SkillCascade licensing authority
+npm --prefix local-helpers/report-generator run smoke -> license-readiness 200, persistent local fingerprint, no helper access-grant authority
 npm --prefix local-helpers/report-generator run smoke -> template profile 200, template status ready, detected goals.objective
 npm --prefix local-helpers/report-generator run smoke -> alias count 2, customer placeholder aliases rendered without unsupported-field markers
 npm --prefix local-helpers/report-generator run smoke -> saved template profile count 1, draft generated from saved profile ID
@@ -196,4 +199,4 @@ http://127.0.0.1:5173/reports -> 200 app shell
 Build the next customer template manager layer:
 
 - Add saved agency mappings, aliases, and template versions after the first buyer's exact template is profiled.
-- Add signed/self-extracting installer, auto-update, and licensing checks after the local helper workflow is stable.
+- Add signed/self-extracting installer, auto-update, and server-side license/seat checks after the local helper workflow is stable.

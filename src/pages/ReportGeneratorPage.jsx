@@ -181,8 +181,9 @@ function SavedTemplateProfilesPanel({ state, activeId, onRefresh, onSelect }) {
   )
 }
 
-function HelperInstallStatePanel({ installState }) {
+function HelperInstallStatePanel({ installState, licenseReadiness }) {
   const buildManifest = installState.buildManifest
+  const fingerprint = licenseReadiness?.installFingerprint
 
   return (
     <div className="mt-5 rounded-xl border border-sage-200 bg-sage-50 p-4">
@@ -194,10 +195,13 @@ function HelperInstallStatePanel({ installState }) {
             Helper version {installState.helperVersion || 'unknown'}{buildManifest?.packageVersion ? `, package ${buildManifest.packageVersion}` : ''}.
           </p>
         </div>
-        <StatusBadge tone="green">PHI local</StatusBadge>
+        <div className="flex flex-wrap gap-2">
+          <StatusBadge tone="green">PHI local</StatusBadge>
+          {fingerprint ? <StatusBadge tone="blue">Seat ready</StatusBadge> : null}
+        </div>
       </div>
 
-      <div className="mt-4 grid gap-3 md:grid-cols-3">
+      <div className="mt-4 grid gap-3 md:grid-cols-4">
         <div className="rounded-lg border border-white/70 bg-white px-3 py-3">
           <p className="text-xs font-semibold uppercase tracking-wide text-warm-500">Customer data</p>
           <p className="mt-2 text-sm leading-6 text-warm-700">
@@ -214,6 +218,14 @@ function HelperInstallStatePanel({ installState }) {
           <p className="text-xs font-semibold uppercase tracking-wide text-warm-500">Updates</p>
           <p className="mt-2 text-sm leading-6 text-warm-700">
             Auto-update is off in this MVP. Replacement requires user approval and preserves local customer data.
+          </p>
+        </div>
+        <div className="rounded-lg border border-white/70 bg-white px-3 py-3">
+          <p className="text-xs font-semibold uppercase tracking-wide text-warm-500">Seat readiness</p>
+          <p className="mt-2 text-sm leading-6 text-warm-700">
+            {fingerprint
+              ? `Local install fingerprint ${fingerprint.slice(0, 12)}... is ready for a SkillCascade seat check.`
+              : 'No local install fingerprint reported yet.'}
           </p>
         </div>
       </div>
@@ -565,7 +577,10 @@ export default function ReportGeneratorPage() {
             ) : null}
 
             {helperStatus.data?.installState ? (
-              <HelperInstallStatePanel installState={helperStatus.data.installState} />
+              <HelperInstallStatePanel
+                installState={helperStatus.data.installState}
+                licenseReadiness={helperStatus.data.licenseReadiness}
+              />
             ) : null}
 
             {runState.error ? (

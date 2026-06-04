@@ -13,6 +13,7 @@ const REPORT_GENERATOR_CONTRACT = {
     defaultUrl: 'http://127.0.0.1:4181',
     statusEndpoint: '/api/local-report-pilot/status',
     installStateEndpoint: '/api/local-report-pilot/install-state',
+    licenseReadinessEndpoint: '/api/local-report-pilot/license-readiness',
     templateProfileEndpoint: '/api/local-report-pilot/template-profile',
     templateProfilesEndpoint: '/api/local-report-pilot/template-profiles',
     runEndpoint: '/api/local-report-pilot/run',
@@ -57,7 +58,10 @@ const REPORT_GENERATOR_CONTRACT = {
   },
   installAndLicensing: {
     helperReportsVersion: true,
+    helperReportsLocalInstallFingerprint: true,
+    licenseReadinessMode: 'helper-identifies-install-skillcascade-authorizes-access',
     helperStoresBillingSecrets: false,
+    helperCanGrantAccess: false,
     skillCascadeWorkflowPackIsAuthority: true,
     updatesPreserveCustomerData: true,
     autoUpdateEnabledInMvp: false,

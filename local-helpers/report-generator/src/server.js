@@ -6,6 +6,7 @@ import { runLocalReportPilot } from './local-report-pilot.js'
 import { profileTemplate, SUPPORTED_TEMPLATE_FIELDS } from './template-profile.js'
 import { listTemplateProfiles, saveTemplateProfile } from './template-profile-store.js'
 import { helperInstallState } from './helper-metadata.js'
+import { localLicenseReadiness } from './license-readiness.js'
 
 const rootDir = fileURLToPath(new URL('.', import.meta.url))
 const webDir = join(rootDir, 'web')
@@ -88,18 +89,21 @@ createServer(async (req, res) => {
 
     if (pathname === '/api/local-report-pilot/status') {
       const installState = await helperInstallState()
+      const licenseReadiness = await localLicenseReadiness()
       sendJson(res, {
         ok: true,
         localOnly: true,
         mode: 'skillcascade-report-helper-v1',
         helperVersion: installState.helperVersion,
         installState,
+        licenseReadiness,
         supportedSourceExtensions: ['.docx', '.txt', '.md'],
         sourceScanning: 'recursive-with-output-folder-exclusion',
         unsupportedFileBehavior: 'warn-do-not-extract',
         output: 'editable-docx',
         endpoints: {
           installState: '/api/local-report-pilot/install-state',
+          licenseReadiness: '/api/local-report-pilot/license-readiness',
           templateProfile: '/api/local-report-pilot/template-profile',
           templateProfiles: '/api/local-report-pilot/template-profiles',
           run: '/api/local-report-pilot/run',
@@ -122,6 +126,16 @@ createServer(async (req, res) => {
     if (pathname === '/api/local-report-pilot/install-state' && method === 'GET') {
       try {
         const result = await helperInstallState()
+        sendJson(res, { ok: true, result }, corsHeaders)
+      } catch (error) {
+        sendError(res, 400, error.message, corsHeaders)
+      }
+      return
+    }
+
+    if (pathname === '/api/local-report-pilot/license-readiness' && method === 'GET') {
+      try {
+        const result = await localLicenseReadiness()
         sendJson(res, { ok: true, result }, corsHeaders)
       } catch (error) {
         sendError(res, 400, error.message, corsHeaders)

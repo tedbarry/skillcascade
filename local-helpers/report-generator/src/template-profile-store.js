@@ -1,12 +1,9 @@
-import { mkdir, readFile, writeFile } from 'node:fs/promises'
-import { homedir } from 'node:os'
-import { dirname, join } from 'node:path'
+import { readFile, writeFile } from 'node:fs/promises'
 import { profileTemplate } from './template-profile.js'
+import { dataPath, ensureDataDir } from './local-data.js'
 
 const STORE_VERSION = 1
-const DEFAULT_DATA_DIR = join(homedir(), '.skillcascade', 'report-generator-helper')
-const DATA_DIR = process.env.REPORT_HELPER_DATA_DIR || DEFAULT_DATA_DIR
-const STORE_PATH = join(DATA_DIR, 'template-profiles.json')
+const STORE_PATH = dataPath('template-profiles.json')
 
 function sanitizeSlug(value) {
   return String(value || 'template')
@@ -59,7 +56,7 @@ async function readStore() {
 }
 
 async function writeStore(store) {
-  await mkdir(dirname(STORE_PATH), { recursive: true })
+  await ensureDataDir()
   await writeFile(STORE_PATH, JSON.stringify({
     version: STORE_VERSION,
     localOnly: true,

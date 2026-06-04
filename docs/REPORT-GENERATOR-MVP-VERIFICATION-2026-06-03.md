@@ -40,6 +40,7 @@ powershell -NoProfile -ExecutionPolicy Bypass -File local-helpers/report-generat
 
 - Helper status endpoint returns `localOnly: true`.
 - Install-state endpoint returns helper version, local data policy, build manifest when packaged, and no local billing-secret authority.
+- License-readiness endpoint returns a persistent local install fingerprint and confirms the helper cannot grant access.
 - Template-profile endpoint returns `status: ready` for the smoke `.docx` fixture.
 - Template-profile endpoint detects `client_label` and `goals.objective`.
 - Saved-template endpoint stores and lists a local profile for the smoke `.docx` fixture.
@@ -62,5 +63,6 @@ powershell -NoProfile -ExecutionPolicy Bypass -File local-helpers/report-generat
 - Do not count buyer template setup as complete unless the helper saves, lists, and runs from a saved profile ID.
 - Do not count alias mapping as complete unless a real `.docx` fixture with unsupported customer placeholder names renders through saved aliases without unsupported-field markers.
 - Do not count the install path as complete unless the package builder creates a package and the packaged launcher smoke passes.
-- Do not count licensing as designed unless SkillCascade remains the workflow-pack authority and the helper stores no billing secrets.
+- Do not count licensing as designed unless SkillCascade remains the workflow-pack authority, the helper stores no billing secrets, and the helper cannot grant access locally.
+- Do not count seat readiness as complete unless the license-readiness endpoint returns the same local install fingerprint across status and direct endpoint checks.
 - Do not count safety as complete unless no-sign, no-submit, and no-live-write flags are verified in the smoke output.

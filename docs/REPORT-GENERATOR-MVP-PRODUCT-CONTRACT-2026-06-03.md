@@ -15,6 +15,7 @@ This is not a generic chatbot and not a cloud file uploader. The product promise
 - Template profile: inspects customer `.docx` placeholders before generation.
 - Saved template profile: stores reusable customer template setup in the local helper data folder.
 - Field alias map: maps customer placeholder names to supported helper fields without code changes.
+- Local install identity: stores a persistent non-secret helper fingerprint for future SkillCascade seat checks.
 - Source packet: recursively scans supported local source files and excludes generated output folders.
 - Clinical draft: creates report sections and goals from source-supported evidence only.
 - Review summary: writes a local JSON QA artifact with source filenames, unsupported files, missing fields, template warnings, and safety flags.
@@ -38,6 +39,7 @@ Custom product layer:
 - Template readiness model for supported, unsupported, missing, and goal-loop placeholders.
 - Local saved-profile store for reusable customer template setup.
 - Saved field aliases for customer-specific template placeholder names.
+- Local license-readiness envelope that identifies the helper install while keeping SkillCascade as the entitlement authority.
 - Buyer-facing Report Generator workflow UI.
 
 ## MVP Acceptance Gates
@@ -52,6 +54,7 @@ Custom product layer:
 - The helper run endpoint generates a local `.docx` draft and local review JSON.
 - The helper has a Windows package builder that bundles the helper, dependencies, Node runtime, install script, startup wrapper, and double-click installer launcher EXE.
 - The helper reports install state, helper version, build manifest, local data policy, and licensing boundary through a PHI-free local endpoint.
+- The helper reports a persistent local install fingerprint for future server-side seat checks while storing no billing secrets and granting no access locally.
 - The browser API response does not return extracted source text.
 - Smoke tests prove no live write, auto-sign, or auto-submit flags.
 - SkillCascade tests and production build pass.
@@ -62,5 +65,6 @@ Custom product layer:
 - Automated payer, CentralReach, Passage, email, or Word Online writes.
 - One-click signing or submission.
 - Full AI clinical reasoning parity with the manual Codex workflow.
-- Signed/self-extracting installer, auto-update execution, and payment-secret handling inside the helper.
+- Signed/self-extracting installer, auto-update execution, and server-side license enforcement.
+- Payment-secret handling inside the helper.
 - Full visual alias/mapping editor beyond saved alias maps.
