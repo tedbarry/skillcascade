@@ -16,6 +16,7 @@ import {
   TextRun,
   WidthType,
 } from 'docx'
+import { profileTemplate } from './template-profile.js'
 
 const SUPPORTED_SOURCE_EXTENSIONS = new Set(['.docx', '.txt', '.md'])
 const SKIP_DIRECTORY_NAMES = new Set(['.git', 'node_modules', 'report-pilot-output', 'verification-output'])
@@ -451,6 +452,10 @@ async function writePlaceholderTemplateDocx({ templatePath, outputPath, job }) {
   const doc = new Docxtemplater(zip, {
     paragraphLoop: true,
     linebreaks: true,
+    nullGetter(part) {
+      const value = part?.value || part?.module || 'unknown'
+      return `[[REVIEW_UNSUPPORTED_TEMPLATE_FIELD:${value}]]`
+    },
   })
   doc.render(templateData(job))
   const buffer = doc.getZip().generate({
@@ -474,6 +479,7 @@ export async function runLocalReportPilot({
   const sourcePacket = await scanLocalSourceFolder(sourceFolder, { excludePaths: [resolvedOutputDir] })
   const clinicalProfile = buildLocalClinicalProfile({ clientLabel, sources: sourcePacket.sources })
   const goalPlan = buildLocalGoalPlan({ sources: sourcePacket.sources })
+  const templateProfile = templatePath ? await profileTemplate({ templatePath }) : null
   const generatedAt = new Date().toISOString()
   const safeClient = clientLabel.replace(/[^a-z0-9]+/gi, '-').replace(/^-|-$/g, '') || 'client'
   const outputPath = join(resolvedOutputDir, `${safeClient}-report-draft.docx`)
@@ -492,12 +498,14 @@ export async function runLocalReportPilot({
     goalPlan,
     outputPath,
     templatePath: templatePath ? resolve(templatePath) : '',
+    templateProfile,
     templateMode: templatePath ? 'placeholder-template' : 'generated-docx',
     qa: {
       status: 'ready-for-bcba-review',
       blockers: [],
       warnings: [
         ...clinicalProfile.missingFields.map((field) => `Missing source support: ${field.label}`),
+        ...(templateProfile?.warnings || []).map((warning) => `Template profile: ${warning}`),
         ...sourcePacket.unsupportedFiles.map((file) => `Unsupported local source not extracted: ${file.relativePath}`),
         ...(goalPlan.goals.length ? [] : ['No source-supported goals were selected automatically.']),
       ],
@@ -525,6 +533,15 @@ export async function runLocalReportPilot({
       characterCount: source.characterCount,
     })),
     unsupportedFiles: sourcePacket.unsupportedFiles,
+    templateProfile: templateProfile ? {
+      status: templateProfile.status,
+      filename: templateProfile.filename,
+      tagCount: templateProfile.tagCount,
+      supportedTags: templateProfile.supportedTags,
+      unsupportedTags: templateProfile.unsupportedTags,
+      missingRecommendedFields: templateProfile.missingRecommendedFields,
+      warnings: templateProfile.warnings,
+    } : null,
     missingFields: clinicalProfile.missingFields,
     goalCount: goalPlan.goals.length,
     goalsByDomain: goalPlan.domains,
@@ -550,4 +567,3 @@ export async function runLocalReportPilot({
     },
   }
 }
-

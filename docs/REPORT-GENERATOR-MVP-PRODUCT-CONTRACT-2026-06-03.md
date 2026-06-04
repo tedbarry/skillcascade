@@ -1,0 +1,58 @@
+# Report Generator MVP Product Contract
+
+Date: 2026-06-03
+
+## Root Wish
+
+Build a sellable ABA report-generation workflow inside SkillCascade that lets a BCBA or agency take a local source folder and a customer Word template, generate a review-ready draft, and keep clinical responsibility with the BCBA.
+
+This is not a generic chatbot and not a cloud file uploader. The product promise is source-backed report drafting, template adaptation, QA visibility, and a local PHI boundary.
+
+## Root Concepts
+
+- Protected SkillCascade dashboard: existing auth, subscription, and workflow-pack gate control access.
+- Local helper sidecar: reads PHI-capable local folders and templates on the workstation.
+- Template profile: inspects customer `.docx` placeholders before generation.
+- Source packet: recursively scans supported local source files and excludes generated output folders.
+- Clinical draft: creates report sections and goals from source-supported evidence only.
+- Review summary: writes a local JSON QA artifact with source filenames, unsupported files, missing fields, template warnings, and safety flags.
+- Human review gate: BCBA reviews, edits, signs, submits, and performs external writes manually.
+
+## Build Vs Reuse
+
+Reused primitives:
+
+- `docxtemplater` for Word placeholder rendering.
+- `docxtemplater` InspectModule for `.docx` template tag profiling.
+- `docx` for generated fallback `.docx` drafts.
+- `mammoth` for local `.docx` raw-text extraction.
+- Existing SkillCascade `ProtectedRoute`, shared `api.fetch`, Worker auth middleware, permissions, and workflow-pack entitlement.
+
+Custom product layer:
+
+- ABA-specific section rules and source-support warnings.
+- Goal-selection rules and data-type metadata.
+- Local helper CORS/private-network bridge for SkillCascade-to-localhost use.
+- Template readiness model for supported, unsupported, missing, and goal-loop placeholders.
+- Buyer-facing Report Generator workflow UI.
+
+## MVP Acceptance Gates
+
+- The protected SkillCascade page is available at `/report-generator` and `/reports`.
+- The route requires Report Generator workflow-pack access.
+- The local helper can be installed and run from `local-helpers/report-generator`.
+- The helper status endpoint returns the local-only safety contract.
+- The helper template-profile endpoint inspects a local `.docx` template and returns supported tags, unsupported tags, missing useful tags, and goal-loop readiness.
+- The helper run endpoint generates a local `.docx` draft and local review JSON.
+- The browser API response does not return extracted source text.
+- Smoke tests prove no live write, auto-sign, or auto-submit flags.
+- SkillCascade tests and production build pass.
+
+## Not In This MVP
+
+- Cloud PHI upload.
+- Automated payer, CentralReach, Passage, email, or Word Online writes.
+- One-click signing or submission.
+- Full AI clinical reasoning parity with the manual Codex workflow.
+- Packaged `.exe` installer with auto-update and licensing.
+- Agency-specific template mapping UI beyond placeholder profiling.

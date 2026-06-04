@@ -63,6 +63,56 @@ powershell -NoProfile -ExecutionPolicy Bypass -File local-helpers/report-generat
 
 The smoke test starts the helper on a temporary port, calls status, preflight, and run endpoints with a SkillCascade local-dev origin, then verifies that a local draft `.docx` and review `.json` were created without live-write, auto-sign, or auto-submit flags.
 
+The smoke test also creates a temporary `.docx` template, profiles it through `/api/local-report-pilot/template-profile`, verifies `goals.objective` support, then generates the draft in template mode.
+
+## Template Placeholders
+
+The helper supports these scalar placeholders:
+
+```text
+{report_title}
+{client_label}
+{generated_at}
+{diagnosis_summary}
+{family_history}
+{developmental_history}
+{educational_history}
+{behavior_profile}
+{communication_profile}
+{social_profile}
+{caregiver_training}
+{missing_fields}
+```
+
+The helper supports this goal loop:
+
+```text
+{#goals}
+{domain}
+{long_term_goal}
+{short_term_goal}
+{objective}
+{baseline}
+{current_level}
+{criteria}
+{target_date}
+{graphs}
+{/goals}
+```
+
+Profile a local template before running a draft:
+
+```http
+POST http://127.0.0.1:4181/api/local-report-pilot/template-profile
+Content-Type: application/json
+
+{
+  "templatePath": "C:\\path\\to\\template.docx"
+}
+```
+
+The response lists supported tags, unsupported tags, missing useful tags, and whether the goal loop was detected.
+
 ## No-Admin Startup Wrapper
 
 Preview the current-user Startup wrapper without writing anything:

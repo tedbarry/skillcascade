@@ -12,7 +12,7 @@ const workflowSteps = [
   },
   {
     title: 'Template profile',
-    detail: 'Map the customer report template, required fields, and goal table columns before exporting a draft.',
+    detail: 'Check the customer Word template for supported placeholders, goal-loop fields, unsupported tags, and missing review fields.',
   },
   {
     title: 'Evidence-backed draft',
@@ -28,7 +28,7 @@ const integrationRows = [
   ['App route', 'Mounted through src/App.jsx as /report-generator and /reports.'],
   ['Shared auth', 'Wrapped in ProtectedRoute and backed by the existing Supabase session/API bearer token flow.'],
   ['Shared API client', 'Uses api.fetch for /api/report-generator/status, so Worker auth and report permissions are reused.'],
-  ['Shared file/source intake', 'Future cloud source intake should reuse client-files and clinical evidence records; PHI-capable folder reads stay in the local helper.'],
+  ['Shared file/source intake', 'Template profiling and PHI-capable folder reads stay in the local helper; future cloud source intake should reuse client-files and clinical evidence records.'],
   ['Audit/review gates', 'No sign, submit, external write, or final report state without explicit BCBA review and approval.'],
 ]
 
@@ -71,11 +71,79 @@ function readHelperError(error) {
   return error.message || 'Local helper request failed.'
 }
 
+function TemplateProfilePanel({ profile }) {
+  const ready = profile.status === 'ready'
+  const unsupported = profile.unsupportedTags || []
+  const requiredMissing = profile.requiredMissing || []
+  const missingRecommended = (profile.missingRecommendedFields || []).filter((field) => !field.required)
+  const supported = profile.supportedTags || []
+
+  return (
+    <div className={`mt-5 rounded-xl border p-4 ${ready ? 'border-sage-200 bg-sage-50' : 'border-amber-200 bg-amber-50'}`}>
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+        <div>
+          <p className={`text-xs font-semibold uppercase tracking-wide ${ready ? 'text-sage-700' : 'text-amber-700'}`}>Template profile</p>
+          <h3 className={`mt-1 text-base font-bold ${ready ? 'text-sage-950' : 'text-amber-950'}`}>
+            {profile.filename || 'Word template'} is {ready ? 'ready to draft' : 'ready for review'}
+          </h3>
+          <p className={`mt-1 text-sm leading-6 ${ready ? 'text-sage-800' : 'text-amber-900'}`}>
+            {profile.tagCount || 0} placeholders found. Goal loop: {profile.goalLoop?.detected ? 'detected' : 'not detected'}.
+          </p>
+        </div>
+        <StatusBadge tone={ready ? 'green' : 'warm'}>{profile.status}</StatusBadge>
+      </div>
+
+      <div className="mt-4 grid gap-3 md:grid-cols-3">
+        <TemplateTagList title="Supported tags" items={supported.slice(0, 12)} empty="No supported tags detected." />
+        <TemplateTagList
+          title="Unsupported tags"
+          items={unsupported.map((item) => item.suggestedTag ? `${item.tag} -> ${item.suggestedTag}` : item.tag)}
+          empty="No unsupported tags."
+        />
+        <TemplateTagList
+          title="Missing useful tags"
+          items={[...requiredMissing, ...missingRecommended].slice(0, 12).map((item) => item.required ? `${item.tag} (important)` : item.tag)}
+          empty="No missing useful tags."
+        />
+      </div>
+
+      {profile.warnings?.length ? (
+        <div className="mt-3 rounded-lg border border-white/70 bg-white px-3 py-2">
+          <p className="text-xs font-semibold uppercase tracking-wide text-amber-700">Template warnings</p>
+          <ul className="mt-2 space-y-1 text-xs text-amber-800">
+            {profile.warnings.map((warning) => (
+              <li key={warning}>{warning}</li>
+            ))}
+          </ul>
+        </div>
+      ) : null}
+    </div>
+  )
+}
+
+function TemplateTagList({ title, items, empty }) {
+  return (
+    <div className="rounded-lg border border-white/70 bg-white px-3 py-3">
+      <p className="text-xs font-semibold uppercase tracking-wide text-warm-500">{title}</p>
+      {items.length ? (
+        <ul className="mt-2 space-y-1 text-xs leading-5 text-warm-700">
+          {items.map((item) => (
+            <li key={item} className="break-all">{item}</li>
+          ))}
+        </ul>
+      ) : (
+        <p className="mt-2 text-xs leading-5 text-warm-500">{empty}</p>
+      )}
+    </div>
+  )
+}
+
 export default function ReportGeneratorPage() {
   const { profile } = useAuth()
   const [moduleStatus, setModuleStatus] = useState({ loading: true, data: null, error: '' })
   const [helperUrl, setHelperUrl] = useState(DEFAULT_HELPER_URL)
   const [helperStatus, setHelperStatus] = useState({ checked: false, loading: false, ok: false, data: null, error: '' })
+  const [templateState, setTemplateState] = useState({ loading: false, profile: null, error: '' })
   const [runState, setRunState] = useState({ loading: false, result: null, error: '' })
   const [form, setForm] = useState({
     clientLabel: '',
@@ -147,9 +215,35 @@ export default function ReportGeneratorPage() {
       if (!response.ok || !payload?.ok) {
         throw new Error(payload?.error || 'Local report generation failed.')
       }
+      if (payload.result?.templateProfile) {
+        setTemplateState({ loading: false, profile: payload.result.templateProfile, error: '' })
+      }
       setRunState({ loading: false, result: payload.result, error: '' })
     } catch (error) {
       setRunState({ loading: false, result: null, error: readHelperError(error) })
+    }
+  }
+
+  async function profileTemplate() {
+    if (!form.templatePath.trim()) {
+      setTemplateState({ loading: false, profile: null, error: 'Enter a local Word template path first.' })
+      return
+    }
+
+    setTemplateState({ loading: true, profile: null, error: '' })
+    try {
+      const response = await fetch(`${helperBase}/api/local-report-pilot/template-profile`, {
+        method: 'POST',
+        headers: { 'content-type': 'application/json' },
+        body: JSON.stringify({ templatePath: form.templatePath.trim() }),
+      })
+      const payload = await response.json().catch(() => null)
+      if (!response.ok || !payload?.ok) {
+        throw new Error(payload?.error || 'Template profile failed.')
+      }
+      setTemplateState({ loading: false, profile: payload.profile, error: '' })
+    } catch (error) {
+      setTemplateState({ loading: false, profile: null, error: readHelperError(error) })
     }
   }
 
@@ -240,6 +334,14 @@ export default function ReportGeneratorPage() {
             <div className="mt-5 flex flex-wrap items-center gap-3">
               <button
                 type="button"
+                onClick={profileTemplate}
+                disabled={templateState.loading || !form.templatePath.trim()}
+                className="min-h-[44px] rounded-full border border-warm-300 bg-white px-5 py-2 text-sm font-semibold text-warm-800 shadow-sm hover:bg-warm-50 disabled:cursor-not-allowed disabled:bg-warm-100 disabled:text-warm-400"
+              >
+                {templateState.loading ? 'Profiling template...' : 'Profile Word template'}
+              </button>
+              <button
+                type="button"
                 onClick={runLocalDraft}
                 disabled={runState.loading || !userCanEdit}
                 className="min-h-[44px] rounded-full bg-sage-600 px-5 py-2 text-sm font-semibold text-white shadow-sm hover:bg-sage-700 disabled:cursor-not-allowed disabled:bg-warm-300"
@@ -253,6 +355,16 @@ export default function ReportGeneratorPage() {
                 <span className="text-xs font-semibold text-amber-700">This role can view but not generate report drafts.</span>
               ) : null}
             </div>
+
+            {templateState.error ? (
+              <div className="mt-4 rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-800">
+                {templateState.error}
+              </div>
+            ) : null}
+
+            {templateState.profile ? (
+              <TemplateProfilePanel profile={templateState.profile} />
+            ) : null}
 
             {helperStatus.error ? (
               <div className="mt-4 rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-800">
@@ -274,6 +386,7 @@ export default function ReportGeneratorPage() {
                   <p><span className="font-semibold">Review JSON:</span> {runState.result.reviewPath}</p>
                   <p><span className="font-semibold">Goals:</span> {runState.result.goalPlan?.goals?.length || 0}</p>
                   <p><span className="font-semibold">Missing fields:</span> {runState.result.clinicalProfile?.missingFields?.length || 0}</p>
+                  <p><span className="font-semibold">Template mode:</span> {runState.result.templateMode}</p>
                 </div>
                 {runState.result.qa?.warnings?.length ? (
                   <div className="mt-3 rounded-lg border border-amber-200 bg-white px-3 py-2">

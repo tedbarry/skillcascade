@@ -3,6 +3,7 @@ import { readFile } from 'node:fs/promises'
 import { extname, join, normalize } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { runLocalReportPilot } from './local-report-pilot.js'
+import { profileTemplate, SUPPORTED_TEMPLATE_FIELDS } from './template-profile.js'
 
 const rootDir = fileURLToPath(new URL('.', import.meta.url))
 const webDir = join(rootDir, 'web')
@@ -90,6 +91,11 @@ createServer(async (req, res) => {
         sourceScanning: 'recursive-with-output-folder-exclusion',
         unsupportedFileBehavior: 'warn-do-not-extract',
         output: 'editable-docx',
+        endpoints: {
+          templateProfile: '/api/local-report-pilot/template-profile',
+          run: '/api/local-report-pilot/run',
+        },
+        supportedTemplateFields: SUPPORTED_TEMPLATE_FIELDS,
         safety: {
           cloudUpload: false,
           liveExternalWrites: false,
@@ -101,6 +107,17 @@ createServer(async (req, res) => {
           extraOriginsEnv: 'REPORT_HELPER_ALLOWED_ORIGINS',
         },
       }, corsHeaders)
+      return
+    }
+
+    if (url === '/api/local-report-pilot/template-profile' && method === 'POST') {
+      try {
+        const body = await readJsonBody(req)
+        const profile = await profileTemplate(body)
+        sendJson(res, { ok: true, profile }, corsHeaders)
+      } catch (error) {
+        sendError(res, 400, error.message, corsHeaders)
+      }
       return
     }
 
@@ -132,4 +149,3 @@ createServer(async (req, res) => {
 }).listen(port, '127.0.0.1', () => {
   console.log(`SkillCascade Report Generator helper running at http://127.0.0.1:${port}`)
 })
-
