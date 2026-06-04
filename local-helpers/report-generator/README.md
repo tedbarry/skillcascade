@@ -150,6 +150,8 @@ Content-Type: application/json
 
 `fieldAliases` maps customer template placeholders to supported helper fields. Unmapped unsupported fields still render as review markers instead of silently disappearing.
 
+On the SkillCascade `/report-generator` page, the alias editor shows unsupported customer placeholders from the template profile, preloads suggested mappings when available, and saves the selected aliases with the local template profile.
+
 Run from a saved profile:
 
 ```http

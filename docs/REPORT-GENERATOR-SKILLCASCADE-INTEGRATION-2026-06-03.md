@@ -80,6 +80,7 @@ Responsibilities:
 - Profiles the local customer `.docx` template through the helper before draft generation.
 - Saves and selects reusable local customer template profiles through the helper.
 - Supports saved field aliases so customer placeholder names can map to supported report fields.
+- Provides a visual alias editor for unsupported customer placeholders and saves those mappings with the local profile.
 - Displays helper version, update-safe data policy, licensing authority, and local seat-readiness fingerprint after the local helper check succeeds.
 - Sends local source folder, output folder, optional template path, and client label only to the local helper URL.
 - Displays template readiness, supported tags, unsupported tags, missing useful tags, local output path, review JSON path, goal count, missing-field count, and QA warnings returned by the helper.
@@ -131,6 +132,7 @@ Current pilot:
 - Local template profiling is handled by the local helper through `/api/local-report-pilot/template-profile`.
 - Reusable template profile setup is handled by the local helper through `/api/local-report-pilot/template-profiles`.
 - Customer placeholder alias maps are saved with the local template profile and applied during helper-side `.docx` rendering.
+- The frontend alias editor preloads suggested mappings, lets the user change them, and sends the selected map to the helper.
 - Helper version, package build manifest, local data policy, and licensing boundary are handled by `/api/local-report-pilot/install-state`.
 - Local install fingerprint and future seat-claim readiness are handled by `/api/local-report-pilot/license-readiness`.
 - Saved template profiles are stored on the workstation in the helper data folder, not in SkillCascade cloud data.

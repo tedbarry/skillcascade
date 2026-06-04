@@ -55,6 +55,7 @@ const REPORT_GENERATOR_CONTRACT = {
     unsupportedTagBehavior: 'Flag in local profile and render review markers for unmapped placeholders.',
     savedProfileBehavior: 'Customer template paths and profile summaries are saved only in the local helper data folder.',
     aliasMapBehavior: 'Saved profiles may map customer placeholder names to supported helper fields; unmapped unsupported placeholders stay visible as review markers.',
+    aliasEditorMode: 'frontend-maps-unsupported-customer-placeholders-to-supported-helper-fields',
   },
   installAndLicensing: {
     helperReportsVersion: true,

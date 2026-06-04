@@ -15,6 +15,7 @@ This is not a generic chatbot and not a cloud file uploader. The product promise
 - Template profile: inspects customer `.docx` placeholders before generation.
 - Saved template profile: stores reusable customer template setup in the local helper data folder.
 - Field alias map: maps customer placeholder names to supported helper fields without code changes.
+- Visual alias editor: lets a nontechnical user map unsupported customer placeholders to supported report fields from the Report Generator page.
 - Local install identity: stores a persistent non-secret helper fingerprint for future SkillCascade seat checks.
 - Source packet: recursively scans supported local source files and excludes generated output folders.
 - Clinical draft: creates report sections and goals from source-supported evidence only.
@@ -39,6 +40,7 @@ Custom product layer:
 - Template readiness model for supported, unsupported, missing, and goal-loop placeholders.
 - Local saved-profile store for reusable customer template setup.
 - Saved field aliases for customer-specific template placeholder names.
+- Frontend alias editor that turns template-profile warnings into editable field mappings.
 - Local license-readiness envelope that identifies the helper install while keeping SkillCascade as the entitlement authority.
 - Buyer-facing Report Generator workflow UI.
 
@@ -51,6 +53,7 @@ Custom product layer:
 - The helper template-profile endpoint inspects a local `.docx` template and returns supported tags, unsupported tags, missing useful tags, and goal-loop readiness.
 - The helper can save, list, and reuse a local customer template profile without uploading it to SkillCascade.
 - Saved profiles can map customer placeholder aliases and still leave unmapped unsupported fields visible for review.
+- The Report Generator page lets a user configure and save unsupported customer placeholder mappings through a visual alias editor.
 - The helper run endpoint generates a local `.docx` draft and local review JSON.
 - The helper has a Windows package builder that bundles the helper, dependencies, Node runtime, install script, startup wrapper, and double-click installer launcher EXE.
 - The helper reports install state, helper version, build manifest, local data policy, and licensing boundary through a PHI-free local endpoint.
@@ -67,4 +70,4 @@ Custom product layer:
 - Full AI clinical reasoning parity with the manual Codex workflow.
 - Signed/self-extracting installer, auto-update execution, and server-side license enforcement.
 - Payment-secret handling inside the helper.
-- Full visual alias/mapping editor beyond saved alias maps.
+- Bulk template versioning, cross-customer alias libraries, and advanced template design tools beyond the basic alias editor.

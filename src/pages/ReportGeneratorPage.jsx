@@ -181,6 +181,97 @@ function SavedTemplateProfilesPanel({ state, activeId, onRefresh, onSelect }) {
   )
 }
 
+function TemplateAliasEditor({ profile, fieldAliases, supportedFields, onChange }) {
+  const unsupported = profile.unsupportedTags || []
+  const aliasTags = [
+    ...unsupported.map((item) => item.tag),
+    ...Object.keys(fieldAliases || {}).filter((tag) => !unsupported.some((item) => item.tag === tag)),
+  ]
+
+  if (!aliasTags.length) {
+    return (
+      <div className="mt-5 rounded-xl border border-sage-200 bg-sage-50 p-4">
+        <p className="text-xs font-semibold uppercase tracking-wide text-sage-700">Alias editor</p>
+        <p className="mt-2 text-sm leading-6 text-sage-800">
+          This template has no unsupported placeholders that need alias mapping.
+        </p>
+      </div>
+    )
+  }
+
+  function setAlias(templateTag, sourceTag) {
+    const next = { ...(fieldAliases || {}) }
+    if (sourceTag) {
+      next[templateTag] = sourceTag
+    } else {
+      delete next[templateTag]
+    }
+    onChange(next)
+  }
+
+  function unsupportedInfo(tag) {
+    return unsupported.find((item) => item.tag === tag) || { tag, suggestedTag: '' }
+  }
+
+  return (
+    <div className="mt-5 rounded-xl border border-blue-200 bg-blue-50 p-4">
+      <div className="flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between">
+        <div>
+          <p className="text-xs font-semibold uppercase tracking-wide text-blue-700">Alias editor</p>
+          <h3 className="mt-1 text-base font-bold text-blue-950">Map customer placeholders to report fields</h3>
+          <p className="mt-1 text-sm leading-6 text-blue-900">
+            Aliases let a customer template keep its own field names while the helper fills them from supported report data.
+          </p>
+        </div>
+        <StatusBadge tone="blue">{Object.keys(fieldAliases || {}).length} aliases</StatusBadge>
+      </div>
+
+      <div className="mt-4 space-y-3">
+        {aliasTags.map((tag) => {
+          const info = unsupportedInfo(tag)
+          const current = fieldAliases?.[tag] || ''
+          return (
+            <div key={tag} className="rounded-lg border border-blue-100 bg-white px-3 py-3">
+              <div className="grid gap-3 md:grid-cols-[minmax(0,1fr)_minmax(220px,320px)_auto] md:items-end">
+                <div>
+                  <p className="text-xs font-semibold uppercase tracking-wide text-warm-500">Customer placeholder</p>
+                  <p className="mt-1 break-all text-sm font-bold text-warm-900">{tag}</p>
+                  {info.suggestedTag ? (
+                    <p className="mt-1 text-xs text-blue-800">Suggested: {info.suggestedTag}</p>
+                  ) : null}
+                </div>
+                <label className="block">
+                  <span className="text-xs font-semibold uppercase tracking-wide text-warm-500">Supported report field</span>
+                  <select
+                    value={current}
+                    onChange={(event) => setAlias(tag, event.target.value)}
+                    className="mt-1 min-h-[44px] w-full rounded-lg border border-warm-200 bg-white px-3 py-2 text-sm text-warm-800 shadow-sm outline-none transition-colors focus:border-sage-400"
+                  >
+                    <option value="">Leave as review marker</option>
+                    {supportedFields.map((field) => (
+                      <option key={field.tag} value={field.tag}>
+                        {field.label ? `${field.label} (${field.tag})` : field.tag}
+                      </option>
+                    ))}
+                  </select>
+                </label>
+                <button
+                  type="button"
+                  onClick={() => setAlias(tag, info.suggestedTag || '')}
+                  disabled={!info.suggestedTag}
+                  className="min-h-[40px] rounded-full border border-blue-200 bg-blue-50 px-4 py-2 text-xs font-semibold text-blue-800 hover:bg-blue-100 disabled:cursor-not-allowed disabled:border-warm-200 disabled:bg-warm-100 disabled:text-warm-400"
+                >
+                  Use suggestion
+                </button>
+              </div>
+            </div>
+          )
+        })}
+      </div>
+    </div>
+  )
+}
+
 function HelperInstallStatePanel({ installState, licenseReadiness }) {
   const buildManifest = installState.buildManifest
   const fingerprint = licenseReadiness?.installFingerprint
@@ -265,9 +356,18 @@ export default function ReportGeneratorPage() {
     templatePath: '',
     templateProfileId: '',
     templateProfileLabel: '',
+    fieldAliases: {},
   })
 
   const helperBase = useMemo(() => helperUrl.replace(/\/+$/, ''), [helperUrl])
+  const supportedTemplateFields = useMemo(() => {
+    const helperFields = helperStatus.data?.supportedTemplateFields || []
+    if (helperFields.length) return helperFields
+
+    return (moduleStatus.data?.templateProfile?.supportedTemplateTags || [])
+      .filter((tag) => tag !== 'goals')
+      .map((tag) => ({ tag, label: tag }))
+  }, [helperStatus.data, moduleStatus.data])
   const userCanEdit = moduleStatus.data?.userCanEdit === true
 
   useEffect(() => {
@@ -333,6 +433,7 @@ export default function ReportGeneratorPage() {
           templatePath: form.templatePath.trim(),
           label: form.templateProfileLabel.trim() || templateState.profile?.filename || 'Customer template',
           templateProfileId: form.templateProfileId,
+          fieldAliases: form.fieldAliases,
         }),
       })
       const payload = await response.json().catch(() => null)
@@ -344,6 +445,7 @@ export default function ReportGeneratorPage() {
         templateProfileId: payload.result.id,
         templateProfileLabel: payload.result.label,
         templatePath: payload.result.templatePath,
+        fieldAliases: payload.result.fieldAliases || prev.fieldAliases,
       }))
       setTemplateState({ loading: false, profile: payload.result.profile, error: '' })
       setSavedTemplatesState((prev) => ({
@@ -364,6 +466,7 @@ export default function ReportGeneratorPage() {
       templateProfileId: savedTemplate.id,
       templateProfileLabel: savedTemplate.label,
       templatePath: savedTemplate.templatePath,
+      fieldAliases: savedTemplate.fieldAliases || {},
     }))
     setTemplateState({ loading: false, profile: savedTemplate.profile, error: '' })
   }
@@ -390,6 +493,7 @@ export default function ReportGeneratorPage() {
           reportTitle: 'ABA Initial Assessment Draft',
           templatePath: form.templatePath.trim(),
           templateProfileId: form.templateProfileId,
+          templateFieldAliases: form.fieldAliases,
         }),
       })
       const payload = await response.json().catch(() => null)
@@ -422,11 +526,15 @@ export default function ReportGeneratorPage() {
       if (!response.ok || !payload?.ok) {
         throw new Error(payload?.error || 'Template profile failed.')
       }
+      const suggestedAliases = Object.fromEntries((payload.profile.unsupportedTags || [])
+        .filter((item) => item.suggestedTag)
+        .map((item) => [item.tag, item.suggestedTag]))
       setTemplateState({ loading: false, profile: payload.profile, error: '' })
       setForm((prev) => ({
         ...prev,
         templateProfileId: '',
         templateProfileLabel: prev.templateProfileLabel || payload.profile.filename || '',
+        fieldAliases: { ...suggestedAliases, ...prev.fieldAliases },
       }))
     } catch (error) {
       setTemplateState({ loading: false, profile: null, error: readHelperError(error) })
@@ -513,7 +621,7 @@ export default function ReportGeneratorPage() {
               <Field label="Local source folder" value={form.sourceFolder} onChange={(value) => setForm((prev) => ({ ...prev, sourceFolder: value }))} placeholder="C:\\path\\to\\client\\Assessment\\Initial" />
               <Field label="Local output folder" value={form.outputDir} onChange={(value) => setForm((prev) => ({ ...prev, outputDir: value }))} placeholder="C:\\path\\to\\draft-output" />
               <div className="md:col-span-2">
-                <Field label="Optional Word template path" value={form.templatePath} onChange={(value) => setForm((prev) => ({ ...prev, templatePath: value, templateProfileId: '' }))} placeholder="C:\\path\\to\\customer-template.docx" />
+                <Field label="Optional Word template path" value={form.templatePath} onChange={(value) => setForm((prev) => ({ ...prev, templatePath: value, templateProfileId: '', fieldAliases: {} }))} placeholder="C:\\path\\to\\customer-template.docx" />
               </div>
               <div className="md:col-span-2">
                 <Field label="Saved template profile label" value={form.templateProfileLabel} onChange={(value) => setForm((prev) => ({ ...prev, templateProfileLabel: value }))} placeholder="Agency initial assessment template" />
@@ -567,7 +675,15 @@ export default function ReportGeneratorPage() {
             ) : null}
 
             {templateState.profile ? (
-              <TemplateProfilePanel profile={templateState.profile} />
+              <>
+                <TemplateProfilePanel profile={templateState.profile} />
+                <TemplateAliasEditor
+                  profile={templateState.profile}
+                  fieldAliases={form.fieldAliases}
+                  supportedFields={supportedTemplateFields}
+                  onChange={(fieldAliases) => setForm((prev) => ({ ...prev, fieldAliases }))}
+                />
+              </>
             ) : null}
 
             {helperStatus.error ? (
