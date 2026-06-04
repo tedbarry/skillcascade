@@ -101,7 +101,7 @@ function readHelperError(error) {
     return 'Local helper check timed out. Make sure the helper is running on this computer.'
   }
   if (/Failed to fetch|NetworkError|Load failed/i.test(error.message || '')) {
-    return 'Local helper was not reachable from the browser. Start the helper on this machine, or confirm its CORS/local access setting.'
+    return 'The browser could not reach the local helper. Start the helper, then allow Chrome or Edge local network access if the browser asks.'
   }
   return error.message || 'Local helper request failed.'
 }
