@@ -43,6 +43,7 @@ powershell -NoProfile -ExecutionPolicy Bypass -File local-helpers/report-generat
 - Template-profile endpoint returns `status: ready` for the smoke `.docx` fixture.
 - Template-profile endpoint detects `client_label` and `goals.objective`.
 - Saved-template endpoint stores and lists a local profile for the smoke `.docx` fixture.
+- Alias-map smoke fixture maps unsupported customer placeholders and renders without unsupported-field review markers.
 - Run endpoint returns `templateMode: placeholder-template` when a saved template profile is supplied.
 - Draft `.docx` and review `.json` are written locally.
 - Windows package builder creates a distributable helper folder and `.zip` with bundled `node.exe` and `Install-ReportGeneratorHelper.exe`.
@@ -59,6 +60,7 @@ powershell -NoProfile -ExecutionPolicy Bypass -File local-helpers/report-generat
 - Do not count review as complete unless an actual `.json` file exists on disk and is larger than 100 bytes.
 - Do not count template support as complete unless the helper profiles a real `.docx` and detects the goal loop.
 - Do not count buyer template setup as complete unless the helper saves, lists, and runs from a saved profile ID.
+- Do not count alias mapping as complete unless a real `.docx` fixture with unsupported customer placeholder names renders through saved aliases without unsupported-field markers.
 - Do not count the install path as complete unless the package builder creates a package and the packaged launcher smoke passes.
 - Do not count licensing as designed unless SkillCascade remains the workflow-pack authority and the helper stores no billing secrets.
 - Do not count safety as complete unless no-sign, no-submit, and no-live-write flags are verified in the smoke output.

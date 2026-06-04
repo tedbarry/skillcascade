@@ -167,7 +167,7 @@ function SavedTemplateProfilesPanel({ state, activeId, onRefresh, onSelect }) {
               <span className="block text-sm font-bold">{saved.label}</span>
               <span className="mt-1 block break-all text-xs leading-5 text-blue-800">{saved.templatePath}</span>
               <span className="mt-2 inline-flex rounded-full border border-blue-100 bg-blue-50 px-2 py-1 text-[11px] font-semibold text-blue-800">
-                {saved.status} - {saved.tagCount || 0} tags
+                {saved.status} - {saved.tagCount || 0} tags - {saved.aliasSummary?.aliasCount || 0} aliases
               </span>
             </button>
           ))}

@@ -14,6 +14,7 @@ This is not a generic chatbot and not a cloud file uploader. The product promise
 - Local helper sidecar: reads PHI-capable local folders and templates on the workstation.
 - Template profile: inspects customer `.docx` placeholders before generation.
 - Saved template profile: stores reusable customer template setup in the local helper data folder.
+- Field alias map: maps customer placeholder names to supported helper fields without code changes.
 - Source packet: recursively scans supported local source files and excludes generated output folders.
 - Clinical draft: creates report sections and goals from source-supported evidence only.
 - Review summary: writes a local JSON QA artifact with source filenames, unsupported files, missing fields, template warnings, and safety flags.
@@ -36,6 +37,7 @@ Custom product layer:
 - Local helper CORS/private-network bridge for SkillCascade-to-localhost use.
 - Template readiness model for supported, unsupported, missing, and goal-loop placeholders.
 - Local saved-profile store for reusable customer template setup.
+- Saved field aliases for customer-specific template placeholder names.
 - Buyer-facing Report Generator workflow UI.
 
 ## MVP Acceptance Gates
@@ -46,6 +48,7 @@ Custom product layer:
 - The helper status endpoint returns the local-only safety contract.
 - The helper template-profile endpoint inspects a local `.docx` template and returns supported tags, unsupported tags, missing useful tags, and goal-loop readiness.
 - The helper can save, list, and reuse a local customer template profile without uploading it to SkillCascade.
+- Saved profiles can map customer placeholder aliases and still leave unmapped unsupported fields visible for review.
 - The helper run endpoint generates a local `.docx` draft and local review JSON.
 - The helper has a Windows package builder that bundles the helper, dependencies, Node runtime, install script, startup wrapper, and double-click installer launcher EXE.
 - The helper reports install state, helper version, build manifest, local data policy, and licensing boundary through a PHI-free local endpoint.
@@ -60,4 +63,4 @@ Custom product layer:
 - One-click signing or submission.
 - Full AI clinical reasoning parity with the manual Codex workflow.
 - Signed/self-extracting installer, auto-update execution, and payment-secret handling inside the helper.
-- Agency-specific alias/mapping editor beyond saved placeholder profiles.
+- Full visual alias/mapping editor beyond saved alias maps.

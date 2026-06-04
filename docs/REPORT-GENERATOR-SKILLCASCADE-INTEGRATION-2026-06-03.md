@@ -79,6 +79,7 @@ Responsibilities:
 - Checks the local helper status endpoint.
 - Profiles the local customer `.docx` template through the helper before draft generation.
 - Saves and selects reusable local customer template profiles through the helper.
+- Supports saved field aliases so customer placeholder names can map to supported report fields.
 - Displays helper version, update-safe data policy, and licensing authority after the local helper check succeeds.
 - Sends local source folder, output folder, optional template path, and client label only to the local helper URL.
 - Displays template readiness, supported tags, unsupported tags, missing useful tags, local output path, review JSON path, goal count, missing-field count, and QA warnings returned by the helper.
@@ -128,6 +129,7 @@ Current pilot:
 - The SkillCascade page passes local path strings only to the helper URL selected by the user.
 - Local template profiling is handled by the local helper through `/api/local-report-pilot/template-profile`.
 - Reusable template profile setup is handled by the local helper through `/api/local-report-pilot/template-profiles`.
+- Customer placeholder alias maps are saved with the local template profile and applied during helper-side `.docx` rendering.
 - Helper version, package build manifest, local data policy, and licensing boundary are handled by `/api/local-report-pilot/install-state`.
 - Saved template profiles are stored on the workstation in the helper data folder, not in SkillCascade cloud data.
 - The packaged-helper path now supports local SkillCascade origins and the live SkillCascade origin through a narrow CORS allowlist.
@@ -175,6 +177,7 @@ OPTIONS /api/local-report-pilot/run from https://www.skillcascade.com -> 204 wit
 npm --prefix local-helpers/report-generator run smoke -> status 200, preflight 204, run 200, 8 goals, local DOCX and review JSON created
 npm --prefix local-helpers/report-generator run smoke -> install-state 200, update-safe data policy, SkillCascade licensing authority
 npm --prefix local-helpers/report-generator run smoke -> template profile 200, template status ready, detected goals.objective
+npm --prefix local-helpers/report-generator run smoke -> alias count 2, customer placeholder aliases rendered without unsupported-field markers
 npm --prefix local-helpers/report-generator run smoke -> saved template profile count 1, draft generated from saved profile ID
 build-windows-package.ps1 -> distributable helper folder and zip with bundled node.exe and Install-ReportGeneratorHelper.exe
 packaged start-report-helper.ps1 -Smoke -NoInstall -> passed

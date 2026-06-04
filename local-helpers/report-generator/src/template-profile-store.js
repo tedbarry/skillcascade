@@ -20,6 +20,29 @@ function nowIso() {
   return new Date().toISOString()
 }
 
+function normalizeFieldAliases(fieldAliases = {}) {
+  return Object.fromEntries(Object.entries(fieldAliases || {})
+    .map(([templateTag, sourceTag]) => [String(templateTag || '').trim(), String(sourceTag || '').trim()])
+    .filter(([templateTag, sourceTag]) => templateTag && sourceTag))
+}
+
+function summarizeAliasCoverage(profile, fieldAliases = {}) {
+  const aliases = normalizeFieldAliases(fieldAliases)
+  const unsupportedTags = profile.unsupportedTags || []
+  return {
+    aliasCount: Object.keys(aliases).length,
+    mappedUnsupportedTags: unsupportedTags
+      .filter((item) => aliases[item.tag])
+      .map((item) => ({
+        tag: item.tag,
+        mappedTo: aliases[item.tag],
+      })),
+    unmappedUnsupportedTags: unsupportedTags
+      .filter((item) => !aliases[item.tag])
+      .map((item) => item.tag),
+  }
+}
+
 async function readStore() {
   try {
     const text = await readFile(STORE_PATH, 'utf8')
@@ -53,6 +76,8 @@ function summarizeProfile(savedProfile) {
     filename: savedProfile.filename,
     status: savedProfile.status,
     tagCount: savedProfile.tagCount,
+    fieldAliases: savedProfile.fieldAliases || {},
+    aliasSummary: savedProfile.aliasSummary || summarizeAliasCoverage(savedProfile.profile, savedProfile.fieldAliases),
     savedAt: savedProfile.savedAt,
     updatedAt: savedProfile.updatedAt,
     localOnly: true,
@@ -78,8 +103,14 @@ export async function getTemplateProfile(profileId) {
   return summarizeProfile(savedProfile)
 }
 
-export async function saveTemplateProfile({ templatePath, label = '', templateProfileId = '' } = {}) {
+export async function saveTemplateProfile({
+  templatePath,
+  label = '',
+  templateProfileId = '',
+  fieldAliases = {},
+} = {}) {
   const profile = await profileTemplate({ templatePath })
+  const normalizedAliases = normalizeFieldAliases(fieldAliases)
   const store = await readStore()
   const existing = templateProfileId
     ? store.profiles.find((item) => item.id === templateProfileId)
@@ -93,6 +124,8 @@ export async function saveTemplateProfile({ templatePath, label = '', templatePr
     filename: profile.filename,
     status: profile.status,
     tagCount: profile.tagCount,
+    fieldAliases: normalizedAliases,
+    aliasSummary: summarizeAliasCoverage(profile, normalizedAliases),
     savedAt: existing?.savedAt || timestamp,
     updatedAt: timestamp,
     localOnly: true,

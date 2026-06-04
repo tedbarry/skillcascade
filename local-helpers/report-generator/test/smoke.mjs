@@ -6,6 +6,7 @@ import { tmpdir } from 'node:os'
 import { dirname, join } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { Document, Packer, Paragraph, TextRun } from 'docx'
+import mammoth from 'mammoth'
 
 const packageRoot = dirname(dirname(fileURLToPath(import.meta.url)))
 const port = Number(process.env.REPORT_HELPER_SMOKE_PORT || 4199)
@@ -78,7 +79,21 @@ async function createSourceFixture() {
   })
   await writeFile(templatePath, await Packer.toBuffer(template))
 
-  return { sourceFolder, outputDir, templatePath }
+  const aliasTemplatePath = join(root, 'alias-template.docx')
+  const aliasTemplate = new Document({
+    sections: [
+      {
+        children: [
+          new Paragraph({ children: [new TextRun('{report_title}')] }),
+          new Paragraph({ children: [new TextRun('Client: {client_name}')] }),
+          new Paragraph({ children: [new TextRun('{#goals}{long_term_goal}: {goal_text}{/goals}')] }),
+        ],
+      },
+    ],
+  })
+  await writeFile(aliasTemplatePath, await Packer.toBuffer(aliasTemplate))
+
+  return { sourceFolder, outputDir, templatePath, aliasTemplatePath }
 }
 
 const server = startServer()
@@ -122,7 +137,7 @@ try {
   assert.equal(preflightResponse.status, 204)
   assert.equal(preflightResponse.headers.get('access-control-allow-private-network'), 'true')
 
-  const { sourceFolder, outputDir, templatePath } = await createSourceFixture()
+  const { sourceFolder, outputDir, templatePath, aliasTemplatePath } = await createSourceFixture()
 
   const templateProfileResponse = await fetch(`${baseUrl}/api/local-report-pilot/template-profile`, {
     method: 'POST',
@@ -147,13 +162,23 @@ try {
       Origin: origin,
       'Content-Type': 'application/json',
     },
-    body: JSON.stringify({ templatePath, label: 'Smoke Customer Template' }),
+    body: JSON.stringify({
+      templatePath: aliasTemplatePath,
+      label: 'Smoke Customer Template',
+      fieldAliases: {
+        client_name: 'client_label',
+        'goals.goal_text': 'goals.objective',
+      },
+    }),
   })
   assert.equal(saveTemplateProfileResponse.status, 200)
   const saveTemplateProfilePayload = await saveTemplateProfileResponse.json()
   assert.equal(saveTemplateProfilePayload.ok, true)
   assert.equal(saveTemplateProfilePayload.result.label, 'Smoke Customer Template')
-  assert.equal(saveTemplateProfilePayload.result.profile.status, 'ready')
+  assert.equal(saveTemplateProfilePayload.result.fieldAliases.client_name, 'client_label')
+  assert.equal(saveTemplateProfilePayload.result.aliasSummary.aliasCount, 2)
+  assert.ok(saveTemplateProfilePayload.result.aliasSummary.mappedUnsupportedTags.some((item) => item.tag === 'client_name'))
+  assert.ok(saveTemplateProfilePayload.result.aliasSummary.mappedUnsupportedTags.some((item) => item.tag === 'goals.goal_text'))
 
   const savedTemplateProfilesResponse = await fetch(`${baseUrl}/api/local-report-pilot/template-profiles`, {
     headers: { Origin: origin },
@@ -189,7 +214,7 @@ try {
   assert.equal(runPayload.result.templateMode, 'placeholder-template')
   assert.equal(runPayload.result.templateProfileId, saveTemplateProfilePayload.result.id)
   assert.equal(runPayload.result.templateProfileLabel, 'Smoke Customer Template')
-  assert.equal(runPayload.result.templateProfile.status, 'ready')
+  assert.equal(runPayload.result.templateFieldAliases.client_name, 'client_label')
   assert.equal(runPayload.result.sourcePacket.sources.some((source) => 'text' in source), false)
   assert.equal(runPayload.result.sourcePacket.unsupportedFiles.some((source) => source.filename === 'legacy-report.doc'), true)
 
@@ -197,6 +222,9 @@ try {
   const reviewStats = await stat(runPayload.result.reviewPath)
   assert.ok(outputStats.size > 1000)
   assert.ok(reviewStats.size > 100)
+  const renderedOutput = await mammoth.extractRawText({ path: runPayload.result.outputPath })
+  assert.match(renderedOutput.value, /Client: Pilot Client/)
+  assert.equal(renderedOutput.value.includes('REVIEW_UNSUPPORTED_TEMPLATE_FIELD'), false)
 
   console.log(JSON.stringify({
     ok: true,
@@ -206,6 +234,7 @@ try {
     templateProfileCode: templateProfileResponse.status,
     templateProfileStatus: templateProfilePayload.profile.status,
     savedTemplateProfileCount: savedTemplateProfilesPayload.result.profileCount,
+    aliasCount: saveTemplateProfilePayload.result.aliasSummary.aliasCount,
     runCode: runResponse.status,
     goalCount: runPayload.result.goalPlan.goals.length,
     outputCreated: true,

@@ -79,6 +79,7 @@ describe('report-generator route contract', () => {
     expect(payload.data.installAndLicensing.helperStoresBillingSecrets).toBe(false)
     expect(payload.data.installAndLicensing.skillCascadeWorkflowPackIsAuthority).toBe(true)
     expect(payload.data.templateProfile.savedProfileMode).toBe('local-workstation-json-store')
+    expect(payload.data.templateProfile.aliasMapBehavior).toMatch(/customer placeholder/i)
     expect(payload.data.templateProfile.supportedTemplateTags).toContain('goals.objective')
     expect(payload.data.reviewGates).toContain('No automatic signing.')
     expect(payload.data.userCanEdit).toBe(false)

@@ -137,9 +137,15 @@ Content-Type: application/json
 
 {
   "templatePath": "C:\\path\\to\\template.docx",
-  "label": "Agency initial assessment template"
+  "label": "Agency initial assessment template",
+  "fieldAliases": {
+    "client_name": "client_label",
+    "goals.goal_text": "goals.objective"
+  }
 }
 ```
+
+`fieldAliases` maps customer template placeholders to supported helper fields. Unmapped unsupported fields still render as review markers instead of silently disappearing.
 
 Run from a saved profile:
 

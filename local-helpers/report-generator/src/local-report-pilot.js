@@ -418,9 +418,44 @@ async function writeGeneratedDocx({ outputPath, job }) {
   await writeFile(outputPath, buffer)
 }
 
-function templateData(job) {
+function readDataPath(data, path) {
+  return String(path || '').split('.').reduce((current, key) => (
+    current && Object.prototype.hasOwnProperty.call(current, key) ? current[key] : undefined
+  ), data)
+}
+
+function writeDataPath(data, path, value) {
+  const parts = String(path || '').split('.').filter(Boolean)
+  if (!parts.length) return
+  let current = data
+  for (const part of parts.slice(0, -1)) {
+    current[part] = current[part] && typeof current[part] === 'object' ? current[part] : {}
+    current = current[part]
+  }
+  current[parts.at(-1)] = value
+}
+
+function applyTemplateAliases(data, fieldAliases = {}) {
+  const aliases = Object.entries(fieldAliases || {}).filter(([, sourceTag]) => sourceTag)
+  for (const [templateTag, sourceTag] of aliases) {
+    if (templateTag.startsWith('goals.') && sourceTag.startsWith('goals.')) {
+      const templateKey = templateTag.replace(/^goals\./, '')
+      const sourceKey = sourceTag.replace(/^goals\./, '')
+      data.goals = data.goals.map((goal) => ({
+        ...goal,
+        [templateKey]: goal[sourceKey] ?? '',
+      }))
+      continue
+    }
+
+    const value = readDataPath(data, sourceTag)
+    if (value !== undefined) writeDataPath(data, templateTag, value)
+  }
+}
+
+function templateData(job, fieldAliases = {}) {
   const sectionById = Object.fromEntries(job.clinicalProfile.sections.map((section) => [section.id, section.text]))
-  return {
+  const data = {
     report_title: job.reportTitle,
     client_label: job.clientLabel,
     generated_at: job.generatedAt,
@@ -445,9 +480,11 @@ function templateData(job) {
       graphs: goal.graphs,
     })),
   }
+  applyTemplateAliases(data, fieldAliases)
+  return data
 }
 
-async function writePlaceholderTemplateDocx({ templatePath, outputPath, job }) {
+async function writePlaceholderTemplateDocx({ templatePath, outputPath, job, fieldAliases = {} }) {
   const content = await readFile(templatePath)
   const zip = new PizZip(content)
   const doc = new Docxtemplater(zip, {
@@ -458,7 +495,7 @@ async function writePlaceholderTemplateDocx({ templatePath, outputPath, job }) {
       return `[[REVIEW_UNSUPPORTED_TEMPLATE_FIELD:${value}]]`
     },
   })
-  doc.render(templateData(job))
+  doc.render(templateData(job, fieldAliases))
   const buffer = doc.getZip().generate({
     type: 'nodebuffer',
     compression: 'DEFLATE',
@@ -473,6 +510,7 @@ export async function runLocalReportPilot({
   reportTitle = 'ABA Initial Assessment Draft',
   templatePath = '',
   templateProfileId = '',
+  templateFieldAliases = {},
 } = {}) {
   if (!sourceFolder) throw new Error('sourceFolder is required')
   const resolvedOutputDir = resolve(outputDir || join(sourceFolder, 'report-pilot-output'))
@@ -483,6 +521,7 @@ export async function runLocalReportPilot({
   const goalPlan = buildLocalGoalPlan({ sources: sourcePacket.sources })
   const savedTemplateProfile = templateProfileId ? await getTemplateProfile(templateProfileId) : null
   const resolvedTemplatePath = savedTemplateProfile?.templatePath || templatePath
+  const resolvedTemplateFieldAliases = savedTemplateProfile?.fieldAliases || templateFieldAliases || {}
   const templateProfile = resolvedTemplatePath ? await profileTemplate({ templatePath: resolvedTemplatePath }) : null
   const generatedAt = new Date().toISOString()
   const safeClient = clientLabel.replace(/[^a-z0-9]+/gi, '-').replace(/^-|-$/g, '') || 'client'
@@ -504,6 +543,7 @@ export async function runLocalReportPilot({
     templatePath: resolvedTemplatePath ? resolve(resolvedTemplatePath) : '',
     templateProfileId: savedTemplateProfile?.id || '',
     templateProfileLabel: savedTemplateProfile?.label || '',
+    templateFieldAliases: resolvedTemplateFieldAliases,
     templateProfile,
     templateMode: resolvedTemplatePath ? 'placeholder-template' : 'generated-docx',
     qa: {
@@ -522,7 +562,12 @@ export async function runLocalReportPilot({
   }
 
   if (resolvedTemplatePath) {
-    await writePlaceholderTemplateDocx({ templatePath: resolvedTemplatePath, outputPath, job })
+    await writePlaceholderTemplateDocx({
+      templatePath: resolvedTemplatePath,
+      outputPath,
+      job,
+      fieldAliases: resolvedTemplateFieldAliases,
+    })
   } else {
     await writeGeneratedDocx({ outputPath, job })
   }
@@ -542,6 +587,7 @@ export async function runLocalReportPilot({
     templateProfile: templateProfile ? {
       savedTemplateProfileId: savedTemplateProfile?.id || '',
       savedTemplateProfileLabel: savedTemplateProfile?.label || '',
+      fieldAliases: resolvedTemplateFieldAliases,
       status: templateProfile.status,
       filename: templateProfile.filename,
       tagCount: templateProfile.tagCount,
