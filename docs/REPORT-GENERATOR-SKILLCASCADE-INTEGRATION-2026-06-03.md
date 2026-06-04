@@ -79,6 +79,7 @@ Responsibilities:
 - Checks the local helper status endpoint.
 - Profiles the local customer `.docx` template through the helper before draft generation.
 - Saves and selects reusable local customer template profiles through the helper.
+- Displays helper version, update-safe data policy, and licensing authority after the local helper check succeeds.
 - Sends local source folder, output folder, optional template path, and client label only to the local helper URL.
 - Displays template readiness, supported tags, unsupported tags, missing useful tags, local output path, review JSON path, goal count, missing-field count, and QA warnings returned by the helper.
 

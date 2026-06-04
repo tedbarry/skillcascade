@@ -181,6 +181,46 @@ function SavedTemplateProfilesPanel({ state, activeId, onRefresh, onSelect }) {
   )
 }
 
+function HelperInstallStatePanel({ installState }) {
+  const buildManifest = installState.buildManifest
+
+  return (
+    <div className="mt-5 rounded-xl border border-sage-200 bg-sage-50 p-4">
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+        <div>
+          <p className="text-xs font-semibold uppercase tracking-wide text-sage-700">Install readiness</p>
+          <h3 className="mt-1 text-base font-bold text-sage-950">Local helper is update-safe</h3>
+          <p className="mt-1 text-sm leading-6 text-sage-800">
+            Helper version {installState.helperVersion || 'unknown'}{buildManifest?.packageVersion ? `, package ${buildManifest.packageVersion}` : ''}.
+          </p>
+        </div>
+        <StatusBadge tone="green">PHI local</StatusBadge>
+      </div>
+
+      <div className="mt-4 grid gap-3 md:grid-cols-3">
+        <div className="rounded-lg border border-white/70 bg-white px-3 py-3">
+          <p className="text-xs font-semibold uppercase tracking-wide text-warm-500">Customer data</p>
+          <p className="mt-2 text-sm leading-6 text-warm-700">
+            Saved template profiles stay outside the app install folder and are preserved during helper replacement.
+          </p>
+        </div>
+        <div className="rounded-lg border border-white/70 bg-white px-3 py-3">
+          <p className="text-xs font-semibold uppercase tracking-wide text-warm-500">Licensing authority</p>
+          <p className="mt-2 text-sm leading-6 text-warm-700">
+            SkillCascade workflow-pack access remains the authority; the local helper stores no billing secrets.
+          </p>
+        </div>
+        <div className="rounded-lg border border-white/70 bg-white px-3 py-3">
+          <p className="text-xs font-semibold uppercase tracking-wide text-warm-500">Updates</p>
+          <p className="mt-2 text-sm leading-6 text-warm-700">
+            Auto-update is off in this MVP. Replacement requires user approval and preserves local customer data.
+          </p>
+        </div>
+      </div>
+    </div>
+  )
+}
+
 function TemplateTagList({ title, items, empty }) {
   return (
     <div className="rounded-lg border border-white/70 bg-white px-3 py-3">
@@ -522,6 +562,10 @@ export default function ReportGeneratorPage() {
               <div className="mt-4 rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-800">
                 {helperStatus.error}
               </div>
+            ) : null}
+
+            {helperStatus.data?.installState ? (
+              <HelperInstallStatePanel installState={helperStatus.data.installState} />
             ) : null}
 
             {runState.error ? (
