@@ -1,6 +1,13 @@
 import { Hono } from 'hono'
+import { query } from '../db.js'
 import { hasPermission } from '../middleware/auth.js'
 import { hasWorkflowPack, WORKFLOW_PACK_IDS } from '../lib/workflow-packs.js'
+import {
+  buildReportGeneratorOnboarding,
+  claimReportGeneratorInstall,
+  findUnsafeReportGeneratorPayloadFields,
+  listReportGeneratorInstallClaims,
+} from '../lib/report-generator-pilot.js'
 
 const route = new Hono()
 
@@ -60,6 +67,7 @@ const REPORT_GENERATOR_CONTRACT = {
   installAndLicensing: {
     helperReportsVersion: true,
     helperReportsLocalInstallFingerprint: true,
+    serverSeatClaimEndpoint: '/api/report-generator/seat-claims',
     licenseReadinessMode: 'helper-identifies-install-skillcascade-authorizes-access',
     helperStoresBillingSecrets: false,
     helperCanGrantAccess: false,
@@ -84,19 +92,46 @@ const REPORT_GENERATOR_CONTRACT = {
   ],
 }
 
-route.get('/status', async (c) => {
+function getAccessError(c, action = 'view') {
   const profile = c.get('profile')
 
-  if (!hasPermission(profile, 'reports', 'view')) {
-    return c.json({ error: 'Forbidden' }, 403)
+  if (!hasPermission(profile, 'reports', action)) {
+    return { status: 403, payload: { error: 'Forbidden', code: 'permission_required' } }
   }
   if (!hasWorkflowPack(profile, WORKFLOW_PACK_IDS.reportGenerator)) {
-    return c.json({
-      error: 'Report Generator access required.',
-      code: 'workflow_pack_required',
-      requiredPack: WORKFLOW_PACK_IDS.reportGenerator,
-    }, 403)
+    return {
+      status: 403,
+      payload: {
+        error: 'Report Generator access required.',
+        code: 'workflow_pack_required',
+        requiredPack: WORKFLOW_PACK_IDS.reportGenerator,
+      },
+    }
   }
+
+  return null
+}
+
+async function getJsonBody(c) {
+  return c.req.json().catch(() => ({}))
+}
+
+function rejectUnsafeSeatClaim(c, body) {
+  const unsafeFields = findUnsafeReportGeneratorPayloadFields(body)
+  if (!unsafeFields.length) return null
+
+  return c.json({
+    error: 'This endpoint is PHI-free. Send only the helper install fingerprint and readiness metadata.',
+    code: 'phi_not_allowed',
+    unsafeFields,
+  }, 400)
+}
+
+route.get('/status', async (c) => {
+  const accessError = getAccessError(c)
+  if (accessError) return c.json(accessError.payload, accessError.status)
+
+  const profile = c.get('profile')
 
   return c.json({
     ok: true,
@@ -106,6 +141,54 @@ route.get('/status', async (c) => {
       checkedAt: new Date().toISOString(),
     },
   })
+})
+
+route.get('/onboarding', async (c) => {
+  const accessError = getAccessError(c)
+  if (accessError) return c.json(accessError.payload, accessError.status)
+
+  const profile = c.get('profile')
+  return c.json({
+    ok: true,
+    data: buildReportGeneratorOnboarding({
+      profile,
+      userCanEdit: hasPermission(profile, 'reports', 'edit'),
+    }),
+  })
+})
+
+route.get('/seat-claims', async (c) => {
+  const accessError = getAccessError(c)
+  if (accessError) return c.json(accessError.payload, accessError.status)
+
+  const profile = c.get('profile')
+  const data = await listReportGeneratorInstallClaims({
+    env: c.env,
+    dbQuery: query,
+    profile,
+  })
+  return c.json({ ok: true, data })
+})
+
+route.post('/seat-claims', async (c) => {
+  const accessError = getAccessError(c)
+  if (accessError) return c.json(accessError.payload, accessError.status)
+
+  const body = await getJsonBody(c)
+  const unsafeResponse = rejectUnsafeSeatClaim(c, body)
+  if (unsafeResponse) return unsafeResponse
+
+  try {
+    const data = await claimReportGeneratorInstall({
+      env: c.env,
+      dbQuery: query,
+      profile: c.get('profile'),
+      body,
+    })
+    return c.json({ ok: true, data }, 201)
+  } catch (error) {
+    return c.json({ error: error.message, code: 'seat_claim_failed' }, 400)
+  }
 })
 
 export default route

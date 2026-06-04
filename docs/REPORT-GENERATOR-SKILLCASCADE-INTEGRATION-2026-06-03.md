@@ -82,6 +82,8 @@ Responsibilities:
 - Supports saved field aliases so customer placeholder names can map to supported report fields.
 - Provides a visual alias editor for unsupported customer placeholders and saves those mappings with the local profile.
 - Displays helper version, update-safe data policy, licensing authority, and local seat-readiness fingerprint after the local helper check succeeds.
+- Loads the protected onboarding checklist from `/api/report-generator/onboarding`.
+- Sends the helper install fingerprint to `/api/report-generator/seat-claims` only after local helper readiness is confirmed.
 - Sends local source folder, output folder, optional template path, and client label only to the local helper URL.
 - Displays template readiness, supported tags, unsupported tags, missing useful tags, local output path, review JSON path, goal count, missing-field count, and QA warnings returned by the helper.
 
@@ -113,6 +115,9 @@ Files:
 Endpoint:
 
 - `GET /api/report-generator/status`
+- `GET /api/report-generator/onboarding`
+- `GET /api/report-generator/seat-claims`
+- `POST /api/report-generator/seat-claims`
 
 Behavior:
 
@@ -120,6 +125,8 @@ Behavior:
 - Returns module contract, local-helper endpoint expectations, review gates, supported pilot source types, and current edit permission.
 - Returns the local helper template-profile endpoint and supported placeholder tags.
 - Returns the local helper license-readiness endpoint and the rule that the helper can identify an install but cannot grant access.
+- Records only non-PHI helper install fingerprints and readiness metadata for the signed-in user/org.
+- Rejects PHI-like install-claim fields before database writes.
 - Does not accept or process source documents.
 - Does not send PHI to SkillCascade.
 
@@ -135,6 +142,7 @@ Current pilot:
 - The frontend alias editor preloads suggested mappings, lets the user change them, and sends the selected map to the helper.
 - Helper version, package build manifest, local data policy, and licensing boundary are handled by `/api/local-report-pilot/install-state`.
 - Local install fingerprint and future seat-claim readiness are handled by `/api/local-report-pilot/license-readiness`.
+- Server-side install claiming is handled by `/api/report-generator/seat-claims`; accepted fields are limited to helper readiness metadata.
 - Saved template profiles are stored on the workstation in the helper data folder, not in SkillCascade cloud data.
 - The packaged-helper path now supports local SkillCascade origins and the live SkillCascade origin through a narrow CORS allowlist.
 - The helper handles `OPTIONS` preflight and returns private-network access headers for the website-to-localhost bridge.

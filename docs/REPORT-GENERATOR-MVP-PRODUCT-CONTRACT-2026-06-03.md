@@ -17,6 +17,8 @@ This is not a generic chatbot and not a cloud file uploader. The product promise
 - Field alias map: maps customer placeholder names to supported helper fields without code changes.
 - Visual alias editor: lets a nontechnical user map unsupported customer placeholders to supported report fields from the Report Generator page.
 - Local install identity: stores a persistent non-secret helper fingerprint for future SkillCascade seat checks.
+- Server install claim: records the non-PHI helper fingerprint for the signed-in user/org as the first licensing primitive.
+- Onboarding contract: exposes the buyer setup checklist and safety boundaries through the protected API.
 - Source packet: recursively scans supported local source files and excludes generated output folders.
 - Clinical draft: creates report sections and goals from source-supported evidence only.
 - Review summary: writes a local JSON QA artifact with source filenames, unsupported files, missing fields, template warnings, and safety flags.
@@ -42,6 +44,7 @@ Custom product layer:
 - Saved field aliases for customer-specific template placeholder names.
 - Frontend alias editor that turns template-profile warnings into editable field mappings.
 - Local license-readiness envelope that identifies the helper install while keeping SkillCascade as the entitlement authority.
+- Worker onboarding and install-claim endpoints for the sellable workflow-pack setup path.
 - Buyer-facing Report Generator workflow UI.
 
 ## MVP Acceptance Gates
@@ -58,6 +61,9 @@ Custom product layer:
 - The helper has a Windows package builder that bundles the helper, dependencies, Node runtime, install script, startup wrapper, and double-click installer launcher EXE.
 - The helper reports install state, helper version, build manifest, local data policy, and licensing boundary through a PHI-free local endpoint.
 - The helper reports a persistent local install fingerprint for future server-side seat checks while storing no billing secrets and granting no access locally.
+- The Worker exposes a PHI-free onboarding checklist and install-claim endpoint for non-secret helper readiness metadata.
+- The Worker rejects PHI-like install-claim fields such as client names, source folder paths, template paths, output folders, document text, and file contents.
+- The Report Generator page lets the user claim the local helper install after helper readiness is confirmed.
 - The browser API response does not return extracted source text.
 - Smoke tests prove no live write, auto-sign, or auto-submit flags.
 - SkillCascade tests and production build pass.
@@ -68,6 +74,6 @@ Custom product layer:
 - Automated payer, CentralReach, Passage, email, or Word Online writes.
 - One-click signing or submission.
 - Full AI clinical reasoning parity with the manual Codex workflow.
-- Signed/self-extracting installer, auto-update execution, and server-side license enforcement.
+- Signed/self-extracting installer, auto-update execution, and full server-side license enforcement beyond install claiming.
 - Payment-secret handling inside the helper.
 - Bulk template versioning, cross-customer alias libraries, and advanced template design tools beyond the basic alias editor.

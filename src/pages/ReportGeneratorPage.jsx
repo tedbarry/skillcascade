@@ -324,6 +324,106 @@ function HelperInstallStatePanel({ installState, licenseReadiness }) {
   )
 }
 
+function SeatClaimPanel({ licenseReadiness, installState, savedTemplatesState, state, onClaim }) {
+  const fingerprint = licenseReadiness?.installFingerprint || ''
+  const claimed = state.data?.claim
+  const profileCount = savedTemplatesState.result?.profileCount || 0
+  const aliasCount = (savedTemplatesState.result?.profiles || [])
+    .reduce((total, profile) => total + (profile.aliasSummary?.aliasCount || 0), 0)
+
+  if (!licenseReadiness) return null
+
+  return (
+    <div className="mt-5 rounded-xl border border-blue-200 bg-blue-50 p-4">
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+        <div>
+          <p className="text-xs font-semibold uppercase tracking-wide text-blue-700">Seat claim</p>
+          <h3 className="mt-1 text-base font-bold text-blue-950">Connect this helper install to SkillCascade</h3>
+          <p className="mt-1 text-sm leading-6 text-blue-900">
+            This sends only the non-secret install fingerprint and readiness metadata. It does not send source folders, template paths, client names, or document text.
+          </p>
+        </div>
+        <StatusBadge tone={claimed ? 'green' : 'blue'}>{claimed ? 'Claimed' : 'Ready'}</StatusBadge>
+      </div>
+
+      <div className="mt-3 grid gap-3 md:grid-cols-3">
+        <div className="rounded-lg border border-blue-100 bg-white px-3 py-3">
+          <p className="text-xs font-semibold uppercase tracking-wide text-warm-500">Install fingerprint</p>
+          <p className="mt-2 break-all text-sm font-bold text-warm-900">{fingerprint ? `${fingerprint.slice(0, 16)}...` : 'Not reported'}</p>
+        </div>
+        <div className="rounded-lg border border-blue-100 bg-white px-3 py-3">
+          <p className="text-xs font-semibold uppercase tracking-wide text-warm-500">Helper version</p>
+          <p className="mt-2 text-sm text-warm-700">{licenseReadiness.helperVersion || installState.helperVersion || 'unknown'}</p>
+        </div>
+        <div className="rounded-lg border border-blue-100 bg-white px-3 py-3">
+          <p className="text-xs font-semibold uppercase tracking-wide text-warm-500">Local profiles</p>
+          <p className="mt-2 text-sm text-warm-700">{profileCount} saved, {aliasCount} aliases</p>
+        </div>
+      </div>
+
+      <div className="mt-4 flex flex-wrap items-center gap-3">
+        <button
+          type="button"
+          onClick={onClaim}
+          disabled={!fingerprint || state.loading}
+          className="min-h-[44px] rounded-full border border-blue-200 bg-white px-5 py-2 text-sm font-semibold text-blue-800 shadow-sm hover:bg-blue-100 disabled:cursor-not-allowed disabled:bg-warm-100 disabled:text-warm-400"
+        >
+          {state.loading ? 'Claiming install...' : claimed ? 'Refresh claim' : 'Claim local install'}
+        </button>
+        {claimed ? (
+          <span className="text-xs font-semibold text-sage-800">
+            Claimed as {claimed.status || 'claimed'}{claimed.lastSeenAt ? `, last seen ${claimed.lastSeenAt}` : ''}.
+          </span>
+        ) : null}
+      </div>
+
+      {state.error ? (
+        <div className="mt-3 rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-xs text-amber-800">
+          {state.error}
+        </div>
+      ) : null}
+    </div>
+  )
+}
+
+function OnboardingChecklistPanel({ state }) {
+  const data = state.data
+
+  return (
+    <section className="rounded-2xl border border-warm-200 bg-white p-5 shadow-sm">
+      <p className="text-xs font-semibold uppercase tracking-wide text-sage-700">Buyer setup</p>
+      <h2 className="mt-2 text-lg font-bold text-warm-900">Pilot readiness checklist</h2>
+      {state.error ? (
+        <div className="mt-3 rounded-xl border border-amber-200 bg-amber-50 px-3 py-2 text-sm text-amber-800">
+          {state.error}
+        </div>
+      ) : null}
+      {state.loading ? (
+        <p className="mt-3 text-sm leading-6 text-warm-600">Loading onboarding contract...</p>
+      ) : (
+        <div className="mt-4 space-y-2">
+          {(data?.steps || []).map((step) => (
+            <div key={step.id} className="rounded-xl border border-warm-200 bg-warm-50 px-3 py-3">
+              <div className="flex items-center justify-between gap-3">
+                <p className="text-sm font-bold text-warm-900">{step.label}</p>
+                <span className="rounded-full border border-warm-200 bg-white px-2 py-1 text-[11px] font-semibold uppercase tracking-wide text-warm-500">
+                  {step.owner}
+                </span>
+              </div>
+              <p className="mt-1 text-xs leading-5 text-warm-600">{step.description}</p>
+            </div>
+          ))}
+        </div>
+      )}
+      {data?.safety ? (
+        <p className="mt-3 text-xs leading-5 text-warm-500">
+          Server claim accepts only helper readiness metadata; PHI fields are rejected.
+        </p>
+      ) : null}
+    </section>
+  )
+}
+
 function TemplateTagList({ title, items, empty }) {
   return (
     <div className="rounded-lg border border-white/70 bg-white px-3 py-3">
@@ -344,10 +444,12 @@ function TemplateTagList({ title, items, empty }) {
 export default function ReportGeneratorPage() {
   const { profile } = useAuth()
   const [moduleStatus, setModuleStatus] = useState({ loading: true, data: null, error: '' })
+  const [onboardingState, setOnboardingState] = useState({ loading: true, data: null, error: '' })
   const [helperUrl, setHelperUrl] = useState(DEFAULT_HELPER_URL)
   const [helperStatus, setHelperStatus] = useState({ checked: false, loading: false, ok: false, data: null, error: '' })
   const [templateState, setTemplateState] = useState({ loading: false, profile: null, error: '' })
   const [savedTemplatesState, setSavedTemplatesState] = useState({ loading: false, saving: false, result: null, error: '', message: '' })
+  const [seatClaimState, setSeatClaimState] = useState({ loading: false, data: null, error: '' })
   const [runState, setRunState] = useState({ loading: false, result: null, error: '' })
   const [form, setForm] = useState({
     clientLabel: '',
@@ -374,15 +476,29 @@ export default function ReportGeneratorPage() {
     let active = true
     async function loadStatus() {
       setModuleStatus({ loading: true, data: null, error: '' })
+      setOnboardingState({ loading: true, data: null, error: '' })
       try {
-        const response = await api.fetch('/api/report-generator/status')
+        const [response, onboardingResponse] = await Promise.all([
+          api.fetch('/api/report-generator/status'),
+          api.fetch('/api/report-generator/onboarding'),
+        ])
         const payload = await response.json().catch(() => null)
         if (!response.ok || !payload?.ok) {
           throw new Error(payload?.error || 'Report Generator status unavailable.')
         }
-        if (active) setModuleStatus({ loading: false, data: payload.data, error: '' })
+        const onboardingPayload = await onboardingResponse.json().catch(() => null)
+        if (!onboardingResponse.ok || !onboardingPayload?.ok) {
+          throw new Error(onboardingPayload?.error || 'Report Generator onboarding unavailable.')
+        }
+        if (active) {
+          setModuleStatus({ loading: false, data: payload.data, error: '' })
+          setOnboardingState({ loading: false, data: onboardingPayload.data, error: '' })
+        }
       } catch (error) {
-        if (active) setModuleStatus({ loading: false, data: null, error: error.message })
+        if (active) {
+          setModuleStatus({ loading: false, data: null, error: error.message })
+          setOnboardingState({ loading: false, data: null, error: error.message })
+        }
       }
     }
     loadStatus()
@@ -401,6 +517,41 @@ export default function ReportGeneratorPage() {
       await loadSavedTemplates({ silent: true })
     } catch (error) {
       setHelperStatus({ checked: true, loading: false, ok: false, data: null, error: readHelperError(error) })
+    }
+  }
+
+  async function claimLocalInstall() {
+    const readiness = helperStatus.data?.licenseReadiness
+    const installState = helperStatus.data?.installState || {}
+    const fingerprint = readiness?.installFingerprint || ''
+    if (!fingerprint) {
+      setSeatClaimState({ loading: false, data: null, error: 'Check the local helper first so it can report an install fingerprint.' })
+      return
+    }
+
+    const profiles = savedTemplatesState.result?.profiles || []
+    const aliasCount = profiles.reduce((total, saved) => total + (saved.aliasSummary?.aliasCount || 0), 0)
+    setSeatClaimState({ loading: true, data: null, error: '' })
+    try {
+      const response = await api.fetch('/api/report-generator/seat-claims', {
+        method: 'POST',
+        body: JSON.stringify({
+          installFingerprint: fingerprint,
+          helperVersion: readiness.helperVersion || installState.helperVersion || '',
+          packageVersion: installState.buildManifest?.packageVersion || '',
+          helperUrl: helperBase,
+          readinessStatus: readiness.status || '',
+          templateProfileCount: savedTemplatesState.result?.profileCount || 0,
+          aliasCount,
+        }),
+      })
+      const payload = await response.json().catch(() => null)
+      if (!response.ok || !payload?.ok) {
+        throw new Error(payload?.error || 'Install claim failed.')
+      }
+      setSeatClaimState({ loading: false, data: payload.data, error: '' })
+    } catch (error) {
+      setSeatClaimState({ loading: false, data: null, error: error.message || 'Install claim failed.' })
     }
   }
 
@@ -693,10 +844,19 @@ export default function ReportGeneratorPage() {
             ) : null}
 
             {helperStatus.data?.installState ? (
-              <HelperInstallStatePanel
-                installState={helperStatus.data.installState}
-                licenseReadiness={helperStatus.data.licenseReadiness}
-              />
+              <>
+                <HelperInstallStatePanel
+                  installState={helperStatus.data.installState}
+                  licenseReadiness={helperStatus.data.licenseReadiness}
+                />
+                <SeatClaimPanel
+                  licenseReadiness={helperStatus.data.licenseReadiness}
+                  installState={helperStatus.data.installState}
+                  savedTemplatesState={savedTemplatesState}
+                  state={seatClaimState}
+                  onClaim={claimLocalInstall}
+                />
+              </>
             ) : null}
 
             {runState.error ? (
@@ -743,6 +903,8 @@ export default function ReportGeneratorPage() {
               ))}
             </div>
           </section>
+
+          <OnboardingChecklistPanel state={onboardingState} />
 
           <section className="rounded-2xl border border-warm-200 bg-white p-5 shadow-sm">
             <p className="text-xs font-semibold uppercase tracking-wide text-sage-700">Boundaries</p>

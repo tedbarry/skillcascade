@@ -54,6 +54,9 @@ powershell -NoProfile -ExecutionPolicy Bypass -File local-helpers/report-generat
 - API response strips source text from `sourcePacket.sources`.
 - QA flags stay false for `liveWriteAttempted`, `autoSignAttempted`, and `autoSubmitAttempted`.
 - Worker route tests enforce both `reports.view` and Report Generator workflow-pack access.
+- Worker route tests cover the protected onboarding contract.
+- Worker route tests cover safe install-claim upsert/list behavior.
+- Worker route tests prove PHI-like install-claim fields are rejected before database writes.
 
 ## Anti-Fake Checks
 
@@ -67,4 +70,5 @@ powershell -NoProfile -ExecutionPolicy Bypass -File local-helpers/report-generat
 - Do not count the install path as complete unless the package builder creates a package and the packaged launcher smoke passes.
 - Do not count licensing as designed unless SkillCascade remains the workflow-pack authority, the helper stores no billing secrets, and the helper cannot grant access locally.
 - Do not count seat readiness as complete unless the license-readiness endpoint returns the same local install fingerprint across status and direct endpoint checks.
+- Do not count server-side seat claiming as complete unless PHI-like fields are rejected and a safe install fingerprint can be upserted for the signed-in user.
 - Do not count safety as complete unless no-sign, no-submit, and no-live-write flags are verified in the smoke output.
