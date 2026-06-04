@@ -12,6 +12,10 @@ SUPABASE_ANON_KEY = "sb_publishable_oh0bvudMoPjqud7RCZ6X4Q_SXp-R_Wu"
 binding = "DB"
 id = "5c73132de99e43e1936fbf274e8d0a13"
 
+[[r2_buckets]]
+binding = "CONNECTOR_ARTIFACTS"
+bucket_name = "skillcascade-private-artifacts"
+
 [env.preview]
 name = "skillcascade-api-preview"
 
@@ -23,3 +27,7 @@ SUPABASE_ANON_KEY = "sb_publishable_oh0bvudMoPjqud7RCZ6X4Q_SXp-R_Wu"
 [[env.preview.hyperdrive]]
 binding = "DB"
 id = "5c73132de99e43e1936fbf274e8d0a13"
+
+[[env.preview.r2_buckets]]
+binding = "CONNECTOR_ARTIFACTS"
+bucket_name = "skillcascade-private-artifacts"

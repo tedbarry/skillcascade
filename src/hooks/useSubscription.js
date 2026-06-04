@@ -42,7 +42,7 @@ export const FEATURE_META = {
 const DATA_GRACE_PERIOD_DAYS = 90
 
 export default function useSubscription() {
-  const { user, profile, isSuperAdmin } = useAuth()
+  const { user, profile, isSuperAdmin, loading: authLoading } = useAuth()
   const [subscription, setSubscription] = useState(null)
   const [loading, setLoading] = useState(true)
 
@@ -55,7 +55,27 @@ export default function useSubscription() {
 
     // Wait for profile to load before checking subscription
     // This prevents the race condition where org lookup fails because profile is null
-    if (!profile) return
+    if (!profile) {
+      if (authLoading) return
+
+      const fallbackTimer = setTimeout(() => {
+        setSubscription({
+          plan: null,
+          status: 'profile_unavailable',
+          seats: 0,
+        })
+        setLoading(false)
+      }, 3500)
+
+      return () => clearTimeout(fallbackTimer)
+    }
+
+    let active = true
+    const finish = (nextSubscription) => {
+      if (!active) return
+      setSubscription(nextSubscription)
+      setLoading(false)
+    }
 
     async function loadSubscription() {
       // First try: load user's own subscription
@@ -66,8 +86,7 @@ export default function useSubscription() {
         .single()
 
       if (ownSub) {
-        setSubscription(ownSub)
-        setLoading(false)
+        finish(ownSub)
         return
       }
 
@@ -76,8 +95,7 @@ export default function useSubscription() {
         await new Promise(r => setTimeout(r, 1000))
         const { data: retry } = await api.from('subscriptions').select('*').eq('user_id', user.id).single()
         if (retry) {
-          setSubscription(retry)
-          setLoading(false)
+          finish(retry)
           return
         }
       }
@@ -101,24 +119,23 @@ export default function useSubscription() {
             .single()
 
           if (orgSub) {
-            setSubscription(orgSub)
-            setLoading(false)
+            finish(orgSub)
             return
           }
         }
       }
 
       // No subscription found = needs to pick a plan and subscribe
-      setSubscription({
+      finish({
         plan: null,
         status: 'no_subscription',
         seats: 0,
       })
-      setLoading(false)
     }
 
     loadSubscription()
-  }, [user, profile])
+    return () => { active = false }
+  }, [user, profile, authLoading])
 
   const rawPlan = subscription?.plan || null
   const plan = isSuperAdmin ? 'enterprise' : rawPlan
