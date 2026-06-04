@@ -1,4 +1,4 @@
-import { mkdir, readdir, readFile, writeFile } from 'node:fs/promises'
+import { mkdir, readdir, readFile, stat, writeFile } from 'node:fs/promises'
 import { basename, extname, isAbsolute, join, relative, resolve } from 'node:path'
 import mammoth from 'mammoth'
 import PizZip from 'pizzip'
@@ -258,6 +258,104 @@ export async function scanLocalSourceFolder(sourceFolder, options = {}) {
       reason: 'not-extracted-by-local-pilot-v1',
     })),
     sources,
+  }
+}
+
+async function directoryStatus(path) {
+  try {
+    const info = await stat(path)
+    return {
+      exists: true,
+      isDirectory: info.isDirectory(),
+      isFile: info.isFile(),
+    }
+  } catch (error) {
+    if (error.code !== 'ENOENT') throw error
+    return {
+      exists: false,
+      isDirectory: false,
+      isFile: false,
+    }
+  }
+}
+
+export async function preflightLocalReportPilot({
+  sourceFolder,
+  outputDir = '',
+  templatePath = '',
+  templateProfileId = '',
+} = {}) {
+  const blockers = []
+  const warnings = []
+  if (!sourceFolder) {
+    blockers.push('sourceFolder is required')
+  }
+
+  const resolvedSourceFolder = sourceFolder ? resolve(sourceFolder) : ''
+  const resolvedOutputDir = sourceFolder ? resolve(outputDir || join(sourceFolder, 'report-pilot-output')) : ''
+  const sourceStatus = resolvedSourceFolder ? await directoryStatus(resolvedSourceFolder) : null
+  if (sourceStatus && !sourceStatus.exists) blockers.push('Source folder does not exist.')
+  if (sourceStatus?.exists && !sourceStatus.isDirectory) blockers.push('Source folder path is not a directory.')
+
+  let supportedFiles = []
+  let unsupportedFiles = []
+  if (!blockers.length && resolvedSourceFolder) {
+    const listed = await listSourceFiles(resolvedSourceFolder, { excludePaths: [resolvedOutputDir] })
+    supportedFiles = listed.supportedFiles
+    unsupportedFiles = listed.unsupportedFiles
+    if (!supportedFiles.length) blockers.push('No supported source files were found. Add .docx, .txt, or .md source files.')
+    if (unsupportedFiles.length) warnings.push(`${unsupportedFiles.length} unsupported file(s) will be listed in review but not extracted.`)
+  }
+
+  let savedTemplateProfile = null
+  let resolvedTemplatePath = templatePath
+  if (templateProfileId) {
+    savedTemplateProfile = await getTemplateProfile(templateProfileId)
+    resolvedTemplatePath = savedTemplateProfile.templatePath
+  }
+
+  let templateProfile = null
+  if (resolvedTemplatePath) {
+    try {
+      templateProfile = await profileTemplate({ templatePath: resolvedTemplatePath })
+      if (templateProfile.status !== 'ready') {
+        warnings.push(`Template profile status is ${templateProfile.status}; review aliases and missing placeholders before generating.`)
+      }
+    } catch (error) {
+      blockers.push(`Template profile failed: ${error.message}`)
+    }
+  } else {
+    warnings.push('No Word template selected. The helper will generate a fallback DOCX draft.')
+  }
+
+  return {
+    okToRun: blockers.length === 0,
+    localOnly: true,
+    sourceTextReturned: false,
+    sourceFolder: resolvedSourceFolder,
+    outputDir: resolvedOutputDir,
+    sourceSummary: {
+      supportedFileCount: supportedFiles.length,
+      unsupportedFileCount: unsupportedFiles.length,
+      supportedExtensions: Array.from(SUPPORTED_SOURCE_EXTENSIONS),
+    },
+    templateSummary: templateProfile ? {
+      savedTemplateProfileId: savedTemplateProfile?.id || '',
+      savedTemplateProfileLabel: savedTemplateProfile?.label || '',
+      filename: templateProfile.filename,
+      status: templateProfile.status,
+      tagCount: templateProfile.tagCount,
+      unsupportedTagCount: templateProfile.unsupportedTags.length,
+      missingRecommendedCount: templateProfile.missingRecommendedFields.length,
+      goalLoopDetected: templateProfile.goalLoop.detected,
+    } : null,
+    blockers,
+    warnings,
+    safety: {
+      liveWriteAttempted: false,
+      autoSignAttempted: false,
+      autoSubmitAttempted: false,
+    },
   }
 }
 

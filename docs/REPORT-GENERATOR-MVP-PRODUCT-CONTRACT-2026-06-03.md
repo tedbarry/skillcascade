@@ -20,6 +20,7 @@ This is not a generic chatbot and not a cloud file uploader. The product promise
 - Server install claim: records the non-PHI helper fingerprint for the signed-in user/org as the first licensing primitive.
 - Onboarding contract: exposes the buyer setup checklist and safety boundaries through the protected API.
 - Source packet: recursively scans supported local source files and excludes generated output folders.
+- Local preflight: validates source folder, output folder, source file counts, and template readiness before generation.
 - Clinical draft: creates report sections and goals from source-supported evidence only.
 - Review summary: writes a local JSON QA artifact with source filenames, unsupported files, missing fields, template warnings, and safety flags.
 - Evidence ledger: writes local section/goal evidence excerpts for BCBA review while keeping excerpts out of the browser response.
@@ -47,6 +48,7 @@ Custom product layer:
 - Local license-readiness envelope that identifies the helper install while keeping SkillCascade as the entitlement authority.
 - Worker onboarding and install-claim endpoints for the sellable workflow-pack setup path.
 - Local evidence ledger artifact and sanitized response references.
+- Local preflight endpoint and UI gate before draft generation.
 - Buyer-facing Report Generator workflow UI.
 
 ## MVP Acceptance Gates
@@ -60,6 +62,7 @@ Custom product layer:
 - Saved profiles can map customer placeholder aliases and still leave unmapped unsupported fields visible for review.
 - The Report Generator page lets a user configure and save unsupported customer placeholder mappings through a visual alias editor.
 - The helper run endpoint generates a local `.docx` draft and local review JSON.
+- The helper preflight endpoint validates source/template readiness before draft generation and returns blockers/warnings without source text.
 - The helper run endpoint generates a local evidence ledger with source excerpts for BCBA review.
 - The helper response strips source evidence excerpts and returns only evidence references plus local artifact paths.
 - The helper has a Windows package builder that bundles the helper, dependencies, Node runtime, install script, startup wrapper, and double-click installer launcher EXE.

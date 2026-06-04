@@ -208,6 +208,27 @@ try {
   assert.equal(savedTemplateProfilesPayload.result.profileCount, 1)
   assert.equal(savedTemplateProfilesPayload.result.profiles[0].id, saveTemplateProfilePayload.result.id)
 
+  const localPreflightResponse = await fetch(`${baseUrl}/api/local-report-pilot/preflight`, {
+    method: 'POST',
+    headers: {
+      Origin: origin,
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify({
+      sourceFolder,
+      outputDir,
+      templateProfileId: saveTemplateProfilePayload.result.id,
+    }),
+  })
+  assert.equal(localPreflightResponse.status, 200)
+  const localPreflightPayload = await localPreflightResponse.json()
+  assert.equal(localPreflightPayload.ok, true)
+  assert.equal(localPreflightPayload.result.okToRun, true)
+  assert.equal(localPreflightPayload.result.sourceTextReturned, false)
+  assert.equal(localPreflightPayload.result.sourceSummary.supportedFileCount, 1)
+  assert.equal(localPreflightPayload.result.sourceSummary.unsupportedFileCount, 1)
+  assert.equal(localPreflightPayload.result.templateSummary.savedTemplateProfileId, saveTemplateProfilePayload.result.id)
+
   const runResponse = await fetch(`${baseUrl}/api/local-report-pilot/run`, {
     method: 'POST',
     headers: {
@@ -265,6 +286,8 @@ try {
     licenseReadinessCode: licenseReadinessResponse.status,
     licenseReady: licenseReadinessPayload.result.status,
     preflightCode: preflightResponse.status,
+    localPreflightCode: localPreflightResponse.status,
+    localPreflightReady: localPreflightPayload.result.okToRun,
     templateProfileCode: templateProfileResponse.status,
     templateProfileStatus: templateProfilePayload.profile.status,
     savedTemplateProfileCount: savedTemplateProfilesPayload.result.profileCount,

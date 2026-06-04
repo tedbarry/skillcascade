@@ -85,6 +85,7 @@ Responsibilities:
 - Loads the protected onboarding checklist from `/api/report-generator/onboarding`.
 - Sends the helper install fingerprint to `/api/report-generator/seat-claims` only after local helper readiness is confirmed.
 - Sends local source folder, output folder, optional template path, and client label only to the local helper URL.
+- Runs local preflight before generation to validate source/template readiness without returning source text.
 - Displays template readiness, supported tags, unsupported tags, missing useful tags, local output path, review JSON path, evidence ledger path, goal count, missing-field count, and QA warnings returned by the helper.
 
 ## Shared Auth
@@ -136,6 +137,7 @@ Current pilot:
 
 - Local source-folder reading is handled by the local helper.
 - The SkillCascade page passes local path strings only to the helper URL selected by the user.
+- Local preflight is handled by `/api/local-report-pilot/preflight` and returns counts, blockers, and warnings only.
 - Source evidence excerpts are written to the local evidence ledger and are not returned to the browser response.
 - Local template profiling is handled by the local helper through `/api/local-report-pilot/template-profile`.
 - Reusable template profile setup is handled by the local helper through `/api/local-report-pilot/template-profiles`.
@@ -190,6 +192,7 @@ OPTIONS /api/local-report-pilot/run from https://www.skillcascade.com -> 204 wit
 npm --prefix local-helpers/report-generator run smoke -> status 200, preflight 204, run 200, 8 goals, local DOCX and review JSON created
 npm --prefix local-helpers/report-generator run smoke -> install-state 200, update-safe data policy, SkillCascade licensing authority
 npm --prefix local-helpers/report-generator run smoke -> license-readiness 200, persistent local fingerprint, no helper access-grant authority
+npm --prefix local-helpers/report-generator run smoke -> local preflight 200, okToRun true, source counts returned, source text omitted
 npm --prefix local-helpers/report-generator run smoke -> template profile 200, template status ready, detected goals.objective
 npm --prefix local-helpers/report-generator run smoke -> alias count 2, customer placeholder aliases rendered without unsupported-field markers
 npm --prefix local-helpers/report-generator run smoke -> saved template profile count 1, draft generated from saved profile ID

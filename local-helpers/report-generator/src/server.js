@@ -2,7 +2,7 @@ import { createServer } from 'node:http'
 import { readFile } from 'node:fs/promises'
 import { extname, join, normalize } from 'node:path'
 import { fileURLToPath } from 'node:url'
-import { runLocalReportPilot } from './local-report-pilot.js'
+import { preflightLocalReportPilot, runLocalReportPilot } from './local-report-pilot.js'
 import { profileTemplate, SUPPORTED_TEMPLATE_FIELDS } from './template-profile.js'
 import { listTemplateProfiles, saveTemplateProfile } from './template-profile-store.js'
 import { helperInstallState } from './helper-metadata.js'
@@ -106,6 +106,7 @@ createServer(async (req, res) => {
           licenseReadiness: '/api/local-report-pilot/license-readiness',
           templateProfile: '/api/local-report-pilot/template-profile',
           templateProfiles: '/api/local-report-pilot/template-profiles',
+          preflight: '/api/local-report-pilot/preflight',
           run: '/api/local-report-pilot/run',
         },
         supportedTemplateFields: SUPPORTED_TEMPLATE_FIELDS,
@@ -168,6 +169,17 @@ createServer(async (req, res) => {
       try {
         const body = await readJsonBody(req)
         const result = await saveTemplateProfile(body)
+        sendJson(res, { ok: true, result }, corsHeaders)
+      } catch (error) {
+        sendError(res, 400, error.message, corsHeaders)
+      }
+      return
+    }
+
+    if (pathname === '/api/local-report-pilot/preflight' && method === 'POST') {
+      try {
+        const body = await readJsonBody(req)
+        const result = await preflightLocalReportPilot(body)
         sendJson(res, { ok: true, result }, corsHeaders)
       } catch (error) {
         sendError(res, 400, error.message, corsHeaders)

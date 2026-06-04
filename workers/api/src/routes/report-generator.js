@@ -23,6 +23,7 @@ const REPORT_GENERATOR_CONTRACT = {
     licenseReadinessEndpoint: '/api/local-report-pilot/license-readiness',
     templateProfileEndpoint: '/api/local-report-pilot/template-profile',
     templateProfilesEndpoint: '/api/local-report-pilot/template-profiles',
+    preflightEndpoint: '/api/local-report-pilot/preflight',
     runEndpoint: '/api/local-report-pilot/run',
     readsLocalFolders: true,
     uploadsSourceFilesToSkillCascade: false,

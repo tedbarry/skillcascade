@@ -450,6 +450,7 @@ export default function ReportGeneratorPage() {
   const [templateState, setTemplateState] = useState({ loading: false, profile: null, error: '' })
   const [savedTemplatesState, setSavedTemplatesState] = useState({ loading: false, saving: false, result: null, error: '', message: '' })
   const [seatClaimState, setSeatClaimState] = useState({ loading: false, data: null, error: '' })
+  const [preflightState, setPreflightState] = useState({ loading: false, result: null, error: '' })
   const [runState, setRunState] = useState({ loading: false, result: null, error: '' })
   const [form, setForm] = useState({
     clientLabel: '',
@@ -552,6 +553,34 @@ export default function ReportGeneratorPage() {
       setSeatClaimState({ loading: false, data: payload.data, error: '' })
     } catch (error) {
       setSeatClaimState({ loading: false, data: null, error: error.message || 'Install claim failed.' })
+    }
+  }
+
+  async function runLocalPreflight() {
+    if (!form.sourceFolder.trim()) {
+      setPreflightState({ loading: false, result: null, error: 'Enter a local source folder first.' })
+      return
+    }
+
+    setPreflightState({ loading: true, result: null, error: '' })
+    try {
+      const response = await fetch(`${helperBase}/api/local-report-pilot/preflight`, {
+        method: 'POST',
+        headers: { 'content-type': 'application/json' },
+        body: JSON.stringify({
+          sourceFolder: form.sourceFolder.trim(),
+          outputDir: form.outputDir.trim(),
+          templatePath: form.templatePath.trim(),
+          templateProfileId: form.templateProfileId,
+        }),
+      })
+      const payload = await response.json().catch(() => null)
+      if (!response.ok || !payload?.ok) {
+        throw new Error(payload?.error || 'Local preflight failed.')
+      }
+      setPreflightState({ loading: false, result: payload.result, error: '' })
+    } catch (error) {
+      setPreflightState({ loading: false, result: null, error: readHelperError(error) })
     }
   }
 
@@ -798,6 +827,14 @@ export default function ReportGeneratorPage() {
               </button>
               <button
                 type="button"
+                onClick={runLocalPreflight}
+                disabled={preflightState.loading || !form.sourceFolder.trim()}
+                className="min-h-[44px] rounded-full border border-sage-200 bg-sage-50 px-5 py-2 text-sm font-semibold text-sage-800 shadow-sm hover:bg-sage-100 disabled:cursor-not-allowed disabled:bg-warm-100 disabled:text-warm-400"
+              >
+                {preflightState.loading ? 'Checking locally...' : 'Run local preflight'}
+              </button>
+              <button
+                type="button"
                 onClick={runLocalDraft}
                 disabled={runState.loading || !userCanEdit}
                 className="min-h-[44px] rounded-full bg-sage-600 px-5 py-2 text-sm font-semibold text-white shadow-sm hover:bg-sage-700 disabled:cursor-not-allowed disabled:bg-warm-300"
@@ -840,6 +877,39 @@ export default function ReportGeneratorPage() {
             {helperStatus.error ? (
               <div className="mt-4 rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-800">
                 {helperStatus.error}
+              </div>
+            ) : null}
+
+            {preflightState.error ? (
+              <div className="mt-4 rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-800">
+                {preflightState.error}
+              </div>
+            ) : null}
+
+            {preflightState.result ? (
+              <div className={`mt-5 rounded-xl border p-4 ${preflightState.result.okToRun ? 'border-sage-200 bg-sage-50' : 'border-amber-200 bg-amber-50'}`}>
+                <div className="flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between">
+                  <div>
+                    <p className={`text-xs font-semibold uppercase tracking-wide ${preflightState.result.okToRun ? 'text-sage-700' : 'text-amber-700'}`}>Local preflight</p>
+                    <h3 className={`mt-1 text-base font-bold ${preflightState.result.okToRun ? 'text-sage-950' : 'text-amber-950'}`}>
+                      {preflightState.result.okToRun ? 'Ready to generate locally' : 'Review blockers before generating'}
+                    </h3>
+                    <p className={`mt-1 text-sm leading-6 ${preflightState.result.okToRun ? 'text-sage-800' : 'text-amber-900'}`}>
+                      {preflightState.result.sourceSummary?.supportedFileCount || 0} supported source files, {preflightState.result.sourceSummary?.unsupportedFileCount || 0} unsupported files.
+                    </p>
+                  </div>
+                  <StatusBadge tone={preflightState.result.okToRun ? 'green' : 'warm'}>{preflightState.result.okToRun ? 'Ready' : 'Blocked'}</StatusBadge>
+                </div>
+                {preflightState.result.blockers?.length ? (
+                  <ul className="mt-3 space-y-1 text-sm text-amber-800">
+                    {preflightState.result.blockers.map((item) => <li key={item}>{item}</li>)}
+                  </ul>
+                ) : null}
+                {preflightState.result.warnings?.length ? (
+                  <ul className="mt-3 space-y-1 text-sm text-warm-700">
+                    {preflightState.result.warnings.map((item) => <li key={item}>{item}</li>)}
+                  </ul>
+                ) : null}
               </div>
             ) : null}
 

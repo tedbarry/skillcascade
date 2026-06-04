@@ -91,6 +91,7 @@ describe('report-generator route contract', () => {
     expect(payload.data.localHelper.licenseReadinessEndpoint).toBe('/api/local-report-pilot/license-readiness')
     expect(payload.data.localHelper.templateProfileEndpoint).toBe('/api/local-report-pilot/template-profile')
     expect(payload.data.localHelper.templateProfilesEndpoint).toBe('/api/local-report-pilot/template-profiles')
+    expect(payload.data.localHelper.preflightEndpoint).toBe('/api/local-report-pilot/preflight')
     expect(payload.data.installAndLicensing.helperReportsLocalInstallFingerprint).toBe(true)
     expect(payload.data.installAndLicensing.helperCanGrantAccess).toBe(false)
     expect(payload.data.installAndLicensing.helperStoresBillingSecrets).toBe(false)

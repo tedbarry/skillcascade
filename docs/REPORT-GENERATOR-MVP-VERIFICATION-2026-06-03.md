@@ -41,6 +41,7 @@ powershell -NoProfile -ExecutionPolicy Bypass -File local-helpers/report-generat
 - Helper status endpoint returns `localOnly: true`.
 - Install-state endpoint returns helper version, local data policy, build manifest when packaged, and no local billing-secret authority.
 - License-readiness endpoint returns a persistent local install fingerprint and confirms the helper cannot grant access.
+- Preflight endpoint returns `okToRun`, source counts, template readiness, blockers/warnings, and no source text.
 - Template-profile endpoint returns `status: ready` for the smoke `.docx` fixture.
 - Template-profile endpoint detects `client_label` and `goals.objective`.
 - Saved-template endpoint stores and lists a local profile for the smoke `.docx` fixture.
@@ -66,6 +67,7 @@ powershell -NoProfile -ExecutionPolicy Bypass -File local-helpers/report-generat
 - Do not count a report draft as complete unless an actual `.docx` file exists on disk and is larger than 1000 bytes.
 - Do not count review as complete unless an actual `.json` file exists on disk and is larger than 100 bytes.
 - Do not count evidence review as complete unless an actual evidence-ledger `.json` exists on disk and the helper response does not return excerpt text.
+- Do not count preflight as complete unless a real local source fixture returns source counts and `sourceTextReturned: false`.
 - Do not count template support as complete unless the helper profiles a real `.docx` and detects the goal loop.
 - Do not count buyer template setup as complete unless the helper saves, lists, and runs from a saved profile ID.
 - Do not count alias mapping as complete unless a real `.docx` fixture with unsupported customer placeholder names renders through saved aliases without unsupported-field markers.

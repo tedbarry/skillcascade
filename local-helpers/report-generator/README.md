@@ -73,6 +73,8 @@ The smoke test verifies `/api/local-report-pilot/license-readiness`, including t
 
 The smoke test verifies that evidence excerpts are stored in the local evidence ledger while the helper response contains only sanitized evidence references.
 
+The smoke test verifies `/api/local-report-pilot/preflight`, including source file counts, unsupported file counts, template-profile readiness, and no source text in the response.
+
 ## Template Placeholders
 
 The helper supports these scalar placeholders:
@@ -166,6 +168,23 @@ Content-Type: application/json
   "templateProfileId": "tpl-agency-initial-assessment-template-123"
 }
 ```
+
+## Local Preflight
+
+Run preflight before generating a draft:
+
+```http
+POST http://127.0.0.1:4181/api/local-report-pilot/preflight
+Content-Type: application/json
+
+{
+  "sourceFolder": "C:\\path\\to\\client\\Assessment\\Initial",
+  "outputDir": "C:\\path\\to\\draft-output",
+  "templateProfileId": "tpl-agency-initial-assessment-template-123"
+}
+```
+
+Preflight validates the local source folder, counts supported and unsupported files, checks the selected template/profile, and returns blockers/warnings without extracting source text into the response.
 
 ## License Readiness
 
