@@ -4,6 +4,9 @@ import { api } from '../lib/api.js'
 import { useAuth } from '../contexts/AuthContext.jsx'
 
 const DEFAULT_HELPER_URL = import.meta.env.VITE_REPORT_GENERATOR_HELPER_URL || 'http://127.0.0.1:4181'
+const HELPER_DISCOVERY_HOST = '127.0.0.1'
+const HELPER_DISCOVERY_START_PORT = 4181
+const HELPER_DISCOVERY_END_PORT = 4199
 const HELPER_API_PREFIX = '/api/local-report-generator'
 const LEGACY_HELPER_API_PREFIX = '/api/local-report-pilot'
 
@@ -30,7 +33,7 @@ const setupSteps = [
   'Download the helper package.',
   'Unzip it on the Windows computer with the report files.',
   'Run Install-ReportGeneratorHelper.exe from the unzipped folder.',
-  'Return here and click Check setup.',
+  'Return here and click Check setup so SkillCascade finds it.',
 ]
 
 function StatusBadge({ children, tone = 'warm' }) {
@@ -119,6 +122,42 @@ async function fetchHelperJson(helperBase, endpoint, options = {}) {
   }
 
   throw lastError || new Error('Local helper request failed.')
+}
+
+function normalizeHelperBase(value) {
+  return (value || DEFAULT_HELPER_URL).trim().replace(/\/+$/, '')
+}
+
+function helperDiscoveryUrls(currentUrl) {
+  const urls = []
+  const addUrl = (url) => {
+    const normalized = normalizeHelperBase(url)
+    if (normalized && !urls.includes(normalized)) urls.push(normalized)
+  }
+
+  addUrl(currentUrl)
+  for (let port = HELPER_DISCOVERY_START_PORT; port <= HELPER_DISCOVERY_END_PORT; port += 1) {
+    addUrl(`http://${HELPER_DISCOVERY_HOST}:${port}`)
+  }
+
+  return urls
+}
+
+async function discoverHelperStatus(currentUrl) {
+  const urls = helperDiscoveryUrls(currentUrl)
+  let lastError = null
+
+  for (const url of urls) {
+    try {
+      const payload = await fetchHelperJson(url, '/status')
+      return { url, payload }
+    } catch (error) {
+      lastError = error
+    }
+  }
+
+  const detail = lastError ? ` Last error: ${readHelperError(lastError)}` : ''
+  throw new Error(`Local helper was not found. Start or install the helper on this computer, then click Check setup again.${detail}`)
 }
 
 function TemplateProfilePanel({ profile }) {
@@ -334,7 +373,7 @@ function HelperPackagePanel({ packageState, downloadState, helperStatus, onRefre
           <p className="text-xs font-semibold uppercase tracking-wide text-sage-700">Setup</p>
           <h2 className="mt-2 text-xl font-bold text-sage-950">Install the local helper</h2>
           <p className="mt-2 max-w-3xl text-sm leading-6 text-sage-800">
-            Install this small helper on the Windows computer that has access to the report files. It runs only on this computer and refuses to take over a local port already used by another app. Then come back here and check setup.
+            Install this small helper on the Windows computer that has access to the report files. It runs only on this computer, chooses a safe local address automatically, and does not take over anything another app is using. Then come back here and check setup.
           </p>
         </div>
         <StatusBadge tone={helperStatus.ok ? 'green' : packageState.ok ? 'blue' : packageState.loading ? 'warm' : 'red'}>
@@ -399,6 +438,7 @@ function HelperPackagePanel({ packageState, downloadState, helperStatus, onRefre
       {helperStatus.ok ? (
         <div className="mt-3 rounded-xl border border-sage-200 bg-white px-3 py-2 text-sm font-semibold text-sage-800">
           Setup is connected. You can create a report draft below.
+          {helperStatus.message ? <span className="block pt-1 text-xs font-medium text-sage-700">{helperStatus.message}</span> : null}
         </div>
       ) : null}
       {packageState.ok ? (
@@ -575,7 +615,7 @@ export default function ReportGeneratorPage() {
   const [showTemplateSettings, setShowTemplateSettings] = useState(false)
   const [helperPackageState, setHelperPackageState] = useState({ loading: true, ok: false, data: null, error: '', message: '' })
   const [downloadState, setDownloadState] = useState({ loading: false, error: '' })
-  const [helperStatus, setHelperStatus] = useState({ checked: false, loading: false, ok: false, data: null, error: '' })
+  const [helperStatus, setHelperStatus] = useState({ checked: false, loading: false, ok: false, data: null, error: '', discoveredUrl: '', message: '' })
   const [templateState, setTemplateState] = useState({ loading: false, profile: null, error: '' })
   const [savedTemplatesState, setSavedTemplatesState] = useState({ loading: false, saving: false, result: null, error: '', message: '' })
   const [seatClaimState, setSeatClaimState] = useState({ loading: false, data: null, error: '' })
@@ -591,7 +631,7 @@ export default function ReportGeneratorPage() {
     fieldAliases: {},
   })
 
-  const helperBase = useMemo(() => helperUrl.replace(/\/+$/, ''), [helperUrl])
+  const helperBase = useMemo(() => normalizeHelperBase(helperUrl), [helperUrl])
   const supportedTemplateFields = useMemo(() => {
     const helperFields = helperStatus.data?.supportedTemplateFields || []
     if (helperFields.length) return helperFields
@@ -680,13 +720,22 @@ export default function ReportGeneratorPage() {
   }
 
   async function checkHelper() {
-    setHelperStatus({ checked: true, loading: true, ok: false, data: null, error: '' })
+    setHelperStatus({ checked: true, loading: true, ok: false, data: null, error: '', discoveredUrl: '', message: '' })
     try {
-      const payload = await fetchHelperJson(helperBase, '/status')
-      setHelperStatus({ checked: true, loading: false, ok: true, data: payload, error: '' })
-      await loadSavedTemplates({ silent: true })
+      const result = await discoverHelperStatus(helperBase)
+      setHelperUrl(result.url)
+      setHelperStatus({
+        checked: true,
+        loading: false,
+        ok: true,
+        data: result.payload,
+        error: '',
+        discoveredUrl: result.url,
+        message: result.url !== helperBase ? 'Helper found automatically at a safe local address.' : '',
+      })
+      await loadSavedTemplates({ silent: true, baseUrl: result.url })
     } catch (error) {
-      setHelperStatus({ checked: true, loading: false, ok: false, data: null, error: readHelperError(error) })
+      setHelperStatus({ checked: true, loading: false, ok: false, data: null, error: readHelperError(error), discoveredUrl: '', message: '' })
     }
   }
 
@@ -749,10 +798,10 @@ export default function ReportGeneratorPage() {
     }
   }
 
-  async function loadSavedTemplates({ silent = false } = {}) {
+  async function loadSavedTemplates({ silent = false, baseUrl = helperBase } = {}) {
     setSavedTemplatesState((prev) => ({ ...prev, loading: true, error: '', message: silent ? prev.message : '' }))
     try {
-      const payload = await fetchHelperJson(helperBase, '/template-profiles')
+      const payload = await fetchHelperJson(baseUrl, '/template-profiles')
       setSavedTemplatesState((prev) => ({ ...prev, loading: false, result: payload.result, error: '' }))
     } catch (error) {
       setSavedTemplatesState((prev) => ({ ...prev, loading: false, error: readHelperError(error) }))
@@ -1042,7 +1091,7 @@ export default function ReportGeneratorPage() {
                   value={helperUrl}
                   onChange={setHelperUrl}
                   placeholder="http://127.0.0.1:4181"
-                  help="Only change this if support tells you to use a different local helper address."
+                  help="Usually this is found automatically. Only change this if support gives you a specific local helper address."
                 />
               </div>
             ) : null}

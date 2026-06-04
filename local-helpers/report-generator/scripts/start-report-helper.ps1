@@ -1,12 +1,14 @@
 [CmdletBinding()]
 param(
-  [int]$Port = 4181,
+  [int]$Port = 0,
   [switch]$InstallDependencies,
   [switch]$NoInstall,
   [switch]$Smoke
 )
 
 $ErrorActionPreference = 'Stop'
+$DefaultPort = 4181
+$DiscoveryPortEnd = 4199
 
 $ScriptDir = Split-Path -Parent $MyInvocation.MyCommand.Path
 $HelperRoot = Resolve-Path (Join-Path $ScriptDir '..')
@@ -21,6 +23,51 @@ $AppRoot = $AppRootCandidates | Where-Object {
 
 if (-not $AppRoot) {
   throw "Could not find Report Generator helper app under: $HelperRoot"
+}
+
+function Get-HelperConfigPath {
+  param([string]$Root)
+  Join-Path $Root 'helper-config.json'
+}
+
+function Read-ConfiguredHelperPort {
+  param([string]$ConfigPath)
+
+  if (-not (Test-Path -LiteralPath $ConfigPath)) {
+    return $null
+  }
+
+  try {
+    $config = Get-Content -LiteralPath $ConfigPath -Raw | ConvertFrom-Json
+    $configuredPort = [int]$config.port
+    if ($configuredPort -gt 0) {
+      return $configuredPort
+    }
+  } catch {
+    Write-Host "Ignoring unreadable helper port config: $ConfigPath"
+  }
+
+  return $null
+}
+
+function Save-ConfiguredHelperPort {
+  param(
+    [string]$ConfigPath,
+    [int]$SelectedPort,
+    [int]$PreferredPort
+  )
+
+  $configDir = Split-Path -Parent $ConfigPath
+  New-Item -ItemType Directory -Force -Path $configDir | Out-Null
+  Set-Content -LiteralPath $ConfigPath -Encoding ASCII -Value (@{
+    port = $SelectedPort
+    preferredPort = $PreferredPort
+    host = '127.0.0.1'
+    helperUrl = "http://127.0.0.1:$SelectedPort"
+    portDiscoveryStart = $DefaultPort
+    portDiscoveryEnd = $DiscoveryPortEnd
+    updatedAt = (Get-Date).ToUniversalTime().ToString('o')
+  } | ConvertTo-Json -Depth 3)
 }
 
 function Get-PortOwnerDescription {
@@ -42,21 +89,69 @@ function Get-PortOwnerDescription {
   return 'another local process'
 }
 
-function Assert-LoopbackPortAvailable {
+function Test-LoopbackPortAvailable {
   param([int]$PortToCheck)
 
   $listener = $null
   try {
     $listener = [System.Net.Sockets.TcpListener]::new([System.Net.IPAddress]::Loopback, $PortToCheck)
     $listener.Start()
+    return $true
   } catch {
-    $owner = Get-PortOwnerDescription -PortToCheck $PortToCheck
-    throw "Port $PortToCheck is already in use by $owner. SkillCascade will not take over a port that another local app is using. Close that app, restart the computer, or start this helper with a different port and update Advanced setup on the Report Generator page."
+    return $false
   } finally {
     if ($listener) {
       $listener.Stop()
     }
   }
+}
+
+function Find-AvailableLoopbackPort {
+  param(
+    [int]$PreferredPort,
+    [int]$PortRangeStart,
+    [int]$PortRangeEnd
+  )
+
+  $candidates = New-Object System.Collections.Generic.List[int]
+  if ($PreferredPort -gt 0) {
+    $candidates.Add($PreferredPort)
+  }
+  for ($candidate = $PortRangeStart; $candidate -le $PortRangeEnd; $candidate += 1) {
+    if (-not $candidates.Contains($candidate)) {
+      $candidates.Add($candidate)
+    }
+  }
+
+  foreach ($candidate in $candidates) {
+    if (Test-LoopbackPortAvailable -PortToCheck $candidate) {
+      return $candidate
+    }
+  }
+
+  $owner = if ($PreferredPort -gt 0) { Get-PortOwnerDescription -PortToCheck $PreferredPort } else { 'another local process' }
+  throw "No safe local helper port is available. SkillCascade checked $PortRangeStart-$PortRangeEnd without taking over any existing local app. Preferred port $PreferredPort is being used by $owner. Close an unused local app or contact support."
+}
+
+function Find-RunningSkillCascadeHelper {
+  param(
+    [int]$PortRangeStart,
+    [int]$PortRangeEnd
+  )
+
+  for ($candidate = $PortRangeStart; $candidate -le $PortRangeEnd; $candidate += 1) {
+    try {
+      $status = Invoke-RestMethod -Uri "http://127.0.0.1:$candidate/api/local-report-generator/status" -Method Get -TimeoutSec 1 -ErrorAction Stop
+      if (($status.ok -eq $true) -and ($status.mode -eq 'skillcascade-report-generator-release-v1')) {
+        return [pscustomobject]@{
+          Port = $candidate
+          HelperUrl = if ($status.helperUrl) { $status.helperUrl } else { "http://127.0.0.1:$candidate" }
+        }
+      }
+    } catch {}
+  }
+
+  return $null
 }
 
 $NodeModules = Join-Path $AppRoot 'node_modules'
@@ -96,9 +191,29 @@ try {
     exit $LASTEXITCODE
   }
 
-  Assert-LoopbackPortAvailable -PortToCheck $Port
-  $env:PORT = [string]$Port
-  Write-Host "Starting SkillCascade Report Generator helper at http://127.0.0.1:$Port"
+  $ConfigPath = Get-HelperConfigPath -Root $HelperRoot
+  $ConfiguredPort = Read-ConfiguredHelperPort -ConfigPath $ConfigPath
+  $PreferredPort = if ($Port -gt 0) {
+    $Port
+  } elseif ($ConfiguredPort) {
+    $ConfiguredPort
+  } else {
+    $DefaultPort
+  }
+  $RunningHelper = Find-RunningSkillCascadeHelper -PortRangeStart $DefaultPort -PortRangeEnd $DiscoveryPortEnd
+  if ($RunningHelper) {
+    Save-ConfiguredHelperPort -ConfigPath $ConfigPath -SelectedPort $RunningHelper.Port -PreferredPort $PreferredPort
+    Write-Host "SkillCascade Report Generator helper is already running at $($RunningHelper.HelperUrl)"
+    exit 0
+  }
+
+  $SelectedPort = Find-AvailableLoopbackPort -PreferredPort $PreferredPort -PortRangeStart $DefaultPort -PortRangeEnd $DiscoveryPortEnd
+  if ($SelectedPort -ne $PreferredPort) {
+    Write-Host "Preferred helper port $PreferredPort is busy. Using safe local port $SelectedPort instead."
+  }
+  Save-ConfiguredHelperPort -ConfigPath $ConfigPath -SelectedPort $SelectedPort -PreferredPort $PreferredPort
+  $env:PORT = [string]$SelectedPort
+  Write-Host "Starting SkillCascade Report Generator helper at http://127.0.0.1:$SelectedPort"
   & $NodeCommand (Join-Path $AppRoot 'src\server.js')
   exit $LASTEXITCODE
 } finally {

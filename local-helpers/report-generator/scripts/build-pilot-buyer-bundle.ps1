@@ -78,6 +78,8 @@ $manifest = [ordered]@{
   smokeRun = (-not $NoSmoke)
   skillCascadeRoute = 'https://www.skillcascade.com/report-generator'
   localHelperDefaultUrl = 'http://127.0.0.1:4181'
+  localHelperDiscoveryPorts = '4181-4199'
+  portCollisionPolicy = 'The helper tries 4181 first, then chooses the next available loopback port in 4181-4199 without taking over a port already used by another local app. The SkillCascade page auto-detects the selected helper port.'
   phiBoundary = 'Source folders, templates, generated drafts, review JSON, and evidence ledgers stay on the buyer workstation.'
   reviewGates = @(
     'BCBA review required before use.',
@@ -125,6 +127,12 @@ Local files created by the helper:
 - Review summary JSON
 - Evidence ledger JSON
 - Saved template profile JSON
+
+Port safety:
+- The helper tries http://127.0.0.1:4181 first.
+- If another local app is already using that address, setup chooses the next available safe local address.
+- SkillCascade finds the helper automatically when the buyer clicks Check setup.
+- The helper never takes over a port already used by another local app.
 
 Privacy boundary:
 - Source folders, template paths, output folders, client names, document text, generated drafts, review JSON, and evidence ledgers stay local.

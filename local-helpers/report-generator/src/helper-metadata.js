@@ -17,6 +17,14 @@ export const LOCAL_DATA_POLICY = {
   updatesPreserveCustomerData: true,
 }
 
+export const LOCAL_PORT_POLICY = {
+  host: '127.0.0.1',
+  defaultPort: 4181,
+  discoveryStart: 4181,
+  discoveryEnd: 4199,
+  collisionBehavior: 'choose-next-available-loopback-port',
+}
+
 export async function readBuildManifest() {
   try {
     return JSON.parse(await readFile(buildManifestPath, 'utf8'))
@@ -32,6 +40,7 @@ export async function helperInstallState() {
     helperVersion: HELPER_VERSION,
     buildManifest: await readBuildManifest(),
     localDataPolicy: LOCAL_DATA_POLICY,
+    localPortPolicy: LOCAL_PORT_POLICY,
     updatePolicy: {
       replaceAppFilesOnly: true,
       preserveCustomerData: true,

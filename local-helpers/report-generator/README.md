@@ -37,15 +37,16 @@ Default URL:
 http://127.0.0.1:4181
 ```
 
-The SkillCascade page at `/report-generator` defaults to this helper URL.
+The SkillCascade page at `/report-generator` tries this helper URL first, then auto-detects the helper across the safe local range if this address is busy.
 
 Port safety:
 
 - The helper uses localhost only; it does not expose the service on the network.
-- The default address is `http://127.0.0.1:4181` so the browser knows where to find it.
-- Setup and startup check the chosen port before launching.
-- If another local app is already using that port, the helper refuses to start and prints the owning process when Windows exposes it.
-- To use a different port, start the helper with `-Port <port>` and enter the matching helper address in Advanced setup on the Report Generator page.
+- The helper tries `http://127.0.0.1:4181` first.
+- If another local app is already using that address, setup/startup chooses the next available localhost port in `4181-4199`.
+- The selected address is saved in `helper-config.json` beside the installed helper app.
+- The SkillCascade Report Generator page finds the selected helper address automatically when the user clicks Check setup.
+- The helper never takes over a port already used by another local app.
 
 Windows launcher:
 
@@ -53,7 +54,7 @@ Windows launcher:
 powershell -NoProfile -ExecutionPolicy Bypass -File local-helpers/report-generator/scripts/start-report-helper.ps1
 ```
 
-Run on a custom port:
+Prefer a custom port:
 
 ```powershell
 powershell -NoProfile -ExecutionPolicy Bypass -File local-helpers/report-generator/scripts/start-report-helper.ps1 -Port 4182

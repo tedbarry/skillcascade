@@ -11,6 +11,12 @@ import { localLicenseReadiness } from './license-readiness.js'
 const rootDir = fileURLToPath(new URL('.', import.meta.url))
 const webDir = join(rootDir, 'web')
 const port = Number(process.env.PORT || 4181)
+const portDiscovery = {
+  host: '127.0.0.1',
+  defaultPort: 4181,
+  startPort: 4181,
+  endPort: 4199,
+}
 const defaultAllowedOrigins = [
   'http://localhost:5173',
   'http://127.0.0.1:5173',
@@ -108,6 +114,9 @@ createServer(async (req, res) => {
         ok: true,
         localOnly: true,
         mode: 'skillcascade-report-generator-release-v1',
+        helperUrl: `http://127.0.0.1:${port}`,
+        port,
+        portDiscovery,
         helperVersion: installState.helperVersion,
         installState,
         licenseReadiness,

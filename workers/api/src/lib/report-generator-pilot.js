@@ -128,6 +128,13 @@ export function buildReportGeneratorOnboarding({ profile, userCanEdit = false } 
     },
     helper: {
       defaultUrl: 'http://127.0.0.1:4181',
+      discovery: {
+        host: '127.0.0.1',
+        startPort: 4181,
+        endPort: 4199,
+        browserAutoDetects: true,
+        collisionBehavior: 'helper chooses the next available loopback port without taking over another local app',
+      },
       requiredEndpoints: [
         '/api/local-report-generator/status',
         '/api/local-report-generator/install-state',
