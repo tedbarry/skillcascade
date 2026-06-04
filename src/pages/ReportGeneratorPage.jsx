@@ -101,7 +101,7 @@ function readHelperError(error) {
     return 'Local helper check timed out. Make sure the helper is running on this computer.'
   }
   if (/Failed to fetch|NetworkError|Load failed/i.test(error.message || '')) {
-    return 'The browser could not reach the local helper. Start the helper, then allow Chrome or Edge local network access if the browser asks.'
+    return 'The browser could not reach the local helper. Start the helper, then allow Chrome or Edge Local Network Access if the browser asks. If it still fails, open the helper address directly to confirm it is running.'
   }
   return error.message || 'Local helper request failed.'
 }
@@ -134,7 +134,6 @@ async function fetchHelperJson(helperBase, endpoint, options = {}) {
     const fetchOptions = { ...requestOptions }
     if (isLoopbackHelper) {
       fetchOptions.credentials = fetchOptions.credentials || 'include'
-      fetchOptions.targetAddressSpace = fetchOptions.targetAddressSpace || 'local'
     }
     try {
       const response = await withTimeout(fetch(`${helperBase}${path}`, fetchOptions), timeoutMs)
@@ -391,7 +390,7 @@ function TemplateAliasEditor({ profile, fieldAliases, supportedFields, onChange 
   )
 }
 
-function HelperPackagePanel({ packageState, downloadState, helperStatus, onRefresh, onDownload, onCheck }) {
+function HelperPackagePanel({ packageState, downloadState, helperStatus, helperUrl, onRefresh, onDownload, onCheck }) {
   const readyToDownload = packageState.ok && !downloadState.loading
   const packageLabel = packageState.data?.filename || 'Report Generator helper'
   const sizeLabel = packageState.data?.size ? ` (${formatFileSize(packageState.data.size)})` : ''
@@ -438,6 +437,14 @@ function HelperPackagePanel({ packageState, downloadState, helperStatus, onRefre
         >
           {helperStatus.loading ? 'Checking setup...' : 'Check setup'}
         </button>
+        <a
+          href={helperUrl}
+          target="_blank"
+          rel="noreferrer"
+          className="inline-flex min-h-[44px] items-center rounded-full border border-blue-200 bg-blue-50 px-5 py-2 text-sm font-semibold text-blue-800 shadow-sm hover:bg-blue-100"
+        >
+          Open local helper
+        </a>
         <button
           type="button"
           onClick={onRefresh}
@@ -1081,6 +1088,7 @@ export default function ReportGeneratorPage() {
             packageState={helperPackageState}
             downloadState={downloadState}
             helperStatus={helperStatus}
+            helperUrl={helperBase}
             onRefresh={loadHelperPackageStatus}
             onDownload={downloadHelperPackage}
             onCheck={checkHelper}
