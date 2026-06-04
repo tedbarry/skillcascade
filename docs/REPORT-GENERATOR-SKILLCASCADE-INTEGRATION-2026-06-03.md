@@ -55,6 +55,12 @@ Build a buyer package:
 powershell -NoProfile -ExecutionPolicy Bypass -File local-helpers/report-generator/scripts/build-windows-package.ps1 -ReuseInstalledDependencies
 ```
 
+Build a buyer pilot handoff bundle:
+
+```powershell
+powershell -NoProfile -ExecutionPolicy Bypass -File local-helpers/report-generator/scripts/build-pilot-buyer-bundle.ps1 -ReuseInstalledDependencies
+```
+
 ## Frontend Wiring
 
 File:
@@ -148,6 +154,7 @@ Current pilot:
 - Server-side install claiming is handled by `/api/report-generator/seat-claims`; accepted fields are limited to helper readiness metadata.
 - Saved template profiles are stored on the workstation in the helper data folder, not in SkillCascade cloud data.
 - The packaged-helper path now supports local SkillCascade origins and the live SkillCascade origin through a narrow CORS allowlist.
+- The buyer pilot bundle includes only non-PHI installation artifacts: helper zip, checksum, manifest, README-first instructions, route/helper URLs, PHI boundary, and review gates.
 - The helper handles `OPTIONS` preflight and returns private-network access headers for the website-to-localhost bridge.
 
 Future cloud-integrated path:
@@ -200,6 +207,8 @@ npm --prefix local-helpers/report-generator run smoke -> evidence ledger created
 build-windows-package.ps1 -> distributable helper folder and zip with bundled node.exe and Install-ReportGeneratorHelper.exe
 packaged start-report-helper.ps1 -Smoke -NoInstall -> passed
 Install-ReportGeneratorHelper.exe -PreviewOnly -> shows install/update/startup actions without writing
+build-pilot-buyer-bundle.ps1 -NoSmoke -> buyer handoff folder, helper zip, checksum, manifest, and README-FIRST created
+build-pilot-buyer-bundle.ps1 -> buyer handoff folder created and packaged-helper smoke passed
 ```
 
 Local route smoke:

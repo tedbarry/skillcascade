@@ -263,6 +263,41 @@ The package includes:
 - `Start-ReportGeneratorHelper.cmd` for manual startup.
 - Current-user startup wrapper support.
 
+## Pilot Buyer Bundle
+
+Build the buyer-facing pilot handoff folder from the SkillCascade repo:
+
+```powershell
+powershell -NoProfile -ExecutionPolicy Bypass -File local-helpers/report-generator/scripts/build-pilot-buyer-bundle.ps1 -ReuseInstalledDependencies
+```
+
+This creates:
+
+```text
+local-helpers/report-generator/dist/SkillCascadeReportGeneratorPilot-<version>/
+```
+
+The pilot bundle contains:
+
+- The helper `.zip`.
+- `checksums.sha256.txt` for the helper zip.
+- `pilot-manifest.json` with the route, helper URL, smoke flag, PHI boundary, and review gates.
+- `README-FIRST.txt` with the buyer setup sequence.
+
+Run a full packaged-helper smoke while building the bundle:
+
+```powershell
+powershell -NoProfile -ExecutionPolicy Bypass -File local-helpers/report-generator/scripts/build-pilot-buyer-bundle.ps1 -ReuseInstalledDependencies
+```
+
+Skip the packaged smoke only for a fast packaging check:
+
+```powershell
+powershell -NoProfile -ExecutionPolicy Bypass -File local-helpers/report-generator/scripts/build-pilot-buyer-bundle.ps1 -ReuseInstalledDependencies -NoSmoke
+```
+
+The bundle builder stages the helper package in a short temporary directory before copying the final zip into the buyer folder. That avoids Windows long-path failures when dependencies are copied into a nested package tree.
+
 Preview the EXE installer without writing files:
 
 ```powershell
