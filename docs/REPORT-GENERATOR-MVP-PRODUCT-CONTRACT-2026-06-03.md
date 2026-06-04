@@ -13,6 +13,7 @@ This is not a generic chatbot and not a cloud file uploader. The product promise
 - Protected SkillCascade dashboard: existing auth, subscription, and workflow-pack gate control access.
 - Local helper sidecar: reads PHI-capable local folders and templates on the workstation.
 - Template profile: inspects customer `.docx` placeholders before generation.
+- Saved template profile: stores reusable customer template setup in the local helper data folder.
 - Source packet: recursively scans supported local source files and excludes generated output folders.
 - Clinical draft: creates report sections and goals from source-supported evidence only.
 - Review summary: writes a local JSON QA artifact with source filenames, unsupported files, missing fields, template warnings, and safety flags.
@@ -34,6 +35,7 @@ Custom product layer:
 - Goal-selection rules and data-type metadata.
 - Local helper CORS/private-network bridge for SkillCascade-to-localhost use.
 - Template readiness model for supported, unsupported, missing, and goal-loop placeholders.
+- Local saved-profile store for reusable customer template setup.
 - Buyer-facing Report Generator workflow UI.
 
 ## MVP Acceptance Gates
@@ -43,6 +45,7 @@ Custom product layer:
 - The local helper can be installed and run from `local-helpers/report-generator`.
 - The helper status endpoint returns the local-only safety contract.
 - The helper template-profile endpoint inspects a local `.docx` template and returns supported tags, unsupported tags, missing useful tags, and goal-loop readiness.
+- The helper can save, list, and reuse a local customer template profile without uploading it to SkillCascade.
 - The helper run endpoint generates a local `.docx` draft and local review JSON.
 - The browser API response does not return extracted source text.
 - Smoke tests prove no live write, auto-sign, or auto-submit flags.
@@ -55,4 +58,4 @@ Custom product layer:
 - One-click signing or submission.
 - Full AI clinical reasoning parity with the manual Codex workflow.
 - Packaged `.exe` installer with auto-update and licensing.
-- Agency-specific template mapping UI beyond placeholder profiling.
+- Agency-specific alias/mapping editor beyond saved placeholder profiles.

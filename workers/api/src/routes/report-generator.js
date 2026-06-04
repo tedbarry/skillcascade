@@ -13,6 +13,7 @@ const REPORT_GENERATOR_CONTRACT = {
     defaultUrl: 'http://127.0.0.1:4181',
     statusEndpoint: '/api/local-report-pilot/status',
     templateProfileEndpoint: '/api/local-report-pilot/template-profile',
+    templateProfilesEndpoint: '/api/local-report-pilot/template-profiles',
     runEndpoint: '/api/local-report-pilot/run',
     readsLocalFolders: true,
     uploadsSourceFilesToSkillCascade: false,
@@ -24,6 +25,7 @@ const REPORT_GENERATOR_CONTRACT = {
   },
   templateProfile: {
     mode: 'local-docx-inspection',
+    savedProfileMode: 'local-workstation-json-store',
     supportedTemplateTags: [
       'report_title',
       'client_label',
@@ -49,6 +51,7 @@ const REPORT_GENERATOR_CONTRACT = {
       'goals.graphs',
     ],
     unsupportedTagBehavior: 'Flag in local profile and render review markers for unmapped placeholders.',
+    savedProfileBehavior: 'Customer template paths and profile summaries are saved only in the local helper data folder.',
   },
   reviewGates: [
     'BCBA review required before report finalization.',

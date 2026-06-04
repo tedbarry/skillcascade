@@ -35,7 +35,8 @@ powershell -NoProfile -ExecutionPolicy Bypass -File local-helpers/report-generat
 - Helper status endpoint returns `localOnly: true`.
 - Template-profile endpoint returns `status: ready` for the smoke `.docx` fixture.
 - Template-profile endpoint detects `client_label` and `goals.objective`.
-- Run endpoint returns `templateMode: placeholder-template` when a template path is supplied.
+- Saved-template endpoint stores and lists a local profile for the smoke `.docx` fixture.
+- Run endpoint returns `templateMode: placeholder-template` when a saved template profile is supplied.
 - Draft `.docx` and review `.json` are written locally.
 - API response strips source text from `sourcePacket.sources`.
 - QA flags stay false for `liveWriteAttempted`, `autoSignAttempted`, and `autoSubmitAttempted`.
@@ -47,4 +48,5 @@ powershell -NoProfile -ExecutionPolicy Bypass -File local-helpers/report-generat
 - Do not count a report draft as complete unless an actual `.docx` file exists on disk and is larger than 1000 bytes.
 - Do not count review as complete unless an actual `.json` file exists on disk and is larger than 100 bytes.
 - Do not count template support as complete unless the helper profiles a real `.docx` and detects the goal loop.
+- Do not count buyer template setup as complete unless the helper saves, lists, and runs from a saved profile ID.
 - Do not count safety as complete unless no-sign, no-submit, and no-live-write flags are verified in the smoke output.

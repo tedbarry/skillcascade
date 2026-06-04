@@ -72,6 +72,7 @@ Responsibilities:
 - Calls the protected SkillCascade API status endpoint.
 - Checks the local helper status endpoint.
 - Profiles the local customer `.docx` template through the helper before draft generation.
+- Saves and selects reusable local customer template profiles through the helper.
 - Sends local source folder, output folder, optional template path, and client label only to the local helper URL.
 - Displays template readiness, supported tags, unsupported tags, missing useful tags, local output path, review JSON path, goal count, missing-field count, and QA warnings returned by the helper.
 
@@ -119,6 +120,8 @@ Current pilot:
 - Local source-folder reading is handled by the local helper.
 - The SkillCascade page passes local path strings only to the helper URL selected by the user.
 - Local template profiling is handled by the local helper through `/api/local-report-pilot/template-profile`.
+- Reusable template profile setup is handled by the local helper through `/api/local-report-pilot/template-profiles`.
+- Saved template profiles are stored on the workstation in the helper data folder, not in SkillCascade cloud data.
 - The packaged-helper path now supports local SkillCascade origins and the live SkillCascade origin through a narrow CORS allowlist.
 - The helper handles `OPTIONS` preflight and returns private-network access headers for the website-to-localhost bridge.
 
@@ -163,6 +166,7 @@ GET /api/local-report-pilot/status from https://www.skillcascade.com -> 200 with
 OPTIONS /api/local-report-pilot/run from https://www.skillcascade.com -> 204 with private-network header
 npm --prefix local-helpers/report-generator run smoke -> status 200, preflight 204, run 200, 8 goals, local DOCX and review JSON created
 npm --prefix local-helpers/report-generator run smoke -> template profile 200, template status ready, detected goals.objective
+npm --prefix local-helpers/report-generator run smoke -> saved template profile count 1, draft generated from saved profile ID
 ```
 
 Local route smoke:
@@ -174,8 +178,7 @@ http://127.0.0.1:5173/reports -> 200 app shell
 
 ## Next Step
 
-Build the customer template manager:
+Build the next customer template manager layer:
 
-- Add customer template profiles and a guided template-intake screen so pilot setup does not require code edits.
 - Add saved agency mappings, aliases, and template versions after the first buyer's exact template is profiled.
 - Add a packaged installer/update/licensing layer after the local helper workflow is stable.

@@ -4,6 +4,7 @@ import { extname, join, normalize } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { runLocalReportPilot } from './local-report-pilot.js'
 import { profileTemplate, SUPPORTED_TEMPLATE_FIELDS } from './template-profile.js'
+import { listTemplateProfiles, saveTemplateProfile } from './template-profile-store.js'
 
 const rootDir = fileURLToPath(new URL('.', import.meta.url))
 const webDir = join(rootDir, 'web')
@@ -74,6 +75,8 @@ createServer(async (req, res) => {
   try {
     const method = req.method || 'GET'
     const url = req.url || '/'
+    const requestUrl = new URL(url, `http://${req.headers.host || '127.0.0.1'}`)
+    const pathname = requestUrl.pathname
 
     if (method === 'OPTIONS') {
       const statusCode = req.headers.origin && !Object.keys(corsHeaders).length ? 403 : 204
@@ -82,7 +85,7 @@ createServer(async (req, res) => {
       return
     }
 
-    if (url === '/api/local-report-pilot/status') {
+    if (pathname === '/api/local-report-pilot/status') {
       sendJson(res, {
         ok: true,
         localOnly: true,
@@ -93,6 +96,7 @@ createServer(async (req, res) => {
         output: 'editable-docx',
         endpoints: {
           templateProfile: '/api/local-report-pilot/template-profile',
+          templateProfiles: '/api/local-report-pilot/template-profiles',
           run: '/api/local-report-pilot/run',
         },
         supportedTemplateFields: SUPPORTED_TEMPLATE_FIELDS,
@@ -110,7 +114,7 @@ createServer(async (req, res) => {
       return
     }
 
-    if (url === '/api/local-report-pilot/template-profile' && method === 'POST') {
+    if (pathname === '/api/local-report-pilot/template-profile' && method === 'POST') {
       try {
         const body = await readJsonBody(req)
         const profile = await profileTemplate(body)
@@ -121,7 +125,28 @@ createServer(async (req, res) => {
       return
     }
 
-    if (url === '/api/local-report-pilot/run' && method === 'POST') {
+    if (pathname === '/api/local-report-pilot/template-profiles' && method === 'GET') {
+      try {
+        const result = await listTemplateProfiles()
+        sendJson(res, { ok: true, result }, corsHeaders)
+      } catch (error) {
+        sendError(res, 400, error.message, corsHeaders)
+      }
+      return
+    }
+
+    if (pathname === '/api/local-report-pilot/template-profiles' && method === 'POST') {
+      try {
+        const body = await readJsonBody(req)
+        const result = await saveTemplateProfile(body)
+        sendJson(res, { ok: true, result }, corsHeaders)
+      } catch (error) {
+        sendError(res, 400, error.message, corsHeaders)
+      }
+      return
+    }
+
+    if (pathname === '/api/local-report-pilot/run' && method === 'POST') {
       try {
         const body = await readJsonBody(req)
         const result = await runLocalReportPilot(body)

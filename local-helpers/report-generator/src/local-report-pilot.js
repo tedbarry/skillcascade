@@ -17,6 +17,7 @@ import {
   WidthType,
 } from 'docx'
 import { profileTemplate } from './template-profile.js'
+import { getTemplateProfile } from './template-profile-store.js'
 
 const SUPPORTED_SOURCE_EXTENSIONS = new Set(['.docx', '.txt', '.md'])
 const SKIP_DIRECTORY_NAMES = new Set(['.git', 'node_modules', 'report-pilot-output', 'verification-output'])
@@ -471,6 +472,7 @@ export async function runLocalReportPilot({
   clientLabel = 'Local Pilot Client',
   reportTitle = 'ABA Initial Assessment Draft',
   templatePath = '',
+  templateProfileId = '',
 } = {}) {
   if (!sourceFolder) throw new Error('sourceFolder is required')
   const resolvedOutputDir = resolve(outputDir || join(sourceFolder, 'report-pilot-output'))
@@ -479,7 +481,9 @@ export async function runLocalReportPilot({
   const sourcePacket = await scanLocalSourceFolder(sourceFolder, { excludePaths: [resolvedOutputDir] })
   const clinicalProfile = buildLocalClinicalProfile({ clientLabel, sources: sourcePacket.sources })
   const goalPlan = buildLocalGoalPlan({ sources: sourcePacket.sources })
-  const templateProfile = templatePath ? await profileTemplate({ templatePath }) : null
+  const savedTemplateProfile = templateProfileId ? await getTemplateProfile(templateProfileId) : null
+  const resolvedTemplatePath = savedTemplateProfile?.templatePath || templatePath
+  const templateProfile = resolvedTemplatePath ? await profileTemplate({ templatePath: resolvedTemplatePath }) : null
   const generatedAt = new Date().toISOString()
   const safeClient = clientLabel.replace(/[^a-z0-9]+/gi, '-').replace(/^-|-$/g, '') || 'client'
   const outputPath = join(resolvedOutputDir, `${safeClient}-report-draft.docx`)
@@ -497,9 +501,11 @@ export async function runLocalReportPilot({
     clinicalProfile,
     goalPlan,
     outputPath,
-    templatePath: templatePath ? resolve(templatePath) : '',
+    templatePath: resolvedTemplatePath ? resolve(resolvedTemplatePath) : '',
+    templateProfileId: savedTemplateProfile?.id || '',
+    templateProfileLabel: savedTemplateProfile?.label || '',
     templateProfile,
-    templateMode: templatePath ? 'placeholder-template' : 'generated-docx',
+    templateMode: resolvedTemplatePath ? 'placeholder-template' : 'generated-docx',
     qa: {
       status: 'ready-for-bcba-review',
       blockers: [],
@@ -515,8 +521,8 @@ export async function runLocalReportPilot({
     },
   }
 
-  if (templatePath) {
-    await writePlaceholderTemplateDocx({ templatePath, outputPath, job })
+  if (resolvedTemplatePath) {
+    await writePlaceholderTemplateDocx({ templatePath: resolvedTemplatePath, outputPath, job })
   } else {
     await writeGeneratedDocx({ outputPath, job })
   }
@@ -534,6 +540,8 @@ export async function runLocalReportPilot({
     })),
     unsupportedFiles: sourcePacket.unsupportedFiles,
     templateProfile: templateProfile ? {
+      savedTemplateProfileId: savedTemplateProfile?.id || '',
+      savedTemplateProfileLabel: savedTemplateProfile?.label || '',
       status: templateProfile.status,
       filename: templateProfile.filename,
       tagCount: templateProfile.tagCount,

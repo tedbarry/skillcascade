@@ -1,5 +1,6 @@
 import assert from 'node:assert/strict'
 import { spawn } from 'node:child_process'
+import { mkdtempSync } from 'node:fs'
 import { mkdir, mkdtemp, stat, writeFile } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
 import { dirname, join } from 'node:path'
@@ -10,11 +11,12 @@ const packageRoot = dirname(dirname(fileURLToPath(import.meta.url)))
 const port = Number(process.env.REPORT_HELPER_SMOKE_PORT || 4199)
 const baseUrl = `http://127.0.0.1:${port}`
 const origin = 'http://127.0.0.1:5173'
+const dataDir = mkdtempSync(join(tmpdir(), 'skillcascade-report-helper-data-'))
 
 function startServer() {
   return spawn(process.execPath, ['src/server.js'], {
     cwd: packageRoot,
-    env: { ...process.env, PORT: String(port) },
+    env: { ...process.env, PORT: String(port), REPORT_HELPER_DATA_DIR: dataDir },
     stdio: ['ignore', 'pipe', 'pipe'],
   })
 }
@@ -114,6 +116,29 @@ try {
   assert.ok(templateProfilePayload.profile.supportedTags.includes('client_label'))
   assert.ok(templateProfilePayload.profile.supportedTags.includes('goals.objective'))
 
+  const saveTemplateProfileResponse = await fetch(`${baseUrl}/api/local-report-pilot/template-profiles`, {
+    method: 'POST',
+    headers: {
+      Origin: origin,
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify({ templatePath, label: 'Smoke Customer Template' }),
+  })
+  assert.equal(saveTemplateProfileResponse.status, 200)
+  const saveTemplateProfilePayload = await saveTemplateProfileResponse.json()
+  assert.equal(saveTemplateProfilePayload.ok, true)
+  assert.equal(saveTemplateProfilePayload.result.label, 'Smoke Customer Template')
+  assert.equal(saveTemplateProfilePayload.result.profile.status, 'ready')
+
+  const savedTemplateProfilesResponse = await fetch(`${baseUrl}/api/local-report-pilot/template-profiles`, {
+    headers: { Origin: origin },
+  })
+  assert.equal(savedTemplateProfilesResponse.status, 200)
+  const savedTemplateProfilesPayload = await savedTemplateProfilesResponse.json()
+  assert.equal(savedTemplateProfilesPayload.ok, true)
+  assert.equal(savedTemplateProfilesPayload.result.profileCount, 1)
+  assert.equal(savedTemplateProfilesPayload.result.profiles[0].id, saveTemplateProfilePayload.result.id)
+
   const runResponse = await fetch(`${baseUrl}/api/local-report-pilot/run`, {
     method: 'POST',
     headers: {
@@ -125,7 +150,7 @@ try {
       outputDir,
       clientLabel: 'Pilot Client',
       reportTitle: 'SkillCascade Local Helper Smoke Draft',
-      templatePath,
+      templateProfileId: saveTemplateProfilePayload.result.id,
     }),
   })
   assert.equal(runResponse.status, 200)
@@ -137,6 +162,8 @@ try {
   assert.equal(runPayload.result.qa.autoSignAttempted, false)
   assert.equal(runPayload.result.qa.autoSubmitAttempted, false)
   assert.equal(runPayload.result.templateMode, 'placeholder-template')
+  assert.equal(runPayload.result.templateProfileId, saveTemplateProfilePayload.result.id)
+  assert.equal(runPayload.result.templateProfileLabel, 'Smoke Customer Template')
   assert.equal(runPayload.result.templateProfile.status, 'ready')
   assert.equal(runPayload.result.sourcePacket.sources.some((source) => 'text' in source), false)
   assert.equal(runPayload.result.sourcePacket.unsupportedFiles.some((source) => source.filename === 'legacy-report.doc'), true)
@@ -152,6 +179,7 @@ try {
     preflightCode: preflightResponse.status,
     templateProfileCode: templateProfileResponse.status,
     templateProfileStatus: templateProfilePayload.profile.status,
+    savedTemplateProfileCount: savedTemplateProfilesPayload.result.profileCount,
     runCode: runResponse.status,
     goalCount: runPayload.result.goalPlan.goals.length,
     outputCreated: true,

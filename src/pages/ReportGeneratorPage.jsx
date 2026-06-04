@@ -121,6 +121,66 @@ function TemplateProfilePanel({ profile }) {
   )
 }
 
+function SavedTemplateProfilesPanel({ state, activeId, onRefresh, onSelect }) {
+  const profiles = state.result?.profiles || []
+
+  return (
+    <div className="mt-5 rounded-xl border border-blue-200 bg-blue-50 p-4">
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+        <div>
+          <p className="text-xs font-semibold uppercase tracking-wide text-blue-700">Saved local templates</p>
+          <h3 className="mt-1 text-base font-bold text-blue-950">Reusable customer template profiles</h3>
+          <p className="mt-1 text-sm leading-6 text-blue-900">
+            Saved profiles stay on this workstation and let the same customer template be reused without profiling from scratch each run.
+          </p>
+        </div>
+        <button
+          type="button"
+          onClick={onRefresh}
+          className="min-h-[40px] rounded-full border border-blue-200 bg-white px-4 py-2 text-xs font-semibold text-blue-800 hover:bg-blue-100"
+        >
+          {state.loading ? 'Refreshing...' : 'Refresh'}
+        </button>
+      </div>
+
+      {state.error ? (
+        <div className="mt-3 rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-xs text-amber-800">
+          {state.error}
+        </div>
+      ) : null}
+
+      {state.message ? (
+        <div className="mt-3 rounded-lg border border-sage-200 bg-sage-50 px-3 py-2 text-xs font-semibold text-sage-800">
+          {state.message}
+        </div>
+      ) : null}
+
+      {profiles.length ? (
+        <div className="mt-3 space-y-2">
+          {profiles.map((saved) => (
+            <button
+              key={saved.id}
+              type="button"
+              onClick={() => onSelect(saved)}
+              className={`w-full rounded-lg border px-3 py-3 text-left transition-colors ${activeId === saved.id ? 'border-sage-300 bg-white text-sage-900' : 'border-blue-100 bg-white/80 text-blue-950 hover:bg-white'}`}
+            >
+              <span className="block text-sm font-bold">{saved.label}</span>
+              <span className="mt-1 block break-all text-xs leading-5 text-blue-800">{saved.templatePath}</span>
+              <span className="mt-2 inline-flex rounded-full border border-blue-100 bg-blue-50 px-2 py-1 text-[11px] font-semibold text-blue-800">
+                {saved.status} - {saved.tagCount || 0} tags
+              </span>
+            </button>
+          ))}
+        </div>
+      ) : (
+        <p className="mt-3 rounded-lg border border-blue-100 bg-white/80 px-3 py-3 text-sm leading-6 text-blue-900">
+          No saved customer template profiles yet. Profile a Word template, then save it here.
+        </p>
+      )}
+    </div>
+  )
+}
+
 function TemplateTagList({ title, items, empty }) {
   return (
     <div className="rounded-lg border border-white/70 bg-white px-3 py-3">
@@ -144,12 +204,15 @@ export default function ReportGeneratorPage() {
   const [helperUrl, setHelperUrl] = useState(DEFAULT_HELPER_URL)
   const [helperStatus, setHelperStatus] = useState({ checked: false, loading: false, ok: false, data: null, error: '' })
   const [templateState, setTemplateState] = useState({ loading: false, profile: null, error: '' })
+  const [savedTemplatesState, setSavedTemplatesState] = useState({ loading: false, saving: false, result: null, error: '', message: '' })
   const [runState, setRunState] = useState({ loading: false, result: null, error: '' })
   const [form, setForm] = useState({
     clientLabel: '',
     sourceFolder: '',
     outputDir: '',
     templatePath: '',
+    templateProfileId: '',
+    templateProfileLabel: '',
   })
 
   const helperBase = useMemo(() => helperUrl.replace(/\/+$/, ''), [helperUrl])
@@ -183,9 +246,74 @@ export default function ReportGeneratorPage() {
         throw new Error(payload?.error || 'Local helper status unavailable.')
       }
       setHelperStatus({ checked: true, loading: false, ok: true, data: payload, error: '' })
+      await loadSavedTemplates({ silent: true })
     } catch (error) {
       setHelperStatus({ checked: true, loading: false, ok: false, data: null, error: readHelperError(error) })
     }
+  }
+
+  async function loadSavedTemplates({ silent = false } = {}) {
+    setSavedTemplatesState((prev) => ({ ...prev, loading: true, error: '', message: silent ? prev.message : '' }))
+    try {
+      const response = await fetch(`${helperBase}/api/local-report-pilot/template-profiles`)
+      const payload = await response.json().catch(() => null)
+      if (!response.ok || !payload?.ok) {
+        throw new Error(payload?.error || 'Saved template profiles unavailable.')
+      }
+      setSavedTemplatesState((prev) => ({ ...prev, loading: false, result: payload.result, error: '' }))
+    } catch (error) {
+      setSavedTemplatesState((prev) => ({ ...prev, loading: false, error: readHelperError(error) }))
+    }
+  }
+
+  async function saveCurrentTemplateProfile() {
+    if (!form.templatePath.trim()) {
+      setSavedTemplatesState((prev) => ({ ...prev, error: 'Enter a local Word template path before saving a profile.' }))
+      return
+    }
+
+    setSavedTemplatesState((prev) => ({ ...prev, saving: true, error: '', message: '' }))
+    try {
+      const response = await fetch(`${helperBase}/api/local-report-pilot/template-profiles`, {
+        method: 'POST',
+        headers: { 'content-type': 'application/json' },
+        body: JSON.stringify({
+          templatePath: form.templatePath.trim(),
+          label: form.templateProfileLabel.trim() || templateState.profile?.filename || 'Customer template',
+          templateProfileId: form.templateProfileId,
+        }),
+      })
+      const payload = await response.json().catch(() => null)
+      if (!response.ok || !payload?.ok) {
+        throw new Error(payload?.error || 'Template profile could not be saved.')
+      }
+      setForm((prev) => ({
+        ...prev,
+        templateProfileId: payload.result.id,
+        templateProfileLabel: payload.result.label,
+        templatePath: payload.result.templatePath,
+      }))
+      setTemplateState({ loading: false, profile: payload.result.profile, error: '' })
+      setSavedTemplatesState((prev) => ({
+        ...prev,
+        saving: false,
+        error: '',
+        message: `Saved template profile: ${payload.result.label}`,
+      }))
+      await loadSavedTemplates({ silent: true })
+    } catch (error) {
+      setSavedTemplatesState((prev) => ({ ...prev, saving: false, error: readHelperError(error) }))
+    }
+  }
+
+  function selectSavedTemplate(savedTemplate) {
+    setForm((prev) => ({
+      ...prev,
+      templateProfileId: savedTemplate.id,
+      templateProfileLabel: savedTemplate.label,
+      templatePath: savedTemplate.templatePath,
+    }))
+    setTemplateState({ loading: false, profile: savedTemplate.profile, error: '' })
   }
 
   async function runLocalDraft() {
@@ -209,6 +337,7 @@ export default function ReportGeneratorPage() {
           clientLabel: form.clientLabel.trim() || 'Local Report Client',
           reportTitle: 'ABA Initial Assessment Draft',
           templatePath: form.templatePath.trim(),
+          templateProfileId: form.templateProfileId,
         }),
       })
       const payload = await response.json().catch(() => null)
@@ -242,6 +371,11 @@ export default function ReportGeneratorPage() {
         throw new Error(payload?.error || 'Template profile failed.')
       }
       setTemplateState({ loading: false, profile: payload.profile, error: '' })
+      setForm((prev) => ({
+        ...prev,
+        templateProfileId: '',
+        templateProfileLabel: prev.templateProfileLabel || payload.profile.filename || '',
+      }))
     } catch (error) {
       setTemplateState({ loading: false, profile: null, error: readHelperError(error) })
     }
@@ -327,7 +461,10 @@ export default function ReportGeneratorPage() {
               <Field label="Local source folder" value={form.sourceFolder} onChange={(value) => setForm((prev) => ({ ...prev, sourceFolder: value }))} placeholder="C:\\path\\to\\client\\Assessment\\Initial" />
               <Field label="Local output folder" value={form.outputDir} onChange={(value) => setForm((prev) => ({ ...prev, outputDir: value }))} placeholder="C:\\path\\to\\draft-output" />
               <div className="md:col-span-2">
-                <Field label="Optional Word template path" value={form.templatePath} onChange={(value) => setForm((prev) => ({ ...prev, templatePath: value }))} placeholder="C:\\path\\to\\customer-template.docx" />
+                <Field label="Optional Word template path" value={form.templatePath} onChange={(value) => setForm((prev) => ({ ...prev, templatePath: value, templateProfileId: '' }))} placeholder="C:\\path\\to\\customer-template.docx" />
+              </div>
+              <div className="md:col-span-2">
+                <Field label="Saved template profile label" value={form.templateProfileLabel} onChange={(value) => setForm((prev) => ({ ...prev, templateProfileLabel: value }))} placeholder="Agency initial assessment template" />
               </div>
             </div>
 
@@ -339,6 +476,14 @@ export default function ReportGeneratorPage() {
                 className="min-h-[44px] rounded-full border border-warm-300 bg-white px-5 py-2 text-sm font-semibold text-warm-800 shadow-sm hover:bg-warm-50 disabled:cursor-not-allowed disabled:bg-warm-100 disabled:text-warm-400"
               >
                 {templateState.loading ? 'Profiling template...' : 'Profile Word template'}
+              </button>
+              <button
+                type="button"
+                onClick={saveCurrentTemplateProfile}
+                disabled={savedTemplatesState.saving || !form.templatePath.trim()}
+                className="min-h-[44px] rounded-full border border-blue-200 bg-blue-50 px-5 py-2 text-sm font-semibold text-blue-800 shadow-sm hover:bg-blue-100 disabled:cursor-not-allowed disabled:bg-warm-100 disabled:text-warm-400"
+              >
+                {savedTemplatesState.saving ? 'Saving profile...' : form.templateProfileId ? 'Update saved profile' : 'Save template profile'}
               </button>
               <button
                 type="button"
@@ -355,6 +500,13 @@ export default function ReportGeneratorPage() {
                 <span className="text-xs font-semibold text-amber-700">This role can view but not generate report drafts.</span>
               ) : null}
             </div>
+
+            <SavedTemplateProfilesPanel
+              state={savedTemplatesState}
+              activeId={form.templateProfileId}
+              onRefresh={loadSavedTemplates}
+              onSelect={selectSavedTemplate}
+            />
 
             {templateState.error ? (
               <div className="mt-4 rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-800">

@@ -63,7 +63,7 @@ powershell -NoProfile -ExecutionPolicy Bypass -File local-helpers/report-generat
 
 The smoke test starts the helper on a temporary port, calls status, preflight, and run endpoints with a SkillCascade local-dev origin, then verifies that a local draft `.docx` and review `.json` were created without live-write, auto-sign, or auto-submit flags.
 
-The smoke test also creates a temporary `.docx` template, profiles it through `/api/local-report-pilot/template-profile`, verifies `goals.objective` support, then generates the draft in template mode.
+The smoke test also creates a temporary `.docx` template, profiles it through `/api/local-report-pilot/template-profile`, saves it through `/api/local-report-pilot/template-profiles`, lists the saved profile, then generates the draft from the saved profile ID in template mode.
 
 ## Template Placeholders
 
@@ -112,6 +112,44 @@ Content-Type: application/json
 ```
 
 The response lists supported tags, unsupported tags, missing useful tags, and whether the goal loop was detected.
+
+## Saved Template Profiles
+
+Saved template profiles let a customer template be profiled once and reused on later report runs. They are stored only on the workstation in:
+
+```text
+%USERPROFILE%\.skillcascade\report-generator-helper\template-profiles.json
+```
+
+List saved profiles:
+
+```http
+GET http://127.0.0.1:4181/api/local-report-pilot/template-profiles
+```
+
+Save or update a profile:
+
+```http
+POST http://127.0.0.1:4181/api/local-report-pilot/template-profiles
+Content-Type: application/json
+
+{
+  "templatePath": "C:\\path\\to\\template.docx",
+  "label": "Agency initial assessment template"
+}
+```
+
+Run from a saved profile:
+
+```http
+POST http://127.0.0.1:4181/api/local-report-pilot/run
+Content-Type: application/json
+
+{
+  "sourceFolder": "C:\\path\\to\\client\\Assessment\\Initial",
+  "templateProfileId": "tpl-agency-initial-assessment-template-123"
+}
+```
 
 ## No-Admin Startup Wrapper
 
