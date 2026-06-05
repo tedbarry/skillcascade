@@ -1121,7 +1121,7 @@ export default function ReportGeneratorPage() {
                 value={form.outputDir}
                 onChange={(value) => setForm((prev) => ({ ...prev, outputDir: value }))}
                 placeholder="C:\\Reports\\Drafts"
-                help="Leave blank to let the helper use its default draft folder."
+                help="Leave blank for the default drafts subfolder, or choose a separate drafts folder. Do not use the same folder as the client documents."
               />
               <div className="md:col-span-2">
                 <Field

@@ -248,6 +248,24 @@ try {
   assert.equal(localPreflightPayload.result.sourceSummary.unsupportedFileCount, 1)
   assert.equal(localPreflightPayload.result.templateSummary.savedTemplateProfileId, saveTemplateProfilePayload.result.id)
 
+  const sameFolderPreflightResponse = await fetch(`${baseUrl}${helperApi}/preflight`, {
+    method: 'POST',
+    headers: {
+      Origin: origin,
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify({
+      sourceFolder,
+      outputDir: sourceFolder,
+      templateProfileId: saveTemplateProfilePayload.result.id,
+    }),
+  })
+  assert.equal(sameFolderPreflightResponse.status, 200)
+  const sameFolderPreflightPayload = await sameFolderPreflightResponse.json()
+  assert.equal(sameFolderPreflightPayload.ok, true)
+  assert.equal(sameFolderPreflightPayload.result.okToRun, false)
+  assert.ok(sameFolderPreflightPayload.result.blockers.some((blocker) => blocker.includes('Output folder cannot be the same as')))
+
   const runResponse = await fetch(`${baseUrl}${helperApi}/run`, {
     method: 'POST',
     headers: {

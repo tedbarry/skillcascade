@@ -185,6 +185,15 @@ function isInsidePath(candidatePath, parentPath) {
   return rel === '' || (!!rel && !rel.startsWith('..') && !isAbsolute(rel))
 }
 
+function outputDirWouldHideSource(sourceFolder, outputDir) {
+  if (!sourceFolder || !outputDir) return false
+  return isInsidePath(resolve(sourceFolder), resolve(outputDir))
+}
+
+function outputDirSourceBlockerMessage() {
+  return 'Output folder cannot be the same as, or contain, the client document folder. Leave output blank or choose a separate drafts folder.'
+}
+
 async function listSourceFiles(rootFolder, { excludePaths = [] } = {}) {
   const supportedFiles = []
   const unsupportedFiles = []
@@ -298,6 +307,9 @@ export async function preflightLocalReportPilot({
   const sourceStatus = resolvedSourceFolder ? await directoryStatus(resolvedSourceFolder) : null
   if (sourceStatus && !sourceStatus.exists) blockers.push('Source folder does not exist.')
   if (sourceStatus?.exists && !sourceStatus.isDirectory) blockers.push('Source folder path is not a directory.')
+  if (resolvedSourceFolder && resolvedOutputDir && outputDirWouldHideSource(resolvedSourceFolder, resolvedOutputDir)) {
+    blockers.push(outputDirSourceBlockerMessage())
+  }
 
   let supportedFiles = []
   let unsupportedFiles = []
@@ -690,6 +702,9 @@ export async function runLocalReportPilot({
 } = {}) {
   if (!sourceFolder) throw new Error('sourceFolder is required')
   const resolvedOutputDir = resolve(outputDir || join(sourceFolder, DEFAULT_OUTPUT_DIRECTORY_NAME))
+  if (outputDirWouldHideSource(sourceFolder, resolvedOutputDir)) {
+    throw new Error(outputDirSourceBlockerMessage())
+  }
   await mkdir(resolvedOutputDir, { recursive: true })
 
   const sourcePacket = await scanLocalSourceFolder(sourceFolder, { excludePaths: [resolvedOutputDir] })
