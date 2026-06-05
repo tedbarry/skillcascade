@@ -18,9 +18,9 @@ import {
 } from '../lib/report-credits.js'
 
 const route = new Hono()
-const REPORT_HELPER_FILENAME = 'SkillCascadeReportHelper-release-20260605-output-guard.zip'
+const REPORT_HELPER_FILENAME = 'SkillCascadeReportHelper-release-20260605-folder-picker-template-guard.zip'
 const REPORT_HELPER_OBJECT_KEY = `report-generator/${REPORT_HELPER_FILENAME}`
-const REPORT_HELPER_VERSION = 'release-20260605-output-guard'
+const REPORT_HELPER_VERSION = 'release-20260605-folder-picker-template-guard'
 
 const REPORT_GENERATOR_CONTRACT = {
   moduleId: 'report-generator',
