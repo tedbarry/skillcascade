@@ -54,6 +54,12 @@ Windows launcher:
 powershell -NoProfile -ExecutionPolicy Bypass -File local-helpers/report-generator/scripts/start-report-helper.ps1
 ```
 
+Windows watchdog launcher:
+
+```powershell
+powershell -NoProfile -ExecutionPolicy Bypass -File local-helpers/report-generator/scripts/watch-report-helper.ps1
+```
+
 Prefer a custom port:
 
 ```powershell
@@ -233,7 +239,7 @@ Install the wrapper for the current Windows user:
 powershell -NoProfile -ExecutionPolicy Bypass -File local-helpers/report-generator/scripts/install-startup-wrapper.ps1
 ```
 
-This writes a small `.vbs` launcher to the current user's Startup folder. It does not require administrator permissions. On login, it starts the helper hidden at:
+This writes a small `.vbs` launcher to the current user's Startup folder. It does not require administrator permissions. On login, it starts a hidden watchdog that keeps the helper available at:
 
 ```text
 http://127.0.0.1:4181
@@ -269,8 +275,11 @@ The package includes:
 - `helper-build-manifest.json` with package version, helper version, build time, and update-safe data policy.
 - `Install-ReportGeneratorHelper.exe` for double-click setup after extracting the zip.
 - `Install-ReportGeneratorHelper.cmd` for nontechnical setup.
-- `Start-ReportGeneratorHelper.cmd` for manual startup.
+- `Start-ReportGeneratorHelper.cmd` for manual watchdog startup.
 - Current-user startup wrapper support.
+- Immediate helper startup after install.
+- A hidden watchdog that restarts the helper if it exits.
+- Update-safe install: setup stops the existing installed helper/watchdog, replaces the app/runtime files, preserves saved local data, then restarts the watchdog.
 
 ## Release Buyer Bundle
 

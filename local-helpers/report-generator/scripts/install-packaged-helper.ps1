@@ -4,6 +4,7 @@ param(
   [int]$Port = 0,
   [switch]$InstallStartup,
   [switch]$SkipSmoke,
+  [switch]$NoStart,
   [switch]$PreviewOnly
 )
 
@@ -176,6 +177,70 @@ function Find-RunningSkillCascadeHelper {
   return $null
 }
 
+function Get-InstalledHelperRuntimeProcesses {
+  param([string]$Root)
+
+  if (-not (Test-Path -LiteralPath $Root)) {
+    return @()
+  }
+
+  $rootNeedle = ([System.IO.Path]::GetFullPath($Root)).ToLowerInvariant()
+  @(Get-CimInstance Win32_Process -ErrorAction SilentlyContinue | Where-Object {
+    if ([string]::IsNullOrWhiteSpace($_.CommandLine)) {
+      return $false
+    }
+
+    $commandLine = $_.CommandLine.ToLowerInvariant()
+    $isInstalledHelper = $commandLine.Contains($rootNeedle)
+    $isHelperProcess = (
+      $commandLine.Contains('watch-report-helper.ps1') -or
+      $commandLine.Contains('src\server.js') -or
+      $commandLine.Contains('runtime\node.exe')
+    )
+
+    $isInstalledHelper -and $isHelperProcess
+  })
+}
+
+function Stop-InstalledHelperProcesses {
+  param([string]$Root)
+
+  $processes = @(Get-InstalledHelperRuntimeProcesses -Root $Root)
+  if ($processes.Count -eq 0) {
+    return
+  }
+
+  Write-Host 'Stopping existing helper/watchdog processes before update...'
+  $orderedProcesses = $processes | Sort-Object @{
+    Expression = {
+      if ($_.CommandLine.ToLowerInvariant().Contains('watch-report-helper.ps1')) { 0 } else { 1 }
+    }
+  }, ProcessId
+
+  foreach ($processInfo in $orderedProcesses) {
+    if ($processInfo.ProcessId -eq $PID) {
+      continue
+    }
+
+    try {
+      Write-Host "Stopping PID $($processInfo.ProcessId)"
+      Stop-Process -Id $processInfo.ProcessId -Force -ErrorAction Stop
+    } catch {
+      Write-Host "Could not stop PID $($processInfo.ProcessId): $($_.Exception.Message)"
+    }
+  }
+
+  for ($attempt = 1; $attempt -le 30; $attempt += 1) {
+    Start-Sleep -Milliseconds 250
+    $remaining = @(Get-InstalledHelperRuntimeProcesses -Root $Root | Where-Object { $_.ProcessId -ne $PID })
+    if ($remaining.Count -eq 0) {
+      return
+    }
+  }
+
+  throw "Existing SkillCascade helper processes did not stop cleanly. Close the helper and run setup again."
+}
+
 function Copy-PackageFolder {
   param(
     [string]$Source,
@@ -189,6 +254,37 @@ function Copy-PackageFolder {
 
   New-Item -ItemType Directory -Force -Path $Destination | Out-Null
   Copy-Item -Path (Join-Path $Source '*') -Destination $Destination -Recurse -Force
+}
+
+function Start-InstalledHelperWatchdog {
+  param(
+    [string]$WatchScript,
+    [int]$SelectedPort,
+    [string]$Root
+  )
+
+  $logDir = Join-Path $Root 'logs'
+  New-Item -ItemType Directory -Force -Path $logDir | Out-Null
+  $outLog = Join-Path $logDir 'watcher.out.log'
+  $errLog = Join-Path $logDir 'watcher.err.log'
+
+  Write-Host "Starting helper watchdog at http://127.0.0.1:$SelectedPort"
+  Start-Process -FilePath 'powershell.exe' `
+    -ArgumentList @('-NoProfile', '-ExecutionPolicy', 'Bypass', '-File', $WatchScript, '-Port', [string]$SelectedPort) `
+    -WindowStyle Hidden `
+    -RedirectStandardOutput $outLog `
+    -RedirectStandardError $errLog | Out-Null
+
+  for ($attempt = 1; $attempt -le 20; $attempt += 1) {
+    Start-Sleep -Milliseconds 500
+    $status = Get-ReportHelperStatus -PortToCheck $SelectedPort
+    if (($status.ok -eq $true) -and ($status.mode -eq 'skillcascade-report-generator-release-v1')) {
+      Write-Host "Helper is running at http://127.0.0.1:$SelectedPort"
+      return
+    }
+  }
+
+  throw "The helper watchdog started, but the helper did not become reachable at http://127.0.0.1:$SelectedPort. Check logs in $logDir."
 }
 
 Write-Host "Installing SkillCascade Report Generator Helper to: $InstallDir"
@@ -213,17 +309,25 @@ if ((-not $RunningHelper) -and ($SelectedPort -ne $PreferredPort)) {
   Write-Host "Preferred helper port $PreferredPort is busy. Setup will use safe local port $SelectedPort instead."
 }
 
+if (-not $PreviewOnly) {
+  Stop-InstalledHelperProcesses -Root $InstallDir
+}
+
 Copy-PackageFolder -Source $AppSource -Destination (Join-Path $InstallDir 'app')
 Copy-PackageFolder -Source $RuntimeSource -Destination (Join-Path $InstallDir 'runtime')
 Copy-PackageFolder -Source $ScriptsSource -Destination (Join-Path $InstallDir 'scripts')
 
 $StartScript = Join-Path $InstallDir 'scripts\start-report-helper.ps1'
 $StartupScript = Join-Path $InstallDir 'scripts\install-startup-wrapper.ps1'
+$WatchScript = Join-Path $InstallDir 'scripts\watch-report-helper.ps1'
 
 if ($PreviewOnly) {
   Write-Host "Would run smoke check with: $StartScript -Smoke -NoInstall"
   if ($InstallStartup) {
     Write-Host "Would install startup wrapper with: $StartupScript -Port $SelectedPort"
+  }
+  if (-not $NoStart) {
+    Write-Host "Would start helper watchdog with: $WatchScript -Port $SelectedPort"
   }
   Write-Host "Would save helper address: http://127.0.0.1:$SelectedPort"
   exit 0
@@ -247,6 +351,10 @@ if ($InstallStartup) {
   }
 }
 
+if (-not $NoStart) {
+  Start-InstalledHelperWatchdog -WatchScript $WatchScript -SelectedPort $SelectedPort -Root $InstallDir
+}
+
 Write-Host 'SkillCascade Report Generator Helper installed.'
 Write-Host "Helper address: http://127.0.0.1:$SelectedPort"
-Write-Host "Start it with: powershell -NoProfile -ExecutionPolicy Bypass -File ""$StartScript"" -NoInstall"
+Write-Host "Start it with: powershell -NoProfile -ExecutionPolicy Bypass -File ""$WatchScript"" -Port $SelectedPort"

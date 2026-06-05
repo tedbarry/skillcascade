@@ -12,11 +12,15 @@ $DiscoveryPortEnd = 4199
 $ScriptDir = Split-Path -Parent $MyInvocation.MyCommand.Path
 $HelperRoot = Resolve-Path (Join-Path $ScriptDir '..')
 $StartScript = Join-Path $ScriptDir 'start-report-helper.ps1'
+$WatchScript = Join-Path $ScriptDir 'watch-report-helper.ps1'
 $StartupDir = [Environment]::GetFolderPath([Environment+SpecialFolder]::Startup)
 $ShortcutPath = Join-Path $StartupDir 'SkillCascade Report Generator Helper.vbs'
 
 if (-not (Test-Path -LiteralPath $StartScript)) {
   throw "Start script not found: $StartScript"
+}
+if (-not (Test-Path -LiteralPath $WatchScript)) {
+  throw "Watchdog script not found: $WatchScript"
 }
 
 function Get-HelperConfigPath {
@@ -225,7 +229,7 @@ if ((-not $RunningHelper) -and ($SelectedPort -ne $PreferredPort)) {
   Write-Host "Preferred helper port $PreferredPort is busy. Startup will use safe local port $SelectedPort instead."
 }
 
-$content = New-StartupScriptContent -PowerShellScript $StartScript -HelperPort $SelectedPort
+$content = New-StartupScriptContent -PowerShellScript $WatchScript -HelperPort $SelectedPort
 
 if ($PreviewOnly) {
   Write-Host "Would create startup wrapper: $ShortcutPath"
@@ -244,4 +248,4 @@ Save-ConfiguredHelperPort -ConfigPath $ConfigPath -SelectedPort $SelectedPort -P
 New-Item -ItemType Directory -Force -Path $StartupDir | Out-Null
 Set-Content -LiteralPath $ShortcutPath -Value $content -Encoding ASCII
 Write-Host "Installed startup wrapper: $ShortcutPath"
-Write-Host "The helper will start on Windows login at http://127.0.0.1:$SelectedPort"
+Write-Host "The helper watchdog will start on Windows login and keep the helper available at http://127.0.0.1:$SelectedPort"

@@ -71,7 +71,7 @@ Set-Content -LiteralPath (Join-Path $AppDir 'helper-build-manifest.json') -Encod
   portCollisionPolicy = 'choose-next-available-loopback-port-without-taking-over-existing-local-port'
 } | ConvertTo-Json -Depth 3)
 
-foreach ($scriptName in @('start-report-helper.ps1', 'install-startup-wrapper.ps1', 'install-packaged-helper.ps1')) {
+foreach ($scriptName in @('start-report-helper.ps1', 'watch-report-helper.ps1', 'install-startup-wrapper.ps1', 'install-packaged-helper.ps1')) {
   Copy-Item -LiteralPath (Join-Path $ScriptDir $scriptName) -Destination $ScriptsDir
 }
 
@@ -105,7 +105,7 @@ pause
 
 Set-Content -LiteralPath (Join-Path $PackageRoot 'Start-ReportGeneratorHelper.cmd') -Encoding ASCII -Value @'
 @echo off
-powershell.exe -NoProfile -ExecutionPolicy Bypass -File "%~dp0scripts\start-report-helper.ps1" -NoInstall %*
+powershell.exe -NoProfile -ExecutionPolicy Bypass -File "%~dp0scripts\watch-report-helper.ps1" %*
 '@
 
 $LauncherSource = @'

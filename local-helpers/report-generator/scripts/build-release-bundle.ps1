@@ -79,7 +79,7 @@ try {
     skillCascadeRoute = 'https://www.skillcascade.com/report-generator'
     localHelperDefaultUrl = 'http://127.0.0.1:4181'
     localHelperDiscoveryPorts = '4181-4199'
-    portCollisionPolicy = 'The helper tries 4181 first, then chooses the next available loopback port in 4181-4199 without taking over a port already used by another local app. The SkillCascade page auto-detects the selected helper port.'
+    portCollisionPolicy = 'The helper tries 4181 first, then chooses the next available loopback port in 4181-4199 without taking over a port already used by another local app. The installer starts a watchdog immediately, the startup wrapper starts it on Windows login, and the SkillCascade page auto-detects the selected helper port.'
     helperApiPrefix = '/api/local-report-generator'
     legacyHelperApiPrefix = '/api/local-report-pilot'
     phiBoundary = 'Source folders, templates, generated drafts, review JSON, and evidence ledgers stay on the buyer workstation.'
@@ -116,7 +116,9 @@ Buyer setup:
 3. In the extracted helper folder, run:
    Install-ReportGeneratorHelper.exe
 
-4. Back in SkillCascade, click:
+4. The installer starts the local helper immediately and installs a current-user Windows Startup watchdog.
+
+5. Back in SkillCascade, click:
    Check helper
    Claim local install
    Profile Word template
@@ -133,6 +135,8 @@ Local files created by the helper:
 Port safety:
 - The helper tries http://127.0.0.1:4181 first.
 - If another local app is already using that address, setup chooses the next available safe local address.
+- The installer starts the helper immediately after setup.
+- A current-user startup watchdog starts the helper on Windows login and restarts it if it exits.
 - SkillCascade finds the helper automatically when the buyer clicks Check setup.
 - The helper never takes over a port already used by another local app.
 
