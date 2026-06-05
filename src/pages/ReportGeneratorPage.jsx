@@ -19,7 +19,7 @@ const workflowSteps = [
   },
   {
     title: 'Choose template',
-    detail: 'Use the default report format or connect the agency Word template once.',
+    detail: 'Choose the agency Word template once, then reuse it for future drafts.',
   },
   {
     title: 'Create draft',
@@ -54,7 +54,7 @@ function StatusBadge({ children, tone = 'warm' }) {
   )
 }
 
-function Field({ label, value, onChange, placeholder, help }) {
+function Field({ label, value, onChange, placeholder, help, actions }) {
   return (
     <label className="block">
       <span className="text-xs font-semibold uppercase tracking-wide text-warm-500">{label}</span>
@@ -65,8 +65,28 @@ function Field({ label, value, onChange, placeholder, help }) {
         placeholder={placeholder}
         className="mt-1 min-h-[44px] w-full rounded-lg border border-warm-200 bg-white px-3 py-2 text-sm text-warm-800 shadow-sm outline-none transition-colors focus:border-sage-400"
       />
+      {actions ? <span className="mt-2 flex flex-wrap gap-2">{actions}</span> : null}
       {help ? <span className="mt-1 block text-xs leading-5 text-warm-500">{help}</span> : null}
     </label>
+  )
+}
+
+function SmallActionButton({ children, onClick, disabled, tone = 'warm' }) {
+  const toneClass = tone === 'blue'
+    ? 'border-blue-200 bg-white text-blue-800 hover:bg-blue-50'
+    : tone === 'sage'
+      ? 'border-sage-200 bg-sage-50 text-sage-800 hover:bg-sage-100'
+      : 'border-warm-200 bg-white text-warm-700 hover:bg-warm-50'
+
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      disabled={disabled}
+      className={`min-h-[38px] rounded-full border px-3 py-1.5 text-xs font-semibold shadow-sm disabled:cursor-not-allowed disabled:bg-warm-100 disabled:text-warm-400 ${toneClass}`}
+    >
+      {children}
+    </button>
   )
 }
 
@@ -660,6 +680,7 @@ export default function ReportGeneratorPage() {
   const [creditCheckoutState, setCreditCheckoutState] = useState({ bundleId: '', error: '' })
   const [preflightState, setPreflightState] = useState({ loading: false, result: null, error: '' })
   const [runState, setRunState] = useState({ loading: false, result: null, error: '' })
+  const [pathPickerState, setPathPickerState] = useState({ loadingField: '', error: '' })
   const [form, setForm] = useState({
     clientLabel: '',
     sourceFolder: '',
@@ -668,6 +689,7 @@ export default function ReportGeneratorPage() {
     templateProfileId: '',
     templateProfileLabel: '',
     fieldAliases: {},
+    allowFallbackTemplate: false,
   })
 
   const helperBase = useMemo(() => normalizeHelperBase(helperUrl), [helperUrl])
@@ -682,6 +704,8 @@ export default function ReportGeneratorPage() {
   const userCanEdit = moduleStatus.data?.userCanEdit === true
   const creditBalance = Number(creditState.data?.balance || 0)
   const reportCreditBundles = creditState.data?.bundles?.length ? creditState.data.bundles : REPORT_CREDIT_BUNDLES
+  const hasTemplateSelection = Boolean(form.templatePath.trim() || form.templateProfileId)
+  const needsTemplateDecision = !hasTemplateSelection && !form.allowFallbackTemplate
 
   useEffect(() => {
     let active = true
@@ -821,6 +845,60 @@ export default function ReportGeneratorPage() {
     }
   }
 
+  async function resolveHelperBaseForLocalAction() {
+    if (helperStatus.ok) return helperBase
+
+    setHelperStatus({ checked: true, loading: true, ok: false, data: null, error: '', discoveredUrl: '', message: '' })
+    const result = await discoverHelperStatus(helperBase)
+    setHelperUrl(result.url)
+    setHelperStatus({
+      checked: true,
+      loading: false,
+      ok: true,
+      data: result.payload,
+      error: '',
+      discoveredUrl: result.url,
+      message: result.url !== helperBase ? 'Helper found automatically at a safe local address.' : '',
+    })
+    await loadSavedTemplates({ silent: true, baseUrl: result.url })
+    return result.url
+  }
+
+  async function pickLocalPath({ field, endpoint, title, defaultPath, filter }) {
+    setPathPickerState({ loadingField: field, error: '' })
+    try {
+      const activeHelperBase = await resolveHelperBaseForLocalAction()
+      const payload = await fetchHelperJson(activeHelperBase, endpoint, {
+        method: 'POST',
+        headers: { 'content-type': 'application/json' },
+        body: JSON.stringify({ title, defaultPath, filter }),
+      })
+      const selectedPath = payload.result?.path || ''
+      if (!selectedPath) {
+        setPathPickerState({ loadingField: '', error: '' })
+        return
+      }
+      setForm((prev) => ({
+        ...prev,
+        [field]: selectedPath,
+        ...(field === 'templatePath' ? { templateProfileId: '', fieldAliases: {} } : {}),
+      }))
+      if (field === 'templatePath') setShowTemplateSettings(true)
+      setPathPickerState({ loadingField: '', error: '' })
+    } catch (error) {
+      setPathPickerState({ loadingField: '', error: readHelperError(error) })
+      setHelperStatus((prev) => prev.ok ? prev : {
+        checked: true,
+        loading: false,
+        ok: false,
+        data: null,
+        error: readHelperError(error),
+        discoveredUrl: '',
+        message: '',
+      })
+    }
+  }
+
   async function claimLocalInstall() {
     const readiness = helperStatus.data?.licenseReadiness
     const installState = helperStatus.data?.installState || {}
@@ -872,6 +950,7 @@ export default function ReportGeneratorPage() {
           outputDir: form.outputDir.trim(),
           templatePath: form.templatePath.trim(),
           templateProfileId: form.templateProfileId,
+          allowFallbackTemplate: form.allowFallbackTemplate,
         }),
       })
       setPreflightState({ loading: false, result: payload.result, error: '' })
@@ -948,6 +1027,10 @@ export default function ReportGeneratorPage() {
       setRunState({ loading: false, result: null, error: 'Enter a local source folder first.' })
       return
     }
+    if (needsTemplateDecision) {
+      setRunState({ loading: false, result: null, error: 'Choose a Word template or check the fallback QA draft option before generating.' })
+      return
+    }
     if (creditBalance <= 0) {
       setRunState({ loading: false, result: null, error: 'Buy at least one report credit before generating a draft.' })
       return
@@ -967,6 +1050,7 @@ export default function ReportGeneratorPage() {
           templatePath: form.templatePath.trim(),
           templateProfileId: form.templateProfileId,
           templateFieldAliases: form.fieldAliases,
+          allowFallbackTemplate: form.allowFallbackTemplate,
         }),
       })
       if (payload.result?.templateProfile) {
@@ -1100,7 +1184,7 @@ export default function ReportGeneratorPage() {
                 <p className="text-xs font-semibold uppercase tracking-wide text-sage-700">Create draft</p>
                 <h2 className="mt-2 text-xl font-bold text-warm-900">Choose the client folder</h2>
                 <p className="mt-2 text-sm leading-6 text-warm-600">
-                  Paste the local folder paths from File Explorer. The draft will be saved on this computer for review.
+                  Use the buttons to choose the local folders and Word template. You can still paste a path if support gives you one.
                 </p>
               </div>
               <StatusBadge tone={helperStatus.ok ? 'green' : helperStatus.checked ? 'red' : 'warm'}>
@@ -1120,19 +1204,64 @@ export default function ReportGeneratorPage() {
                 label="Where to save the draft"
                 value={form.outputDir}
                 onChange={(value) => setForm((prev) => ({ ...prev, outputDir: value }))}
-                placeholder="C:\\Reports\\Drafts"
-                help="Leave blank for the default drafts subfolder, or choose a separate drafts folder. Do not use the same folder as the client documents."
+                placeholder="Leave blank or choose a folder"
+                help="Leave blank for a safe drafts subfolder, choose the same client folder, or choose another local folder."
+                actions={(
+                  <>
+                    <SmallActionButton
+                      onClick={() => pickLocalPath({
+                        field: 'outputDir',
+                        endpoint: '/pick-folder',
+                        title: 'Choose where to save the report draft',
+                        defaultPath: form.outputDir || form.sourceFolder,
+                      })}
+                      disabled={pathPickerState.loadingField === 'outputDir'}
+                      tone="sage"
+                    >
+                      {pathPickerState.loadingField === 'outputDir' ? 'Opening...' : 'Choose folder'}
+                    </SmallActionButton>
+                    <SmallActionButton
+                      onClick={() => setForm((prev) => ({ ...prev, outputDir: prev.sourceFolder }))}
+                      disabled={!form.sourceFolder.trim()}
+                    >
+                      Use client folder
+                    </SmallActionButton>
+                    <SmallActionButton onClick={() => setForm((prev) => ({ ...prev, outputDir: '' }))}>
+                      Use default
+                    </SmallActionButton>
+                  </>
+                )}
               />
               <div className="md:col-span-2">
                 <Field
                   label="Client document folder"
                   value={form.sourceFolder}
                   onChange={(value) => setForm((prev) => ({ ...prev, sourceFolder: value }))}
-                  placeholder="C:\\path\\to\\client\\Assessment\\Initial"
+                  placeholder="Choose the folder with client source documents"
                   help="This should be the folder that contains the assessment, old reports, and other source documents."
+                  actions={(
+                    <SmallActionButton
+                      onClick={() => pickLocalPath({
+                        field: 'sourceFolder',
+                        endpoint: '/pick-folder',
+                        title: 'Choose the client document folder',
+                        defaultPath: form.sourceFolder || form.outputDir,
+                      })}
+                      disabled={pathPickerState.loadingField === 'sourceFolder'}
+                      tone="sage"
+                    >
+                      {pathPickerState.loadingField === 'sourceFolder' ? 'Opening...' : 'Choose client folder'}
+                    </SmallActionButton>
+                  )}
                 />
               </div>
             </div>
+
+            {pathPickerState.error ? (
+              <div className="mt-4 rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-800">
+                {pathPickerState.error}
+              </div>
+            ) : null}
 
             <div className="mt-4 flex flex-wrap gap-3">
               <button
@@ -1159,8 +1288,23 @@ export default function ReportGeneratorPage() {
                       label="Word template file"
                       value={form.templatePath}
                       onChange={(value) => setForm((prev) => ({ ...prev, templatePath: value, templateProfileId: '', fieldAliases: {} }))}
-                      placeholder="C:\\path\\to\\customer-template.docx"
-                      help="Optional. Use this when the agency wants the draft placed into its own report template."
+                      placeholder="Choose the agency Word report template"
+                      help="Required for a real agency-formatted report draft. Save it once to reuse it later."
+                      actions={(
+                        <SmallActionButton
+                          onClick={() => pickLocalPath({
+                            field: 'templatePath',
+                            endpoint: '/pick-file',
+                            title: 'Choose the agency Word report template',
+                            defaultPath: form.templatePath || form.sourceFolder,
+                            filter: 'Word documents (*.docx)|*.docx|All files (*.*)|*.*',
+                          })}
+                          disabled={pathPickerState.loadingField === 'templatePath'}
+                          tone="blue"
+                        >
+                          {pathPickerState.loadingField === 'templatePath' ? 'Opening...' : 'Choose Word template'}
+                        </SmallActionButton>
+                      )}
                     />
                   </div>
                   <div className="md:col-span-2">
@@ -1195,6 +1339,19 @@ export default function ReportGeneratorPage() {
               </div>
             ) : null}
 
+            <label className="mt-4 flex gap-3 rounded-xl border border-warm-200 bg-warm-50 px-4 py-3 text-sm text-warm-700">
+              <input
+                type="checkbox"
+                checked={form.allowFallbackTemplate}
+                onChange={(event) => setForm((prev) => ({ ...prev, allowFallbackTemplate: event.target.checked }))}
+                className="mt-1 h-4 w-4 rounded border-warm-300 text-sage-600 focus:ring-sage-500"
+              />
+              <span>
+                <span className="font-semibold text-warm-900">Allow fallback QA draft without a Word template.</span>{' '}
+                This is only for testing the source extraction and review checklist. It is not the agency report format.
+              </span>
+            </label>
+
             {showAdvancedSetup ? (
               <div className="mt-4 rounded-xl border border-warm-200 bg-warm-50 p-4">
                 <Field
@@ -1219,7 +1376,7 @@ export default function ReportGeneratorPage() {
               <button
                 type="button"
                 onClick={runLocalDraft}
-                disabled={runState.loading || !userCanEdit || creditBalance <= 0}
+                disabled={runState.loading || !userCanEdit || creditBalance <= 0 || needsTemplateDecision}
                 className="min-h-[44px] rounded-full bg-sage-600 px-5 py-2 text-sm font-semibold text-white shadow-sm hover:bg-sage-700 disabled:cursor-not-allowed disabled:bg-warm-300"
               >
                 {runState.loading ? 'Creating draft...' : 'Create Word draft'}
@@ -1229,6 +1386,9 @@ export default function ReportGeneratorPage() {
               ) : null}
               {userCanEdit && creditBalance <= 0 ? (
                 <span className="text-xs font-semibold text-amber-700">Buy a report credit before generating a draft.</span>
+              ) : null}
+              {userCanEdit && creditBalance > 0 && needsTemplateDecision ? (
+                <span className="text-xs font-semibold text-amber-700">Choose a Word template, saved template, or fallback QA draft first.</span>
               ) : null}
             </div>
 

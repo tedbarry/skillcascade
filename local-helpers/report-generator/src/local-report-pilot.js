@@ -185,13 +185,46 @@ function isInsidePath(candidatePath, parentPath) {
   return rel === '' || (!!rel && !rel.startsWith('..') && !isAbsolute(rel))
 }
 
+function resolvedPathKey(value) {
+  const resolved = resolve(value)
+  return process.platform === 'win32' ? resolved.toLowerCase() : resolved
+}
+
+function pathsAreSame(left, right) {
+  if (!left || !right) return false
+  return resolvedPathKey(left) === resolvedPathKey(right)
+}
+
 function outputDirWouldHideSource(sourceFolder, outputDir) {
   if (!sourceFolder || !outputDir) return false
+  if (pathsAreSame(sourceFolder, outputDir)) return false
   return isInsidePath(resolve(sourceFolder), resolve(outputDir))
 }
 
 function outputDirSourceBlockerMessage() {
-  return 'Output folder cannot be the same as, or contain, the client document folder. Leave output blank or choose a separate drafts folder.'
+  return 'Output folder cannot contain the client document folder. Choose the client folder itself, leave output blank for the default drafts subfolder, or choose a drafts folder inside the client folder.'
+}
+
+function noTemplateBlockerMessage() {
+  return 'No Word template selected. Choose a customer Word template, select a saved template profile, or explicitly allow a fallback QA draft.'
+}
+
+function outputDirScanExclusions(sourceFolder, outputDir) {
+  if (!sourceFolder || !outputDir || pathsAreSame(sourceFolder, outputDir)) return []
+  return [resolve(outputDir)]
+}
+
+function outputDirStrategy(sourceFolder, outputDir, requestedOutputDir) {
+  if (!sourceFolder || !outputDir) return 'unknown'
+  if (pathsAreSame(sourceFolder, outputDir)) return 'source-folder'
+  if (!requestedOutputDir) return 'default-subfolder'
+  return 'custom-folder'
+}
+
+function isGeneratedOutputArtifact(filename) {
+  return /-report-draft\.docx$/i.test(filename)
+    || /-review-summary\.json$/i.test(filename)
+    || /-evidence-ledger\.json$/i.test(filename)
 }
 
 async function listSourceFiles(rootFolder, { excludePaths = [] } = {}) {
@@ -209,6 +242,7 @@ async function listSourceFiles(rootFolder, { excludePaths = [] } = {}) {
         if (!SKIP_DIRECTORY_NAMES.has(entry.name)) await walk(entryPath)
         continue
       }
+      if (entry.isFile() && isGeneratedOutputArtifact(entry.name)) continue
       if (entry.isFile() && SUPPORTED_SOURCE_EXTENSIONS.has(extname(entryPath).toLowerCase())) {
         supportedFiles.push(entryPath)
       } else if (entry.isFile()) {
@@ -295,6 +329,7 @@ export async function preflightLocalReportPilot({
   outputDir = '',
   templatePath = '',
   templateProfileId = '',
+  allowFallbackTemplate = false,
 } = {}) {
   const blockers = []
   const warnings = []
@@ -314,7 +349,9 @@ export async function preflightLocalReportPilot({
   let supportedFiles = []
   let unsupportedFiles = []
   if (!blockers.length && resolvedSourceFolder) {
-    const listed = await listSourceFiles(resolvedSourceFolder, { excludePaths: [resolvedOutputDir] })
+    const listed = await listSourceFiles(resolvedSourceFolder, {
+      excludePaths: outputDirScanExclusions(resolvedSourceFolder, resolvedOutputDir),
+    })
     supportedFiles = listed.supportedFiles
     unsupportedFiles = listed.unsupportedFiles
     if (!supportedFiles.length) blockers.push('No supported source files were found. Add .docx, .txt, or .md source files.')
@@ -338,8 +375,10 @@ export async function preflightLocalReportPilot({
     } catch (error) {
       blockers.push(`Template profile failed: ${error.message}`)
     }
+  } else if (allowFallbackTemplate) {
+    warnings.push('No Word template selected. The helper will generate a fallback QA DOCX draft, not the agency report template.')
   } else {
-    warnings.push('No Word template selected. The helper will generate a fallback DOCX draft.')
+    blockers.push(noTemplateBlockerMessage())
   }
 
   return {
@@ -348,6 +387,7 @@ export async function preflightLocalReportPilot({
     sourceTextReturned: false,
     sourceFolder: resolvedSourceFolder,
     outputDir: resolvedOutputDir,
+    outputStrategy: outputDirStrategy(resolvedSourceFolder, resolvedOutputDir, outputDir),
     sourceSummary: {
       supportedFileCount: supportedFiles.length,
       unsupportedFileCount: unsupportedFiles.length,
@@ -699,20 +739,27 @@ export async function runLocalReportPilot({
   templatePath = '',
   templateProfileId = '',
   templateFieldAliases = {},
+  allowFallbackTemplate = false,
 } = {}) {
   if (!sourceFolder) throw new Error('sourceFolder is required')
   const resolvedOutputDir = resolve(outputDir || join(sourceFolder, DEFAULT_OUTPUT_DIRECTORY_NAME))
   if (outputDirWouldHideSource(sourceFolder, resolvedOutputDir)) {
     throw new Error(outputDirSourceBlockerMessage())
   }
-  await mkdir(resolvedOutputDir, { recursive: true })
-
-  const sourcePacket = await scanLocalSourceFolder(sourceFolder, { excludePaths: [resolvedOutputDir] })
-  const clinicalProfile = buildLocalClinicalProfile({ clientLabel, sources: sourcePacket.sources })
-  const goalPlan = buildLocalGoalPlan({ sources: sourcePacket.sources })
   const savedTemplateProfile = templateProfileId ? await getTemplateProfile(templateProfileId) : null
   const resolvedTemplatePath = savedTemplateProfile?.templatePath || templatePath
   const resolvedTemplateFieldAliases = savedTemplateProfile?.fieldAliases || templateFieldAliases || {}
+  if (!resolvedTemplatePath && !allowFallbackTemplate) {
+    throw new Error(noTemplateBlockerMessage())
+  }
+
+  await mkdir(resolvedOutputDir, { recursive: true })
+
+  const sourcePacket = await scanLocalSourceFolder(sourceFolder, {
+    excludePaths: outputDirScanExclusions(sourceFolder, resolvedOutputDir),
+  })
+  const clinicalProfile = buildLocalClinicalProfile({ clientLabel, sources: sourcePacket.sources })
+  const goalPlan = buildLocalGoalPlan({ sources: sourcePacket.sources })
   const templateProfile = resolvedTemplatePath ? await profileTemplate({ templatePath: resolvedTemplatePath }) : null
   const generatedAt = new Date().toISOString()
   const safeClient = clientLabel.replace(/[^a-z0-9]+/gi, '-').replace(/^-|-$/g, '') || 'client'
@@ -725,6 +772,7 @@ export async function runLocalReportPilot({
     localOnly: true,
     sourceFolder: sourcePacket.sourceFolder,
     outputDir: resolvedOutputDir,
+    outputStrategy: outputDirStrategy(sourceFolder, resolvedOutputDir, outputDir),
     clientLabel,
     reportTitle,
     generatedAt,
@@ -737,7 +785,7 @@ export async function runLocalReportPilot({
     templateProfileLabel: savedTemplateProfile?.label || '',
     templateFieldAliases: resolvedTemplateFieldAliases,
     templateProfile,
-    templateMode: resolvedTemplatePath ? 'placeholder-template' : 'generated-docx',
+    templateMode: resolvedTemplatePath ? 'placeholder-template' : 'fallback-generated-docx',
     qa: {
       status: 'ready-for-bcba-review',
       blockers: [],
@@ -745,6 +793,7 @@ export async function runLocalReportPilot({
         ...clinicalProfile.missingFields.map((field) => `Missing source support: ${field.label}`),
         ...(templateProfile?.warnings || []).map((warning) => `Template profile: ${warning}`),
         ...sourcePacket.unsupportedFiles.map((file) => `Unsupported local source not extracted: ${file.relativePath}`),
+        ...(resolvedTemplatePath ? [] : ['Fallback QA DOCX generated without a customer Word template; do not present it as the final agency-formatted report.']),
         ...(goalPlan.goals.length ? [] : ['No source-supported goals were selected automatically.']),
       ],
       liveWriteAttempted: false,

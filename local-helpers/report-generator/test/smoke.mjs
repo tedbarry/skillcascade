@@ -121,7 +121,13 @@ try {
   assert.equal(statusPayload.installState.localPortPolicy.collisionBehavior, 'choose-next-available-loopback-port')
   assert.equal(statusPayload.installState.licensingPolicy.skillCascadeWorkflowPackIsAuthority, true)
   assert.equal(statusPayload.endpoints.licenseReadiness, `${helperApi}/license-readiness`)
+  assert.equal(statusPayload.endpoints.pickFolder, `${helperApi}/pick-folder`)
+  assert.equal(statusPayload.endpoints.pickFile, `${helperApi}/pick-file`)
   assert.equal(statusPayload.legacyEndpoints.licenseReadiness, `${legacyHelperApi}/license-readiness`)
+  assert.equal(statusPayload.legacyEndpoints.pickFolder, `${legacyHelperApi}/pick-folder`)
+  assert.equal(statusPayload.pathPickers.folderEndpoint, `${helperApi}/pick-folder`)
+  assert.equal(statusPayload.pathPickers.fileEndpoint, `${helperApi}/pick-file`)
+  assert.equal(statusPayload.pathPickers.returnsPathOnly, true)
   assert.equal(statusPayload.licenseReadiness.localOnly, true)
   assert.equal(statusPayload.licenseReadiness.authority.localHelperStoresBillingSecrets, false)
   assert.equal(statusPayload.licenseReadiness.authority.localHelperCanGrantAccess, false)
@@ -227,6 +233,41 @@ try {
   assert.equal(savedTemplateProfilesPayload.result.profileCount, 1)
   assert.equal(savedTemplateProfilesPayload.result.profiles[0].id, saveTemplateProfilePayload.result.id)
 
+  const noTemplatePreflightResponse = await fetch(`${baseUrl}${helperApi}/preflight`, {
+    method: 'POST',
+    headers: {
+      Origin: origin,
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify({
+      sourceFolder,
+      outputDir,
+    }),
+  })
+  assert.equal(noTemplatePreflightResponse.status, 200)
+  const noTemplatePreflightPayload = await noTemplatePreflightResponse.json()
+  assert.equal(noTemplatePreflightPayload.ok, true)
+  assert.equal(noTemplatePreflightPayload.result.okToRun, false)
+  assert.ok(noTemplatePreflightPayload.result.blockers.some((blocker) => blocker.includes('No Word template selected')))
+
+  const fallbackPreflightResponse = await fetch(`${baseUrl}${helperApi}/preflight`, {
+    method: 'POST',
+    headers: {
+      Origin: origin,
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify({
+      sourceFolder,
+      outputDir,
+      allowFallbackTemplate: true,
+    }),
+  })
+  assert.equal(fallbackPreflightResponse.status, 200)
+  const fallbackPreflightPayload = await fallbackPreflightResponse.json()
+  assert.equal(fallbackPreflightPayload.ok, true)
+  assert.equal(fallbackPreflightPayload.result.okToRun, true)
+  assert.ok(fallbackPreflightPayload.result.warnings.some((warning) => warning.includes('fallback QA DOCX')))
+
   const localPreflightResponse = await fetch(`${baseUrl}${helperApi}/preflight`, {
     method: 'POST',
     headers: {
@@ -263,8 +304,47 @@ try {
   assert.equal(sameFolderPreflightResponse.status, 200)
   const sameFolderPreflightPayload = await sameFolderPreflightResponse.json()
   assert.equal(sameFolderPreflightPayload.ok, true)
-  assert.equal(sameFolderPreflightPayload.result.okToRun, false)
-  assert.ok(sameFolderPreflightPayload.result.blockers.some((blocker) => blocker.includes('Output folder cannot be the same as')))
+  assert.equal(sameFolderPreflightPayload.result.okToRun, true)
+  assert.equal(sameFolderPreflightPayload.result.outputDir, sourceFolder)
+  assert.equal(sameFolderPreflightPayload.result.outputStrategy, 'source-folder')
+  assert.equal(sameFolderPreflightPayload.result.sourceSummary.supportedFileCount, 1)
+
+  const blockedRunResponse = await fetch(`${baseUrl}${helperApi}/run`, {
+    method: 'POST',
+    headers: {
+      Origin: origin,
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify({
+      sourceFolder,
+      outputDir,
+      clientLabel: 'Blocked No Template Client',
+    }),
+  })
+  assert.equal(blockedRunResponse.status, 400)
+  const blockedRunPayload = await blockedRunResponse.json()
+  assert.equal(blockedRunPayload.ok, false)
+  assert.match(blockedRunPayload.error, /No Word template selected/)
+
+  const fallbackRunResponse = await fetch(`${baseUrl}${helperApi}/run`, {
+    method: 'POST',
+    headers: {
+      Origin: origin,
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify({
+      sourceFolder,
+      outputDir,
+      clientLabel: 'Fallback Client',
+      reportTitle: 'Fallback QA Draft',
+      allowFallbackTemplate: true,
+    }),
+  })
+  assert.equal(fallbackRunResponse.status, 200)
+  const fallbackRunPayload = await fallbackRunResponse.json()
+  assert.equal(fallbackRunPayload.ok, true)
+  assert.equal(fallbackRunPayload.result.templateMode, 'fallback-generated-docx')
+  assert.ok(fallbackRunPayload.result.qa.warnings.some((warning) => warning.includes('Fallback QA DOCX')))
 
   const runResponse = await fetch(`${baseUrl}${helperApi}/run`, {
     method: 'POST',
@@ -316,6 +396,46 @@ try {
   assert.match(renderedOutput.value, /Client: Release Client/)
   assert.equal(renderedOutput.value.includes('REVIEW_UNSUPPORTED_TEMPLATE_FIELD'), false)
 
+  const sameFolderRunResponse = await fetch(`${baseUrl}${helperApi}/run`, {
+    method: 'POST',
+    headers: {
+      Origin: origin,
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify({
+      sourceFolder,
+      outputDir: sourceFolder,
+      clientLabel: 'Same Folder Client',
+      reportTitle: 'Same Folder Output Draft',
+      templateProfileId: saveTemplateProfilePayload.result.id,
+    }),
+  })
+  assert.equal(sameFolderRunResponse.status, 200)
+  const sameFolderRunPayload = await sameFolderRunResponse.json()
+  assert.equal(sameFolderRunPayload.ok, true)
+  assert.equal(sameFolderRunPayload.result.outputStrategy, 'source-folder')
+  assert.ok(sameFolderRunPayload.result.outputPath.startsWith(sourceFolder))
+  assert.equal(sameFolderRunPayload.result.sourcePacket.sources.length, 1)
+
+  const postSameFolderPreflightResponse = await fetch(`${baseUrl}${helperApi}/preflight`, {
+    method: 'POST',
+    headers: {
+      Origin: origin,
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify({
+      sourceFolder,
+      outputDir: sourceFolder,
+      templateProfileId: saveTemplateProfilePayload.result.id,
+    }),
+  })
+  assert.equal(postSameFolderPreflightResponse.status, 200)
+  const postSameFolderPreflightPayload = await postSameFolderPreflightResponse.json()
+  assert.equal(postSameFolderPreflightPayload.ok, true)
+  assert.equal(postSameFolderPreflightPayload.result.okToRun, true)
+  assert.equal(postSameFolderPreflightPayload.result.sourceSummary.supportedFileCount, 1)
+  assert.equal(postSameFolderPreflightPayload.result.sourceSummary.unsupportedFileCount, 1)
+
   console.log(JSON.stringify({
     ok: true,
     statusCode: statusResponse.status,
@@ -325,6 +445,9 @@ try {
     preflightCode: preflightResponse.status,
     localPreflightCode: localPreflightResponse.status,
     localPreflightReady: localPreflightPayload.result.okToRun,
+    sameFolderReady: postSameFolderPreflightPayload.result.okToRun,
+    sameFolderOutputCreated: true,
+    fallbackTemplateMode: fallbackRunPayload.result.templateMode,
     templateProfileCode: templateProfileResponse.status,
     templateProfileStatus: templateProfilePayload.profile.status,
     savedTemplateProfileCount: savedTemplateProfilesPayload.result.profileCount,

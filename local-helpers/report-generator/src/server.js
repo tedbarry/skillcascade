@@ -1,4 +1,5 @@
 import { createServer } from 'node:http'
+import { spawn } from 'node:child_process'
 import { readFile } from 'node:fs/promises'
 import { extname, join, normalize } from 'node:path'
 import { fileURLToPath } from 'node:url'
@@ -30,6 +31,7 @@ const configuredAllowedOrigins = (process.env.REPORT_HELPER_ALLOWED_ORIGINS || '
 const allowedOrigins = new Set([...defaultAllowedOrigins, ...configuredAllowedOrigins])
 const helperApiPrefix = '/api/local-report-generator'
 const legacyHelperApiPrefix = '/api/local-report-pilot'
+const pickerTimeoutMs = 10 * 60 * 1000
 
 function isHelperEndpoint(pathname, endpoint) {
   return pathname === `${helperApiPrefix}${endpoint}` || pathname === `${legacyHelperApiPrefix}${endpoint}`
@@ -83,6 +85,111 @@ async function readJsonBody(req) {
   return JSON.parse(text)
 }
 
+function pathPickerSupported() {
+  return process.platform === 'win32'
+}
+
+function dialogValue(value, fallback = '') {
+  return String(value || fallback).slice(0, 500)
+}
+
+function runPowerShellPicker(script, envOverrides = {}) {
+  return new Promise((resolvePicker, rejectPicker) => {
+    if (!pathPickerSupported()) {
+      rejectPicker(new Error('Local path picker is currently supported on Windows helper installations.'))
+      return
+    }
+
+    let stdout = ''
+    let stderr = ''
+    let settled = false
+    let timer
+    const child = spawn('powershell.exe', [
+      '-NoProfile',
+      '-STA',
+      '-ExecutionPolicy',
+      'Bypass',
+      '-Command',
+      script,
+    ], {
+      env: { ...process.env, ...envOverrides },
+      stdio: ['ignore', 'pipe', 'pipe'],
+      windowsHide: false,
+    })
+
+    const finish = (callback) => {
+      if (settled) return
+      settled = true
+      clearTimeout(timer)
+      callback()
+    }
+
+    timer = setTimeout(() => {
+      child.kill()
+      finish(() => rejectPicker(new Error('Path chooser timed out before a selection was made.')))
+    }, pickerTimeoutMs)
+
+    child.stdout.on('data', (chunk) => { stdout += chunk.toString('utf8') })
+    child.stderr.on('data', (chunk) => { stderr += chunk.toString('utf8') })
+    child.on('error', (error) => {
+      finish(() => rejectPicker(error))
+    })
+    child.on('close', (code) => {
+      finish(() => {
+        if (code === 0) {
+          const selectedPath = stdout.trim().split(/\r?\n/).filter(Boolean).at(-1) || ''
+          resolvePicker(selectedPath)
+          return
+        }
+        rejectPicker(new Error(stderr.trim() || `Path chooser exited with code ${code}.`))
+      })
+    })
+  })
+}
+
+async function chooseLocalFolder({ title, defaultPath } = {}) {
+  return runPowerShellPicker(`
+$ErrorActionPreference = 'Stop'
+Add-Type -AssemblyName System.Windows.Forms
+[Console]::OutputEncoding = [System.Text.Encoding]::UTF8
+$dialog = New-Object System.Windows.Forms.FolderBrowserDialog
+$dialog.Description = if ($env:SC_PICKER_TITLE) { $env:SC_PICKER_TITLE } else { 'Choose folder' }
+$dialog.ShowNewFolderButton = $true
+if ($env:SC_PICKER_DEFAULT -and (Test-Path -LiteralPath $env:SC_PICKER_DEFAULT)) { $dialog.SelectedPath = $env:SC_PICKER_DEFAULT }
+if ($dialog.ShowDialog() -eq [System.Windows.Forms.DialogResult]::OK) { Write-Output $dialog.SelectedPath }
+`, {
+    SC_PICKER_TITLE: dialogValue(title, 'Choose folder'),
+    SC_PICKER_DEFAULT: dialogValue(defaultPath),
+  })
+}
+
+async function chooseLocalFile({ title, defaultPath, filter } = {}) {
+  return runPowerShellPicker(`
+$ErrorActionPreference = 'Stop'
+Add-Type -AssemblyName System.Windows.Forms
+[Console]::OutputEncoding = [System.Text.Encoding]::UTF8
+$dialog = New-Object System.Windows.Forms.OpenFileDialog
+$dialog.Title = if ($env:SC_PICKER_TITLE) { $env:SC_PICKER_TITLE } else { 'Choose file' }
+$dialog.Filter = if ($env:SC_PICKER_FILTER) { $env:SC_PICKER_FILTER } else { 'Word documents (*.docx)|*.docx|All files (*.*)|*.*' }
+$dialog.CheckFileExists = $true
+$dialog.Multiselect = $false
+if ($env:SC_PICKER_DEFAULT -and (Test-Path -LiteralPath $env:SC_PICKER_DEFAULT)) {
+  $item = Get-Item -LiteralPath $env:SC_PICKER_DEFAULT
+  if ($item.PSIsContainer) {
+    $dialog.InitialDirectory = $item.FullName
+  } else {
+    $dialog.InitialDirectory = $item.DirectoryName
+    $dialog.FileName = $item.Name
+  }
+}
+if ($dialog.ShowDialog() -eq [System.Windows.Forms.DialogResult]::OK) { Write-Output $dialog.FileName }
+`, {
+    SC_PICKER_TITLE: dialogValue(title, 'Choose file'),
+    SC_PICKER_DEFAULT: dialogValue(defaultPath),
+    SC_PICKER_FILTER: dialogValue(filter, 'Word documents (*.docx)|*.docx|All files (*.*)|*.*'),
+  })
+}
+
 function safePath(urlPath) {
   const pathOnly = (urlPath || '/').split('?')[0]
   const requested = pathOnly === '/' ? '/index.html' : pathOnly
@@ -122,7 +229,7 @@ createServer(async (req, res) => {
         installState,
         licenseReadiness,
         supportedSourceExtensions: ['.docx', '.txt', '.md'],
-        sourceScanning: 'recursive-with-output-folder-exclusion',
+        sourceScanning: 'recursive-with-output-folder-exclusion-and-same-folder-artifact-skip',
         unsupportedFileBehavior: 'warn-do-not-extract',
         output: 'editable-docx',
         endpoints: {
@@ -130,6 +237,8 @@ createServer(async (req, res) => {
           licenseReadiness: helperEndpoint('/license-readiness'),
           templateProfile: helperEndpoint('/template-profile'),
           templateProfiles: helperEndpoint('/template-profiles'),
+          pickFolder: helperEndpoint('/pick-folder'),
+          pickFile: helperEndpoint('/pick-file'),
           preflight: helperEndpoint('/preflight'),
           run: helperEndpoint('/run'),
         },
@@ -138,8 +247,18 @@ createServer(async (req, res) => {
           licenseReadiness: legacyHelperEndpoint('/license-readiness'),
           templateProfile: legacyHelperEndpoint('/template-profile'),
           templateProfiles: legacyHelperEndpoint('/template-profiles'),
+          pickFolder: legacyHelperEndpoint('/pick-folder'),
+          pickFile: legacyHelperEndpoint('/pick-file'),
           preflight: legacyHelperEndpoint('/preflight'),
           run: legacyHelperEndpoint('/run'),
+        },
+        pathPickers: {
+          supported: pathPickerSupported(),
+          platform: process.platform,
+          mode: 'local-native-dialog',
+          folderEndpoint: helperEndpoint('/pick-folder'),
+          fileEndpoint: helperEndpoint('/pick-file'),
+          returnsPathOnly: true,
         },
         supportedTemplateFields: SUPPORTED_TEMPLATE_FIELDS,
         safety: {
@@ -153,6 +272,42 @@ createServer(async (req, res) => {
           extraOriginsEnv: 'REPORT_HELPER_ALLOWED_ORIGINS',
         },
       }, corsHeaders)
+      return
+    }
+
+    if (isHelperEndpoint(pathname, '/pick-folder') && method === 'POST') {
+      try {
+        const body = await readJsonBody(req)
+        const selectedPath = await chooseLocalFolder(body)
+        sendJson(res, {
+          ok: true,
+          result: {
+            kind: 'folder',
+            canceled: !selectedPath,
+            path: selectedPath,
+          },
+        }, corsHeaders)
+      } catch (error) {
+        sendError(res, 400, error.message, corsHeaders)
+      }
+      return
+    }
+
+    if (isHelperEndpoint(pathname, '/pick-file') && method === 'POST') {
+      try {
+        const body = await readJsonBody(req)
+        const selectedPath = await chooseLocalFile(body)
+        sendJson(res, {
+          ok: true,
+          result: {
+            kind: 'file',
+            canceled: !selectedPath,
+            path: selectedPath,
+          },
+        }, corsHeaders)
+      } catch (error) {
+        sendError(res, 400, error.message, corsHeaders)
+      }
       return
     }
 
