@@ -54,8 +54,12 @@ async function createSourceFixture() {
   const outputDir = join(root, 'output')
   await mkdir(sourceFolder, { recursive: true })
   await mkdir(outputDir, { recursive: true })
+  await writeFile(join(sourceFolder, 'psychological-evaluation.md'), [
+    'Psychological evaluation and diagnostic report document diagnosis of autism spectrum disorder under DSM-5 criteria.',
+    'The evaluation notes adaptive functioning, communication, social, and behavior needs that require ABA treatment planning.',
+  ].join(' '))
   await writeFile(join(sourceFolder, 'intake.md'), [
-    'Diagnosis: autism spectrum disorder is documented in the reviewed records.',
+    'Intake and caregiver interview identify presenting concerns and parent report.',
     'Family history includes caregiver participation and parent report.',
     'Developmental history notes delayed milestones and early intervention.',
     'Educational history includes school placement and IEP support.',
@@ -63,6 +67,11 @@ async function createSourceFixture() {
     'Communication profile indicates functional request and break communication needs.',
     'Social profile indicates reciprocal interaction and peer play needs.',
     'Parent training should address caregiver prompting, reinforcement, generalization, and safety response.',
+  ].join(' '))
+  await writeFile(join(sourceFolder, 'vineland.md'), [
+    'Vineland-3 Adaptive Behavior Composite indicates adaptive behavior deficits.',
+    'Communication domain, Daily Living Skills, and Socialization domain results support functional communication, adaptive, and social goal planning.',
+    'V-scale subdomains include receptive, expressive, interpersonal relationships, play and leisure, coping skills, domestic, and community needs.',
   ].join(' '))
   await writeFile(join(sourceFolder, 'legacy-report.doc'), 'unsupported binary placeholder')
   const templatePath = join(root, 'template.docx')
@@ -117,6 +126,10 @@ try {
   assert.equal(statusPayload.portDiscovery.endPort, 4199)
   assert.equal(statusPayload.safety.cloudUpload, false)
   assert.ok(statusPayload.helperVersion)
+  assert.equal(statusPayload.customerTemplateUpload, false)
+  assert.equal(statusPayload.standardTemplate.mode, 'skillcascade-standard-docx')
+  assert.equal(statusPayload.requiredEvidenceCategories.length, 3)
+  assert.ok(statusPayload.assessmentAdapters.some((adapter) => adapter.id === 'vineland'))
   assert.equal(statusPayload.installState.localDataPolicy.updatesPreserveCustomerData, true)
   assert.equal(statusPayload.installState.localPortPolicy.collisionBehavior, 'choose-next-available-loopback-port')
   assert.equal(statusPayload.installState.licensingPolicy.skillCascadeWorkflowPackIsAuthority, true)
@@ -233,7 +246,7 @@ try {
   assert.equal(savedTemplateProfilesPayload.result.profileCount, 1)
   assert.equal(savedTemplateProfilesPayload.result.profiles[0].id, saveTemplateProfilePayload.result.id)
 
-  const noTemplatePreflightResponse = await fetch(`${baseUrl}${helperApi}/preflight`, {
+  const standardPreflightResponse = await fetch(`${baseUrl}${helperApi}/preflight`, {
     method: 'POST',
     headers: {
       Origin: origin,
@@ -244,29 +257,19 @@ try {
       outputDir,
     }),
   })
-  assert.equal(noTemplatePreflightResponse.status, 200)
-  const noTemplatePreflightPayload = await noTemplatePreflightResponse.json()
-  assert.equal(noTemplatePreflightPayload.ok, true)
-  assert.equal(noTemplatePreflightPayload.result.okToRun, false)
-  assert.ok(noTemplatePreflightPayload.result.blockers.some((blocker) => blocker.includes('No Word template selected')))
-
-  const fallbackPreflightResponse = await fetch(`${baseUrl}${helperApi}/preflight`, {
-    method: 'POST',
-    headers: {
-      Origin: origin,
-      'Content-Type': 'application/json',
-    },
-    body: JSON.stringify({
-      sourceFolder,
-      outputDir,
-      allowFallbackTemplate: true,
-    }),
-  })
-  assert.equal(fallbackPreflightResponse.status, 200)
-  const fallbackPreflightPayload = await fallbackPreflightResponse.json()
-  assert.equal(fallbackPreflightPayload.ok, true)
-  assert.equal(fallbackPreflightPayload.result.okToRun, true)
-  assert.ok(fallbackPreflightPayload.result.warnings.some((warning) => warning.includes('fallback QA DOCX')))
+  assert.equal(standardPreflightResponse.status, 200)
+  const standardPreflightPayload = await standardPreflightResponse.json()
+  assert.equal(standardPreflightPayload.ok, true)
+  assert.equal(standardPreflightPayload.result.okToRun, true)
+  assert.equal(standardPreflightPayload.result.sourceTextReturned, false)
+  assert.equal(standardPreflightPayload.result.sourceSummary.supportedFileCount, 3)
+  assert.equal(standardPreflightPayload.result.sourceSummary.unsupportedFileCount, 1)
+  assert.equal(standardPreflightPayload.result.standardTemplate.mode, 'skillcascade-standard-docx')
+  assert.equal(standardPreflightPayload.result.templateSummary.customerTemplateUpload, false)
+  assert.equal(standardPreflightPayload.result.evidenceReadiness.ready, true)
+  assert.equal(standardPreflightPayload.result.evidenceReadiness.categories.length, 3)
+  assert.ok(standardPreflightPayload.result.assessmentAdapters.some((adapter) => adapter.id === 'vineland'))
+  assert.ok(standardPreflightPayload.result.deficitProfile.supportedGoalDomains.includes('Communication'))
 
   const localPreflightResponse = await fetch(`${baseUrl}${helperApi}/preflight`, {
     method: 'POST',
@@ -285,9 +288,10 @@ try {
   assert.equal(localPreflightPayload.ok, true)
   assert.equal(localPreflightPayload.result.okToRun, true)
   assert.equal(localPreflightPayload.result.sourceTextReturned, false)
-  assert.equal(localPreflightPayload.result.sourceSummary.supportedFileCount, 1)
+  assert.equal(localPreflightPayload.result.sourceSummary.supportedFileCount, 3)
   assert.equal(localPreflightPayload.result.sourceSummary.unsupportedFileCount, 1)
   assert.equal(localPreflightPayload.result.templateSummary.savedTemplateProfileId, saveTemplateProfilePayload.result.id)
+  assert.equal(localPreflightPayload.result.templateSummary.mode, 'legacy-local-template')
 
   const sameFolderPreflightResponse = await fetch(`${baseUrl}${helperApi}/preflight`, {
     method: 'POST',
@@ -307,9 +311,9 @@ try {
   assert.equal(sameFolderPreflightPayload.result.okToRun, true)
   assert.equal(sameFolderPreflightPayload.result.outputDir, sourceFolder)
   assert.equal(sameFolderPreflightPayload.result.outputStrategy, 'source-folder')
-  assert.equal(sameFolderPreflightPayload.result.sourceSummary.supportedFileCount, 1)
+  assert.equal(sameFolderPreflightPayload.result.sourceSummary.supportedFileCount, 3)
 
-  const blockedRunResponse = await fetch(`${baseUrl}${helperApi}/run`, {
+  const standardRunResponse = await fetch(`${baseUrl}${helperApi}/run`, {
     method: 'POST',
     headers: {
       Origin: origin,
@@ -318,33 +322,16 @@ try {
     body: JSON.stringify({
       sourceFolder,
       outputDir,
-      clientLabel: 'Blocked No Template Client',
+      clientLabel: 'Standard Client',
     }),
   })
-  assert.equal(blockedRunResponse.status, 400)
-  const blockedRunPayload = await blockedRunResponse.json()
-  assert.equal(blockedRunPayload.ok, false)
-  assert.match(blockedRunPayload.error, /No Word template selected/)
-
-  const fallbackRunResponse = await fetch(`${baseUrl}${helperApi}/run`, {
-    method: 'POST',
-    headers: {
-      Origin: origin,
-      'Content-Type': 'application/json',
-    },
-    body: JSON.stringify({
-      sourceFolder,
-      outputDir,
-      clientLabel: 'Fallback Client',
-      reportTitle: 'Fallback QA Draft',
-      allowFallbackTemplate: true,
-    }),
-  })
-  assert.equal(fallbackRunResponse.status, 200)
-  const fallbackRunPayload = await fallbackRunResponse.json()
-  assert.equal(fallbackRunPayload.ok, true)
-  assert.equal(fallbackRunPayload.result.templateMode, 'fallback-generated-docx')
-  assert.ok(fallbackRunPayload.result.qa.warnings.some((warning) => warning.includes('Fallback QA DOCX')))
+  assert.equal(standardRunResponse.status, 200)
+  const standardRunPayload = await standardRunResponse.json()
+  assert.equal(standardRunPayload.ok, true)
+  assert.equal(standardRunPayload.result.templateMode, 'skillcascade-standard-docx')
+  assert.equal(standardRunPayload.result.standardTemplate.customerTemplateUpload, false)
+  assert.equal(standardRunPayload.result.evidenceReadiness.ready, true)
+  assert.ok(standardRunPayload.result.assessmentAdapters.some((adapter) => adapter.id === 'vineland'))
 
   const runResponse = await fetch(`${baseUrl}${helperApi}/run`, {
     method: 'POST',
@@ -368,10 +355,12 @@ try {
   assert.equal(runPayload.result.qa.liveWriteAttempted, false)
   assert.equal(runPayload.result.qa.autoSignAttempted, false)
   assert.equal(runPayload.result.qa.autoSubmitAttempted, false)
-  assert.equal(runPayload.result.templateMode, 'placeholder-template')
+  assert.equal(runPayload.result.templateMode, 'legacy-placeholder-template')
   assert.equal(runPayload.result.templateProfileId, saveTemplateProfilePayload.result.id)
   assert.equal(runPayload.result.templateProfileLabel, 'Smoke Customer Template')
   assert.equal(runPayload.result.templateFieldAliases.client_name, 'client_label')
+  assert.equal(runPayload.result.standardTemplate.mode, 'skillcascade-standard-docx')
+  assert.equal(runPayload.result.evidenceReadiness.ready, true)
   assert.equal(runPayload.result.sourcePacket.sources.some((source) => 'text' in source), false)
   assert.equal(runPayload.result.sourcePacket.unsupportedFiles.some((source) => source.filename === 'legacy-report.doc'), true)
 
@@ -415,7 +404,7 @@ try {
   assert.equal(sameFolderRunPayload.ok, true)
   assert.equal(sameFolderRunPayload.result.outputStrategy, 'source-folder')
   assert.ok(sameFolderRunPayload.result.outputPath.startsWith(sourceFolder))
-  assert.equal(sameFolderRunPayload.result.sourcePacket.sources.length, 1)
+  assert.equal(sameFolderRunPayload.result.sourcePacket.sources.length, 3)
 
   const postSameFolderPreflightResponse = await fetch(`${baseUrl}${helperApi}/preflight`, {
     method: 'POST',
@@ -433,7 +422,7 @@ try {
   const postSameFolderPreflightPayload = await postSameFolderPreflightResponse.json()
   assert.equal(postSameFolderPreflightPayload.ok, true)
   assert.equal(postSameFolderPreflightPayload.result.okToRun, true)
-  assert.equal(postSameFolderPreflightPayload.result.sourceSummary.supportedFileCount, 1)
+  assert.equal(postSameFolderPreflightPayload.result.sourceSummary.supportedFileCount, 3)
   assert.equal(postSameFolderPreflightPayload.result.sourceSummary.unsupportedFileCount, 1)
 
   console.log(JSON.stringify({
@@ -443,11 +432,13 @@ try {
     licenseReadinessCode: licenseReadinessResponse.status,
     licenseReady: licenseReadinessPayload.result.status,
     preflightCode: preflightResponse.status,
+    standardPreflightCode: standardPreflightResponse.status,
+    standardPreflightReady: standardPreflightPayload.result.okToRun,
     localPreflightCode: localPreflightResponse.status,
     localPreflightReady: localPreflightPayload.result.okToRun,
     sameFolderReady: postSameFolderPreflightPayload.result.okToRun,
     sameFolderOutputCreated: true,
-    fallbackTemplateMode: fallbackRunPayload.result.templateMode,
+    standardTemplateMode: standardRunPayload.result.templateMode,
     templateProfileCode: templateProfileResponse.status,
     templateProfileStatus: templateProfilePayload.profile.status,
     savedTemplateProfileCount: savedTemplateProfilesPayload.result.profileCount,

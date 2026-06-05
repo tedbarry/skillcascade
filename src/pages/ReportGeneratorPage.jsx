@@ -14,20 +14,20 @@ const LEGACY_HELPER_API_PREFIX = '/api/local-report-pilot'
 
 const workflowSteps = [
   {
-    title: 'Choose files',
-    detail: 'Pick the folder that contains the client documents for the report.',
+    title: 'Choose sources',
+    detail: 'Pick the folder with the diagnostic/evaluation, intake, adaptive assessment, and related records.',
   },
   {
-    title: 'Choose template',
-    detail: 'Choose the agency Word template once, then reuse it for future drafts.',
+    title: 'Check evidence',
+    detail: 'SkillCascade confirms the packet can support deficits, goals, and core report sections.',
   },
   {
-    title: 'Create draft',
-    detail: 'Generate an editable Word draft and review checklist on the workstation.',
+    title: 'Use standard template',
+    detail: 'The draft uses the SkillCascade standard initial assessment template automatically.',
   },
   {
-    title: 'Review',
-    detail: 'The BCBA reviews the draft before using, signing, or submitting anything.',
+    title: 'BCBA review',
+    detail: 'Review the Word draft, evidence ledger, missing fields, and goals before use.',
   },
 ]
 
@@ -209,207 +209,6 @@ async function discoverHelperStatus(currentUrl) {
   throw new Error(`Local helper was not found. Start or install the helper on this computer, then click Check setup again.${detail}`)
 }
 
-function TemplateProfilePanel({ profile }) {
-  const ready = profile.status === 'ready'
-  const unsupported = profile.unsupportedTags || []
-  const requiredMissing = profile.requiredMissing || []
-  const missingRecommended = (profile.missingRecommendedFields || []).filter((field) => !field.required)
-  const supported = profile.supportedTags || []
-
-  return (
-    <div className={`mt-5 rounded-xl border p-4 ${ready ? 'border-sage-200 bg-sage-50' : 'border-amber-200 bg-amber-50'}`}>
-      <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
-        <div>
-          <p className={`text-xs font-semibold uppercase tracking-wide ${ready ? 'text-sage-700' : 'text-amber-700'}`}>Template check</p>
-          <h3 className={`mt-1 text-base font-bold ${ready ? 'text-sage-950' : 'text-amber-950'}`}>
-            {profile.filename || 'Word template'} is {ready ? 'ready to draft' : 'ready for review'}
-          </h3>
-          <p className={`mt-1 text-sm leading-6 ${ready ? 'text-sage-800' : 'text-amber-900'}`}>
-            {profile.tagCount || 0} fillable fields found. Goals table: {profile.goalLoop?.detected ? 'ready' : 'needs review'}.
-          </p>
-        </div>
-        <StatusBadge tone={ready ? 'green' : 'warm'}>{profile.status}</StatusBadge>
-      </div>
-
-      <div className="mt-4 grid gap-3 md:grid-cols-3">
-        <TemplateTagList title="Ready fields" items={supported.slice(0, 12)} empty="No ready fields detected." />
-        <TemplateTagList
-          title="Needs matching"
-          items={unsupported.map((item) => item.suggestedTag ? `${item.tag} -> ${item.suggestedTag}` : item.tag)}
-          empty="No fields need matching."
-        />
-        <TemplateTagList
-          title="Useful fields not found"
-          items={[...requiredMissing, ...missingRecommended].slice(0, 12).map((item) => item.required ? `${item.tag} (important)` : item.tag)}
-          empty="No missing useful tags."
-        />
-      </div>
-
-      {profile.warnings?.length ? (
-        <div className="mt-3 rounded-lg border border-white/70 bg-white px-3 py-2">
-          <p className="text-xs font-semibold uppercase tracking-wide text-amber-700">Template notes</p>
-          <ul className="mt-2 space-y-1 text-xs text-amber-800">
-            {profile.warnings.map((warning) => (
-              <li key={warning}>{warning}</li>
-            ))}
-          </ul>
-        </div>
-      ) : null}
-    </div>
-  )
-}
-
-function SavedTemplateProfilesPanel({ state, activeId, onRefresh, onSelect }) {
-  const profiles = state.result?.profiles || []
-
-  return (
-    <div className="mt-5 rounded-xl border border-blue-200 bg-blue-50 p-4">
-      <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
-        <div>
-          <p className="text-xs font-semibold uppercase tracking-wide text-blue-700">Saved templates</p>
-          <h3 className="mt-1 text-base font-bold text-blue-950">Reusable Word templates</h3>
-          <p className="mt-1 text-sm leading-6 text-blue-900">
-            Save a customer template once and reuse it for later drafts on this computer.
-          </p>
-        </div>
-        <button
-          type="button"
-          onClick={onRefresh}
-          className="min-h-[40px] rounded-full border border-blue-200 bg-white px-4 py-2 text-xs font-semibold text-blue-800 hover:bg-blue-100"
-        >
-          {state.loading ? 'Refreshing...' : 'Refresh'}
-        </button>
-      </div>
-
-      {state.error ? (
-        <div className="mt-3 rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-xs text-amber-800">
-          {state.error}
-        </div>
-      ) : null}
-
-      {state.message ? (
-        <div className="mt-3 rounded-lg border border-sage-200 bg-sage-50 px-3 py-2 text-xs font-semibold text-sage-800">
-          {state.message}
-        </div>
-      ) : null}
-
-      {profiles.length ? (
-        <div className="mt-3 space-y-2">
-          {profiles.map((saved) => (
-            <button
-              key={saved.id}
-              type="button"
-              onClick={() => onSelect(saved)}
-              className={`w-full rounded-lg border px-3 py-3 text-left transition-colors ${activeId === saved.id ? 'border-sage-300 bg-white text-sage-900' : 'border-blue-100 bg-white/80 text-blue-950 hover:bg-white'}`}
-            >
-              <span className="block text-sm font-bold">{saved.label}</span>
-              <span className="mt-1 block break-all text-xs leading-5 text-blue-800">{saved.templatePath}</span>
-              <span className="mt-2 inline-flex rounded-full border border-blue-100 bg-blue-50 px-2 py-1 text-[11px] font-semibold text-blue-800">
-                {saved.status} - {saved.tagCount || 0} fields - {saved.aliasSummary?.aliasCount || 0} matched
-              </span>
-            </button>
-          ))}
-        </div>
-      ) : (
-        <p className="mt-3 rounded-lg border border-blue-100 bg-white/80 px-3 py-3 text-sm leading-6 text-blue-900">
-          No saved templates yet. Check a Word template, then save it here.
-        </p>
-      )}
-    </div>
-  )
-}
-
-function TemplateAliasEditor({ profile, fieldAliases, supportedFields, onChange }) {
-  const unsupported = profile.unsupportedTags || []
-  const aliasTags = [
-    ...unsupported.map((item) => item.tag),
-    ...Object.keys(fieldAliases || {}).filter((tag) => !unsupported.some((item) => item.tag === tag)),
-  ]
-
-  if (!aliasTags.length) {
-    return (
-      <div className="mt-5 rounded-xl border border-sage-200 bg-sage-50 p-4">
-        <p className="text-xs font-semibold uppercase tracking-wide text-sage-700">Template matching</p>
-        <p className="mt-2 text-sm leading-6 text-sage-800">
-          This template is ready. No field matching is needed.
-        </p>
-      </div>
-    )
-  }
-
-  function setAlias(templateTag, sourceTag) {
-    const next = { ...(fieldAliases || {}) }
-    if (sourceTag) {
-      next[templateTag] = sourceTag
-    } else {
-      delete next[templateTag]
-    }
-    onChange(next)
-  }
-
-  function unsupportedInfo(tag) {
-    return unsupported.find((item) => item.tag === tag) || { tag, suggestedTag: '' }
-  }
-
-  return (
-    <div className="mt-5 rounded-xl border border-blue-200 bg-blue-50 p-4">
-      <div className="flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between">
-        <div>
-          <p className="text-xs font-semibold uppercase tracking-wide text-blue-700">Template matching</p>
-          <h3 className="mt-1 text-base font-bold text-blue-950">Match template fields to report fields</h3>
-          <p className="mt-1 text-sm leading-6 text-blue-900">
-            Match any customer template field names that SkillCascade does not recognize automatically.
-          </p>
-        </div>
-        <StatusBadge tone="blue">{Object.keys(fieldAliases || {}).length} matched</StatusBadge>
-      </div>
-
-      <div className="mt-4 space-y-3">
-        {aliasTags.map((tag) => {
-          const info = unsupportedInfo(tag)
-          const current = fieldAliases?.[tag] || ''
-          return (
-            <div key={tag} className="rounded-lg border border-blue-100 bg-white px-3 py-3">
-              <div className="grid gap-3 md:grid-cols-[minmax(0,1fr)_minmax(220px,320px)_auto] md:items-end">
-                <div>
-                  <p className="text-xs font-semibold uppercase tracking-wide text-warm-500">Template field</p>
-                  <p className="mt-1 break-all text-sm font-bold text-warm-900">{tag}</p>
-                  {info.suggestedTag ? (
-                    <p className="mt-1 text-xs text-blue-800">Suggested: {info.suggestedTag}</p>
-                  ) : null}
-                </div>
-                <label className="block">
-                  <span className="text-xs font-semibold uppercase tracking-wide text-warm-500">Report field</span>
-                  <select
-                    value={current}
-                    onChange={(event) => setAlias(tag, event.target.value)}
-                    className="mt-1 min-h-[44px] w-full rounded-lg border border-warm-200 bg-white px-3 py-2 text-sm text-warm-800 shadow-sm outline-none transition-colors focus:border-sage-400"
-                  >
-                    <option value="">Leave for review</option>
-                    {supportedFields.map((field) => (
-                      <option key={field.tag} value={field.tag}>
-                        {field.label ? `${field.label} (${field.tag})` : field.tag}
-                      </option>
-                    ))}
-                  </select>
-                </label>
-                <button
-                  type="button"
-                  onClick={() => setAlias(tag, info.suggestedTag || '')}
-                  disabled={!info.suggestedTag}
-                  className="min-h-[40px] rounded-full border border-blue-200 bg-blue-50 px-4 py-2 text-xs font-semibold text-blue-800 hover:bg-blue-100 disabled:cursor-not-allowed disabled:border-warm-200 disabled:bg-warm-100 disabled:text-warm-400"
-                >
-                  Use suggestion
-                </button>
-              </div>
-            </div>
-          )
-        })}
-      </div>
-    </div>
-  )
-}
-
 function HelperPackagePanel({ packageState, downloadState, helperStatus, helperUrl, onRefresh, onDownload, onCheck }) {
   const readyToDownload = packageState.ok && !downloadState.loading
   const packageLabel = packageState.data?.filename || 'Report Generator helper'
@@ -507,6 +306,43 @@ function HelperPackagePanel({ packageState, downloadState, helperStatus, helperU
   )
 }
 
+function StandardTemplatePanel({ template }) {
+  const activeTemplate = template || {
+    label: 'SkillCascade Standard Initial Assessment',
+    reportType: 'initial-assessment',
+    mode: 'skillcascade-standard-docx',
+  }
+
+  return (
+    <div className="mt-4 rounded-xl border border-blue-200 bg-blue-50 p-4">
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+        <div>
+          <p className="text-xs font-semibold uppercase tracking-wide text-blue-700">Template</p>
+          <h3 className="mt-1 text-base font-bold text-blue-950">{activeTemplate.label}</h3>
+          <p className="mt-1 text-sm leading-6 text-blue-900">
+            Report drafts use the SkillCascade standard initial assessment format automatically. Users upload source documents, not report templates.
+          </p>
+        </div>
+        <StatusBadge tone="blue">Standard only</StatusBadge>
+      </div>
+      <div className="mt-3 grid gap-3 md:grid-cols-3">
+        <div className="rounded-lg border border-blue-100 bg-white px-3 py-3">
+          <p className="text-xs font-semibold uppercase tracking-wide text-warm-500">Report type</p>
+          <p className="mt-2 text-sm font-bold text-warm-900">{activeTemplate.reportType || 'initial-assessment'}</p>
+        </div>
+        <div className="rounded-lg border border-blue-100 bg-white px-3 py-3">
+          <p className="text-xs font-semibold uppercase tracking-wide text-warm-500">Template source</p>
+          <p className="mt-2 text-sm font-bold text-warm-900">Controlled by SkillCascade</p>
+        </div>
+        <div className="rounded-lg border border-blue-100 bg-white px-3 py-3">
+          <p className="text-xs font-semibold uppercase tracking-wide text-warm-500">Template upload</p>
+          <p className="mt-2 text-sm font-bold text-warm-900">Not used in v1</p>
+        </div>
+      </div>
+    </div>
+  )
+}
+
 function HelperInstallStatePanel({ installState, licenseReadiness }) {
   const buildManifest = installState.buildManifest
   const fingerprint = licenseReadiness?.installFingerprint
@@ -531,7 +367,7 @@ function HelperInstallStatePanel({ installState, licenseReadiness }) {
         <div className="rounded-lg border border-white/70 bg-white px-3 py-3">
           <p className="text-xs font-semibold uppercase tracking-wide text-warm-500">Saved settings</p>
           <p className="mt-2 text-sm leading-6 text-warm-700">
-            Template settings are preserved when the helper is replaced.
+            Local helper settings are preserved when the helper is replaced.
           </p>
         </div>
         <div className="rounded-lg border border-white/70 bg-white px-3 py-3">
@@ -551,12 +387,9 @@ function HelperInstallStatePanel({ installState, licenseReadiness }) {
   )
 }
 
-function SeatClaimPanel({ licenseReadiness, installState, savedTemplatesState, state, onClaim }) {
+function SeatClaimPanel({ licenseReadiness, installState, state, onClaim }) {
   const fingerprint = licenseReadiness?.installFingerprint || ''
   const claimed = state.data?.claim
-  const profileCount = savedTemplatesState.result?.profileCount || 0
-  const aliasCount = (savedTemplatesState.result?.profiles || [])
-    .reduce((total, profile) => total + (profile.aliasSummary?.aliasCount || 0), 0)
 
   if (!licenseReadiness) return null
 
@@ -583,8 +416,8 @@ function SeatClaimPanel({ licenseReadiness, installState, savedTemplatesState, s
           <p className="mt-2 text-sm text-warm-700">{licenseReadiness.helperVersion || installState.helperVersion || 'unknown'}</p>
         </div>
         <div className="rounded-lg border border-blue-100 bg-white px-3 py-3">
-          <p className="text-xs font-semibold uppercase tracking-wide text-warm-500">Templates</p>
-          <p className="mt-2 text-sm text-warm-700">{profileCount} saved, {aliasCount} field matches</p>
+          <p className="text-xs font-semibold uppercase tracking-wide text-warm-500">Template</p>
+          <p className="mt-2 text-sm text-warm-700">SkillCascade standard</p>
         </div>
       </div>
 
@@ -646,6 +479,49 @@ function OnboardingChecklistPanel({ state }) {
   )
 }
 
+function EvidenceReadinessPanel({ result }) {
+  const evidenceCategories = result.evidenceReadiness?.categories || []
+  const detectedAdapters = result.assessmentAdapters || []
+  const deficitDomains = result.deficitProfile?.domains || []
+
+  return (
+    <div className="mt-4 grid gap-3 lg:grid-cols-3">
+      <div className="rounded-xl border border-white/70 bg-white px-3 py-3">
+        <p className="text-xs font-semibold uppercase tracking-wide text-warm-500">Required source evidence</p>
+        <div className="mt-2 space-y-2">
+          {evidenceCategories.length ? evidenceCategories.map((category) => (
+            <div key={category.id} className="rounded-lg border border-warm-100 bg-warm-50 px-3 py-2">
+              <div className="flex items-start justify-between gap-2">
+                <p className="text-sm font-bold text-warm-900">{category.label}</p>
+                <StatusBadge tone={category.status === 'found' ? 'green' : 'warm'}>
+                  {category.status === 'found' ? 'Found' : 'Missing'}
+                </StatusBadge>
+              </div>
+              <p className="mt-1 text-xs leading-5 text-warm-600">{category.evidence?.length || 0} source file match{category.evidence?.length === 1 ? '' : 'es'}</p>
+            </div>
+          )) : (
+            <p className="text-sm leading-6 text-warm-600">Run Check files to see required evidence.</p>
+          )}
+        </div>
+      </div>
+
+      <TemplateTagList
+        title="Detected assessment inputs"
+        items={detectedAdapters.map((adapter) => adapter.label)}
+        empty="No known assessment inputs detected yet."
+      />
+
+      <TemplateTagList
+        title="Supported deficit domains"
+        items={deficitDomains
+          .filter((domain) => domain.status === 'source-supported')
+          .map((domain) => domain.label)}
+        empty="No source-supported deficit domains detected yet."
+      />
+    </div>
+  )
+}
+
 function TemplateTagList({ title, items, empty }) {
   return (
     <div className="rounded-lg border border-white/70 bg-white px-3 py-3">
@@ -669,12 +545,9 @@ export default function ReportGeneratorPage() {
   const [onboardingState, setOnboardingState] = useState({ loading: true, data: null, error: '' })
   const [helperUrl, setHelperUrl] = useState(DEFAULT_HELPER_URL)
   const [showAdvancedSetup, setShowAdvancedSetup] = useState(false)
-  const [showTemplateSettings, setShowTemplateSettings] = useState(false)
   const [helperPackageState, setHelperPackageState] = useState({ loading: true, ok: false, data: null, error: '', message: '' })
   const [downloadState, setDownloadState] = useState({ loading: false, error: '' })
   const [helperStatus, setHelperStatus] = useState({ checked: false, loading: false, ok: false, data: null, error: '', discoveredUrl: '', message: '' })
-  const [templateState, setTemplateState] = useState({ loading: false, profile: null, error: '' })
-  const [savedTemplatesState, setSavedTemplatesState] = useState({ loading: false, saving: false, result: null, error: '', message: '' })
   const [seatClaimState, setSeatClaimState] = useState({ loading: false, data: null, error: '' })
   const [creditState, setCreditState] = useState({ loading: true, data: null, error: '' })
   const [creditCheckoutState, setCreditCheckoutState] = useState({ bundleId: '', error: '' })
@@ -685,27 +558,14 @@ export default function ReportGeneratorPage() {
     clientLabel: '',
     sourceFolder: '',
     outputDir: '',
-    templatePath: '',
-    templateProfileId: '',
-    templateProfileLabel: '',
-    fieldAliases: {},
-    allowFallbackTemplate: false,
   })
 
   const helperBase = useMemo(() => normalizeHelperBase(helperUrl), [helperUrl])
-  const supportedTemplateFields = useMemo(() => {
-    const helperFields = helperStatus.data?.supportedTemplateFields || []
-    if (helperFields.length) return helperFields
-
-    return (moduleStatus.data?.templateProfile?.supportedTemplateTags || [])
-      .filter((tag) => tag !== 'goals')
-      .map((tag) => ({ tag, label: tag }))
-  }, [helperStatus.data, moduleStatus.data])
   const userCanEdit = moduleStatus.data?.userCanEdit === true
   const creditBalance = Number(creditState.data?.balance || 0)
   const reportCreditBundles = creditState.data?.bundles?.length ? creditState.data.bundles : REPORT_CREDIT_BUNDLES
-  const hasTemplateSelection = Boolean(form.templatePath.trim() || form.templateProfileId)
-  const needsTemplateDecision = !hasTemplateSelection && !form.allowFallbackTemplate
+  const evidenceReady = preflightState.result?.okToRun === true
+  const needsEvidenceCheck = !evidenceReady
 
   useEffect(() => {
     let active = true
@@ -839,7 +699,6 @@ export default function ReportGeneratorPage() {
         discoveredUrl: result.url,
         message: result.url !== helperBase ? 'Helper found automatically at a safe local address.' : '',
       })
-      await loadSavedTemplates({ silent: true, baseUrl: result.url })
     } catch (error) {
       setHelperStatus({ checked: true, loading: false, ok: false, data: null, error: readHelperError(error), discoveredUrl: '', message: '' })
     }
@@ -860,7 +719,6 @@ export default function ReportGeneratorPage() {
       discoveredUrl: result.url,
       message: result.url !== helperBase ? 'Helper found automatically at a safe local address.' : '',
     })
-    await loadSavedTemplates({ silent: true, baseUrl: result.url })
     return result.url
   }
 
@@ -881,9 +739,7 @@ export default function ReportGeneratorPage() {
       setForm((prev) => ({
         ...prev,
         [field]: selectedPath,
-        ...(field === 'templatePath' ? { templateProfileId: '', fieldAliases: {} } : {}),
       }))
-      if (field === 'templatePath') setShowTemplateSettings(true)
       setPathPickerState({ loadingField: '', error: '' })
     } catch (error) {
       setPathPickerState({ loadingField: '', error: readHelperError(error) })
@@ -908,8 +764,6 @@ export default function ReportGeneratorPage() {
       return
     }
 
-    const profiles = savedTemplatesState.result?.profiles || []
-    const aliasCount = profiles.reduce((total, saved) => total + (saved.aliasSummary?.aliasCount || 0), 0)
     setSeatClaimState({ loading: true, data: null, error: '' })
     try {
       const response = await api.fetch('/api/report-generator/seat-claims', {
@@ -920,8 +774,7 @@ export default function ReportGeneratorPage() {
           packageVersion: installState.buildManifest?.packageVersion || '',
           helperUrl: helperBase,
           readinessStatus: readiness.status || '',
-          templateProfileCount: savedTemplatesState.result?.profileCount || 0,
-          aliasCount,
+          standardTemplateId: moduleStatus.data?.standardTemplate?.id || 'skillcascade-standard-initial-assessment-v1',
         }),
       })
       const payload = await response.json().catch(() => null)
@@ -948,74 +801,12 @@ export default function ReportGeneratorPage() {
         body: JSON.stringify({
           sourceFolder: form.sourceFolder.trim(),
           outputDir: form.outputDir.trim(),
-          templatePath: form.templatePath.trim(),
-          templateProfileId: form.templateProfileId,
-          allowFallbackTemplate: form.allowFallbackTemplate,
         }),
       })
       setPreflightState({ loading: false, result: payload.result, error: '' })
     } catch (error) {
       setPreflightState({ loading: false, result: null, error: readHelperError(error) })
     }
-  }
-
-  async function loadSavedTemplates({ silent = false, baseUrl = helperBase } = {}) {
-    setSavedTemplatesState((prev) => ({ ...prev, loading: true, error: '', message: silent ? prev.message : '' }))
-    try {
-      const payload = await fetchHelperJson(baseUrl, '/template-profiles')
-      setSavedTemplatesState((prev) => ({ ...prev, loading: false, result: payload.result, error: '' }))
-    } catch (error) {
-      setSavedTemplatesState((prev) => ({ ...prev, loading: false, error: readHelperError(error) }))
-    }
-  }
-
-  async function saveCurrentTemplateProfile() {
-    if (!form.templatePath.trim()) {
-      setSavedTemplatesState((prev) => ({ ...prev, error: 'Enter a local Word template path before saving a profile.' }))
-      return
-    }
-
-    setSavedTemplatesState((prev) => ({ ...prev, saving: true, error: '', message: '' }))
-    try {
-      const payload = await fetchHelperJson(helperBase, '/template-profiles', {
-        method: 'POST',
-        headers: { 'content-type': 'application/json' },
-        body: JSON.stringify({
-          templatePath: form.templatePath.trim(),
-          label: form.templateProfileLabel.trim() || templateState.profile?.filename || 'Customer template',
-          templateProfileId: form.templateProfileId,
-          fieldAliases: form.fieldAliases,
-        }),
-      })
-      setForm((prev) => ({
-        ...prev,
-        templateProfileId: payload.result.id,
-        templateProfileLabel: payload.result.label,
-        templatePath: payload.result.templatePath,
-        fieldAliases: payload.result.fieldAliases || prev.fieldAliases,
-      }))
-      setTemplateState({ loading: false, profile: payload.result.profile, error: '' })
-      setSavedTemplatesState((prev) => ({
-        ...prev,
-        saving: false,
-        error: '',
-        message: `Saved template profile: ${payload.result.label}`,
-      }))
-      await loadSavedTemplates({ silent: true })
-    } catch (error) {
-      setSavedTemplatesState((prev) => ({ ...prev, saving: false, error: readHelperError(error) }))
-    }
-  }
-
-  function selectSavedTemplate(savedTemplate) {
-    setForm((prev) => ({
-      ...prev,
-      templateProfileId: savedTemplate.id,
-      templateProfileLabel: savedTemplate.label,
-      templatePath: savedTemplate.templatePath,
-      fieldAliases: savedTemplate.fieldAliases || {},
-    }))
-    setTemplateState({ loading: false, profile: savedTemplate.profile, error: '' })
   }
 
   async function runLocalDraft() {
@@ -1027,8 +818,8 @@ export default function ReportGeneratorPage() {
       setRunState({ loading: false, result: null, error: 'Enter a local source folder first.' })
       return
     }
-    if (needsTemplateDecision) {
-      setRunState({ loading: false, result: null, error: 'Choose a Word template or check the fallback QA draft option before generating.' })
+    if (needsEvidenceCheck) {
+      setRunState({ loading: false, result: null, error: 'Run Check files first. Required source evidence must be present before creating a report draft.' })
       return
     }
     if (creditBalance <= 0) {
@@ -1046,16 +837,9 @@ export default function ReportGeneratorPage() {
           sourceFolder: form.sourceFolder.trim(),
           outputDir: form.outputDir.trim(),
           clientLabel: form.clientLabel.trim() || 'Local Report Client',
-          reportTitle: 'ABA Initial Assessment Draft',
-          templatePath: form.templatePath.trim(),
-          templateProfileId: form.templateProfileId,
-          templateFieldAliases: form.fieldAliases,
-          allowFallbackTemplate: form.allowFallbackTemplate,
+          reportTitle: moduleStatus.data?.standardTemplate?.label || 'SkillCascade Standard Initial Assessment',
         }),
       })
-      if (payload.result?.templateProfile) {
-        setTemplateState({ loading: false, profile: payload.result.templateProfile, error: '' })
-      }
       let creditResult = null
       let creditWarning = ''
       try {
@@ -1079,34 +863,6 @@ export default function ReportGeneratorPage() {
       setRunState({ loading: false, result: { ...payload.result, creditResult, creditWarning }, error: '' })
     } catch (error) {
       setRunState({ loading: false, result: null, error: readHelperError(error) })
-    }
-  }
-
-  async function profileTemplate() {
-    if (!form.templatePath.trim()) {
-      setTemplateState({ loading: false, profile: null, error: 'Enter a local Word template path first.' })
-      return
-    }
-
-    setTemplateState({ loading: true, profile: null, error: '' })
-    try {
-      const payload = await fetchHelperJson(helperBase, '/template-profile', {
-        method: 'POST',
-        headers: { 'content-type': 'application/json' },
-        body: JSON.stringify({ templatePath: form.templatePath.trim() }),
-      })
-      const suggestedAliases = Object.fromEntries((payload.profile.unsupportedTags || [])
-        .filter((item) => item.suggestedTag)
-        .map((item) => [item.tag, item.suggestedTag]))
-      setTemplateState({ loading: false, profile: payload.profile, error: '' })
-      setForm((prev) => ({
-        ...prev,
-        templateProfileId: '',
-        templateProfileLabel: prev.templateProfileLabel || payload.profile.filename || '',
-        fieldAliases: { ...suggestedAliases, ...prev.fieldAliases },
-      }))
-    } catch (error) {
-      setTemplateState({ loading: false, profile: null, error: readHelperError(error) })
     }
   }
 
@@ -1184,7 +940,7 @@ export default function ReportGeneratorPage() {
                 <p className="text-xs font-semibold uppercase tracking-wide text-sage-700">Create draft</p>
                 <h2 className="mt-2 text-xl font-bold text-warm-900">Choose the client folder</h2>
                 <p className="mt-2 text-sm leading-6 text-warm-600">
-                  Use the buttons to choose the local folders and Word template. You can still paste a path if support gives you one.
+                  Use the buttons to choose the local source and output folders. SkillCascade uses the standard initial assessment template automatically.
                 </p>
               </div>
               <StatusBadge tone={helperStatus.ok ? 'green' : helperStatus.checked ? 'red' : 'warm'}>
@@ -1263,14 +1019,9 @@ export default function ReportGeneratorPage() {
               </div>
             ) : null}
 
+            <StandardTemplatePanel template={moduleStatus.data?.standardTemplate || helperStatus.data?.standardTemplate} />
+
             <div className="mt-4 flex flex-wrap gap-3">
-              <button
-                type="button"
-                onClick={() => setShowTemplateSettings((value) => !value)}
-                className="min-h-[40px] rounded-full border border-blue-200 bg-blue-50 px-4 py-2 text-xs font-semibold text-blue-800 hover:bg-blue-100"
-              >
-                {showTemplateSettings ? 'Hide Word template options' : 'Use a Word template'}
-              </button>
               <button
                 type="button"
                 onClick={() => setShowAdvancedSetup((value) => !value)}
@@ -1279,78 +1030,6 @@ export default function ReportGeneratorPage() {
                 {showAdvancedSetup ? 'Hide advanced setup' : 'Advanced setup'}
               </button>
             </div>
-
-            {showTemplateSettings ? (
-              <div className="mt-4 rounded-xl border border-blue-100 bg-blue-50 p-4">
-                <div className="grid gap-4 md:grid-cols-2">
-                  <div className="md:col-span-2">
-                    <Field
-                      label="Word template file"
-                      value={form.templatePath}
-                      onChange={(value) => setForm((prev) => ({ ...prev, templatePath: value, templateProfileId: '', fieldAliases: {} }))}
-                      placeholder="Choose the agency Word report template"
-                      help="Required for a real agency-formatted report draft. Save it once to reuse it later."
-                      actions={(
-                        <SmallActionButton
-                          onClick={() => pickLocalPath({
-                            field: 'templatePath',
-                            endpoint: '/pick-file',
-                            title: 'Choose the agency Word report template',
-                            defaultPath: form.templatePath || form.sourceFolder,
-                            filter: 'Word documents (*.docx)|*.docx|All files (*.*)|*.*',
-                          })}
-                          disabled={pathPickerState.loadingField === 'templatePath'}
-                          tone="blue"
-                        >
-                          {pathPickerState.loadingField === 'templatePath' ? 'Opening...' : 'Choose Word template'}
-                        </SmallActionButton>
-                      )}
-                    />
-                  </div>
-                  <div className="md:col-span-2">
-                    <Field
-                      label="Template nickname"
-                      value={form.templateProfileLabel}
-                      onChange={(value) => setForm((prev) => ({ ...prev, templateProfileLabel: value }))}
-                      placeholder="Agency initial assessment template"
-                      help="Optional. Save the template once so it can be reused later."
-                    />
-                  </div>
-                </div>
-
-                <div className="mt-4 flex flex-wrap items-center gap-3">
-                  <button
-                    type="button"
-                    onClick={profileTemplate}
-                    disabled={templateState.loading || !form.templatePath.trim()}
-                    className="min-h-[44px] rounded-full border border-warm-300 bg-white px-5 py-2 text-sm font-semibold text-warm-800 shadow-sm hover:bg-warm-50 disabled:cursor-not-allowed disabled:bg-warm-100 disabled:text-warm-400"
-                  >
-                    {templateState.loading ? 'Checking template...' : 'Check Word template'}
-                  </button>
-                  <button
-                    type="button"
-                    onClick={saveCurrentTemplateProfile}
-                    disabled={savedTemplatesState.saving || !form.templatePath.trim()}
-                    className="min-h-[44px] rounded-full border border-blue-200 bg-white px-5 py-2 text-sm font-semibold text-blue-800 shadow-sm hover:bg-blue-100 disabled:cursor-not-allowed disabled:bg-warm-100 disabled:text-warm-400"
-                  >
-                    {savedTemplatesState.saving ? 'Saving template...' : form.templateProfileId ? 'Update saved template' : 'Save template for reuse'}
-                  </button>
-                </div>
-              </div>
-            ) : null}
-
-            <label className="mt-4 flex gap-3 rounded-xl border border-warm-200 bg-warm-50 px-4 py-3 text-sm text-warm-700">
-              <input
-                type="checkbox"
-                checked={form.allowFallbackTemplate}
-                onChange={(event) => setForm((prev) => ({ ...prev, allowFallbackTemplate: event.target.checked }))}
-                className="mt-1 h-4 w-4 rounded border-warm-300 text-sage-600 focus:ring-sage-500"
-              />
-              <span>
-                <span className="font-semibold text-warm-900">Allow fallback QA draft without a Word template.</span>{' '}
-                This is only for testing the source extraction and review checklist. It is not the agency report format.
-              </span>
-            </label>
 
             {showAdvancedSetup ? (
               <div className="mt-4 rounded-xl border border-warm-200 bg-warm-50 p-4">
@@ -1376,7 +1055,7 @@ export default function ReportGeneratorPage() {
               <button
                 type="button"
                 onClick={runLocalDraft}
-                disabled={runState.loading || !userCanEdit || creditBalance <= 0 || needsTemplateDecision}
+                disabled={runState.loading || !userCanEdit || creditBalance <= 0 || needsEvidenceCheck}
                 className="min-h-[44px] rounded-full bg-sage-600 px-5 py-2 text-sm font-semibold text-white shadow-sm hover:bg-sage-700 disabled:cursor-not-allowed disabled:bg-warm-300"
               >
                 {runState.loading ? 'Creating draft...' : 'Create Word draft'}
@@ -1387,37 +1066,10 @@ export default function ReportGeneratorPage() {
               {userCanEdit && creditBalance <= 0 ? (
                 <span className="text-xs font-semibold text-amber-700">Buy a report credit before generating a draft.</span>
               ) : null}
-              {userCanEdit && creditBalance > 0 && needsTemplateDecision ? (
-                <span className="text-xs font-semibold text-amber-700">Choose a Word template, saved template, or fallback QA draft first.</span>
+              {userCanEdit && creditBalance > 0 && needsEvidenceCheck ? (
+                <span className="text-xs font-semibold text-amber-700">Run Check files first. Required evidence must be present before generation.</span>
               ) : null}
             </div>
-
-            {showTemplateSettings || savedTemplatesState.result?.profiles?.length ? (
-              <SavedTemplateProfilesPanel
-                state={savedTemplatesState}
-                activeId={form.templateProfileId}
-                onRefresh={loadSavedTemplates}
-                onSelect={selectSavedTemplate}
-              />
-            ) : null}
-
-            {showTemplateSettings && templateState.error ? (
-              <div className="mt-4 rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-800">
-                {templateState.error}
-              </div>
-            ) : null}
-
-            {showTemplateSettings && templateState.profile ? (
-              <>
-                <TemplateProfilePanel profile={templateState.profile} />
-                <TemplateAliasEditor
-                  profile={templateState.profile}
-                  fieldAliases={form.fieldAliases}
-                  supportedFields={supportedTemplateFields}
-                  onChange={(fieldAliases) => setForm((prev) => ({ ...prev, fieldAliases }))}
-                />
-              </>
-            ) : null}
 
             {helperStatus.error ? (
               <div className="mt-4 rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-800">
@@ -1455,6 +1107,7 @@ export default function ReportGeneratorPage() {
                     {preflightState.result.warnings.map((item) => <li key={item}>{item}</li>)}
                   </ul>
                 ) : null}
+                <EvidenceReadinessPanel result={preflightState.result} />
               </div>
             ) : null}
 
@@ -1467,7 +1120,6 @@ export default function ReportGeneratorPage() {
                 <SeatClaimPanel
                   licenseReadiness={helperStatus.data.licenseReadiness}
                   installState={helperStatus.data.installState}
-                  savedTemplatesState={savedTemplatesState}
                   state={seatClaimState}
                   onClaim={claimLocalInstall}
                 />
@@ -1489,6 +1141,9 @@ export default function ReportGeneratorPage() {
                   <p><span className="font-semibold">Evidence ledger:</span> {runState.result.evidenceLedgerPath}</p>
                   <p><span className="font-semibold">Goals:</span> {runState.result.goalPlan?.goals?.length || 0}</p>
                   <p><span className="font-semibold">Missing fields:</span> {runState.result.clinicalProfile?.missingFields?.length || 0}</p>
+                  <p><span className="font-semibold">Template:</span> {runState.result.standardTemplate?.label || 'SkillCascade standard'}</p>
+                  <p><span className="font-semibold">Evidence readiness:</span> {runState.result.evidenceReadiness?.status || 'review required'}</p>
+                  <p><span className="font-semibold">Assessment inputs detected:</span> {runState.result.assessmentAdapters?.length || 0}</p>
                   <p><span className="font-semibold">Template mode:</span> {runState.result.templateMode}</p>
                   {runState.result.creditResult ? (
                     <p><span className="font-semibold">Credits left:</span> {runState.result.creditResult.balance}</p>

@@ -24,6 +24,192 @@ const DEFAULT_OUTPUT_DIRECTORY_NAME = 'report-generator-output'
 const LEGACY_OUTPUT_DIRECTORY_NAMES = ['report-pilot-output']
 const SKIP_DIRECTORY_NAMES = new Set(['.git', 'node_modules', DEFAULT_OUTPUT_DIRECTORY_NAME, ...LEGACY_OUTPUT_DIRECTORY_NAMES, 'verification-output'])
 
+export const STANDARD_REPORT_TEMPLATE = {
+  id: 'skillcascade-standard-initial-assessment-v1',
+  label: 'SkillCascade Standard Initial Assessment',
+  reportType: 'initial-assessment',
+  mode: 'skillcascade-standard-docx',
+  controlledBy: 'skillcascade',
+  customerTemplateUpload: false,
+  reviewRule: 'BCBA review is required before use, signing, submission, or payer delivery.',
+}
+
+export const REQUIRED_EVIDENCE_CATEGORIES = [
+  {
+    id: 'diagnostic_or_psychological_evaluation',
+    label: 'Diagnosis / Psychological Evaluation',
+    required: true,
+    keywords: [
+      'psychological evaluation',
+      'diagnostic evaluation',
+      'diagnostic report',
+      'psych report',
+      'diagnosis',
+      'diagnosed',
+      'autism spectrum disorder',
+      'asd',
+      'dsm-5',
+      'dsm v',
+    ],
+    examples: 'diagnostic report, psychological evaluation, or diagnosis document',
+  },
+  {
+    id: 'intake_or_caregiver_history',
+    label: 'Intake / Caregiver History',
+    required: true,
+    keywords: [
+      'intake',
+      'caregiver interview',
+      'parent interview',
+      'parent report',
+      'family history',
+      'developmental history',
+      'caregiver reported',
+      'presenting concerns',
+    ],
+    examples: 'intake form, caregiver interview, or parent history document',
+  },
+  {
+    id: 'adaptive_or_functional_assessment',
+    label: 'Adaptive / Functional Assessment',
+    required: true,
+    keywords: [
+      'vineland',
+      'vineland-3',
+      'adaptive behavior',
+      'adaptive behavior composite',
+      'communication domain',
+      'daily living skills',
+      'socialization',
+      'abas',
+      'afls',
+      'vbmapp',
+      'vb-mapp',
+      'ablls',
+    ],
+    examples: 'Vineland, ABAS, AFLS, VB-MAPP, ABLLS, or similar adaptive/skill assessment',
+  },
+]
+
+export const ASSESSMENT_ADAPTERS = [
+  {
+    id: 'psychological_evaluation',
+    label: 'Psychological / Diagnostic Evaluation',
+    kind: 'evaluation',
+    keywords: ['psychological evaluation', 'diagnostic evaluation', 'cognitive', 'adaptive functioning', 'dsm-5', 'diagnosis'],
+    use: 'diagnosis, developmental history, medical necessity, and broad deficit rationale',
+  },
+  {
+    id: 'intake',
+    label: 'Intake / Caregiver Interview',
+    kind: 'intake',
+    keywords: ['intake', 'caregiver interview', 'parent report', 'presenting concerns', 'family history', 'developmental history'],
+    use: 'family history, developmental history, educational history, caregiver priorities, and contextual needs',
+  },
+  {
+    id: 'vineland',
+    label: 'Vineland / Adaptive Behavior Report',
+    kind: 'adaptive-assessment',
+    keywords: ['vineland', 'adaptive behavior composite', 'communication domain', 'daily living skills', 'socialization', 'v-scale'],
+    use: 'adaptive, communication, daily living, and socialization deficit crosswalks',
+  },
+  {
+    id: 'srs2',
+    label: 'SRS-2 / Social Responsiveness Report',
+    kind: 'social-assessment',
+    keywords: ['srs-2', 'srs2', 'social responsiveness', 'social awareness', 'social cognition', 'social communication', 'restricted interests'],
+    use: 'social communication, social cognition, social motivation, and restricted/repetitive behavior prioritization',
+  },
+  {
+    id: 'abas',
+    label: 'ABAS / Adaptive Behavior Report',
+    kind: 'adaptive-assessment',
+    keywords: ['abas', 'adaptive behavior assessment system', 'conceptual', 'social composite', 'practical composite'],
+    use: 'adaptive functioning and daily living deficit crosswalks',
+  },
+  {
+    id: 'vbmapp',
+    label: 'VB-MAPP',
+    kind: 'skill-assessment',
+    keywords: ['vb-mapp', 'vbmapp', 'mand', 'tact', 'listener responding', 'intraverbal', 'milestones assessment'],
+    use: 'early language, listener responding, manding, tacting, and learning-readiness goal families',
+  },
+  {
+    id: 'ablls_afls',
+    label: 'ABLLS-R / AFLS',
+    kind: 'skill-assessment',
+    keywords: ['ablls', 'ablls-r', 'afls', 'basic living', 'home skills', 'community skills', 'functional living'],
+    use: 'skill acquisition, functional living, adaptive, and community goal families',
+  },
+  {
+    id: 'fba_bip',
+    label: 'FBA / BIP / Behavior Documentation',
+    kind: 'behavior-assessment',
+    keywords: ['fba', 'functional behavior assessment', 'behavior intervention plan', 'bip', 'antecedent', 'consequence', 'function of behavior'],
+    use: 'maladaptive behavior definitions, hypothesized functions, FERBs, and behavior goals',
+  },
+  {
+    id: 'speech_language',
+    label: 'Speech / Language Evaluation',
+    kind: 'related-service',
+    keywords: ['speech', 'language evaluation', 'expressive language', 'receptive language', 'pragmatic language', 'articulation'],
+    use: 'communication and pragmatic-language goal rationale',
+  },
+  {
+    id: 'ot_sensory',
+    label: 'OT / Sensory Documentation',
+    kind: 'related-service',
+    keywords: ['occupational therapy', 'sensory', 'fine motor', 'gross motor', 'adaptive equipment', 'sensory profile'],
+    use: 'sensory, motor, and adaptive support context',
+  },
+  {
+    id: 'school_iep',
+    label: 'School / IEP Documentation',
+    kind: 'education',
+    keywords: ['iep', 'school', 'classroom', 'teacher', 'educational', 'placement', 'special education'],
+    use: 'educational history and school-functioning context when clinically relevant',
+  },
+]
+
+const DEFICIT_DOMAIN_RULES = [
+  {
+    id: 'maladaptiveBehavior',
+    label: 'Maladaptive Behavior',
+    goalDomains: ['Behavior', 'Communication', 'Social', 'Parent Training'],
+    keywords: ['aggression', 'noncompliance', 'non-compliance', 'property destruction', 'elopement', 'unsafe', 'tantrum', 'profane', 'self-injury', 'sib'],
+  },
+  {
+    id: 'communication',
+    label: 'Communication Deficits',
+    goalDomains: ['Communication'],
+    keywords: ['communication', 'expressive', 'receptive', 'request', 'mand', 'language', 'pragmatic', 'conversation', 'functional communication'],
+  },
+  {
+    id: 'social',
+    label: 'Social / Reciprocal Interaction Deficits',
+    goalDomains: ['Social'],
+    keywords: ['social', 'peer', 'reciprocal', 'joint attention', 'play', 'social cognition', 'social communication', 'social motivation', 'perspective'],
+  },
+  {
+    id: 'adaptiveDailyLiving',
+    label: 'Adaptive / Daily Living Deficits',
+    goalDomains: ['Communication', 'Social', 'Parent Training'],
+    keywords: ['adaptive', 'daily living', 'self-care', 'personal', 'domestic', 'community', 'functional living', 'vineland', 'abas', 'afls'],
+  },
+  {
+    id: 'flexibilityRrb',
+    label: 'Flexibility / Restricted-Repetitive Behavior Needs',
+    goalDomains: ['Behavior', 'Social', 'Parent Training'],
+    keywords: ['restricted interests', 'repetitive', 'rigid', 'sameness', 'transition', 'flexibility', 'perseverative', 'ritual'],
+  },
+  {
+    id: 'caregiverTraining',
+    label: 'Caregiver Training Needs',
+    goalDomains: ['Parent Training'],
+    keywords: ['caregiver', 'parent training', 'parent', 'home', 'generalization', 'family training', 'reinforcement', 'prompting'],
+  },
+]
+
 const SECTION_RULES = [
   {
     id: 'diagnosisSummary',
@@ -83,6 +269,7 @@ const GOAL_LIBRARY = [
     shortTermGoalName: 'Physical Aggression',
     objective: 'The client will decrease instances of physical aggression across treatment settings.',
     keywords: ['aggression', 'physical aggression', 'hitting', 'kicking', 'biting'],
+    deficitDomains: ['maladaptiveBehavior'],
     centralReachDataType: 'frequency',
   },
   {
@@ -92,6 +279,7 @@ const GOAL_LIBRARY = [
     shortTermGoalName: 'Instructional Noncompliance',
     objective: 'The client will decrease instances of noncompliance and increase cooperation with adult-directed tasks.',
     keywords: ['noncompliance', 'non-compliance', 'refusal', 'refuse'],
+    deficitDomains: ['maladaptiveBehavior', 'flexibilityRrb'],
     centralReachDataType: 'frequency',
   },
   {
@@ -101,6 +289,7 @@ const GOAL_LIBRARY = [
     shortTermGoalName: 'Elopement',
     objective: 'The client will decrease instances of elopement and unsafe movement away from supervised areas.',
     keywords: ['elopement', 'elope', 'run away', 'unsafe'],
+    deficitDomains: ['maladaptiveBehavior'],
     centralReachDataType: 'frequency',
   },
   {
@@ -110,6 +299,7 @@ const GOAL_LIBRARY = [
     shortTermGoalName: 'Functional Requests',
     objective: 'The client will independently use functional communication to request help, items, breaks, or attention across people and settings.',
     keywords: ['communication', 'request', 'mand', 'help', 'break'],
+    deficitDomains: ['communication', 'maladaptiveBehavior', 'adaptiveDailyLiving'],
     centralReachDataType: 'percent',
   },
   {
@@ -119,6 +309,7 @@ const GOAL_LIBRARY = [
     shortTermGoalName: 'Repair Strategies',
     objective: 'The client will use communication repair strategies when misunderstood or when access to preferred items/activities is delayed.',
     keywords: ['communication', 'repair', 'misunderstood', 'frustration'],
+    deficitDomains: ['communication', 'maladaptiveBehavior'],
     centralReachDataType: 'percent',
   },
   {
@@ -128,6 +319,7 @@ const GOAL_LIBRARY = [
     shortTermGoalName: 'Reciprocal Responses',
     objective: 'The client will respond to and initiate reciprocal social exchanges using contextually appropriate comments, questions, or gestures.',
     keywords: ['social', 'reciprocal', 'peer', 'conversation'],
+    deficitDomains: ['social', 'communication'],
     centralReachDataType: 'percent',
   },
   {
@@ -137,6 +329,7 @@ const GOAL_LIBRARY = [
     shortTermGoalName: 'Peer Play',
     objective: 'The client will participate in structured or semi-structured peer play using appropriate social behaviors.',
     keywords: ['play', 'peer', 'social'],
+    deficitDomains: ['social'],
     centralReachDataType: 'percent',
   },
   {
@@ -146,6 +339,7 @@ const GOAL_LIBRARY = [
     shortTermGoalName: 'Prompting And Reinforcement',
     objective: 'The caregiver will implement prompting, reinforcement, and generalization procedures as trained by the BCBA.',
     keywords: ['parent', 'caregiver', 'generalization', 'home'],
+    deficitDomains: ['caregiverTraining', 'maladaptiveBehavior', 'adaptiveDailyLiving'],
     centralReachDataType: 'percent',
   },
 ]
@@ -180,6 +374,110 @@ function firstMatchingSentence(sources, keywords) {
   return null
 }
 
+function sourceSearchText(source) {
+  return `${source.filename || ''} ${source.relativePath || ''} ${source.text || ''}`
+}
+
+function matchedKeywordsForSource(source, keywords = []) {
+  const searchText = sourceSearchText(source)
+  return keywords.filter((keyword) => sourceHasKeyword(searchText, keyword))
+}
+
+function sourceReference(source, matchedKeywords = []) {
+  return {
+    sourceId: source.id,
+    filename: source.filename,
+    relativePath: source.relativePath,
+    matchedKeywords: matchedKeywords.slice(0, 8),
+  }
+}
+
+function buildSourceRuleMatches(sources, rules) {
+  return rules.map((rule) => {
+    const evidence = sources
+      .map((source) => {
+        const matchedKeywords = matchedKeywordsForSource(source, rule.keywords)
+        return matchedKeywords.length ? sourceReference(source, matchedKeywords) : null
+      })
+      .filter(Boolean)
+
+    return {
+      id: rule.id,
+      label: rule.label,
+      required: Boolean(rule.required),
+      kind: rule.kind || '',
+      use: rule.use || '',
+      examples: rule.examples || '',
+      status: evidence.length ? 'found' : 'missing',
+      evidence,
+    }
+  })
+}
+
+export function buildRequiredEvidenceReadiness(sources) {
+  const categories = buildSourceRuleMatches(sources, REQUIRED_EVIDENCE_CATEGORIES)
+  const missingRequired = categories.filter((category) => category.required && category.status !== 'found')
+
+  return {
+    status: missingRequired.length ? 'blocked-missing-required-evidence' : 'ready',
+    ready: missingRequired.length === 0,
+    categories,
+    missingRequired: missingRequired.map((category) => ({
+      id: category.id,
+      label: category.label,
+      examples: category.examples,
+    })),
+  }
+}
+
+export function detectAssessmentAdapters(sources) {
+  return buildSourceRuleMatches(sources, ASSESSMENT_ADAPTERS)
+    .filter((adapter) => adapter.status === 'found')
+}
+
+function firstDeficitEvidence(sources, keywords) {
+  const match = firstMatchingSentence(sources, keywords)
+  if (match) return match
+
+  const source = sources.find((item) => matchedKeywordsForSource(item, keywords).length)
+  if (!source) return null
+  return {
+    sourceId: source.id,
+    filename: source.filename,
+    text: '',
+  }
+}
+
+export function buildLocalDeficitProfile({ sources }) {
+  const domains = DEFICIT_DOMAIN_RULES.map((rule) => {
+    const evidence = firstDeficitEvidence(sources, rule.keywords)
+    return {
+      id: rule.id,
+      label: rule.label,
+      status: evidence ? 'source-supported' : 'missing-source-support',
+      goalDomains: rule.goalDomains,
+      sourceEvidence: evidence ? [evidence] : [],
+    }
+  })
+
+  return {
+    id: 'local-deficit-profile',
+    generatedAt: new Date().toISOString(),
+    localOnly: true,
+    domains,
+    supportedGoalDomains: Array.from(new Set(domains
+      .filter((domain) => domain.status === 'source-supported')
+      .flatMap((domain) => domain.goalDomains))),
+    missingDeficitDomains: domains
+      .filter((domain) => domain.status !== 'source-supported')
+      .map((domain) => ({
+        id: domain.id,
+        label: domain.label,
+        behavior: 'flag-for-bcba-review-before-selecting-related-goals',
+      })),
+  }
+}
+
 function isInsidePath(candidatePath, parentPath) {
   const rel = relative(parentPath, candidatePath)
   return rel === '' || (!!rel && !rel.startsWith('..') && !isAbsolute(rel))
@@ -203,10 +501,6 @@ function outputDirWouldHideSource(sourceFolder, outputDir) {
 
 function outputDirSourceBlockerMessage() {
   return 'Output folder cannot contain the client document folder. Choose the client folder itself, leave output blank for the default drafts subfolder, or choose a drafts folder inside the client folder.'
-}
-
-function noTemplateBlockerMessage() {
-  return 'No Word template selected. Choose a customer Word template, select a saved template profile, or explicitly allow a fallback QA draft.'
 }
 
 function outputDirScanExclusions(sourceFolder, outputDir) {
@@ -329,7 +623,6 @@ export async function preflightLocalReportPilot({
   outputDir = '',
   templatePath = '',
   templateProfileId = '',
-  allowFallbackTemplate = false,
 } = {}) {
   const blockers = []
   const warnings = []
@@ -348,14 +641,29 @@ export async function preflightLocalReportPilot({
 
   let supportedFiles = []
   let unsupportedFiles = []
+  let sourcePacket = null
+  let evidenceReadiness = buildRequiredEvidenceReadiness([])
+  let assessmentAdapters = []
+  let deficitProfile = buildLocalDeficitProfile({ sources: [] })
   if (!blockers.length && resolvedSourceFolder) {
-    const listed = await listSourceFiles(resolvedSourceFolder, {
+    sourcePacket = await scanLocalSourceFolder(resolvedSourceFolder, {
       excludePaths: outputDirScanExclusions(resolvedSourceFolder, resolvedOutputDir),
     })
-    supportedFiles = listed.supportedFiles
-    unsupportedFiles = listed.unsupportedFiles
+    supportedFiles = sourcePacket.sources.map((source) => source.path)
+    unsupportedFiles = sourcePacket.unsupportedFiles.map((source) => source.path)
     if (!supportedFiles.length) blockers.push('No supported source files were found. Add .docx, .txt, or .md source files.')
     if (unsupportedFiles.length) warnings.push(`${unsupportedFiles.length} unsupported file(s) will be listed in review but not extracted.`)
+    if (supportedFiles.length) {
+      evidenceReadiness = buildRequiredEvidenceReadiness(sourcePacket.sources)
+      assessmentAdapters = detectAssessmentAdapters(sourcePacket.sources)
+      deficitProfile = buildLocalDeficitProfile({ sources: sourcePacket.sources })
+      for (const missing of evidenceReadiness.missingRequired) {
+        blockers.push(`Required source evidence missing: ${missing.label}. Add ${missing.examples}.`)
+      }
+      if (!deficitProfile.supportedGoalDomains.length) {
+        blockers.push('No source-supported deficit domains were detected. Add assessment/evaluation records that clearly describe communication, social, adaptive, behavior, or caregiver-training needs.')
+      }
+    }
   }
 
   let savedTemplateProfile = null
@@ -372,13 +680,12 @@ export async function preflightLocalReportPilot({
       if (templateProfile.status !== 'ready') {
         warnings.push(`Template profile status is ${templateProfile.status}; review aliases and missing placeholders before generating.`)
       }
+      warnings.push('A legacy local Word template was supplied, but the buyer workflow uses the SkillCascade standard report template.')
     } catch (error) {
       blockers.push(`Template profile failed: ${error.message}`)
     }
-  } else if (allowFallbackTemplate) {
-    warnings.push('No Word template selected. The helper will generate a fallback QA DOCX draft, not the agency report template.')
   } else {
-    blockers.push(noTemplateBlockerMessage())
+    warnings.push(`${STANDARD_REPORT_TEMPLATE.label} will be used automatically. Customer report templates are not part of this workflow.`)
   }
 
   return {
@@ -393,6 +700,10 @@ export async function preflightLocalReportPilot({
       unsupportedFileCount: unsupportedFiles.length,
       supportedExtensions: Array.from(SUPPORTED_SOURCE_EXTENSIONS),
     },
+    standardTemplate: STANDARD_REPORT_TEMPLATE,
+    evidenceReadiness,
+    assessmentAdapters,
+    deficitProfile: sanitizeDeficitProfileForResponse(deficitProfile),
     templateSummary: templateProfile ? {
       savedTemplateProfileId: savedTemplateProfile?.id || '',
       savedTemplateProfileLabel: savedTemplateProfile?.label || '',
@@ -402,7 +713,12 @@ export async function preflightLocalReportPilot({
       unsupportedTagCount: templateProfile.unsupportedTags.length,
       missingRecommendedCount: templateProfile.missingRecommendedFields.length,
       goalLoopDetected: templateProfile.goalLoop.detected,
-    } : null,
+      mode: 'legacy-local-template',
+    } : {
+      mode: STANDARD_REPORT_TEMPLATE.mode,
+      label: STANDARD_REPORT_TEMPLATE.label,
+      customerTemplateUpload: false,
+    },
     blockers,
     warnings,
     safety: {
@@ -444,10 +760,33 @@ export function buildLocalClinicalProfile({ clientLabel, sources }) {
   }
 }
 
-export function buildLocalGoalPlan({ sources }) {
+function firstGoalEvidence(goal, sources, deficitProfile) {
+  const directMatch = firstMatchingSentence(sources, goal.keywords)
+  if (directMatch) {
+    return {
+      ...directMatch,
+      basis: 'direct-goal-keyword',
+    }
+  }
+
+  const supportedDeficit = (deficitProfile?.domains || []).find((domain) => (
+    goal.deficitDomains?.includes(domain.id)
+    && domain.sourceEvidence?.length
+  ))
+  if (!supportedDeficit) return null
+
+  return {
+    ...supportedDeficit.sourceEvidence[0],
+    basis: `deficit-domain:${supportedDeficit.id}`,
+    deficitDomainId: supportedDeficit.id,
+    deficitDomainLabel: supportedDeficit.label,
+  }
+}
+
+export function buildLocalGoalPlan({ sources, deficitProfile }) {
   const selectedGoals = []
   for (const goal of GOAL_LIBRARY) {
-    const match = firstMatchingSentence(sources, goal.keywords)
+    const match = firstGoalEvidence(goal, sources, deficitProfile)
     if (!match) continue
     selectedGoals.push({
       ...goal,
@@ -458,6 +797,7 @@ export function buildLocalGoalPlan({ sources }) {
         : '80% independence across 3 consecutive sessions and at least 2 people/settings when applicable.',
       targetDateForMastery: '12 months from authorization start',
       graphs: 'N/A for initial assessment',
+      selectionBasis: match.basis || 'source-supported',
       sourceEvidence: [match],
     })
   }
@@ -472,6 +812,13 @@ export function buildLocalGoalPlan({ sources }) {
     generatedAt: new Date().toISOString(),
     goals: selectedGoals,
     domains,
+    supportedDeficitDomains: (deficitProfile?.domains || [])
+      .filter((domain) => domain.status === 'source-supported')
+      .map((domain) => ({
+        id: domain.id,
+        label: domain.label,
+        goalDomains: domain.goalDomains,
+      })),
     excludedGoalCount: GOAL_LIBRARY.length - selectedGoals.length,
   }
 }
@@ -549,7 +896,16 @@ async function writeGeneratedDocx({ outputPath, job }) {
           }),
           paragraph(`Client: ${job.clientLabel}`, { spacing: { after: 180 } }),
           paragraph(`Generated locally: ${job.generatedAt}`, { spacing: { after: 300 } }),
+          paragraph(`Template: ${job.standardTemplate.label}`, { spacing: { after: 180 } }),
           paragraph('Review status: Draft for BCBA review. This local helper does not sign, submit, or finalize reports.', { spacing: { after: 300 } }),
+          new Paragraph({ text: 'Evidence Readiness', heading: HeadingLevel.HEADING_2 }),
+          ...job.evidenceReadiness.categories.map((category) => paragraph(`${category.label}: ${category.status}`, { spacing: { after: 80 } })),
+          new Paragraph({ text: 'Detected Assessment Inputs', heading: HeadingLevel.HEADING_2 }),
+          ...(job.assessmentAdapters.length
+            ? job.assessmentAdapters.map((adapter) => paragraph(`${adapter.label}: ${adapter.use}`, { spacing: { after: 80 } }))
+            : [paragraph('No recognized assessment adapters were detected. BCBA review is required.', { spacing: { after: 120 } })]),
+          new Paragraph({ text: 'Deficit Domains', heading: HeadingLevel.HEADING_2 }),
+          ...job.deficitProfile.domains.map((domain) => paragraph(`${domain.label}: ${domain.status}`, { spacing: { after: 80 } })),
           ...job.clinicalProfile.sections.flatMap((section) => [
             new Paragraph({ text: section.label, heading: HeadingLevel.HEADING_2 }),
             paragraph(section.text, { spacing: { after: 120 } }),
@@ -684,12 +1040,22 @@ function buildEvidenceLedger(job) {
       returnedToSkillCascade: false,
       browserResponseContainsExcerpts: false,
     },
+    standardTemplate: job.standardTemplate,
     sourceFiles: job.sourcePacket.sources.map((source) => ({
       id: source.id,
       filename: source.filename,
       relativePath: source.relativePath,
       extension: source.extension,
       characterCount: source.characterCount,
+    })),
+    requiredEvidence: job.evidenceReadiness.categories,
+    assessmentAdapters: job.assessmentAdapters,
+    deficitDomains: job.deficitProfile.domains.map((domain) => ({
+      id: domain.id,
+      label: domain.label,
+      status: domain.status,
+      goalDomains: domain.goalDomains,
+      evidence: domain.sourceEvidence.map(evidenceLedgerItem),
     })),
     sections: job.clinicalProfile.sections.map((section) => ({
       id: section.id,
@@ -731,15 +1097,24 @@ function sanitizeGoalPlanForResponse(goalPlan) {
   }
 }
 
+function sanitizeDeficitProfileForResponse(deficitProfile) {
+  return {
+    ...deficitProfile,
+    domains: (deficitProfile.domains || []).map((domain) => ({
+      ...domain,
+      sourceEvidence: domain.sourceEvidence.map(responseEvidenceItem),
+    })),
+  }
+}
+
 export async function runLocalReportPilot({
   sourceFolder,
   outputDir,
   clientLabel = 'Local Report Client',
-  reportTitle = 'ABA Initial Assessment Draft',
+  reportTitle = STANDARD_REPORT_TEMPLATE.label,
   templatePath = '',
   templateProfileId = '',
   templateFieldAliases = {},
-  allowFallbackTemplate = false,
 } = {}) {
   if (!sourceFolder) throw new Error('sourceFolder is required')
   const resolvedOutputDir = resolve(outputDir || join(sourceFolder, DEFAULT_OUTPUT_DIRECTORY_NAME))
@@ -749,17 +1124,23 @@ export async function runLocalReportPilot({
   const savedTemplateProfile = templateProfileId ? await getTemplateProfile(templateProfileId) : null
   const resolvedTemplatePath = savedTemplateProfile?.templatePath || templatePath
   const resolvedTemplateFieldAliases = savedTemplateProfile?.fieldAliases || templateFieldAliases || {}
-  if (!resolvedTemplatePath && !allowFallbackTemplate) {
-    throw new Error(noTemplateBlockerMessage())
-  }
 
   await mkdir(resolvedOutputDir, { recursive: true })
 
   const sourcePacket = await scanLocalSourceFolder(sourceFolder, {
     excludePaths: outputDirScanExclusions(sourceFolder, resolvedOutputDir),
   })
+  const evidenceReadiness = buildRequiredEvidenceReadiness(sourcePacket.sources)
+  if (!evidenceReadiness.ready) {
+    throw new Error(`Required source evidence is missing: ${evidenceReadiness.missingRequired.map((item) => item.label).join(', ')}.`)
+  }
+  const assessmentAdapters = detectAssessmentAdapters(sourcePacket.sources)
+  const deficitProfile = buildLocalDeficitProfile({ sources: sourcePacket.sources })
+  if (!deficitProfile.supportedGoalDomains.length) {
+    throw new Error('No source-supported deficit domains were detected. Add assessment/evaluation records that clearly describe communication, social, adaptive, behavior, or caregiver-training needs.')
+  }
   const clinicalProfile = buildLocalClinicalProfile({ clientLabel, sources: sourcePacket.sources })
-  const goalPlan = buildLocalGoalPlan({ sources: sourcePacket.sources })
+  const goalPlan = buildLocalGoalPlan({ sources: sourcePacket.sources, deficitProfile })
   const templateProfile = resolvedTemplatePath ? await profileTemplate({ templatePath: resolvedTemplatePath }) : null
   const generatedAt = new Date().toISOString()
   const safeClient = clientLabel.replace(/[^a-z0-9]+/gi, '-').replace(/^-|-$/g, '') || 'client'
@@ -777,6 +1158,10 @@ export async function runLocalReportPilot({
     reportTitle,
     generatedAt,
     sourcePacket,
+    standardTemplate: STANDARD_REPORT_TEMPLATE,
+    evidenceReadiness,
+    assessmentAdapters,
+    deficitProfile,
     clinicalProfile,
     goalPlan,
     outputPath,
@@ -785,15 +1170,17 @@ export async function runLocalReportPilot({
     templateProfileLabel: savedTemplateProfile?.label || '',
     templateFieldAliases: resolvedTemplateFieldAliases,
     templateProfile,
-    templateMode: resolvedTemplatePath ? 'placeholder-template' : 'fallback-generated-docx',
+    templateMode: resolvedTemplatePath ? 'legacy-placeholder-template' : STANDARD_REPORT_TEMPLATE.mode,
     qa: {
       status: 'ready-for-bcba-review',
       blockers: [],
       warnings: [
+        ...evidenceReadiness.missingRequired.map((item) => `Missing required evidence: ${item.label}`),
         ...clinicalProfile.missingFields.map((field) => `Missing source support: ${field.label}`),
+        ...deficitProfile.missingDeficitDomains.map((domain) => `Deficit domain not clearly supported: ${domain.label}`),
         ...(templateProfile?.warnings || []).map((warning) => `Template profile: ${warning}`),
         ...sourcePacket.unsupportedFiles.map((file) => `Unsupported local source not extracted: ${file.relativePath}`),
-        ...(resolvedTemplatePath ? [] : ['Fallback QA DOCX generated without a customer Word template; do not present it as the final agency-formatted report.']),
+        ...(resolvedTemplatePath ? ['Legacy customer-template mode used; standard SkillCascade template is the supported buyer workflow.'] : []),
         ...(goalPlan.goals.length ? [] : ['No source-supported goals were selected automatically.']),
       ],
       liveWriteAttempted: false,
@@ -828,6 +1215,10 @@ export async function runLocalReportPilot({
       characterCount: source.characterCount,
     })),
     unsupportedFiles: sourcePacket.unsupportedFiles,
+    standardTemplate: STANDARD_REPORT_TEMPLATE,
+    evidenceReadiness,
+    assessmentAdapters,
+    deficitProfile: sanitizeDeficitProfileForResponse(deficitProfile),
     templateProfile: templateProfile ? {
       savedTemplateProfileId: savedTemplateProfile?.id || '',
       savedTemplateProfileLabel: savedTemplateProfile?.label || '',
@@ -858,6 +1249,9 @@ export async function runLocalReportPilot({
     reviewPath,
     evidenceLedgerPath,
     clinicalProfile: sanitizeClinicalProfileForResponse(job.clinicalProfile),
+    evidenceReadiness,
+    assessmentAdapters,
+    deficitProfile: sanitizeDeficitProfileForResponse(job.deficitProfile),
     goalPlan: sanitizeGoalPlanForResponse(job.goalPlan),
     sourcePacket: {
       ...sourcePacket,

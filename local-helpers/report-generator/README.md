@@ -80,7 +80,7 @@ powershell -NoProfile -ExecutionPolicy Bypass -File local-helpers/report-generat
 
 The smoke test starts the helper on a temporary port, calls status, preflight, and run endpoints with a SkillCascade local-dev origin, then verifies that a local draft `.docx`, review `.json`, and evidence-ledger `.json` were created without live-write, auto-sign, or auto-submit flags.
 
-The smoke test also creates a temporary `.docx` template, profiles it through `/api/local-report-generator/template-profile`, saves it through `/api/local-report-generator/template-profiles`, lists the saved profile, then generates the draft from the saved profile ID in template mode.
+The smoke test verifies the standard SkillCascade template path, required-evidence preflight, assessment adapter detection, deficit-domain readiness, local draft creation, review JSON creation, and evidence-ledger creation.
 
 The smoke test verifies `/api/local-report-generator/install-state`, including helper version, update-safe local data policy, and the rule that SkillCascade workflow-pack access remains the licensing authority.
 
@@ -88,101 +88,20 @@ The smoke test verifies `/api/local-report-generator/license-readiness`, includi
 
 The smoke test verifies that evidence excerpts are stored in the local evidence ledger while the helper response contains only sanitized evidence references.
 
-The smoke test verifies `/api/local-report-generator/preflight`, including source file counts, unsupported file counts, template-profile readiness, and no source text in the response.
+The smoke test verifies `/api/local-report-generator/preflight`, including source file counts, unsupported file counts, required clinical evidence categories, detected assessment inputs, supported deficit domains, and no source text in the response.
 
-## Template Placeholders
+## Standard Template
 
-The helper supports these scalar placeholders:
+The buyer workflow uses the built-in SkillCascade standard initial assessment template. Users provide source documents; they do not upload report templates.
 
-```text
-{report_title}
-{client_label}
-{generated_at}
-{diagnosis_summary}
-{family_history}
-{developmental_history}
-{educational_history}
-{behavior_profile}
-{communication_profile}
-{social_profile}
-{caregiver_training}
-{missing_fields}
-```
+Current template contract:
 
-The helper supports this goal loop:
+- `id`: `skillcascade-standard-initial-assessment-v1`
+- `mode`: `skillcascade-standard-docx`
+- `reportType`: `initial-assessment`
+- `customerTemplateUpload`: `false`
 
-```text
-{#goals}
-{domain}
-{long_term_goal}
-{short_term_goal}
-{objective}
-{baseline}
-{current_level}
-{criteria}
-{target_date}
-{graphs}
-{/goals}
-```
-
-Profile a local template before running a draft:
-
-```http
-POST http://127.0.0.1:4181/api/local-report-generator/template-profile
-Content-Type: application/json
-
-{
-  "templatePath": "C:\\path\\to\\template.docx"
-}
-```
-
-The response lists supported tags, unsupported tags, missing useful tags, and whether the goal loop was detected.
-
-## Saved Template Profiles
-
-Saved template profiles let a customer template be profiled once and reused on later report runs. They are stored only on the workstation in:
-
-```text
-%USERPROFILE%\.skillcascade\report-generator-helper\template-profiles.json
-```
-
-List saved profiles:
-
-```http
-GET http://127.0.0.1:4181/api/local-report-generator/template-profiles
-```
-
-Save or update a profile:
-
-```http
-POST http://127.0.0.1:4181/api/local-report-generator/template-profiles
-Content-Type: application/json
-
-{
-  "templatePath": "C:\\path\\to\\template.docx",
-  "label": "Agency initial assessment template",
-  "fieldAliases": {
-    "client_name": "client_label",
-    "goals.goal_text": "goals.objective"
-  }
-}
-```
-
-`fieldAliases` maps customer template placeholders to supported helper fields. Unmapped unsupported fields still render as review markers instead of silently disappearing.
-
-On the SkillCascade `/report-generator` page, the alias editor shows unsupported customer placeholders from the template profile, preloads suggested mappings when available, and saves the selected aliases with the local template profile.
-
-Run from a saved profile:
-
-```http
-POST http://127.0.0.1:4181/api/local-report-generator/run
-Content-Type: application/json
-
-{
-  "sourceFolder": "C:\\path\\to\\client\\Assessment\\Initial",
-  "templateProfileId": "tpl-agency-initial-assessment-template-123"
-}
-```
+Legacy template-profile endpoints may remain in the helper for internal compatibility and migration testing, but they are not part of the buyer-facing v1 workflow.
 
 ## Local Preflight
 
@@ -194,12 +113,11 @@ Content-Type: application/json
 
 {
   "sourceFolder": "C:\\path\\to\\client\\Assessment\\Initial",
-  "outputDir": "C:\\path\\to\\draft-output",
-  "templateProfileId": "tpl-agency-initial-assessment-template-123"
+  "outputDir": "C:\\path\\to\\draft-output"
 }
 ```
 
-Preflight validates the local source folder, counts supported and unsupported files, checks the selected template/profile, and returns blockers/warnings without extracting source text into the response.
+Preflight validates the local source folder, counts supported and unsupported files, verifies required diagnosis/evaluation, intake/history, and adaptive/functional assessment evidence, detects known assessment inputs such as Vineland and SRS-2, identifies source-supported deficit domains, and returns blockers/warnings without extracting source text into the browser response.
 
 ## License Readiness
 
@@ -332,13 +250,13 @@ Installed app files live under:
 %LOCALAPPDATA%\SkillCascade\ReportGeneratorHelper
 ```
 
-Saved template profiles stay outside the app install folder:
+Legacy internal template-profile data, if present from earlier builds, stays outside the app install folder:
 
 ```text
 %USERPROFILE%\.skillcascade\report-generator-helper\template-profiles.json
 ```
 
-That separation is intentional. Replacing or updating the installed helper does not wipe customer template profiles.
+That separation is intentional. Replacing or updating the installed helper does not wipe local helper data, even when legacy compatibility files exist.
 
 ## Browser Origins
 

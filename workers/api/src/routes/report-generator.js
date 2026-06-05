@@ -21,6 +21,34 @@ const route = new Hono()
 const REPORT_HELPER_FILENAME = 'SkillCascadeReportHelper-release-20260605-folder-picker-template-guard.zip'
 const REPORT_HELPER_OBJECT_KEY = `report-generator/${REPORT_HELPER_FILENAME}`
 const REPORT_HELPER_VERSION = 'release-20260605-folder-picker-template-guard'
+const STANDARD_REPORT_TEMPLATE = {
+  id: 'skillcascade-standard-initial-assessment-v1',
+  label: 'SkillCascade Standard Initial Assessment',
+  reportType: 'initial-assessment',
+  mode: 'skillcascade-standard-docx',
+  controlledBy: 'skillcascade',
+  customerTemplateUpload: false,
+}
+const REQUIRED_EVIDENCE_CATEGORIES = [
+  {
+    id: 'diagnostic_or_psychological_evaluation',
+    label: 'Diagnosis / Psychological Evaluation',
+    required: true,
+    examples: 'diagnostic report, psychological evaluation, or diagnosis document',
+  },
+  {
+    id: 'intake_or_caregiver_history',
+    label: 'Intake / Caregiver History',
+    required: true,
+    examples: 'intake form, caregiver interview, or parent history document',
+  },
+  {
+    id: 'adaptive_or_functional_assessment',
+    label: 'Adaptive / Functional Assessment',
+    required: true,
+    examples: 'Vineland, ABAS, AFLS, VB-MAPP, ABLLS, or similar adaptive/skill assessment',
+  },
+]
 
 const REPORT_GENERATOR_CONTRACT = {
   moduleId: 'report-generator',
@@ -32,10 +60,7 @@ const REPORT_GENERATOR_CONTRACT = {
     statusEndpoint: '/api/local-report-generator/status',
     installStateEndpoint: '/api/local-report-generator/install-state',
     licenseReadinessEndpoint: '/api/local-report-generator/license-readiness',
-    templateProfileEndpoint: '/api/local-report-generator/template-profile',
-    templateProfilesEndpoint: '/api/local-report-generator/template-profiles',
     pickFolderEndpoint: '/api/local-report-generator/pick-folder',
-    pickFileEndpoint: '/api/local-report-generator/pick-file',
     preflightEndpoint: '/api/local-report-generator/preflight',
     runEndpoint: '/api/local-report-generator/run',
     legacyEndpoints: {
@@ -63,37 +88,29 @@ const REPORT_GENERATOR_CONTRACT = {
     permissions: 'Requires reports.view for status and reports.edit before future server-side draft records.',
     phiBoundary: 'This route returns configuration and review gates only. Source document extraction stays in the local helper.',
   },
-  templateProfile: {
-    mode: 'local-docx-inspection',
-    savedProfileMode: 'local-workstation-json-store',
-    supportedTemplateTags: [
-      'report_title',
-      'client_label',
-      'generated_at',
-      'diagnosis_summary',
-      'family_history',
-      'developmental_history',
-      'educational_history',
-      'behavior_profile',
-      'communication_profile',
-      'social_profile',
-      'caregiver_training',
-      'missing_fields',
-      'goals',
-      'goals.domain',
-      'goals.long_term_goal',
-      'goals.short_term_goal',
-      'goals.objective',
-      'goals.baseline',
-      'goals.current_level',
-      'goals.criteria',
-      'goals.target_date',
-      'goals.graphs',
+  standardTemplate: STANDARD_REPORT_TEMPLATE,
+  sourceRequirements: {
+    requiredEvidenceCategories: REQUIRED_EVIDENCE_CATEGORIES,
+    customerTemplateUpload: false,
+    evidenceGate: 'preflight-and-run-block-when-required-clinical-source-categories-are-missing',
+    sourceTextReturnPolicy: 'Local helper extracts source text locally but does not return PHI excerpts to SkillCascade.',
+  },
+  assessmentAdapters: {
+    mode: 'local-source-type-detection-and-deficit-crosswalk',
+    supportedFamilies: [
+      'psychological_evaluation',
+      'intake',
+      'vineland',
+      'srs2',
+      'abas',
+      'vbmapp',
+      'ablls_afls',
+      'fba_bip',
+      'speech_language',
+      'ot_sensory',
+      'school_iep',
     ],
-    unsupportedTagBehavior: 'Flag in local profile and render review markers for unmapped placeholders.',
-    savedProfileBehavior: 'Customer template paths and profile summaries are saved only in the local helper data folder.',
-    aliasMapBehavior: 'Saved profiles may map customer placeholder names to supported helper fields; unmapped unsupported placeholders stay visible as review markers.',
-    aliasEditorMode: 'frontend-maps-unsupported-customer-placeholders-to-supported-helper-fields',
+    output: 'detected assessment inputs, source-supported deficit domains, missing-evidence blockers, and goal-domain readiness',
   },
   installAndLicensing: {
     helperReportsVersion: true,
@@ -114,10 +131,15 @@ const REPORT_GENERATOR_CONTRACT = {
     'No automatic submission.',
     'No live CentralReach, Passage, payer, email, or Word Online write from this module.',
     'Unsupported or missing source fields must stay visible in QA.',
+    'Required diagnosis/evaluation, intake/history, and adaptive/functional assessment evidence must be present before generation.',
   ],
   supportedSourceTypes: ['.docx', '.txt', '.md'],
   plannedAdapters: [
-    'customer_docx_template_profile',
+    'skillcascade_standard_template_renderer',
+    'diagnosis_psych_eval_adapter',
+    'intake_history_adapter',
+    'vineland_adaptive_crosswalk',
+    'srs2_social_crosswalk',
     'goal_bank_mapping',
     'source_evidence_ledger',
     'review_summary_json',

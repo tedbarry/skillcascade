@@ -3,7 +3,13 @@ import { spawn } from 'node:child_process'
 import { readFile } from 'node:fs/promises'
 import { extname, join, normalize } from 'node:path'
 import { fileURLToPath } from 'node:url'
-import { preflightLocalReportPilot, runLocalReportPilot } from './local-report-pilot.js'
+import {
+  ASSESSMENT_ADAPTERS,
+  REQUIRED_EVIDENCE_CATEGORIES,
+  STANDARD_REPORT_TEMPLATE,
+  preflightLocalReportPilot,
+  runLocalReportPilot,
+} from './local-report-pilot.js'
 import { profileTemplate, SUPPORTED_TEMPLATE_FIELDS } from './template-profile.js'
 import { listTemplateProfiles, saveTemplateProfile } from './template-profile-store.js'
 import { helperInstallState } from './helper-metadata.js'
@@ -232,6 +238,16 @@ createServer(async (req, res) => {
         sourceScanning: 'recursive-with-output-folder-exclusion-and-same-folder-artifact-skip',
         unsupportedFileBehavior: 'warn-do-not-extract',
         output: 'editable-docx',
+        standardTemplate: STANDARD_REPORT_TEMPLATE,
+        templateMode: STANDARD_REPORT_TEMPLATE.mode,
+        customerTemplateUpload: false,
+        requiredEvidenceCategories: REQUIRED_EVIDENCE_CATEGORIES,
+        assessmentAdapters: ASSESSMENT_ADAPTERS.map((adapter) => ({
+          id: adapter.id,
+          label: adapter.label,
+          kind: adapter.kind,
+          use: adapter.use,
+        })),
         endpoints: {
           installState: helperEndpoint('/install-state'),
           licenseReadiness: helperEndpoint('/license-readiness'),
