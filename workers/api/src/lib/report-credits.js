@@ -88,6 +88,35 @@ export async function listReportCreditLedger({ env, dbQuery, userId, limit = 20 
   return result.rows || []
 }
 
+export async function adjustReportCredits({
+  env,
+  dbQuery,
+  userId,
+  orgId = null,
+  creditsDelta,
+  description = 'Manual report credit adjustment',
+  metadata = {},
+}) {
+  const delta = Number(creditsDelta)
+  if (!Number.isInteger(delta) || delta === 0) throw new Error('creditsDelta must be a non-zero integer.')
+  await ensureReportCreditLedgerTable(env, dbQuery)
+  const result = await dbQuery(env,
+    `INSERT INTO report_generator_credit_ledger (
+       user_id, org_id, credits_delta, event_type, description, metadata
+     )
+     VALUES ($1, $2, $3, 'manual_adjustment', $4, $5::jsonb)
+     RETURNING *`,
+    [
+      userId,
+      orgId,
+      delta,
+      String(description || 'Manual report credit adjustment').slice(0, 240),
+      JSON.stringify(metadata),
+    ]
+  )
+  return result.rows[0] || null
+}
+
 export async function grantReportCredits({
   env,
   dbQuery,

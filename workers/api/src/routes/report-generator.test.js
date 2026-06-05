@@ -253,6 +253,62 @@ describe('report-generator route contract', () => {
     expect(db.query.mock.calls.some((call) => String(call[1]).includes('INSERT INTO report_generator_credit_ledger'))).toBe(true)
   })
 
+  it('blocks manual report credit adjustments for non-admin users', async () => {
+    auth.hasPermission.mockImplementation((_profile, category, action) => (
+      category === 'reports' && ['view', 'edit'].includes(action)
+    ))
+
+    const response = await sendRequest('/credits/manual-adjustment', createProfile({ role: 'bcba', role_slug: 'bcba' }), {
+      method: 'POST',
+      body: {
+        creditsDelta: 1,
+        reason: 'owner_qa',
+      },
+    })
+    const payload = await response.json()
+
+    expect(response.status).toBe(403)
+    expect(payload.code).toBe('admin_required')
+    expect(db.query).not.toHaveBeenCalled()
+  })
+
+  it('allows admins to create a manual report credit adjustment', async () => {
+    auth.hasPermission.mockImplementation((_profile, category, action) => (
+      category === 'reports' && ['view', 'edit'].includes(action)
+    ))
+    db.query.mockImplementation(async (_env, sql, params = []) => {
+      const statement = String(sql)
+      if (statement.includes('INSERT INTO report_generator_credit_ledger')) {
+        return {
+          rows: [{
+            id: 'manual-credit-entry-1',
+            user_id: params[0],
+            credits_delta: params[2],
+            event_type: 'manual_adjustment',
+          }],
+        }
+      }
+      if (statement.includes('COALESCE(SUM(credits_delta)')) return { rows: [{ balance: 1 }] }
+      return { rows: [] }
+    })
+
+    const response = await sendRequest('/credits/manual-adjustment', createProfile({ role: 'admin', role_slug: 'admin' }), {
+      method: 'POST',
+      body: {
+        creditsDelta: 2,
+        reason: 'owner_qa',
+        description: 'Internal test credit adjustment',
+      },
+    })
+    const payload = await response.json()
+
+    expect(response.status).toBe(200)
+    expect(payload.ok).toBe(true)
+    expect(payload.data.balance).toBe(1)
+    expect(payload.data.entry.creditsDelta).toBe(2)
+    expect(db.query.mock.calls.some((call) => String(call[1]).includes('manual_adjustment'))).toBe(true)
+  })
+
   it('rejects PHI-like fields from install seat claims before database writes', async () => {
     auth.hasPermission.mockImplementation((_profile, category, action) => category === 'reports' && action === 'view')
 

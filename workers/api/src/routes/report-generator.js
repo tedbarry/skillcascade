@@ -1,6 +1,7 @@
 import { Hono } from 'hono'
 import { query } from '../db.js'
 import { hasPermission } from '../middleware/auth.js'
+import { requireAdmin } from '../middleware/access.js'
 import { hasWorkflowPack, WORKFLOW_PACK_IDS } from '../lib/workflow-packs.js'
 import {
   buildReportGeneratorOnboarding,
@@ -10,6 +11,7 @@ import {
 } from '../lib/report-generator-pilot.js'
 import {
   REPORT_CREDIT_BUNDLES,
+  adjustReportCredits,
   consumeReportCredit,
   getReportCreditBalance,
   listReportCreditLedger,
@@ -260,6 +262,63 @@ route.post('/credits/consume', async (c) => {
     return c.json({
       error: error.message || 'Could not consume report credit.',
       code: 'report_credit_consume_failed',
+    }, 400)
+  }
+})
+
+route.post('/credits/manual-adjustment', async (c) => {
+  const accessError = getAccessError(c, 'edit')
+  if (accessError) return c.json(accessError.payload, accessError.status)
+
+  const profile = c.get('profile')
+  if (!requireAdmin(profile)) {
+    return c.json({ error: 'Admin access required.', code: 'admin_required' }, 403)
+  }
+
+  const body = await getJsonBody(c)
+  const unsafeResponse = rejectUnsafeSeatClaim(c, body)
+  if (unsafeResponse) return unsafeResponse
+
+  const targetUserId = String(body.targetUserId || profile.id || '').trim()
+  if (!targetUserId) return c.json({ error: 'targetUserId is required.', code: 'target_user_required' }, 400)
+  if (targetUserId !== profile.id && !profile.is_super_admin) {
+    return c.json({ error: 'Only super admins can adjust another user.', code: 'super_admin_required' }, 403)
+  }
+
+  try {
+    const entry = await adjustReportCredits({
+      env: c.env,
+      dbQuery: query,
+      userId: targetUserId,
+      orgId: profile.org_id || null,
+      creditsDelta: Number(body.creditsDelta),
+      description: body.description || 'Manual report credit adjustment',
+      metadata: {
+        reason: String(body.reason || 'admin_adjustment').slice(0, 120),
+        adjustedBy: profile.id,
+        source: 'report-generator-admin-api',
+      },
+    })
+    const balance = await getReportCreditBalance({
+      env: c.env,
+      dbQuery: query,
+      userId: targetUserId,
+    })
+    return c.json({
+      ok: true,
+      data: {
+        balance,
+        entry: {
+          id: entry?.id || '',
+          creditsDelta: entry?.credits_delta || Number(body.creditsDelta),
+          eventType: 'manual_adjustment',
+        },
+      },
+    })
+  } catch (error) {
+    return c.json({
+      error: error.message || 'Could not adjust report credits.',
+      code: 'report_credit_adjustment_failed',
     }, 400)
   }
 })
