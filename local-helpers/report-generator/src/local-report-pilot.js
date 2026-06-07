@@ -645,6 +645,15 @@ export async function preflightLocalReportPilot({
   let evidenceReadiness = buildRequiredEvidenceReadiness([])
   let assessmentAdapters = []
   let deficitProfile = buildLocalDeficitProfile({ sources: [] })
+  let clinicalProfile = buildLocalClinicalProfile({ clientLabel: 'Local Report Client', sources: [] })
+  let goalPlan = buildLocalGoalPlan({ sources: [], deficitProfile })
+  let coverageMatrix = buildReportCoverageMatrix({
+    evidenceReadiness,
+    assessmentAdapters,
+    deficitProfile,
+    clinicalProfile,
+    goalPlan,
+  })
   if (!blockers.length && resolvedSourceFolder) {
     sourcePacket = await scanLocalSourceFolder(resolvedSourceFolder, {
       excludePaths: outputDirScanExclusions(resolvedSourceFolder, resolvedOutputDir),
@@ -657,6 +666,15 @@ export async function preflightLocalReportPilot({
       evidenceReadiness = buildRequiredEvidenceReadiness(sourcePacket.sources)
       assessmentAdapters = detectAssessmentAdapters(sourcePacket.sources)
       deficitProfile = buildLocalDeficitProfile({ sources: sourcePacket.sources })
+      clinicalProfile = buildLocalClinicalProfile({ clientLabel: 'Local Report Client', sources: sourcePacket.sources })
+      goalPlan = buildLocalGoalPlan({ sources: sourcePacket.sources, deficitProfile })
+      coverageMatrix = buildReportCoverageMatrix({
+        evidenceReadiness,
+        assessmentAdapters,
+        deficitProfile,
+        clinicalProfile,
+        goalPlan,
+      })
       for (const missing of evidenceReadiness.missingRequired) {
         blockers.push(`Required source evidence missing: ${missing.label}. Add ${missing.examples}.`)
       }
@@ -704,6 +722,7 @@ export async function preflightLocalReportPilot({
     evidenceReadiness,
     assessmentAdapters,
     deficitProfile: sanitizeDeficitProfileForResponse(deficitProfile),
+    coverageMatrix,
     templateSummary: templateProfile ? {
       savedTemplateProfileId: savedTemplateProfile?.id || '',
       savedTemplateProfileLabel: savedTemplateProfile?.label || '',
@@ -823,6 +842,98 @@ export function buildLocalGoalPlan({ sources, deficitProfile }) {
   }
 }
 
+export function buildReportCoverageMatrix({
+  evidenceReadiness,
+  assessmentAdapters = [],
+  deficitProfile,
+  clinicalProfile,
+  goalPlan,
+} = {}) {
+  const sectionCoverage = (clinicalProfile?.sections || []).map((section) => ({
+    id: section.id,
+    label: section.label,
+    status: section.status,
+    evidenceCount: section.sourceEvidence?.length || 0,
+    reviewAction: section.missing ? 'review-required-do-not-invent' : 'source-supported-review-language',
+  }))
+  const goalDomainNames = ['Behavior', 'Communication', 'Social', 'Parent Training']
+  const goalDomainCoverage = goalDomainNames.map((domain) => {
+    const goals = (goalPlan?.goals || []).filter((goal) => goal.domain === domain)
+    const deficitSupport = (deficitProfile?.domains || [])
+      .filter((item) => item.status === 'source-supported' && item.goalDomains?.includes(domain))
+      .map((item) => ({ id: item.id, label: item.label }))
+    return {
+      domain,
+      status: goals.length ? 'source-supported-goals-present' : deficitSupport.length ? 'review-needed-no-goals-selected' : 'not-source-supported',
+      goalCount: goals.length,
+      sourceSupportedDeficitCount: deficitSupport.length,
+      sourceSupportedDeficits: deficitSupport,
+      reviewAction: goals.length
+        ? 'bcba-review-goal-fit-and-medical-necessity'
+        : deficitSupport.length
+          ? 'bcba-review-needed-before-adding-goals'
+          : 'do-not-add-without-source-support',
+    }
+  })
+  const requiredEvidenceCoverage = (evidenceReadiness?.categories || []).map((category) => ({
+    id: category.id,
+    label: category.label,
+    required: Boolean(category.required),
+    status: category.status,
+    evidenceCount: category.evidence?.length || 0,
+  }))
+  const missingSections = sectionCoverage.filter((section) => section.status !== 'source-supported')
+  const missingRequiredEvidence = requiredEvidenceCoverage.filter((category) => category.required && category.status !== 'found')
+  const uncoveredGoalDomains = goalDomainCoverage.filter((domain) => domain.status !== 'source-supported-goals-present')
+  const blockers = [
+    ...missingRequiredEvidence.map((category) => `Missing required evidence category: ${category.label}`),
+    ...(!deficitProfile?.supportedGoalDomains?.length ? ['No source-supported deficit domains detected.'] : []),
+  ]
+  const warnings = [
+    ...missingSections.map((section) => `Report section needs source review: ${section.label}`),
+    ...uncoveredGoalDomains
+      .filter((domain) => domain.status === 'review-needed-no-goals-selected')
+      .map((domain) => `Goal domain has deficit support but no selected goals: ${domain.domain}`),
+    ...(!assessmentAdapters.length ? ['No known assessment adapter detected.'] : []),
+  ]
+
+  return {
+    id: 'report-source-coverage-matrix',
+    localOnly: true,
+    sourceTextReturned: false,
+    status: blockers.length ? 'blocked' : warnings.length ? 'review-needed' : 'ready-for-draft',
+    summary: {
+      requiredEvidenceReady: Boolean(evidenceReadiness?.ready),
+      requiredEvidenceFound: requiredEvidenceCoverage.filter((category) => category.status === 'found').length,
+      requiredEvidenceTotal: requiredEvidenceCoverage.length,
+      detectedAssessmentInputCount: assessmentAdapters.length,
+      sourceSupportedSectionCount: sectionCoverage.filter((section) => section.status === 'source-supported').length,
+      sectionCount: sectionCoverage.length,
+      missingSectionCount: missingSections.length,
+      selectedGoalCount: goalPlan?.goals?.length || 0,
+      goalDomainsWithGoals: goalDomainCoverage.filter((domain) => domain.goalCount > 0).map((domain) => domain.domain),
+    },
+    requiredEvidenceCoverage,
+    assessmentInputCoverage: assessmentAdapters.map((adapter) => ({
+      id: adapter.id,
+      label: adapter.label,
+      kind: adapter.kind,
+      use: adapter.use,
+      evidenceCount: adapter.evidence?.length || 0,
+    })),
+    sectionCoverage,
+    goalDomainCoverage,
+    blockers,
+    warnings,
+    reviewGates: [
+      'BCBA review required before using report language.',
+      'Do not add goals for unsupported domains without source evidence.',
+      'Missing sections must stay visible in QA instead of being invented.',
+      'No signing, submission, payer delivery, or external-platform write is performed by this helper.',
+    ],
+  }
+}
+
 function paragraph(text, options = {}) {
   return new Paragraph({
     ...options,
@@ -906,6 +1017,9 @@ async function writeGeneratedDocx({ outputPath, job }) {
             : [paragraph('No recognized assessment adapters were detected. BCBA review is required.', { spacing: { after: 120 } })]),
           new Paragraph({ text: 'Deficit Domains', heading: HeadingLevel.HEADING_2 }),
           ...job.deficitProfile.domains.map((domain) => paragraph(`${domain.label}: ${domain.status}`, { spacing: { after: 80 } })),
+          new Paragraph({ text: 'Report Coverage Matrix', heading: HeadingLevel.HEADING_2 }),
+          paragraph(`Coverage status: ${job.coverageMatrix.status}. Source-supported sections: ${job.coverageMatrix.summary.sourceSupportedSectionCount}/${job.coverageMatrix.summary.sectionCount}. Selected goals: ${job.coverageMatrix.summary.selectedGoalCount}.`, { spacing: { after: 120 } }),
+          ...job.coverageMatrix.goalDomainCoverage.map((domain) => paragraph(`${domain.domain}: ${domain.status} (${domain.goalCount} goal${domain.goalCount === 1 ? '' : 's'})`, { spacing: { after: 80 } })),
           ...job.clinicalProfile.sections.flatMap((section) => [
             new Paragraph({ text: section.label, heading: HeadingLevel.HEADING_2 }),
             paragraph(section.text, { spacing: { after: 120 } }),
@@ -1050,6 +1164,7 @@ function buildEvidenceLedger(job) {
     })),
     requiredEvidence: job.evidenceReadiness.categories,
     assessmentAdapters: job.assessmentAdapters,
+    coverageMatrix: job.coverageMatrix,
     deficitDomains: job.deficitProfile.domains.map((domain) => ({
       id: domain.id,
       label: domain.label,
@@ -1141,6 +1256,13 @@ export async function runLocalReportPilot({
   }
   const clinicalProfile = buildLocalClinicalProfile({ clientLabel, sources: sourcePacket.sources })
   const goalPlan = buildLocalGoalPlan({ sources: sourcePacket.sources, deficitProfile })
+  const coverageMatrix = buildReportCoverageMatrix({
+    evidenceReadiness,
+    assessmentAdapters,
+    deficitProfile,
+    clinicalProfile,
+    goalPlan,
+  })
   const templateProfile = resolvedTemplatePath ? await profileTemplate({ templatePath: resolvedTemplatePath }) : null
   const generatedAt = new Date().toISOString()
   const safeClient = clientLabel.replace(/[^a-z0-9]+/gi, '-').replace(/^-|-$/g, '') || 'client'
@@ -1164,6 +1286,7 @@ export async function runLocalReportPilot({
     deficitProfile,
     clinicalProfile,
     goalPlan,
+    coverageMatrix,
     outputPath,
     templatePath: resolvedTemplatePath ? resolve(resolvedTemplatePath) : '',
     templateProfileId: savedTemplateProfile?.id || '',
@@ -1219,6 +1342,7 @@ export async function runLocalReportPilot({
     evidenceReadiness,
     assessmentAdapters,
     deficitProfile: sanitizeDeficitProfileForResponse(deficitProfile),
+    coverageMatrix,
     templateProfile: templateProfile ? {
       savedTemplateProfileId: savedTemplateProfile?.id || '',
       savedTemplateProfileLabel: savedTemplateProfile?.label || '',
@@ -1238,6 +1362,9 @@ export async function runLocalReportPilot({
     evidenceSummary: {
       sectionEvidenceCount: evidenceLedger.sections.reduce((total, section) => total + section.evidence.length, 0),
       goalEvidenceCount: evidenceLedger.goals.reduce((total, goal) => total + goal.evidence.length, 0),
+      coverageStatus: coverageMatrix.status,
+      missingSectionCount: coverageMatrix.summary.missingSectionCount,
+      goalDomainsWithGoals: coverageMatrix.summary.goalDomainsWithGoals,
       excerptTextStoredLocallyOnly: true,
     },
     qa: job.qa,
@@ -1252,6 +1379,7 @@ export async function runLocalReportPilot({
     evidenceReadiness,
     assessmentAdapters,
     deficitProfile: sanitizeDeficitProfileForResponse(job.deficitProfile),
+    coverageMatrix: job.coverageMatrix,
     goalPlan: sanitizeGoalPlanForResponse(job.goalPlan),
     sourcePacket: {
       ...sourcePacket,

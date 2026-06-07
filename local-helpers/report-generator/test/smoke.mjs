@@ -270,6 +270,11 @@ try {
   assert.equal(standardPreflightPayload.result.evidenceReadiness.categories.length, 3)
   assert.ok(standardPreflightPayload.result.assessmentAdapters.some((adapter) => adapter.id === 'vineland'))
   assert.ok(standardPreflightPayload.result.deficitProfile.supportedGoalDomains.includes('Communication'))
+  assert.equal(standardPreflightPayload.result.coverageMatrix.status, 'ready-for-draft')
+  assert.equal(standardPreflightPayload.result.coverageMatrix.sourceTextReturned, false)
+  assert.equal(standardPreflightPayload.result.coverageMatrix.summary.requiredEvidenceFound, 3)
+  assert.equal(standardPreflightPayload.result.coverageMatrix.summary.sourceSupportedSectionCount, 8)
+  assert.ok(standardPreflightPayload.result.coverageMatrix.goalDomainCoverage.some((domain) => domain.domain === 'Communication' && domain.goalCount > 0))
 
   const localPreflightResponse = await fetch(`${baseUrl}${helperApi}/preflight`, {
     method: 'POST',
@@ -332,6 +337,8 @@ try {
   assert.equal(standardRunPayload.result.standardTemplate.customerTemplateUpload, false)
   assert.equal(standardRunPayload.result.evidenceReadiness.ready, true)
   assert.ok(standardRunPayload.result.assessmentAdapters.some((adapter) => adapter.id === 'vineland'))
+  assert.equal(standardRunPayload.result.coverageMatrix.status, 'ready-for-draft')
+  assert.equal(standardRunPayload.result.coverageMatrix.summary.selectedGoalCount, standardRunPayload.result.goalPlan.goals.length)
 
   const runResponse = await fetch(`${baseUrl}${helperApi}/run`, {
     method: 'POST',
@@ -361,6 +368,8 @@ try {
   assert.equal(runPayload.result.templateFieldAliases.client_name, 'client_label')
   assert.equal(runPayload.result.standardTemplate.mode, 'skillcascade-standard-docx')
   assert.equal(runPayload.result.evidenceReadiness.ready, true)
+  assert.equal(runPayload.result.coverageMatrix.status, 'ready-for-draft')
+  assert.equal(runPayload.result.coverageMatrix.summary.goalDomainsWithGoals.includes('Behavior'), true)
   assert.equal(runPayload.result.sourcePacket.sources.some((source) => 'text' in source), false)
   assert.equal(runPayload.result.sourcePacket.unsupportedFiles.some((source) => source.filename === 'legacy-report.doc'), true)
 
@@ -374,7 +383,12 @@ try {
   assert.equal(evidenceLedger.localOnly, true)
   assert.equal(evidenceLedger.containsPhi, true)
   assert.equal(evidenceLedger.dataPolicy.browserResponseContainsExcerpts, false)
+  assert.equal(evidenceLedger.coverageMatrix.status, 'ready-for-draft')
   assert.ok(evidenceLedger.sections.some((section) => section.evidence.some((item) => item.excerpt)))
+  const reviewSummary = JSON.parse(await readFile(runPayload.result.reviewPath, 'utf8'))
+  assert.equal(reviewSummary.coverageMatrix.status, 'ready-for-draft')
+  assert.equal(reviewSummary.evidenceSummary.coverageStatus, 'ready-for-draft')
+  assert.equal(reviewSummary.evidenceSummary.missingSectionCount, 0)
   assert.equal(runPayload.result.clinicalProfile.sections.some((section) => (
     section.sourceEvidence.some((item) => Object.prototype.hasOwnProperty.call(item, 'text') || Object.prototype.hasOwnProperty.call(item, 'excerpt'))
   )), false)

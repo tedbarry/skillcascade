@@ -154,6 +154,7 @@ async function fetchHelperJson(helperBase, endpoint, options = {}) {
     const fetchOptions = { ...requestOptions }
     if (isLoopbackHelper) {
       fetchOptions.credentials = fetchOptions.credentials || 'include'
+      fetchOptions.targetAddressSpace = 'loopback'
     }
     try {
       const response = await withTimeout(fetch(`${helperBase}${path}`, fetchOptions), timeoutMs)
@@ -485,39 +486,117 @@ function EvidenceReadinessPanel({ result }) {
   const deficitDomains = result.deficitProfile?.domains || []
 
   return (
-    <div className="mt-4 grid gap-3 lg:grid-cols-3">
-      <div className="rounded-xl border border-white/70 bg-white px-3 py-3">
-        <p className="text-xs font-semibold uppercase tracking-wide text-warm-500">Required source evidence</p>
-        <div className="mt-2 space-y-2">
-          {evidenceCategories.length ? evidenceCategories.map((category) => (
-            <div key={category.id} className="rounded-lg border border-warm-100 bg-warm-50 px-3 py-2">
-              <div className="flex items-start justify-between gap-2">
-                <p className="text-sm font-bold text-warm-900">{category.label}</p>
-                <StatusBadge tone={category.status === 'found' ? 'green' : 'warm'}>
-                  {category.status === 'found' ? 'Found' : 'Missing'}
-                </StatusBadge>
+    <>
+      <div className="mt-4 grid gap-3 lg:grid-cols-3">
+        <div className="rounded-xl border border-white/70 bg-white px-3 py-3">
+          <p className="text-xs font-semibold uppercase tracking-wide text-warm-500">Required source evidence</p>
+          <div className="mt-2 space-y-2">
+            {evidenceCategories.length ? evidenceCategories.map((category) => (
+              <div key={category.id} className="rounded-lg border border-warm-100 bg-warm-50 px-3 py-2">
+                <div className="flex items-start justify-between gap-2">
+                  <p className="text-sm font-bold text-warm-900">{category.label}</p>
+                  <StatusBadge tone={category.status === 'found' ? 'green' : 'warm'}>
+                    {category.status === 'found' ? 'Found' : 'Missing'}
+                  </StatusBadge>
+                </div>
+                <p className="mt-1 text-xs leading-5 text-warm-600">{category.evidence?.length || 0} source file match{category.evidence?.length === 1 ? '' : 'es'}</p>
               </div>
-              <p className="mt-1 text-xs leading-5 text-warm-600">{category.evidence?.length || 0} source file match{category.evidence?.length === 1 ? '' : 'es'}</p>
-            </div>
-          )) : (
-            <p className="text-sm leading-6 text-warm-600">Run Check files to see required evidence.</p>
-          )}
+            )) : (
+              <p className="text-sm leading-6 text-warm-600">Run Check files to see required evidence.</p>
+            )}
+          </div>
+        </div>
+
+        <TemplateTagList
+          title="Detected assessment inputs"
+          items={detectedAdapters.map((adapter) => adapter.label)}
+          empty="No known assessment inputs detected yet."
+        />
+
+        <TemplateTagList
+          title="Supported deficit domains"
+          items={deficitDomains
+            .filter((domain) => domain.status === 'source-supported')
+            .map((domain) => domain.label)}
+          empty="No source-supported deficit domains detected yet."
+        />
+      </div>
+      <CoverageMatrixPanel matrix={result.coverageMatrix} />
+    </>
+  )
+}
+
+function CoverageMatrixPanel({ matrix }) {
+  if (!matrix) return null
+  const summary = matrix.summary || {}
+  const sectionCoverage = matrix.sectionCoverage || []
+  const goalDomainCoverage = matrix.goalDomainCoverage || []
+
+  return (
+    <div className="mt-4 rounded-xl border border-blue-200 bg-white p-4">
+      <div className="flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between">
+        <div>
+          <p className="text-xs font-semibold uppercase tracking-wide text-blue-700">Report coverage matrix</p>
+          <h4 className="mt-1 text-sm font-bold text-blue-950">Source support for report sections and goal domains</h4>
+          <p className="mt-1 text-xs leading-5 text-blue-900">
+            Shows what the local source packet can support without sending excerpts to SkillCascade.
+          </p>
+        </div>
+        <StatusBadge tone={matrix.status === 'ready-for-draft' ? 'green' : matrix.status === 'blocked' ? 'red' : 'warm'}>
+          {matrix.status === 'ready-for-draft' ? 'Ready' : matrix.status === 'blocked' ? 'Blocked' : 'Review needed'}
+        </StatusBadge>
+      </div>
+
+      <div className="mt-3 grid gap-3 md:grid-cols-4">
+        <div className="rounded-lg border border-blue-100 bg-blue-50 px-3 py-3">
+          <p className="text-xs font-semibold uppercase tracking-wide text-blue-700">Required evidence</p>
+          <p className="mt-2 text-sm font-bold text-blue-950">{summary.requiredEvidenceFound || 0}/{summary.requiredEvidenceTotal || 0}</p>
+        </div>
+        <div className="rounded-lg border border-blue-100 bg-blue-50 px-3 py-3">
+          <p className="text-xs font-semibold uppercase tracking-wide text-blue-700">Sections supported</p>
+          <p className="mt-2 text-sm font-bold text-blue-950">{summary.sourceSupportedSectionCount || 0}/{summary.sectionCount || 0}</p>
+        </div>
+        <div className="rounded-lg border border-blue-100 bg-blue-50 px-3 py-3">
+          <p className="text-xs font-semibold uppercase tracking-wide text-blue-700">Assessment inputs</p>
+          <p className="mt-2 text-sm font-bold text-blue-950">{summary.detectedAssessmentInputCount || 0}</p>
+        </div>
+        <div className="rounded-lg border border-blue-100 bg-blue-50 px-3 py-3">
+          <p className="text-xs font-semibold uppercase tracking-wide text-blue-700">Selected goals</p>
+          <p className="mt-2 text-sm font-bold text-blue-950">{summary.selectedGoalCount || 0}</p>
         </div>
       </div>
 
-      <TemplateTagList
-        title="Detected assessment inputs"
-        items={detectedAdapters.map((adapter) => adapter.label)}
-        empty="No known assessment inputs detected yet."
-      />
-
-      <TemplateTagList
-        title="Supported deficit domains"
-        items={deficitDomains
-          .filter((domain) => domain.status === 'source-supported')
-          .map((domain) => domain.label)}
-        empty="No source-supported deficit domains detected yet."
-      />
+      <div className="mt-3 grid gap-3 lg:grid-cols-2">
+        <div className="rounded-lg border border-warm-100 bg-warm-50 px-3 py-3">
+          <p className="text-xs font-semibold uppercase tracking-wide text-warm-500">Report sections</p>
+          <div className="mt-2 grid gap-2 sm:grid-cols-2">
+            {sectionCoverage.map((section) => (
+              <div key={section.id} className="rounded-md border border-white bg-white px-2 py-2">
+                <p className="text-xs font-bold text-warm-900">{section.label}</p>
+                <p className={`mt-1 text-xs font-semibold ${section.status === 'source-supported' ? 'text-sage-700' : 'text-amber-700'}`}>
+                  {section.status === 'source-supported' ? 'Source supported' : 'Review needed'}
+                </p>
+              </div>
+            ))}
+          </div>
+        </div>
+        <div className="rounded-lg border border-warm-100 bg-warm-50 px-3 py-3">
+          <p className="text-xs font-semibold uppercase tracking-wide text-warm-500">Goal domains</p>
+          <div className="mt-2 space-y-2">
+            {goalDomainCoverage.map((domain) => (
+              <div key={domain.domain} className="rounded-md border border-white bg-white px-2 py-2">
+                <div className="flex items-start justify-between gap-2">
+                  <p className="text-xs font-bold text-warm-900">{domain.domain}</p>
+                  <span className="text-xs font-semibold text-warm-600">{domain.goalCount || 0} goals</span>
+                </div>
+                <p className={`mt-1 text-xs font-semibold ${domain.status === 'source-supported-goals-present' ? 'text-sage-700' : domain.status === 'review-needed-no-goals-selected' ? 'text-amber-700' : 'text-warm-500'}`}>
+                  {domain.status === 'source-supported-goals-present' ? 'Goals present' : domain.status === 'review-needed-no-goals-selected' ? 'Review needed' : 'Not source supported'}
+                </p>
+              </div>
+            ))}
+          </div>
+        </div>
+      </div>
     </div>
   )
 }
@@ -1164,6 +1243,7 @@ export default function ReportGeneratorPage() {
                     </ul>
                   </div>
                 ) : null}
+                <EvidenceReadinessPanel result={runState.result} />
               </div>
             ) : null}
           </section>
