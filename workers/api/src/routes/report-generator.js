@@ -18,9 +18,9 @@ import {
 } from '../lib/report-credits.js'
 
 const route = new Hono()
-const REPORT_HELPER_FILENAME = 'SkillCascadeReportHelper-release-20260608-standard-template-lock.zip'
+const REPORT_HELPER_FILENAME = 'SkillCascadeReportHelper-release-20260608-standard-renderer-v2.zip'
 const REPORT_HELPER_OBJECT_KEY = `report-generator/${REPORT_HELPER_FILENAME}`
-const REPORT_HELPER_VERSION = 'release-20260608-standard-template-lock'
+const REPORT_HELPER_VERSION = 'release-20260608-standard-renderer-v2'
 const STANDARD_REPORT_TEMPLATE = {
   id: 'skillcascade-standard-initial-assessment-v1',
   label: 'SkillCascade Standard Initial Assessment',

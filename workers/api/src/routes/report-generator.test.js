@@ -158,7 +158,7 @@ describe('report-generator route contract', () => {
     expect(response.headers.get('content-type')).toBe('application/zip')
     expect(response.headers.get('content-disposition')).toMatch(/SkillCascadeReportHelper/)
     expect(response.headers.get('cache-control')).toBe('private, no-store')
-    expect(response.headers.get('x-skillcascade-report-helper-version')).toBe('release-20260608-standard-template-lock')
+    expect(response.headers.get('x-skillcascade-report-helper-version')).toBe('release-20260608-standard-renderer-v2')
     expect(bucket.get).toHaveBeenCalled()
   })
 
