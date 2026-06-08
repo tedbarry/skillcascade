@@ -101,7 +101,7 @@ Current template contract:
 - `reportType`: `initial-assessment`
 - `customerTemplateUpload`: `false`
 
-Legacy template-profile endpoints may remain in the helper for internal compatibility and migration testing, but they are not part of the buyer-facing v1 workflow.
+Customer template profiling, saved template profiles, and placeholder alias mapping are intentionally not part of this workflow. If an older local helper build exposes those endpoints, update to the current package before testing buyer workflows.
 
 ## Local Preflight
 
@@ -234,8 +234,6 @@ powershell -NoProfile -ExecutionPolicy Bypass -File local-helpers/report-generat
 
 The bundle builder stages the helper package in a short temporary directory before copying the final zip into the buyer folder. That avoids Windows long-path failures when dependencies are copied into a nested package tree.
 
-The older `build-pilot-buyer-bundle.ps1` script remains only for compatibility with earlier internal packaging checks. Use `build-release-bundle.ps1` for buyer testing and release handoff.
-
 The helper still accepts legacy `/api/local-report-pilot/...` endpoints so older local installs can be updated without breaking the web workflow.
 
 Preview the EXE installer without writing files:
@@ -250,13 +248,13 @@ Installed app files live under:
 %LOCALAPPDATA%\SkillCascade\ReportGeneratorHelper
 ```
 
-Legacy internal template-profile data, if present from earlier builds, stays outside the app install folder:
+Local helper identity and non-PHI readiness settings live outside the app install folder:
 
 ```text
-%USERPROFILE%\.skillcascade\report-generator-helper\template-profiles.json
+%USERPROFILE%\.skillcascade\report-generator-helper
 ```
 
-That separation is intentional. Replacing or updating the installed helper does not wipe local helper data, even when legacy compatibility files exist.
+That separation is intentional. Replacing or updating the installed helper does not wipe local helper identity or future readiness metadata.
 
 ## Browser Origins
 

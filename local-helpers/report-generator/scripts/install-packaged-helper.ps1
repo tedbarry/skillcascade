@@ -288,7 +288,7 @@ function Start-InstalledHelperWatchdog {
 }
 
 Write-Host "Installing SkillCascade Report Generator Helper to: $InstallDir"
-Write-Host 'Saved customer template profiles remain in the user data folder and are not removed by updates.'
+Write-Host 'Local helper identity and settings remain in the user data folder and are not removed by updates.'
 $ConfigPath = Get-HelperConfigPath -Root $InstallDir
 $ConfiguredPort = Read-ConfiguredHelperPort -ConfigPath $ConfigPath
 $PreferredPort = if ($Port -gt 0) {

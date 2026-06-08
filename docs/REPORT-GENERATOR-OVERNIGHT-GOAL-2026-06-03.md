@@ -21,8 +21,6 @@ Read first:
 - `local-helpers/report-generator/README.md`
 - `local-helpers/report-generator/src/server.js`
 - `local-helpers/report-generator/src/local-report-pilot.js`
-- `local-helpers/report-generator/src/template-profile.js`
-- `local-helpers/report-generator/src/template-profile-store.js`
 - `local-helpers/report-generator/scripts/build-windows-package.ps1`
 - `local-helpers/report-generator/scripts/install-packaged-helper.ps1`
 
@@ -31,9 +29,9 @@ Current verified state:
 - `/report-generator` and `/reports` are protected SkillCascade routes.
 - Report Generator access is a workflow-pack entitlement.
 - The local helper runs at `http://127.0.0.1:4181`.
-- The helper profiles `.docx` templates, saves local template profiles, generates local `.docx` drafts, and writes local review JSON.
+- The helper uses the SkillCascade standard initial assessment template, generates local `.docx` drafts, and writes local review JSON.
 - The package builder creates a zip containing a bundled `node.exe` and `Install-ReportGeneratorHelper.exe`.
-- Saved customer template profiles live outside the app install folder at `%USERPROFILE%\.skillcascade\report-generator-helper\template-profiles.json`, so updates do not wipe template setup.
+- Local helper identity and settings live outside the app install folder at `%USERPROFILE%\.skillcascade\report-generator-helper`, so updates do not wipe helper readiness data.
 
 Do not:
 
@@ -67,11 +65,11 @@ Do not:
 - The helper may expose local readiness and version, but should not store Stripe secrets or act as the billing authority.
 - If implementing a first slice, add a PHI-free license/status contract only. Do not add real payment secrets.
 
-4. Template mapping next layer
+4. Standard report renderer next layer
 
-- Keep saved profiles as the foundation.
-- Add design docs or first code for alias/mapping profiles only if it can be verified with a real `.docx` fixture.
-- Unsupported fields must render review markers instead of disappearing.
+- Keep the SkillCascade standard initial assessment format as the only buyer template.
+- Improve standard report sections and goal tables only when source evidence can support them.
+- Unsupported or missing source areas must render review markers instead of disappearing.
 - Do not invent clinical facts to satisfy a template.
 
 5. Verification gates
@@ -103,7 +101,7 @@ Do not:
 
 - Signed/self-extracting installer.
 - Auto-update channel with manifest, version comparison, rollback notes, and customer-safe replacement.
-- Customer-specific template alias/mapping editor.
+- Standard report renderer quality pass against Teddy's accepted report structure.
 - Account-level onboarding checklist for purchased Report Generator packs.
 - Licensing heartbeat between SkillCascade and the local helper without storing secrets locally.
-- First buyer template pilot with real customer template fixtures and no PHI in repo.
+- First buyer source-packet pilot with no PHI in repo.

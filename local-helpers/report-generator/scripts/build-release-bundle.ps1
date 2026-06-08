@@ -82,8 +82,10 @@ try {
     portCollisionPolicy = 'The helper tries 4181 first, then chooses the next available loopback port in 4181-4199 without taking over a port already used by another local app. The installer starts a watchdog immediately, the startup wrapper starts it on Windows login, and the SkillCascade page auto-detects the selected helper port.'
     helperApiPrefix = '/api/local-report-generator'
     legacyHelperApiPrefix = '/api/local-report-pilot'
-    phiBoundary = 'Source folders, templates, generated drafts, review JSON, and evidence ledgers stay on the buyer workstation.'
+    phiBoundary = 'Source folders, generated drafts, review JSON, and evidence ledgers stay on the buyer workstation.'
     reviewGates = @(
+      'Required diagnosis/evaluation, intake/history, and adaptive/functional assessment evidence must be present before generation.',
+      'Deficit domains must be supported by source evidence before goals are drafted.',
       'BCBA review required before use.',
       'No automatic signing.',
       'No automatic submission.',
@@ -98,8 +100,9 @@ Version: $Version
 
 What this is:
 - A controlled-release local helper package for the SkillCascade Report Generator workflow pack.
-- The helper reads local source folders and Word templates on the buyer workstation.
-- SkillCascade coordinates access, setup, helper readiness, template profiling, preflight, and draft generation.
+- The helper reads local source folders on the buyer workstation.
+- SkillCascade uses its standard initial assessment format; buyers upload source documents, not report templates.
+- SkillCascade coordinates access, setup, helper readiness, evidence preflight, deficit detection, and draft generation.
 
 What this is not:
 - It is not an automatic signer.
@@ -121,16 +124,15 @@ Buyer setup:
 5. Back in SkillCascade, click:
    Check helper
    Claim local install
-   Profile Word template
-   Review aliases
-   Run local preflight
+   Select source folder
+   Select output folder
+   Check evidence
    Generate local DOCX draft
 
 Local files created by the helper:
 - Editable report draft DOCX
 - Review summary JSON
 - Evidence ledger JSON
-- Saved template profile JSON
 
 Port safety:
 - The helper tries http://127.0.0.1:4181 first.
@@ -141,7 +143,7 @@ Port safety:
 - The helper never takes over a port already used by another local app.
 
 Privacy boundary:
-- Source folders, template paths, output folders, client names, document text, generated drafts, review JSON, and evidence ledgers stay local.
+- Source folders, output folders, client names, document text, generated drafts, review JSON, and evidence ledgers stay local.
 - The install claim sends only non-PHI helper readiness metadata such as install fingerprint and helper version.
 
 Verification included:

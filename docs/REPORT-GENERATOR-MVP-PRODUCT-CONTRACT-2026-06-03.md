@@ -4,24 +4,21 @@ Date: 2026-06-03
 
 ## Root Wish
 
-Build a sellable ABA report-generation workflow inside SkillCascade that lets a BCBA or agency take a local source folder and a customer Word template, generate a review-ready draft, and keep clinical responsibility with the BCBA.
+Build a sellable ABA report-generation workflow inside SkillCascade that lets a BCBA or agency take a local source folder, generate a review-ready draft in the SkillCascade standard initial assessment format, and keep clinical responsibility with the BCBA.
 
-This is not a generic chatbot and not a cloud file uploader. The product promise is source-backed report drafting, template adaptation, QA visibility, and a local PHI boundary.
+This is not a generic chatbot and not a cloud file uploader. The product promise is source-backed report drafting, one consistent SkillCascade report format, QA visibility, and a local PHI boundary.
 
 ## Root Concepts
 
 - Protected SkillCascade dashboard: existing auth, subscription, and workflow-pack gate control access.
-- Local helper sidecar: reads PHI-capable local folders and templates on the workstation.
-- Template profile: inspects customer `.docx` placeholders before generation.
-- Saved template profile: stores reusable customer template setup in the local helper data folder.
-- Field alias map: maps customer placeholder names to supported helper fields without code changes.
-- Visual alias editor: lets a nontechnical user map unsupported customer placeholders to supported report fields from the Report Generator page.
+- Local helper sidecar: reads PHI-capable local source folders on the workstation.
+- Standard report template: the built-in SkillCascade initial assessment structure used for all buyer drafts.
 - Local install identity: stores a persistent non-secret helper fingerprint for future SkillCascade seat checks.
 - Server install claim: records the non-PHI helper fingerprint for the signed-in user/org as the first licensing primitive.
 - Onboarding contract: exposes the buyer setup checklist and safety boundaries through the protected API.
 - Release buyer bundle: creates a customer handoff folder containing the helper zip, checksum, manifest, README-first instructions, PHI boundary, and review-gate contract.
 - Source packet: recursively scans supported local source files and excludes generated output folders.
-- Local preflight: validates source folder, output folder, source file counts, and template readiness before generation.
+- Local preflight: validates source folder, output folder, source file counts, required source evidence, and deficit-domain readiness before generation.
 - Clinical draft: creates report sections and goals from source-supported evidence only.
 - Review summary: writes a local JSON QA artifact with source filenames, unsupported files, missing fields, template warnings, and safety flags.
 - Evidence ledger: writes local section/goal evidence excerpts for BCBA review while keeping excerpts out of the browser response.
@@ -31,8 +28,6 @@ This is not a generic chatbot and not a cloud file uploader. The product promise
 
 Reused primitives:
 
-- `docxtemplater` for Word placeholder rendering.
-- `docxtemplater` InspectModule for `.docx` template tag profiling.
 - `docx` for generated fallback `.docx` drafts.
 - `mammoth` for local `.docx` raw-text extraction.
 - Existing SkillCascade `ProtectedRoute`, shared `api.fetch`, Worker auth middleware, permissions, and workflow-pack entitlement.
@@ -42,10 +37,7 @@ Custom product layer:
 - ABA-specific section rules and source-support warnings.
 - Goal-selection rules and data-type metadata.
 - Local helper CORS/private-network bridge for SkillCascade-to-localhost use.
-- Template readiness model for supported, unsupported, missing, and goal-loop placeholders.
-- Local saved-profile store for reusable customer template setup.
-- Saved field aliases for customer-specific template placeholder names.
-- Frontend alias editor that turns template-profile warnings into editable field mappings.
+- Standard-template renderer that keeps buyer drafts in one consistent report structure.
 - Local license-readiness envelope that identifies the helper install while keeping SkillCascade as the entitlement authority.
 - Worker onboarding and install-claim endpoints for the sellable workflow-pack setup path.
 - Local evidence ledger artifact and sanitized response references.
@@ -59,10 +51,7 @@ Custom product layer:
 - The route requires Report Generator workflow-pack access.
 - The local helper can be installed and run from `local-helpers/report-generator`.
 - The helper status endpoint returns the local-only safety contract.
-- The helper template-profile endpoint inspects a local `.docx` template and returns supported tags, unsupported tags, missing useful tags, and goal-loop readiness.
-- The helper can save, list, and reuse a local customer template profile without uploading it to SkillCascade.
-- Saved profiles can map customer placeholder aliases and still leave unmapped unsupported fields visible for review.
-- The Report Generator page lets a user configure and save unsupported customer placeholder mappings through a visual alias editor.
+- Customer template upload, template profiling, saved template profiles, and placeholder alias mapping are disabled for buyer workflows.
 - The helper run endpoint generates a local `.docx` draft and local review JSON.
 - The helper preflight endpoint validates source/template readiness before draft generation and returns blockers/warnings without source text.
 - The helper run endpoint generates a local evidence ledger with source excerpts for BCBA review.
@@ -86,4 +75,4 @@ Custom product layer:
 - Full AI clinical reasoning parity with the manual Codex workflow.
 - Signed/self-extracting installer, auto-update execution, and full server-side license enforcement beyond install claiming.
 - Payment-secret handling inside the helper.
-- Bulk template versioning, cross-customer alias libraries, and advanced template design tools beyond the basic alias editor.
+- Customer-specific template adaptation.

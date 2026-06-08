@@ -13,7 +13,8 @@ export const HELPER_VERSION = packageJson.version || '0.0.0'
 export const LOCAL_DATA_POLICY = {
   appInstallDir: '%LOCALAPPDATA%\\SkillCascade\\ReportGeneratorHelper',
   customerDataDir: '%USERPROFILE%\\.skillcascade\\report-generator-helper',
-  savedTemplateProfiles: '%USERPROFILE%\\.skillcascade\\report-generator-helper\\template-profiles.json',
+  standardTemplateId: 'skillcascade-standard-initial-assessment-v1',
+  customerTemplateUpload: false,
   updatesPreserveCustomerData: true,
 }
 
