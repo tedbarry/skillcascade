@@ -207,6 +207,8 @@ const DEFICIT_DOMAIN_RULES = [
   },
 ]
 
+const GOAL_DOMAIN_ORDER = ['Behavior', 'Communication', 'Social', 'Parent Training']
+
 const SECTION_RULES = [
   {
     id: 'diagnosisSummary',
@@ -920,6 +922,14 @@ function evidenceParagraph(section) {
   return paragraph(`Source support: ${section.sourceEvidence.map((item) => item.filename).join(', ')}`, { spacing: { after: 180 } })
 }
 
+function reviewMarker(text) {
+  return paragraph(`Review required: ${text}`, { spacing: { after: 160 }, boldText: true })
+}
+
+function heading(text, level = HeadingLevel.HEADING_2) {
+  return new Paragraph({ text, heading: level })
+}
+
 function tableCell(text, bold = false) {
   return new TableCell({
     margins: { top: 80, bottom: 80, left: 80, right: 80 },
@@ -927,28 +937,107 @@ function tableCell(text, bold = false) {
   })
 }
 
-function buildGoalTable(goalPlan) {
+function sectionById(job, id) {
+  return job.clinicalProfile.sections.find((section) => section.id === id)
+}
+
+function sectionDraftParagraph(section) {
+  if (!section) return reviewMarker('Section was not available in the generated clinical profile.')
+  return paragraph(section.text, { spacing: { after: 120 } })
+}
+
+function buildSectionBlock(section) {
+  return [
+    heading(section.label),
+    sectionDraftParagraph(section),
+    evidenceParagraph(section),
+  ]
+}
+
+function buildSourcePacketSection(job) {
+  const sourceItems = job.sourcePacket.sources.map((source) => (
+    paragraph(`${source.relativePath} (${source.extension}, ${source.characterCount} characters extracted)`, { spacing: { after: 60 } })
+  ))
+  const unsupportedItems = job.sourcePacket.unsupportedFiles.map((source) => (
+    paragraph(`${source.relativePath} (${source.extension}) - unsupported; review manually if clinically relevant.`, { spacing: { after: 60 } })
+  ))
+
+  return [
+    heading('Source Packet Reviewed'),
+    ...(sourceItems.length ? sourceItems : [reviewMarker('No supported source files were extracted.')]),
+    ...(unsupportedItems.length
+      ? [
+          paragraph('Unsupported local files:', { spacing: { before: 120, after: 60 }, boldText: true }),
+          ...unsupportedItems,
+        ]
+      : []),
+  ]
+}
+
+function buildMedicalNecessitySection(job) {
+  const supportedDeficits = job.deficitProfile.domains
+    .filter((domain) => domain.status === 'source-supported')
+    .map((domain) => domain.label)
+  const supportedGoalDomains = job.coverageMatrix.summary.goalDomainsWithGoals || []
+
+  return [
+    heading('Medical Necessity And Clinical Rationale'),
+    supportedDeficits.length
+      ? paragraph(`The local source packet supports clinically significant needs in the following areas: ${supportedDeficits.join(', ')}. Recommended goals are included only where the available sources support a related deficit domain.`, { spacing: { after: 120 } })
+      : reviewMarker('No source-supported deficit domains were detected. Do not finalize goals until the source packet supports the clinical rationale.'),
+    supportedGoalDomains.length
+      ? paragraph(`Goal domains with source-supported recommendations in this draft: ${supportedGoalDomains.join(', ')}.`, { spacing: { after: 120 } })
+      : reviewMarker('No goal domains currently have source-supported recommendations.'),
+    paragraph('The BCBA must review the draft, confirm medical necessity, finalize wording, and adjust service recommendations before the report is used.', { spacing: { after: 180 } }),
+  ]
+}
+
+function buildBiopsychosocialSection(job) {
+  const ids = ['familyHistory', 'developmentalHistory', 'educationalHistory']
+  return [
+    heading('Biopsychosocial History'),
+    ...ids.flatMap((id) => {
+      const section = sectionById(job, id)
+      return section ? buildSectionBlock(section) : [reviewMarker(`${id} was not available.`)]
+    }),
+  ]
+}
+
+function buildClinicalProfileSection(job) {
+  const ids = ['diagnosisSummary', 'behaviorProfile', 'communicationProfile', 'socialProfile', 'caregiverTraining']
+  return [
+    heading('Clinical Profile And Treatment Needs'),
+    ...ids.flatMap((id) => {
+      const section = sectionById(job, id)
+      return section ? buildSectionBlock(section) : [reviewMarker(`${id} was not available.`)]
+    }),
+  ]
+}
+
+function buildGoalTable(goals) {
   const header = new TableRow({
     children: [
       tableCell('Program/Behavior', true),
+      tableCell('Short-Term Goal', true),
       tableCell('Objective', true),
       tableCell('Baseline', true),
       tableCell('Current Level', true),
       tableCell('Criteria for Mastery', true),
       tableCell('Target date for Mastery', true),
-      tableCell('Graphs', true),
+      tableCell('Data / Graphs', true),
     ],
   })
 
-  const rows = goalPlan.goals.map((goal) => new TableRow({
+  const rows = goals.map((goal) => new TableRow({
     children: [
       tableCell(goal.longTermGoalName),
+      tableCell(goal.shortTermGoalName),
       tableCell(goal.objective),
       tableCell(goal.baseline),
       tableCell(goal.currentLevel),
       tableCell(goal.criteriaForMastery),
       tableCell(goal.targetDateForMastery),
-      tableCell(goal.graphs),
+      tableCell(`${goal.centralReachDataType}; ${goal.graphs}`),
     ],
   }))
 
@@ -966,6 +1055,34 @@ function buildGoalTable(goalPlan) {
   })
 }
 
+function buildGoalDomainSections(job) {
+  return GOAL_DOMAIN_ORDER.flatMap((domain) => {
+    const goals = job.goalPlan.goals.filter((goal) => goal.domain === domain)
+    const domainCoverage = job.coverageMatrix.goalDomainCoverage.find((item) => item.domain === domain)
+    return [
+      heading(`${domain} Goals`),
+      paragraph(`Coverage: ${domainCoverage?.status || 'not reviewed'} (${goals.length} goal${goals.length === 1 ? '' : 's'}).`, { spacing: { after: 100 } }),
+      goals.length
+        ? buildGoalTable(goals)
+        : reviewMarker(`No ${domain.toLowerCase()} goals were selected automatically. Add only if source evidence supports this domain.`),
+    ]
+  })
+}
+
+function buildReviewChecklist(job) {
+  const warnings = job.qa.warnings.length ? job.qa.warnings : ['No automated QA warnings were generated; BCBA review is still required.']
+  return [
+    heading('BCBA Review Checklist'),
+    paragraph('Before using this draft, the BCBA should confirm the following:', { spacing: { after: 100 } }),
+    paragraph('1. All source-supported sections accurately reflect the records reviewed.', { spacing: { after: 60 } }),
+    paragraph('2. Missing or unsupported areas are corrected manually and not invented.', { spacing: { after: 60 } }),
+    paragraph('3. Each recommended goal is clinically appropriate for the client and tied to source-supported deficits.', { spacing: { after: 60 } }),
+    paragraph('4. Service recommendations, titration, signatures, payer language, and final formatting are reviewed before use.', { spacing: { after: 140 } }),
+    heading('QA Warnings', HeadingLevel.HEADING_3),
+    ...warnings.map((warning) => paragraph(warning, { spacing: { after: 60 } })),
+  ]
+}
+
 async function writeGeneratedDocx({ outputPath, job }) {
   const doc = new Document({
     sections: [
@@ -981,28 +1098,26 @@ async function writeGeneratedDocx({ outputPath, job }) {
           paragraph(`Generated locally: ${job.generatedAt}`, { spacing: { after: 300 } }),
           paragraph(`Template: ${job.standardTemplate.label}`, { spacing: { after: 180 } }),
           paragraph('Review status: Draft for BCBA review. This local helper does not sign, submit, or finalize reports.', { spacing: { after: 300 } }),
-          new Paragraph({ text: 'Evidence Readiness', heading: HeadingLevel.HEADING_2 }),
+          ...buildSourcePacketSection(job),
+          heading('Evidence Readiness'),
           ...job.evidenceReadiness.categories.map((category) => paragraph(`${category.label}: ${category.status}`, { spacing: { after: 80 } })),
-          new Paragraph({ text: 'Detected Assessment Inputs', heading: HeadingLevel.HEADING_2 }),
+          heading('Detected Assessment Inputs'),
           ...(job.assessmentAdapters.length
             ? job.assessmentAdapters.map((adapter) => paragraph(`${adapter.label}: ${adapter.use}`, { spacing: { after: 80 } }))
             : [paragraph('No recognized assessment adapters were detected. BCBA review is required.', { spacing: { after: 120 } })]),
-          new Paragraph({ text: 'Deficit Domains', heading: HeadingLevel.HEADING_2 }),
+          heading('Deficit Domains'),
           ...job.deficitProfile.domains.map((domain) => paragraph(`${domain.label}: ${domain.status}`, { spacing: { after: 80 } })),
-          new Paragraph({ text: 'Report Coverage Matrix', heading: HeadingLevel.HEADING_2 }),
+          heading('Report Coverage Matrix'),
           paragraph(`Coverage status: ${job.coverageMatrix.status}. Source-supported sections: ${job.coverageMatrix.summary.sourceSupportedSectionCount}/${job.coverageMatrix.summary.sectionCount}. Selected goals: ${job.coverageMatrix.summary.selectedGoalCount}.`, { spacing: { after: 120 } }),
           ...job.coverageMatrix.goalDomainCoverage.map((domain) => paragraph(`${domain.domain}: ${domain.status} (${domain.goalCount} goal${domain.goalCount === 1 ? '' : 's'})`, { spacing: { after: 80 } })),
-          ...job.clinicalProfile.sections.flatMap((section) => [
-            new Paragraph({ text: section.label, heading: HeadingLevel.HEADING_2 }),
-            paragraph(section.text, { spacing: { after: 120 } }),
-            evidenceParagraph(section),
-          ]),
-          new Paragraph({ text: 'Recommended Goals', heading: HeadingLevel.HEADING_2 }),
-          job.goalPlan.goals.length
-            ? buildGoalTable(job.goalPlan)
-            : paragraph('No source-supported goals were selected automatically. BCBA review is required.', { spacing: { after: 240 } }),
-          new Paragraph({ text: 'Missing / Review-Required Fields', heading: HeadingLevel.HEADING_2 }),
+          ...buildMedicalNecessitySection(job),
+          ...buildBiopsychosocialSection(job),
+          ...buildClinicalProfileSection(job),
+          heading('Recommended Goals'),
+          ...buildGoalDomainSections(job),
+          heading('Missing / Review-Required Fields'),
           ...job.clinicalProfile.missingFields.map((field) => paragraph(`${field.label}: ${field.behavior}`)),
+          ...buildReviewChecklist(job),
         ],
       },
     ],

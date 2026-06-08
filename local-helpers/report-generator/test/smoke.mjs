@@ -335,6 +335,16 @@ try {
   )), false)
   const renderedOutput = await mammoth.extractRawText({ path: runPayload.result.outputPath })
   assert.match(renderedOutput.value, /Client: Release Client/)
+  assert.match(renderedOutput.value, /Source Packet Reviewed/)
+  assert.match(renderedOutput.value, /Medical Necessity And Clinical Rationale/)
+  assert.match(renderedOutput.value, /Biopsychosocial History/)
+  assert.match(renderedOutput.value, /Clinical Profile And Treatment Needs/)
+  assert.match(renderedOutput.value, /Behavior Goals/)
+  assert.match(renderedOutput.value, /Communication Goals/)
+  assert.match(renderedOutput.value, /Social Goals/)
+  assert.match(renderedOutput.value, /Parent Training Goals/)
+  assert.match(renderedOutput.value, /Short-Term Goal/)
+  assert.match(renderedOutput.value, /BCBA Review Checklist/)
   assert.equal(renderedOutput.value.includes('REVIEW_UNSUPPORTED_TEMPLATE_FIELD'), false)
 
   const sameFolderRunResponse = await fetch(`${baseUrl}${helperApi}/run`, {
