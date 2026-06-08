@@ -10,8 +10,6 @@ import {
   preflightLocalReportPilot,
   runLocalReportPilot,
 } from './local-report-pilot.js'
-import { profileTemplate, SUPPORTED_TEMPLATE_FIELDS } from './template-profile.js'
-import { listTemplateProfiles, saveTemplateProfile } from './template-profile-store.js'
 import { helperInstallState } from './helper-metadata.js'
 import { localLicenseReadiness } from './license-readiness.js'
 
@@ -38,6 +36,7 @@ const allowedOrigins = new Set([...defaultAllowedOrigins, ...configuredAllowedOr
 const helperApiPrefix = '/api/local-report-generator'
 const legacyHelperApiPrefix = '/api/local-report-pilot'
 const pickerTimeoutMs = 10 * 60 * 1000
+const standardTemplateOnlyMessage = 'Customer Word templates are disabled for this workflow. SkillCascade uses the standard initial assessment template automatically.'
 
 function isHelperEndpoint(pathname, endpoint) {
   return pathname === `${helperApiPrefix}${endpoint}` || pathname === `${legacyHelperApiPrefix}${endpoint}`
@@ -251,20 +250,14 @@ createServer(async (req, res) => {
         endpoints: {
           installState: helperEndpoint('/install-state'),
           licenseReadiness: helperEndpoint('/license-readiness'),
-          templateProfile: helperEndpoint('/template-profile'),
-          templateProfiles: helperEndpoint('/template-profiles'),
           pickFolder: helperEndpoint('/pick-folder'),
-          pickFile: helperEndpoint('/pick-file'),
           preflight: helperEndpoint('/preflight'),
           run: helperEndpoint('/run'),
         },
         legacyEndpoints: {
           installState: legacyHelperEndpoint('/install-state'),
           licenseReadiness: legacyHelperEndpoint('/license-readiness'),
-          templateProfile: legacyHelperEndpoint('/template-profile'),
-          templateProfiles: legacyHelperEndpoint('/template-profiles'),
           pickFolder: legacyHelperEndpoint('/pick-folder'),
-          pickFile: legacyHelperEndpoint('/pick-file'),
           preflight: legacyHelperEndpoint('/preflight'),
           run: legacyHelperEndpoint('/run'),
         },
@@ -273,10 +266,14 @@ createServer(async (req, res) => {
           platform: process.platform,
           mode: 'local-native-dialog',
           folderEndpoint: helperEndpoint('/pick-folder'),
-          fileEndpoint: helperEndpoint('/pick-file'),
           returnsPathOnly: true,
         },
-        supportedTemplateFields: SUPPORTED_TEMPLATE_FIELDS,
+        templatePolicy: {
+          customerTemplateUpload: false,
+          customTemplateAccepted: false,
+          mode: STANDARD_REPORT_TEMPLATE.mode,
+          message: standardTemplateOnlyMessage,
+        },
         safety: {
           cloudUpload: false,
           liveExternalWrites: false,
@@ -348,34 +345,17 @@ createServer(async (req, res) => {
     }
 
     if (isHelperEndpoint(pathname, '/template-profile') && method === 'POST') {
-      try {
-        const body = await readJsonBody(req)
-        const profile = await profileTemplate(body)
-        sendJson(res, { ok: true, profile }, corsHeaders)
-      } catch (error) {
-        sendError(res, 400, error.message, corsHeaders)
-      }
+      sendError(res, 410, standardTemplateOnlyMessage, corsHeaders)
       return
     }
 
     if (isHelperEndpoint(pathname, '/template-profiles') && method === 'GET') {
-      try {
-        const result = await listTemplateProfiles()
-        sendJson(res, { ok: true, result }, corsHeaders)
-      } catch (error) {
-        sendError(res, 400, error.message, corsHeaders)
-      }
+      sendError(res, 410, standardTemplateOnlyMessage, corsHeaders)
       return
     }
 
     if (isHelperEndpoint(pathname, '/template-profiles') && method === 'POST') {
-      try {
-        const body = await readJsonBody(req)
-        const result = await saveTemplateProfile(body)
-        sendJson(res, { ok: true, result }, corsHeaders)
-      } catch (error) {
-        sendError(res, 400, error.message, corsHeaders)
-      }
+      sendError(res, 410, standardTemplateOnlyMessage, corsHeaders)
       return
     }
 

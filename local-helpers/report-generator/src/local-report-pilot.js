@@ -1,8 +1,6 @@
 import { mkdir, readdir, readFile, stat, writeFile } from 'node:fs/promises'
 import { basename, extname, isAbsolute, join, relative, resolve } from 'node:path'
 import mammoth from 'mammoth'
-import PizZip from 'pizzip'
-import Docxtemplater from 'docxtemplater'
 import {
   AlignmentType,
   BorderStyle,
@@ -16,13 +14,12 @@ import {
   TextRun,
   WidthType,
 } from 'docx'
-import { profileTemplate } from './template-profile.js'
-import { getTemplateProfile } from './template-profile-store.js'
 
 const SUPPORTED_SOURCE_EXTENSIONS = new Set(['.docx', '.txt', '.md'])
 const DEFAULT_OUTPUT_DIRECTORY_NAME = 'report-generator-output'
 const LEGACY_OUTPUT_DIRECTORY_NAMES = ['report-pilot-output']
 const SKIP_DIRECTORY_NAMES = new Set(['.git', 'node_modules', DEFAULT_OUTPUT_DIRECTORY_NAME, ...LEGACY_OUTPUT_DIRECTORY_NAMES, 'verification-output'])
+const STANDARD_TEMPLATE_ONLY_BLOCKER = 'Customer Word templates are disabled for this workflow. SkillCascade uses the standard initial assessment template automatically.'
 
 export const STANDARD_REPORT_TEMPLATE = {
   id: 'skillcascade-standard-initial-assessment-v1',
@@ -626,6 +623,9 @@ export async function preflightLocalReportPilot({
 } = {}) {
   const blockers = []
   const warnings = []
+  if (templatePath || templateProfileId) {
+    blockers.push(STANDARD_TEMPLATE_ONLY_BLOCKER)
+  }
   if (!sourceFolder) {
     blockers.push('sourceFolder is required')
   }
@@ -684,27 +684,7 @@ export async function preflightLocalReportPilot({
     }
   }
 
-  let savedTemplateProfile = null
-  let resolvedTemplatePath = templatePath
-  if (templateProfileId) {
-    savedTemplateProfile = await getTemplateProfile(templateProfileId)
-    resolvedTemplatePath = savedTemplateProfile.templatePath
-  }
-
-  let templateProfile = null
-  if (resolvedTemplatePath) {
-    try {
-      templateProfile = await profileTemplate({ templatePath: resolvedTemplatePath })
-      if (templateProfile.status !== 'ready') {
-        warnings.push(`Template profile status is ${templateProfile.status}; review aliases and missing placeholders before generating.`)
-      }
-      warnings.push('A legacy local Word template was supplied, but the buyer workflow uses the SkillCascade standard report template.')
-    } catch (error) {
-      blockers.push(`Template profile failed: ${error.message}`)
-    }
-  } else {
-    warnings.push(`${STANDARD_REPORT_TEMPLATE.label} will be used automatically. Customer report templates are not part of this workflow.`)
-  }
+  warnings.push(`${STANDARD_REPORT_TEMPLATE.label} will be used automatically. Customer report templates are not part of this workflow.`)
 
   return {
     okToRun: blockers.length === 0,
@@ -723,20 +703,12 @@ export async function preflightLocalReportPilot({
     assessmentAdapters,
     deficitProfile: sanitizeDeficitProfileForResponse(deficitProfile),
     coverageMatrix,
-    templateSummary: templateProfile ? {
-      savedTemplateProfileId: savedTemplateProfile?.id || '',
-      savedTemplateProfileLabel: savedTemplateProfile?.label || '',
-      filename: templateProfile.filename,
-      status: templateProfile.status,
-      tagCount: templateProfile.tagCount,
-      unsupportedTagCount: templateProfile.unsupportedTags.length,
-      missingRecommendedCount: templateProfile.missingRecommendedFields.length,
-      goalLoopDetected: templateProfile.goalLoop.detected,
-      mode: 'legacy-local-template',
-    } : {
+    templateSummary: {
       mode: STANDARD_REPORT_TEMPLATE.mode,
       label: STANDARD_REPORT_TEMPLATE.label,
       customerTemplateUpload: false,
+      customTemplateAccepted: false,
+      controlledBy: STANDARD_REPORT_TEMPLATE.controlledBy,
     },
     blockers,
     warnings,
@@ -1040,91 +1012,6 @@ async function writeGeneratedDocx({ outputPath, job }) {
   await writeFile(outputPath, buffer)
 }
 
-function readDataPath(data, path) {
-  return String(path || '').split('.').reduce((current, key) => (
-    current && Object.prototype.hasOwnProperty.call(current, key) ? current[key] : undefined
-  ), data)
-}
-
-function writeDataPath(data, path, value) {
-  const parts = String(path || '').split('.').filter(Boolean)
-  if (!parts.length) return
-  let current = data
-  for (const part of parts.slice(0, -1)) {
-    current[part] = current[part] && typeof current[part] === 'object' ? current[part] : {}
-    current = current[part]
-  }
-  current[parts.at(-1)] = value
-}
-
-function applyTemplateAliases(data, fieldAliases = {}) {
-  const aliases = Object.entries(fieldAliases || {}).filter(([, sourceTag]) => sourceTag)
-  for (const [templateTag, sourceTag] of aliases) {
-    if (templateTag.startsWith('goals.') && sourceTag.startsWith('goals.')) {
-      const templateKey = templateTag.replace(/^goals\./, '')
-      const sourceKey = sourceTag.replace(/^goals\./, '')
-      data.goals = data.goals.map((goal) => ({
-        ...goal,
-        [templateKey]: goal[sourceKey] ?? '',
-      }))
-      continue
-    }
-
-    const value = readDataPath(data, sourceTag)
-    if (value !== undefined) writeDataPath(data, templateTag, value)
-  }
-}
-
-function templateData(job, fieldAliases = {}) {
-  const sectionById = Object.fromEntries(job.clinicalProfile.sections.map((section) => [section.id, section.text]))
-  const data = {
-    report_title: job.reportTitle,
-    client_label: job.clientLabel,
-    generated_at: job.generatedAt,
-    diagnosis_summary: sectionById.diagnosisSummary || '',
-    family_history: sectionById.familyHistory || '',
-    developmental_history: sectionById.developmentalHistory || '',
-    educational_history: sectionById.educationalHistory || '',
-    behavior_profile: sectionById.behaviorProfile || '',
-    communication_profile: sectionById.communicationProfile || '',
-    social_profile: sectionById.socialProfile || '',
-    caregiver_training: sectionById.caregiverTraining || '',
-    missing_fields: job.clinicalProfile.missingFields.map((field) => field.label).join(', '),
-    goals: job.goalPlan.goals.map((goal) => ({
-      domain: goal.domain,
-      long_term_goal: goal.longTermGoalName,
-      short_term_goal: goal.shortTermGoalName,
-      objective: goal.objective,
-      baseline: goal.baseline,
-      current_level: goal.currentLevel,
-      criteria: goal.criteriaForMastery,
-      target_date: goal.targetDateForMastery,
-      graphs: goal.graphs,
-    })),
-  }
-  applyTemplateAliases(data, fieldAliases)
-  return data
-}
-
-async function writePlaceholderTemplateDocx({ templatePath, outputPath, job, fieldAliases = {} }) {
-  const content = await readFile(templatePath)
-  const zip = new PizZip(content)
-  const doc = new Docxtemplater(zip, {
-    paragraphLoop: true,
-    linebreaks: true,
-    nullGetter(part) {
-      const value = part?.value || part?.module || 'unknown'
-      return `[[REVIEW_UNSUPPORTED_TEMPLATE_FIELD:${value}]]`
-    },
-  })
-  doc.render(templateData(job, fieldAliases))
-  const buffer = doc.getZip().generate({
-    type: 'nodebuffer',
-    compression: 'DEFLATE',
-  })
-  await writeFile(outputPath, buffer)
-}
-
 function evidenceLedgerItem(item) {
   return {
     sourceId: item.sourceId,
@@ -1232,13 +1119,13 @@ export async function runLocalReportPilot({
   templateFieldAliases = {},
 } = {}) {
   if (!sourceFolder) throw new Error('sourceFolder is required')
+  if (templatePath || templateProfileId || Object.keys(templateFieldAliases || {}).length) {
+    throw new Error(STANDARD_TEMPLATE_ONLY_BLOCKER)
+  }
   const resolvedOutputDir = resolve(outputDir || join(sourceFolder, DEFAULT_OUTPUT_DIRECTORY_NAME))
   if (outputDirWouldHideSource(sourceFolder, resolvedOutputDir)) {
     throw new Error(outputDirSourceBlockerMessage())
   }
-  const savedTemplateProfile = templateProfileId ? await getTemplateProfile(templateProfileId) : null
-  const resolvedTemplatePath = savedTemplateProfile?.templatePath || templatePath
-  const resolvedTemplateFieldAliases = savedTemplateProfile?.fieldAliases || templateFieldAliases || {}
 
   await mkdir(resolvedOutputDir, { recursive: true })
 
@@ -1263,7 +1150,6 @@ export async function runLocalReportPilot({
     clinicalProfile,
     goalPlan,
   })
-  const templateProfile = resolvedTemplatePath ? await profileTemplate({ templatePath: resolvedTemplatePath }) : null
   const generatedAt = new Date().toISOString()
   const safeClient = clientLabel.replace(/[^a-z0-9]+/gi, '-').replace(/^-|-$/g, '') || 'client'
   const outputPath = join(resolvedOutputDir, `${safeClient}-report-draft.docx`)
@@ -1288,12 +1174,12 @@ export async function runLocalReportPilot({
     goalPlan,
     coverageMatrix,
     outputPath,
-    templatePath: resolvedTemplatePath ? resolve(resolvedTemplatePath) : '',
-    templateProfileId: savedTemplateProfile?.id || '',
-    templateProfileLabel: savedTemplateProfile?.label || '',
-    templateFieldAliases: resolvedTemplateFieldAliases,
-    templateProfile,
-    templateMode: resolvedTemplatePath ? 'legacy-placeholder-template' : STANDARD_REPORT_TEMPLATE.mode,
+    templatePath: '',
+    templateProfileId: '',
+    templateProfileLabel: '',
+    templateFieldAliases: {},
+    templateProfile: null,
+    templateMode: STANDARD_REPORT_TEMPLATE.mode,
     qa: {
       status: 'ready-for-bcba-review',
       blockers: [],
@@ -1301,9 +1187,7 @@ export async function runLocalReportPilot({
         ...evidenceReadiness.missingRequired.map((item) => `Missing required evidence: ${item.label}`),
         ...clinicalProfile.missingFields.map((field) => `Missing source support: ${field.label}`),
         ...deficitProfile.missingDeficitDomains.map((domain) => `Deficit domain not clearly supported: ${domain.label}`),
-        ...(templateProfile?.warnings || []).map((warning) => `Template profile: ${warning}`),
         ...sourcePacket.unsupportedFiles.map((file) => `Unsupported local source not extracted: ${file.relativePath}`),
-        ...(resolvedTemplatePath ? ['Legacy customer-template mode used; standard SkillCascade template is the supported buyer workflow.'] : []),
         ...(goalPlan.goals.length ? [] : ['No source-supported goals were selected automatically.']),
       ],
       liveWriteAttempted: false,
@@ -1312,16 +1196,7 @@ export async function runLocalReportPilot({
     },
   }
 
-  if (resolvedTemplatePath) {
-    await writePlaceholderTemplateDocx({
-      templatePath: resolvedTemplatePath,
-      outputPath,
-      job,
-      fieldAliases: resolvedTemplateFieldAliases,
-    })
-  } else {
-    await writeGeneratedDocx({ outputPath, job })
-  }
+  await writeGeneratedDocx({ outputPath, job })
 
   const evidenceLedger = buildEvidenceLedger(job)
   await writeFile(evidenceLedgerPath, JSON.stringify(evidenceLedger, null, 2))
@@ -1343,18 +1218,7 @@ export async function runLocalReportPilot({
     assessmentAdapters,
     deficitProfile: sanitizeDeficitProfileForResponse(deficitProfile),
     coverageMatrix,
-    templateProfile: templateProfile ? {
-      savedTemplateProfileId: savedTemplateProfile?.id || '',
-      savedTemplateProfileLabel: savedTemplateProfile?.label || '',
-      fieldAliases: resolvedTemplateFieldAliases,
-      status: templateProfile.status,
-      filename: templateProfile.filename,
-      tagCount: templateProfile.tagCount,
-      supportedTags: templateProfile.supportedTags,
-      unsupportedTags: templateProfile.unsupportedTags,
-      missingRecommendedFields: templateProfile.missingRecommendedFields,
-      warnings: templateProfile.warnings,
-    } : null,
+    templateProfile: null,
     missingFields: clinicalProfile.missingFields,
     goalCount: goalPlan.goals.length,
     goalsByDomain: goalPlan.domains,

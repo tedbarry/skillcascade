@@ -18,9 +18,9 @@ import {
 } from '../lib/report-credits.js'
 
 const route = new Hono()
-const REPORT_HELPER_FILENAME = 'SkillCascadeReportHelper-release-20260605-folder-picker-template-guard.zip'
+const REPORT_HELPER_FILENAME = 'SkillCascadeReportHelper-release-20260608-standard-template-lock.zip'
 const REPORT_HELPER_OBJECT_KEY = `report-generator/${REPORT_HELPER_FILENAME}`
-const REPORT_HELPER_VERSION = 'release-20260605-folder-picker-template-guard'
+const REPORT_HELPER_VERSION = 'release-20260608-standard-template-lock'
 const STANDARD_REPORT_TEMPLATE = {
   id: 'skillcascade-standard-initial-assessment-v1',
   label: 'SkillCascade Standard Initial Assessment',
@@ -67,10 +67,7 @@ const REPORT_GENERATOR_CONTRACT = {
       status: '/api/local-report-pilot/status',
       installState: '/api/local-report-pilot/install-state',
       licenseReadiness: '/api/local-report-pilot/license-readiness',
-      templateProfile: '/api/local-report-pilot/template-profile',
-      templateProfiles: '/api/local-report-pilot/template-profiles',
       pickFolder: '/api/local-report-pilot/pick-folder',
-      pickFile: '/api/local-report-pilot/pick-file',
       preflight: '/api/local-report-pilot/preflight',
       run: '/api/local-report-pilot/run',
     },
@@ -89,6 +86,11 @@ const REPORT_GENERATOR_CONTRACT = {
     phiBoundary: 'This route returns configuration and review gates only. Source document extraction stays in the local helper.',
   },
   standardTemplate: STANDARD_REPORT_TEMPLATE,
+  templatePolicy: {
+    customerTemplateUpload: false,
+    customTemplateAccepted: false,
+    message: 'SkillCascade uses the standard initial assessment template automatically. Customer template upload is not part of this workflow.',
+  },
   sourceRequirements: {
     requiredEvidenceCategories: REQUIRED_EVIDENCE_CATEGORIES,
     customerTemplateUpload: false,

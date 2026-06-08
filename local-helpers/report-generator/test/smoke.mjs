@@ -5,7 +5,6 @@ import { mkdir, mkdtemp, readFile, stat, writeFile } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
 import { dirname, join } from 'node:path'
 import { fileURLToPath } from 'node:url'
-import { Document, Packer, Paragraph, TextRun } from 'docx'
 import mammoth from 'mammoth'
 
 const packageRoot = dirname(dirname(fileURLToPath(import.meta.url)))
@@ -74,37 +73,8 @@ async function createSourceFixture() {
     'V-scale subdomains include receptive, expressive, interpersonal relationships, play and leisure, coping skills, domestic, and community needs.',
   ].join(' '))
   await writeFile(join(sourceFolder, 'legacy-report.doc'), 'unsupported binary placeholder')
-  const templatePath = join(root, 'template.docx')
-  const template = new Document({
-    sections: [
-      {
-        children: [
-          new Paragraph({ children: [new TextRun('{report_title}')] }),
-          new Paragraph({ children: [new TextRun('Client: {client_label}')] }),
-          new Paragraph({ children: [new TextRun('Diagnosis: {diagnosis_summary}')] }),
-          new Paragraph({ children: [new TextRun('Family: {family_history}')] }),
-          new Paragraph({ children: [new TextRun('{#goals}{long_term_goal}: {objective}{/goals}')] }),
-        ],
-      },
-    ],
-  })
-  await writeFile(templatePath, await Packer.toBuffer(template))
 
-  const aliasTemplatePath = join(root, 'alias-template.docx')
-  const aliasTemplate = new Document({
-    sections: [
-      {
-        children: [
-          new Paragraph({ children: [new TextRun('{report_title}')] }),
-          new Paragraph({ children: [new TextRun('Client: {client_name}')] }),
-          new Paragraph({ children: [new TextRun('{#goals}{long_term_goal}: {goal_text}{/goals}')] }),
-        ],
-      },
-    ],
-  })
-  await writeFile(aliasTemplatePath, await Packer.toBuffer(aliasTemplate))
-
-  return { sourceFolder, outputDir, templatePath, aliasTemplatePath }
+  return { sourceFolder, outputDir }
 }
 
 const server = startServer()
@@ -135,12 +105,14 @@ try {
   assert.equal(statusPayload.installState.licensingPolicy.skillCascadeWorkflowPackIsAuthority, true)
   assert.equal(statusPayload.endpoints.licenseReadiness, `${helperApi}/license-readiness`)
   assert.equal(statusPayload.endpoints.pickFolder, `${helperApi}/pick-folder`)
-  assert.equal(statusPayload.endpoints.pickFile, `${helperApi}/pick-file`)
+  assert.equal(statusPayload.endpoints.templateProfile, undefined)
+  assert.equal(statusPayload.endpoints.templateProfiles, undefined)
   assert.equal(statusPayload.legacyEndpoints.licenseReadiness, `${legacyHelperApi}/license-readiness`)
   assert.equal(statusPayload.legacyEndpoints.pickFolder, `${legacyHelperApi}/pick-folder`)
   assert.equal(statusPayload.pathPickers.folderEndpoint, `${helperApi}/pick-folder`)
-  assert.equal(statusPayload.pathPickers.fileEndpoint, `${helperApi}/pick-file`)
+  assert.equal(statusPayload.pathPickers.fileEndpoint, undefined)
   assert.equal(statusPayload.pathPickers.returnsPathOnly, true)
+  assert.equal(statusPayload.templatePolicy.customTemplateAccepted, false)
   assert.equal(statusPayload.licenseReadiness.localOnly, true)
   assert.equal(statusPayload.licenseReadiness.authority.localHelperStoresBillingSecrets, false)
   assert.equal(statusPayload.licenseReadiness.authority.localHelperCanGrantAccess, false)
@@ -186,7 +158,7 @@ try {
   assert.equal(preflightResponse.headers.get('access-control-allow-private-network'), 'true')
   assert.equal(preflightResponse.headers.get('access-control-allow-credentials'), 'true')
 
-  const { sourceFolder, outputDir, templatePath, aliasTemplatePath } = await createSourceFixture()
+  const { sourceFolder, outputDir } = await createSourceFixture()
 
   const legacyStatusResponse = await fetch(`${baseUrl}${legacyHelperApi}/status`, {
     headers: { Origin: origin },
@@ -202,49 +174,20 @@ try {
       Origin: origin,
       'Content-Type': 'application/json',
     },
-    body: JSON.stringify({ templatePath }),
+    body: JSON.stringify({ templatePath: join(sourceFolder, 'customer-template.docx') }),
   })
-  assert.equal(templateProfileResponse.status, 200)
-  assert.equal(templateProfileResponse.headers.get('access-control-allow-origin'), origin)
+  assert.equal(templateProfileResponse.status, 410)
   const templateProfilePayload = await templateProfileResponse.json()
-  assert.equal(templateProfilePayload.ok, true)
-  assert.equal(templateProfilePayload.profile.status, 'ready')
-  assert.equal(templateProfilePayload.profile.goalLoop.detected, true)
-  assert.ok(templateProfilePayload.profile.supportedTags.includes('client_label'))
-  assert.ok(templateProfilePayload.profile.supportedTags.includes('goals.objective'))
-
-  const saveTemplateProfileResponse = await fetch(`${baseUrl}${helperApi}/template-profiles`, {
-    method: 'POST',
-    headers: {
-      Origin: origin,
-      'Content-Type': 'application/json',
-    },
-    body: JSON.stringify({
-      templatePath: aliasTemplatePath,
-      label: 'Smoke Customer Template',
-      fieldAliases: {
-        client_name: 'client_label',
-        'goals.goal_text': 'goals.objective',
-      },
-    }),
-  })
-  assert.equal(saveTemplateProfileResponse.status, 200)
-  const saveTemplateProfilePayload = await saveTemplateProfileResponse.json()
-  assert.equal(saveTemplateProfilePayload.ok, true)
-  assert.equal(saveTemplateProfilePayload.result.label, 'Smoke Customer Template')
-  assert.equal(saveTemplateProfilePayload.result.fieldAliases.client_name, 'client_label')
-  assert.equal(saveTemplateProfilePayload.result.aliasSummary.aliasCount, 2)
-  assert.ok(saveTemplateProfilePayload.result.aliasSummary.mappedUnsupportedTags.some((item) => item.tag === 'client_name'))
-  assert.ok(saveTemplateProfilePayload.result.aliasSummary.mappedUnsupportedTags.some((item) => item.tag === 'goals.goal_text'))
+  assert.equal(templateProfilePayload.ok, false)
+  assert.match(templateProfilePayload.error, /standard initial assessment template/i)
 
   const savedTemplateProfilesResponse = await fetch(`${baseUrl}${helperApi}/template-profiles`, {
     headers: { Origin: origin },
   })
-  assert.equal(savedTemplateProfilesResponse.status, 200)
+  assert.equal(savedTemplateProfilesResponse.status, 410)
   const savedTemplateProfilesPayload = await savedTemplateProfilesResponse.json()
-  assert.equal(savedTemplateProfilesPayload.ok, true)
-  assert.equal(savedTemplateProfilesPayload.result.profileCount, 1)
-  assert.equal(savedTemplateProfilesPayload.result.profiles[0].id, saveTemplateProfilePayload.result.id)
+  assert.equal(savedTemplateProfilesPayload.ok, false)
+  assert.match(savedTemplateProfilesPayload.error, /standard initial assessment template/i)
 
   const standardPreflightResponse = await fetch(`${baseUrl}${helperApi}/preflight`, {
     method: 'POST',
@@ -276,7 +219,7 @@ try {
   assert.equal(standardPreflightPayload.result.coverageMatrix.summary.sourceSupportedSectionCount, 8)
   assert.ok(standardPreflightPayload.result.coverageMatrix.goalDomainCoverage.some((domain) => domain.domain === 'Communication' && domain.goalCount > 0))
 
-  const localPreflightResponse = await fetch(`${baseUrl}${helperApi}/preflight`, {
+  const customTemplatePreflightResponse = await fetch(`${baseUrl}${helperApi}/preflight`, {
     method: 'POST',
     headers: {
       Origin: origin,
@@ -285,18 +228,15 @@ try {
     body: JSON.stringify({
       sourceFolder,
       outputDir,
-      templateProfileId: saveTemplateProfilePayload.result.id,
+      templatePath: join(sourceFolder, 'customer-template.docx'),
     }),
   })
-  assert.equal(localPreflightResponse.status, 200)
-  const localPreflightPayload = await localPreflightResponse.json()
-  assert.equal(localPreflightPayload.ok, true)
-  assert.equal(localPreflightPayload.result.okToRun, true)
-  assert.equal(localPreflightPayload.result.sourceTextReturned, false)
-  assert.equal(localPreflightPayload.result.sourceSummary.supportedFileCount, 3)
-  assert.equal(localPreflightPayload.result.sourceSummary.unsupportedFileCount, 1)
-  assert.equal(localPreflightPayload.result.templateSummary.savedTemplateProfileId, saveTemplateProfilePayload.result.id)
-  assert.equal(localPreflightPayload.result.templateSummary.mode, 'legacy-local-template')
+  assert.equal(customTemplatePreflightResponse.status, 200)
+  const customTemplatePreflightPayload = await customTemplatePreflightResponse.json()
+  assert.equal(customTemplatePreflightPayload.ok, true)
+  assert.equal(customTemplatePreflightPayload.result.okToRun, false)
+  assert.ok(customTemplatePreflightPayload.result.blockers.some((blocker) => /customer word templates are disabled/i.test(blocker)))
+  assert.equal(customTemplatePreflightPayload.result.templateSummary.mode, 'skillcascade-standard-docx')
 
   const sameFolderPreflightResponse = await fetch(`${baseUrl}${helperApi}/preflight`, {
     method: 'POST',
@@ -307,7 +247,6 @@ try {
     body: JSON.stringify({
       sourceFolder,
       outputDir: sourceFolder,
-      templateProfileId: saveTemplateProfilePayload.result.id,
     }),
   })
   assert.equal(sameFolderPreflightResponse.status, 200)
@@ -351,7 +290,6 @@ try {
       outputDir,
       clientLabel: 'Release Client',
       reportTitle: 'SkillCascade Local Helper Smoke Draft',
-      templateProfileId: saveTemplateProfilePayload.result.id,
     }),
   })
   assert.equal(runResponse.status, 200)
@@ -362,10 +300,10 @@ try {
   assert.equal(runPayload.result.qa.liveWriteAttempted, false)
   assert.equal(runPayload.result.qa.autoSignAttempted, false)
   assert.equal(runPayload.result.qa.autoSubmitAttempted, false)
-  assert.equal(runPayload.result.templateMode, 'legacy-placeholder-template')
-  assert.equal(runPayload.result.templateProfileId, saveTemplateProfilePayload.result.id)
-  assert.equal(runPayload.result.templateProfileLabel, 'Smoke Customer Template')
-  assert.equal(runPayload.result.templateFieldAliases.client_name, 'client_label')
+  assert.equal(runPayload.result.templateMode, 'skillcascade-standard-docx')
+  assert.equal(runPayload.result.templateProfileId, '')
+  assert.equal(runPayload.result.templateProfileLabel, '')
+  assert.equal(Object.keys(runPayload.result.templateFieldAliases).length, 0)
   assert.equal(runPayload.result.standardTemplate.mode, 'skillcascade-standard-docx')
   assert.equal(runPayload.result.evidenceReadiness.ready, true)
   assert.equal(runPayload.result.coverageMatrix.status, 'ready-for-draft')
@@ -410,7 +348,6 @@ try {
       outputDir: sourceFolder,
       clientLabel: 'Same Folder Client',
       reportTitle: 'Same Folder Output Draft',
-      templateProfileId: saveTemplateProfilePayload.result.id,
     }),
   })
   assert.equal(sameFolderRunResponse.status, 200)
@@ -429,7 +366,6 @@ try {
     body: JSON.stringify({
       sourceFolder,
       outputDir: sourceFolder,
-      templateProfileId: saveTemplateProfilePayload.result.id,
     }),
   })
   assert.equal(postSameFolderPreflightResponse.status, 200)
@@ -448,15 +384,14 @@ try {
     preflightCode: preflightResponse.status,
     standardPreflightCode: standardPreflightResponse.status,
     standardPreflightReady: standardPreflightPayload.result.okToRun,
-    localPreflightCode: localPreflightResponse.status,
-    localPreflightReady: localPreflightPayload.result.okToRun,
+    customTemplatePreflightCode: customTemplatePreflightResponse.status,
+    customTemplateBlocked: !customTemplatePreflightPayload.result.okToRun,
     sameFolderReady: postSameFolderPreflightPayload.result.okToRun,
     sameFolderOutputCreated: true,
     standardTemplateMode: standardRunPayload.result.templateMode,
     templateProfileCode: templateProfileResponse.status,
-    templateProfileStatus: templateProfilePayload.profile.status,
-    savedTemplateProfileCount: savedTemplateProfilesPayload.result.profileCount,
-    aliasCount: saveTemplateProfilePayload.result.aliasSummary.aliasCount,
+    templateProfileBlocked: templateProfilePayload.ok === false,
+    savedTemplateProfilesBlocked: savedTemplateProfilesPayload.ok === false,
     runCode: runResponse.status,
     goalCount: runPayload.result.goalPlan.goals.length,
     outputCreated: true,

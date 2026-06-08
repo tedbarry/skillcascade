@@ -117,6 +117,8 @@ describe('report-generator route contract', () => {
     expect(payload.data.installAndLicensing.skillCascadeWorkflowPackIsAuthority).toBe(true)
     expect(payload.data.standardTemplate.customerTemplateUpload).toBe(false)
     expect(payload.data.standardTemplate.mode).toBe('skillcascade-standard-docx')
+    expect(payload.data.templatePolicy.customerTemplateUpload).toBe(false)
+    expect(payload.data.templatePolicy.customTemplateAccepted).toBe(false)
     expect(payload.data.sourceRequirements.requiredEvidenceCategories).toHaveLength(3)
     expect(payload.data.sourceRequirements.evidenceGate).toMatch(/required-clinical-source/i)
     expect(payload.data.assessmentAdapters.supportedFamilies).toContain('vineland')
@@ -156,7 +158,7 @@ describe('report-generator route contract', () => {
     expect(response.headers.get('content-type')).toBe('application/zip')
     expect(response.headers.get('content-disposition')).toMatch(/SkillCascadeReportHelper/)
     expect(response.headers.get('cache-control')).toBe('private, no-store')
-    expect(response.headers.get('x-skillcascade-report-helper-version')).toBe('release-20260605-folder-picker-template-guard')
+    expect(response.headers.get('x-skillcascade-report-helper-version')).toBe('release-20260608-standard-template-lock')
     expect(bucket.get).toHaveBeenCalled()
   })
 
@@ -366,8 +368,8 @@ describe('report-generator route contract', () => {
         packageVersion: 'release-1',
         helperUrl: 'http://127.0.0.1:4181',
         readinessStatus: 'ready-for-skillcascade-license-check',
-        templateProfileCount: 1,
-        aliasCount: 2,
+        standardTemplateId: 'skillcascade-standard-initial-assessment-v1',
+        templateMode: 'skillcascade-standard-docx',
       },
     })
     const payload = await response.json()
