@@ -15,12 +15,49 @@ const origin = 'http://127.0.0.1:5173'
 const dataDir = mkdtempSync(join(tmpdir(), 'skillcascade-report-helper-data-'))
 const helperApi = '/api/local-report-generator'
 const legacyHelperApi = '/api/local-report-pilot'
+const checkedBox = '\u2612'
+const uncheckedBox = '\u2610'
+const unresolvedTemplatePhrases = [
+  'Write what ABA methods',
+  'Please specify specific long term goals',
+  'Client is a(n)',
+  'full term/premature',
+  'school name full time',
+  'Four to five sentences',
+  'Please identify as Mild',
+  'Click or tap here',
+  'REVIEW_UNSUPPORTED_TEMPLATE_FIELD',
+  'Review required:',
+]
 
 async function countDocxTables(docxPath) {
   const zip = await JSZip.loadAsync(await readFile(docxPath))
   const xml = await zip.file('word/document.xml')?.async('string')
   if (!xml) return 0
   return (xml.match(/<w:tbl[\s>]/g) || []).length
+}
+
+async function inspectDocxCloneContract(docxPath) {
+  const zip = await JSZip.loadAsync(await readFile(docxPath))
+  const xmlFiles = Object.keys(zip.files).filter((filename) => (
+    filename.startsWith('word/') && filename.endsWith('.xml')
+  ))
+  const documentXml = await zip.file('word/document.xml')?.async('string')
+  assert.ok(documentXml, 'generated DOCX should contain word/document.xml')
+
+  let allXml = ''
+  for (const filename of xmlFiles) {
+    allXml += `${await zip.file(filename).async('string')}\n`
+  }
+  const plainText = documentXml.replace(/<[^>]+>/g, ' ').replace(/\s+/g, ' ').trim()
+  return {
+    tableCount: (documentXml.match(/<w:tbl[\s>]/g) || []).length,
+    highlightCount: (allXml.match(/<w:highlight[\s>]/g) || []).length,
+    contentControlCount: (documentXml.match(/<w:sdt[\s>]/g) || []).length,
+    checkboxControlCount: (allXml.match(/<w14:checkbox|<w:checkBox|FORMCHECKBOX/g) || []).length,
+    unresolvedPhraseHits: unresolvedTemplatePhrases.filter((phrase) => plainText.includes(phrase)),
+    plainText,
+  }
 }
 
 function startServer() {
@@ -316,6 +353,9 @@ try {
   assert.equal(runPayload.result.evidenceReadiness.ready, true)
   assert.equal(runPayload.result.coverageMatrix.status, 'ready-for-draft')
   assert.equal(runPayload.result.coverageMatrix.summary.goalDomainsWithGoals.includes('Behavior'), true)
+  assert.equal(runPayload.result.qa.standardTemplateClone.ok, true)
+  assert.equal(runPayload.result.qa.standardTemplateClone.highlightCount, 0)
+  assert.equal(runPayload.result.qa.standardTemplateClone.contentControlCount, 0)
   assert.equal(runPayload.result.sourcePacket.sources.some((source) => 'text' in source), false)
   assert.equal(runPayload.result.sourcePacket.unsupportedFiles.some((source) => source.filename === 'legacy-report.doc'), true)
 
@@ -342,7 +382,13 @@ try {
     goal.sourceEvidence.some((item) => Object.prototype.hasOwnProperty.call(item, 'text') || Object.prototype.hasOwnProperty.call(item, 'excerpt'))
   )), false)
   const renderedOutput = await mammoth.extractRawText({ path: runPayload.result.outputPath })
+  const cloneInspection = await inspectDocxCloneContract(runPayload.result.outputPath)
   assert.equal(await countDocxTables(runPayload.result.outputPath), 15)
+  assert.equal(cloneInspection.tableCount, 15)
+  assert.equal(cloneInspection.highlightCount, 0)
+  assert.equal(cloneInspection.contentControlCount, 0)
+  assert.equal(cloneInspection.checkboxControlCount, 0)
+  assert.deepEqual(cloneInspection.unresolvedPhraseHits, [])
   assert.match(renderedOutput.value, /Client Name:/)
   assert.match(renderedOutput.value, /Release Client/)
   assert.match(renderedOutput.value, /Biopsychosocial Information:/)
@@ -358,6 +404,10 @@ try {
   assert.match(renderedOutput.value, /Socialization skills:/)
   assert.match(renderedOutput.value, /Parent Goals:/)
   assert.match(renderedOutput.value, /Program\/Behavior/)
+  assert.match(cloneInspection.plainText, new RegExp(`Communication:\\s*${uncheckedBox} Mild\\s+${uncheckedBox} Moderate\\s+${checkedBox} Severe`))
+  assert.match(cloneInspection.plainText, new RegExp(`Suicidality\\?\\s*${checkedBox} Not present`))
+  assert.match(cloneInspection.plainText, new RegExp(`Homicidality\\?\\s*${checkedBox} Not present`))
+  assert.match(cloneInspection.plainText, new RegExp(`${checkedBox} This treatment plan was developed and reviewed with parent/caregiver`))
   assert.equal(renderedOutput.value.includes('Short-Term Goal'), false)
   assert.equal(renderedOutput.value.includes('Reviewer QA Appendix'), false)
   assert.equal(renderedOutput.value.includes('Source Packet Reviewed'), false)
@@ -423,6 +473,7 @@ try {
     templateProfileBlocked: templateProfilePayload.ok === false,
     savedTemplateProfilesBlocked: savedTemplateProfilesPayload.ok === false,
     runCode: runResponse.status,
+    standardTemplateCloneQa: runPayload.result.qa.standardTemplateClone.ok,
     goalCount: runPayload.result.goalPlan.goals.length,
     outputCreated: true,
     reviewCreated: true,

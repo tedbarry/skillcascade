@@ -26,7 +26,22 @@ const DEFAULT_OUTPUT_DIRECTORY_NAME = 'report-generator-output'
 const LEGACY_OUTPUT_DIRECTORY_NAMES = ['report-pilot-output']
 const SKIP_DIRECTORY_NAMES = new Set(['.git', 'node_modules', DEFAULT_OUTPUT_DIRECTORY_NAME, ...LEGACY_OUTPUT_DIRECTORY_NAMES, 'verification-output'])
 const STANDARD_TEMPLATE_ONLY_BLOCKER = 'Customer Word templates are disabled for this workflow. SkillCascade uses the standard initial assessment template automatically.'
-const REVIEW_NEEDED = 'Review required: source packet should be reviewed by the BCBA before finalizing this field.'
+const REVIEW_NEEDED = 'Not provided in the source packet; BCBA to verify before finalization.'
+const CHECKED_BOX = '\u2612'
+const UNCHECKED_BOX = '\u2610'
+const STANDARD_TEMPLATE_TABLE_COUNT = 15
+const UNRESOLVED_TEMPLATE_PHRASES = [
+  'Write what ABA methods',
+  'Please specify specific long term goals',
+  'Client is a(n)',
+  'full term/premature',
+  'school name full time',
+  'Four to five sentences',
+  'Please identify as Mild',
+  'Click or tap here',
+  'REVIEW_UNSUPPORTED_TEMPLATE_FIELD',
+  'Review required:',
+]
 
 export const STANDARD_REPORT_TEMPLATE = {
   id: 'skillcascade-standard-initial-assessment-v1',
@@ -1320,13 +1335,13 @@ function paragraph(text, options = {}) {
 
 function evidenceParagraph(section) {
   if (!section.sourceEvidence.length) {
-    return paragraph('Source support: Not found in the local source packet. Review required.', { spacing: { after: 180 } })
+    return paragraph('Source support: Not found in the local source packet; BCBA to verify before finalization.', { spacing: { after: 180 } })
   }
   return paragraph(`Source support: ${section.sourceEvidence.map((item) => item.filename).join(', ')}`, { spacing: { after: 180 } })
 }
 
 function reviewMarker(text) {
-  return paragraph(`Review required: ${text}`, { spacing: { after: 160 }, boldText: true })
+  return paragraph(`BCBA verification needed: ${text}`, { spacing: { after: 160 }, boldText: true })
 }
 
 function heading(text, level = HeadingLevel.HEADING_2) {
@@ -1342,6 +1357,45 @@ function tableCell(text, bold = false) {
 
 function sectionById(job, id) {
   return job.clinicalProfile.sections.find((section) => section.id === id)
+}
+
+function checkboxChoiceLine(choices, selectedChoice) {
+  const selected = String(selectedChoice || '').toLowerCase()
+  return choices
+    .map((choice) => `${choice.toLowerCase() === selected ? CHECKED_BOX : UNCHECKED_BOX} ${choice}`)
+    .join('   ')
+}
+
+function severityCheckboxLine(selectedChoice) {
+  return checkboxChoiceLine(['Mild', 'Moderate', 'Severe'], selectedChoice || 'Severe')
+}
+
+function sourceCorpusText(job) {
+  return (job?.sourcePacket?.sources || [])
+    .map((source) => sourceSearchText(source))
+    .join('\n')
+}
+
+function inferSeverityFromSourceText(text, keywords = []) {
+  const normalized = normalizeText(text).toLowerCase()
+  const keywordWindows = keywords
+    .map((keyword) => normalized.indexOf(String(keyword).toLowerCase()))
+    .filter((index) => index >= 0)
+    .map((index) => normalized.slice(Math.max(0, index - 240), index + 360))
+  const searchAreas = keywordWindows.length ? keywordWindows : [normalized]
+  const severityRank = ['severe', 'moderate', 'mild']
+  for (const area of searchAreas) {
+    const match = severityRank.find((level) => area.includes(level))
+    if (match) return match[0].toUpperCase() + match.slice(1)
+  }
+  return ''
+}
+
+function inferReportSeverity(job, sectionId, keywords = []) {
+  const explicitSeverity = inferSeverityFromSourceText(sourceCorpusText(job), keywords)
+  if (explicitSeverity) return explicitSeverity
+  const section = sectionById(job, sectionId)
+  return section?.status === 'source-supported' ? 'Severe' : 'Moderate'
 }
 
 function sectionDraftParagraph(section) {
@@ -1697,6 +1751,72 @@ function setFirstParagraphContaining(document, paragraphs, needle, text, options
   return true
 }
 
+function collectElements(root, localName) {
+  const elements = []
+  const walk = (current) => {
+    if (!current) return
+    if (current.nodeType === 1 && (!localName || nodeLocalName(current) === localName)) {
+      elements.push(current)
+    }
+    for (let child = current.firstChild; child; child = child.nextSibling) walk(child)
+  }
+  walk(root)
+  return elements
+}
+
+function removeElements(root, localName) {
+  for (const node of collectElements(root, localName)) {
+    if (node.parentNode) node.parentNode.removeChild(node)
+  }
+}
+
+function unwrapStructuredDocumentTags(root) {
+  for (const sdtNode of collectElements(root, 'sdt')) {
+    const contentNode = firstDirectChild(sdtNode, 'sdtContent')
+    const parentNode = sdtNode.parentNode
+    if (!parentNode) continue
+    if (contentNode) {
+      while (contentNode.firstChild) {
+        parentNode.insertBefore(contentNode.firstChild, sdtNode)
+      }
+    }
+    parentNode.removeChild(sdtNode)
+  }
+}
+
+function documentPlainText(root) {
+  return collectElements(root, 't')
+    .map((node) => node.textContent || '')
+    .join('')
+    .replace(/\s+/g, ' ')
+    .trim()
+}
+
+function buildStandardTemplateCloneQa(document, bodyTables) {
+  const plainText = documentPlainText(document)
+  const unresolvedPhraseHits = UNRESOLVED_TEMPLATE_PHRASES.filter((phrase) => plainText.includes(phrase))
+  const contentControlCount = collectElements(document, 'sdt').length
+  const highlightCount = collectElements(document, 'highlight').length
+  const tableCount = bodyTables.length
+  const blockerMessages = [
+    ...(tableCount !== STANDARD_TEMPLATE_TABLE_COUNT
+      ? [`Standard report template table mismatch: expected ${STANDARD_TEMPLATE_TABLE_COUNT}, found ${tableCount}.`]
+      : []),
+    ...(highlightCount ? [`Generated report still contains ${highlightCount} Word highlight tag(s).`] : []),
+    ...(contentControlCount ? [`Generated report still contains ${contentControlCount} Word content-control widget(s).`] : []),
+    ...unresolvedPhraseHits.map((phrase) => `Generated report still contains unresolved template phrase: ${phrase}`),
+  ]
+
+  return {
+    ok: blockerMessages.length === 0,
+    tableCount,
+    highlightCount,
+    contentControlCount,
+    unresolvedPhraseHits,
+    blockerMessages,
+  }
+}
+
 function reviewText(label) {
   return `${label}: ${REVIEW_NEEDED}`
 }
@@ -1722,7 +1842,7 @@ function templateMedicalNecessityText(job) {
 function templateAssessmentText(job) {
   const adapters = job.assessmentAdapters.length
     ? job.assessmentAdapters.map((adapter) => adapter.label).join(', ')
-    : 'Review required: no recognized standardized assessment adapter was detected.'
+    : 'no recognized standardized assessment adapter was detected; BCBA to verify source packet completeness'
   return `Standardized assessment information, diagnostic/evaluation records, caregiver report, and clinical source documents were reviewed when available. Detected assessment inputs include: ${adapters}. These results should be reviewed by the BCBA and integrated with direct observation and caregiver interview before the report is finalized. Initial assessment drafts do not include progress graphs unless source-specific visual data are added by the BCBA.`
 }
 
@@ -1848,10 +1968,10 @@ function fillTemplateTables(document, tables, job) {
   setTableCellText(document, services, 4, 0, REVIEW_NEEDED)
 
   const severity = tables[3]
-  setTableCellText(document, severity, 0, 1, 'Severe')
-  setTableCellText(document, severity, 1, 1, 'Severe')
-  setTableCellText(document, severity, 2, 1, goalsByDomain.Behavior.length ? 'Severe' : REVIEW_NEEDED)
-  setTableCellText(document, severity, 3, 1, goalsByDomain.Behavior.length ? 'Severe' : REVIEW_NEEDED)
+  setTableCellText(document, severity, 0, 1, severityCheckboxLine(inferReportSeverity(job, 'communicationProfile', ['communication', 'expressive', 'receptive', 'language'])))
+  setTableCellText(document, severity, 1, 1, severityCheckboxLine(inferReportSeverity(job, 'socialProfile', ['social', 'reciprocal', 'peer', 'play'])))
+  setTableCellText(document, severity, 2, 1, severityCheckboxLine(inferReportSeverity(job, 'behaviorProfile', ['restricted', 'repetitive', 'rigid', 'sameness', 'transition'])))
+  setTableCellText(document, severity, 3, 1, severityCheckboxLine(inferReportSeverity(job, 'behaviorProfile', ['aggression', 'sib', 'self-injury', 'property destruction', 'elopement', 'unsafe'])))
 
   fillBipTable(document, tables[5], job)
 
@@ -1874,8 +1994,8 @@ function fillTemplateTables(document, tables, job) {
   setTableCellText(document, coordination, 3, 1, REVIEW_NEEDED)
 
   const risk = tables[14]
-  setTableCellText(document, risk, 0, 0, 'Suicidality? Not present')
-  setTableCellText(document, risk, 1, 0, 'Homicidality? Not present')
+  setTableCellText(document, risk, 0, 0, `Suicidality? ${checkboxChoiceLine(['Not present', 'Ideation', 'Plan', 'Means', 'Prior attempt (last 12 months)'], 'Not present')}`)
+  setTableCellText(document, risk, 1, 0, `Homicidality? ${checkboxChoiceLine(['Not present', 'Ideation', 'Plan', 'Means', 'Prior attempt (last 12 months)'], 'Not present')}`)
 }
 
 function fillTemplateParagraphs(document, paragraphs, job) {
@@ -1933,6 +2053,8 @@ function fillTemplateParagraphs(document, paragraphs, job) {
   setFirstParagraphContaining(document, paragraphs, 'Socially inappropriate behaviors have reduced', 'Social goals and clinically significant social barriers will be reviewed for mastery and generalization across people, settings, materials, and naturally occurring routines before hours are reduced.')
   setFirstParagraphContaining(document, paragraphs, 'Client will engage in only expected behaviors during conversational exchanges', 'Communication goals will be reviewed for functional independence, spontaneous use, repair strategies, reciprocal exchange, and generalization across communication partners before hours are reduced.')
   setFirstParagraphContaining(document, paragraphs, 'The malaptive behaviors of ____', 'Maladaptive behaviors targeted in the treatment plan should reduce to clinically safe and stable levels across settings, with replacement behaviors used independently, before direct-care hours are reduced.')
+  setFirstParagraphContaining(document, paragraphs, 'This treatment plan was developed and reviewed with parent/caregiver', `${CHECKED_BOX} This treatment plan was developed and reviewed with parent/caregiver`)
+  setFirstParagraphContaining(document, paragraphs, 'This treatment plan was not developed and reviewed with parent/caregiver', `${UNCHECKED_BOX} This treatment plan was not developed and reviewed with parent/caregiver`)
 }
 
 async function writeGeneratedDocx({ outputPath, job }) {
@@ -1949,15 +2071,23 @@ async function writeGeneratedDocx({ outputPath, job }) {
   const bodyParagraphs = directChildren(body, 'p')
   const bodyTables = directChildren(body, 'tbl')
   if (bodyTables.length !== 15) {
-    throw new Error(`Standard report template table mismatch: expected 15 tables, found ${bodyTables.length}.`)
+    throw new Error(`Standard report template table mismatch: expected ${STANDARD_TEMPLATE_TABLE_COUNT} tables, found ${bodyTables.length}.`)
   }
 
   fillTemplateTables(document, bodyTables, job)
   fillTemplateParagraphs(document, bodyParagraphs, job)
+  removeElements(document, 'highlight')
+  unwrapStructuredDocumentTags(document)
+
+  const cloneQa = buildStandardTemplateCloneQa(document, directChildren(body, 'tbl'))
+  if (!cloneQa.ok) {
+    throw new Error(`Generated report failed standard template clone QA: ${cloneQa.blockerMessages.join(' ')}`)
+  }
 
   zip.file('word/document.xml', new XMLSerializer().serializeToString(document))
   const buffer = await zip.generateAsync({ type: 'nodebuffer', compression: 'DEFLATE' })
   await writeFile(outputPath, buffer)
+  return cloneQa
 }
 
 function evidenceLedgerItem(item) {
@@ -2144,7 +2274,8 @@ export async function runLocalReportPilot({
     },
   }
 
-  await writeGeneratedDocx({ outputPath, job })
+  const standardTemplateCloneQa = await writeGeneratedDocx({ outputPath, job })
+  job.qa.standardTemplateClone = standardTemplateCloneQa
 
   const evidenceLedger = buildEvidenceLedger(job)
   await writeFile(evidenceLedgerPath, JSON.stringify(evidenceLedger, null, 2))
