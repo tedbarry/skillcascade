@@ -117,6 +117,9 @@ async function saveResponseAsDownload(response, fallbackFilename) {
 
 function readHelperError(error) {
   if (!error) return ''
+  if (error.code === 'helper_update_required') {
+    return error.message
+  }
   if (error.name === 'AbortError' || /helper_probe_timeout/i.test(error.message || '')) {
     return 'Local helper check timed out. Make sure the helper is running on this computer.'
   }
@@ -144,6 +147,16 @@ function withTimeout(promise, timeoutMs) {
   })
 }
 
+function getTargetAddressSpace(value) {
+  try {
+    const hostname = new URL(String(value || '')).hostname.replace(/^\[|\]$/g, '').toLowerCase()
+    if (hostname === 'localhost' || hostname === '127.0.0.1' || hostname === '::1') return 'loopback'
+  } catch {
+    return 'loopback'
+  }
+  return 'local'
+}
+
 async function fetchHelperJson(helperBase, endpoint, options = {}) {
   const paths = [`${HELPER_API_PREFIX}${endpoint}`, `${LEGACY_HELPER_API_PREFIX}${endpoint}`]
   const { timeoutMs, ...requestOptions } = options
@@ -153,8 +166,9 @@ async function fetchHelperJson(helperBase, endpoint, options = {}) {
   for (const path of paths) {
     const fetchOptions = { ...requestOptions }
     if (isLoopbackHelper) {
-      fetchOptions.credentials = fetchOptions.credentials || 'include'
-      fetchOptions.targetAddressSpace = 'loopback'
+      fetchOptions.mode = fetchOptions.mode || 'cors'
+      fetchOptions.credentials = fetchOptions.credentials || 'omit'
+      fetchOptions.targetAddressSpace = getTargetAddressSpace(helperBase)
     }
     try {
       const response = await withTimeout(fetch(`${helperBase}${path}`, fetchOptions), timeoutMs)
@@ -193,17 +207,57 @@ function helperDiscoveryUrls(currentUrl) {
   return urls
 }
 
+function getHelperCompatibility(payload) {
+  const hasFolderPicker = Boolean(payload?.pathPickers?.supported || payload?.endpoints?.pickFolder || payload?.legacyEndpoints?.pickFolder)
+  const usesStandardTemplate = payload?.templateMode === 'skillcascade-standard-docx' || payload?.standardTemplate?.mode === 'skillcascade-standard-docx'
+  const blocksCustomerTemplates = payload?.customerTemplateUpload === false || payload?.standardTemplate?.customerTemplateUpload === false
+
+  if (!hasFolderPicker) {
+    return {
+      ok: false,
+      reason: 'This helper is missing the folder chooser used by the current Report Generator.',
+    }
+  }
+  if (!usesStandardTemplate || !blocksCustomerTemplates) {
+    return {
+      ok: false,
+      reason: 'This helper is an older report-template build. The current Report Generator requires the standard-template helper.',
+    }
+  }
+
+  return { ok: true, reason: '' }
+}
+
+function helperUpdateRequiredError(url, reason) {
+  const error = new Error(
+    `A local helper was found at ${url}, but it needs an update before this page can choose folders. ${reason} Download and run the latest helper installer from this page, then click Check setup again.`
+  )
+  error.code = 'helper_update_required'
+  return error
+}
+
 async function discoverHelperStatus(currentUrl) {
   const urls = helperDiscoveryUrls(currentUrl)
   let lastError = null
+  let incompatibleHelper = null
 
   for (const url of urls) {
     try {
       const payload = await fetchHelperJson(url, '/status', { timeoutMs: HELPER_DISCOVERY_TIMEOUT_MS })
+      const compatibility = getHelperCompatibility(payload)
+      if (!compatibility.ok) {
+        incompatibleHelper = incompatibleHelper || { url, reason: compatibility.reason }
+        lastError = helperUpdateRequiredError(url, compatibility.reason)
+        continue
+      }
       return { url, payload }
     } catch (error) {
       lastError = error
     }
+  }
+
+  if (incompatibleHelper) {
+    throw helperUpdateRequiredError(incompatibleHelper.url, incompatibleHelper.reason)
   }
 
   const detail = lastError ? ` Last error: ${readHelperError(lastError)}` : ''
@@ -214,6 +268,7 @@ function HelperPackagePanel({ packageState, downloadState, helperStatus, helperU
   const readyToDownload = packageState.ok && !downloadState.loading
   const packageLabel = packageState.data?.filename || 'Report Generator helper'
   const sizeLabel = packageState.data?.size ? ` (${formatFileSize(packageState.data.size)})` : ''
+  const helperStatusUrl = `${normalizeHelperBase(helperUrl)}${HELPER_API_PREFIX}/status`
 
   return (
     <section className="rounded-2xl border border-sage-200 bg-sage-50 p-5 shadow-sm">
@@ -258,7 +313,7 @@ function HelperPackagePanel({ packageState, downloadState, helperStatus, helperU
           {helperStatus.loading ? 'Checking setup...' : 'Check setup'}
         </button>
         <a
-          href={helperUrl}
+          href={helperStatusUrl}
           target="_blank"
           rel="noreferrer"
           className="inline-flex min-h-[44px] items-center rounded-full border border-blue-200 bg-blue-50 px-5 py-2 text-sm font-semibold text-blue-800 shadow-sm hover:bg-blue-100"
@@ -784,7 +839,7 @@ export default function ReportGeneratorPage() {
   }
 
   async function resolveHelperBaseForLocalAction() {
-    if (helperStatus.ok) return helperBase
+    if (helperStatus.ok && getHelperCompatibility(helperStatus.data).ok) return helperBase
 
     setHelperStatus({ checked: true, loading: true, ok: false, data: null, error: '', discoveredUrl: '', message: '' })
     const result = await discoverHelperStatus(helperBase)
@@ -874,7 +929,8 @@ export default function ReportGeneratorPage() {
 
     setPreflightState({ loading: true, result: null, error: '' })
     try {
-      const payload = await fetchHelperJson(helperBase, '/preflight', {
+      const activeHelperBase = await resolveHelperBaseForLocalAction()
+      const payload = await fetchHelperJson(activeHelperBase, '/preflight', {
         method: 'POST',
         headers: { 'content-type': 'application/json' },
         body: JSON.stringify({
@@ -909,7 +965,8 @@ export default function ReportGeneratorPage() {
     const creditEventId = globalThis.crypto?.randomUUID?.() || `report-run-${Date.now()}-${Math.random().toString(16).slice(2)}`
     setRunState({ loading: true, result: null, error: '' })
     try {
-      const payload = await fetchHelperJson(helperBase, '/run', {
+      const activeHelperBase = await resolveHelperBaseForLocalAction()
+      const payload = await fetchHelperJson(activeHelperBase, '/run', {
         method: 'POST',
         headers: { 'content-type': 'application/json' },
         body: JSON.stringify({
