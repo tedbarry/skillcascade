@@ -55,6 +55,7 @@ async function inspectDocxCloneContract(docxPath) {
     highlightCount: (allXml.match(/<w:highlight[\s>]/g) || []).length,
     contentControlCount: (documentXml.match(/<w:sdt[\s>]/g) || []).length,
     checkboxControlCount: (allXml.match(/<w14:checkbox|<w:checkBox|FORMCHECKBOX/g) || []).length,
+    checkboxFontRunCount: (allXml.match(/MS Gothic/g) || []).length,
     unresolvedPhraseHits: unresolvedTemplatePhrases.filter((phrase) => plainText.includes(phrase)),
     plainText,
   }
@@ -387,7 +388,7 @@ try {
   assert.equal(runPayload.result.coverageMatrix.status, 'review-needed')
   assert.equal(runPayload.result.coverageMatrix.summary.goalDomainsWithGoals.includes('Behavior'), true)
   assert.equal(runPayload.result.qa.standardTemplateClone.ok, true)
-  assert.equal(runPayload.result.qa.standardTemplateClone.highlightCount, 0)
+  assert.ok(runPayload.result.qa.standardTemplateClone.highlightCount >= 1)
   assert.equal(runPayload.result.qa.standardTemplateClone.contentControlCount, 0)
   assert.equal(runPayload.result.sourcePacket.sources.some((source) => 'text' in source), false)
   assert.equal(runPayload.result.sourcePacket.unsupportedFiles.some((source) => source.filename === 'legacy-report.doc'), true)
@@ -418,18 +419,21 @@ try {
   const cloneInspection = await inspectDocxCloneContract(runPayload.result.outputPath)
   assert.equal(await countDocxTables(runPayload.result.outputPath), 15)
   assert.equal(cloneInspection.tableCount, 15)
-  assert.equal(cloneInspection.highlightCount, 0)
+  assert.ok(cloneInspection.highlightCount >= 1)
   assert.equal(cloneInspection.contentControlCount, 0)
   assert.equal(cloneInspection.checkboxControlCount, 0)
+  assert.ok(cloneInspection.checkboxFontRunCount >= 10)
   assert.deepEqual(cloneInspection.unresolvedPhraseHits, [])
   assert.match(renderedOutput.value, /Client Name:/)
   assert.match(renderedOutput.value, /Release Client/)
+  assert.match(renderedOutput.value, /Not provided in reviewed records/)
   assert.match(renderedOutput.value, /Biopsychosocial Information:/)
   assert.match(renderedOutput.value, /97151/)
   assert.match(renderedOutput.value, /97153/)
   assert.match(renderedOutput.value, /97155/)
   assert.match(renderedOutput.value, /97156/)
   assert.match(renderedOutput.value, /Medical Necessity:/)
+  assert.match(renderedOutput.value, /Research has demonstrated that ABA methodology is effective/)
   assert.match(renderedOutput.value, /Maladaptive Behavior Type I/)
   assert.match(renderedOutput.value, /Maladaptive Behavior Type II/)
   assert.match(renderedOutput.value, /Behavior Intervention Plan:/)
@@ -456,6 +460,13 @@ try {
   assert.match(renderedOutput.value, /unable to function in traditional academic environments/)
   assert.match(renderedOutput.value, /Eye contact was inconsistent/)
   assert.match(renderedOutput.value, /need for repetition and simplification/)
+  assert.match(renderedOutput.value, /The BCBA will utilize a blend of evidence-based ABA principles/)
+  assert.match(renderedOutput.value, /Results of Preference Assessment: An interview informed/)
+  assert.match(renderedOutput.value, /Parent involvement is expected to be a central component/)
+  assert.match(renderedOutput.value, /Maladaptive behaviors to decrease/)
+  assert.match(renderedOutput.value, /The maladaptive behaviors of physical aggression, verbal aggression, non-compliance, property destruction, profane language, elopement, and unsafe behaviors/)
+  assert.match(renderedOutput.value, /Client will engage in reciprocal, functional communication/)
+  assert.match(renderedOutput.value, /Client will engage in socially appropriate interaction/)
   assert.match(renderedOutput.value, /Program\/Behavior/)
   assert.match(cloneInspection.plainText, new RegExp(`Communication:\\s*${uncheckedBox} Mild\\s+${uncheckedBox} Moderate\\s+${checkedBox} Severe`))
   assert.match(cloneInspection.plainText, new RegExp(`Suicidality\\?\\s*${checkedBox} Not present`))
@@ -466,6 +477,7 @@ try {
   assert.equal(renderedOutput.value.includes('Source Packet Reviewed'), false)
   assert.equal(renderedOutput.value.includes('Write what ABA methods'), false)
   assert.equal(renderedOutput.value.includes('Please specify specific long term goals'), false)
+  assert.equal(renderedOutput.value.includes('Not provided in the source packet; BCBA to verify before finalization.'), false)
   assert.equal(renderedOutput.value.includes('Mock Provider Header'), false)
   assert.equal(renderedOutput.value.includes('License: fake test line'), false)
   assert.equal(renderedOutput.value.includes('Initial observation details should be finalized'), false)
