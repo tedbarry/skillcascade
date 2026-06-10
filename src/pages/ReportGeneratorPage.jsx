@@ -11,6 +11,7 @@ const HELPER_DISCOVERY_END_PORT = 4199
 const HELPER_DISCOVERY_TIMEOUT_MS = 1200
 const HELPER_API_PREFIX = '/api/local-report-generator'
 const LEGACY_HELPER_API_PREFIX = '/api/local-report-pilot'
+const REPORT_GENERATOR_ROUTE_MARKER = 'report-generator-route-20260610'
 
 const workflowSteps = [
   {
@@ -1004,7 +1005,7 @@ export default function ReportGeneratorPage() {
   }
 
   return (
-    <div className="min-h-screen bg-warm-50">
+    <div className="min-h-screen bg-warm-50" data-skillcascade-route={REPORT_GENERATOR_ROUTE_MARKER}>
       <header className="border-b border-warm-200 bg-white">
         <div className="mx-auto flex max-w-7xl flex-col gap-4 px-5 py-5 sm:flex-row sm:items-center sm:justify-between lg:px-8">
           <div>
