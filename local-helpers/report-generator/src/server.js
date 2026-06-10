@@ -37,6 +37,7 @@ const helperApiPrefix = '/api/local-report-generator'
 const legacyHelperApiPrefix = '/api/local-report-pilot'
 const pickerTimeoutMs = 10 * 60 * 1000
 const standardTemplateOnlyMessage = 'Customer Word templates are disabled for this workflow. SkillCascade uses the standard initial assessment template automatically.'
+let activePicker = null
 
 function isHelperEndpoint(pathname, endpoint) {
   return pathname === `${helperApiPrefix}${endpoint}` || pathname === `${legacyHelperApiPrefix}${endpoint}`
@@ -99,6 +100,10 @@ function dialogValue(value, fallback = '') {
 }
 
 function runPowerShellPicker(script, envOverrides = {}) {
+  if (activePicker) {
+    return Promise.reject(new Error('A local folder chooser is already open. Select a folder or cancel the open chooser before trying again.'))
+  }
+
   return new Promise((resolvePicker, rejectPicker) => {
     if (!pathPickerSupported()) {
       rejectPicker(new Error('Local path picker is currently supported on Windows helper installations.'))
@@ -112,6 +117,8 @@ function runPowerShellPicker(script, envOverrides = {}) {
     const child = spawn('powershell.exe', [
       '-NoProfile',
       '-STA',
+      '-WindowStyle',
+      'Normal',
       '-ExecutionPolicy',
       'Bypass',
       '-Command',
@@ -121,10 +128,12 @@ function runPowerShellPicker(script, envOverrides = {}) {
       stdio: ['ignore', 'pipe', 'pipe'],
       windowsHide: false,
     })
+    activePicker = child
 
     const finish = (callback) => {
       if (settled) return
       settled = true
+      if (activePicker === child) activePicker = null
       clearTimeout(timer)
       callback()
     }
@@ -156,12 +165,46 @@ async function chooseLocalFolder({ title, defaultPath } = {}) {
   return runPowerShellPicker(`
 $ErrorActionPreference = 'Stop'
 Add-Type -AssemblyName System.Windows.Forms
+Add-Type -AssemblyName System.Drawing
 [Console]::OutputEncoding = [System.Text.Encoding]::UTF8
-$dialog = New-Object System.Windows.Forms.FolderBrowserDialog
-$dialog.Description = if ($env:SC_PICKER_TITLE) { $env:SC_PICKER_TITLE } else { 'Choose folder' }
-$dialog.ShowNewFolderButton = $true
-if ($env:SC_PICKER_DEFAULT -and (Test-Path -LiteralPath $env:SC_PICKER_DEFAULT)) { $dialog.SelectedPath = $env:SC_PICKER_DEFAULT }
-if ($dialog.ShowDialog() -eq [System.Windows.Forms.DialogResult]::OK) { Write-Output $dialog.SelectedPath }
+[System.Windows.Forms.Application]::EnableVisualStyles()
+$owner = New-Object System.Windows.Forms.Form
+$owner.Text = 'SkillCascade folder chooser'
+$owner.StartPosition = 'CenterScreen'
+$owner.Size = New-Object System.Drawing.Size(320, 90)
+$owner.TopMost = $true
+$owner.ShowInTaskbar = $true
+$owner.Show()
+$owner.Activate()
+
+$dialog = New-Object System.Windows.Forms.OpenFileDialog
+$dialog.Title = if ($env:SC_PICKER_TITLE) { $env:SC_PICKER_TITLE } else { 'Choose folder' }
+$dialog.CheckFileExists = $false
+$dialog.CheckPathExists = $true
+$dialog.ValidateNames = $false
+$dialog.Multiselect = $false
+$dialog.FileName = 'Select this folder'
+if ($env:SC_PICKER_DEFAULT -and (Test-Path -LiteralPath $env:SC_PICKER_DEFAULT)) {
+  $item = Get-Item -LiteralPath $env:SC_PICKER_DEFAULT
+  if ($item.PSIsContainer) {
+    $dialog.InitialDirectory = $item.FullName
+  } else {
+    $dialog.InitialDirectory = $item.DirectoryName
+  }
+}
+try {
+  if ($dialog.ShowDialog($owner) -eq [System.Windows.Forms.DialogResult]::OK) {
+    $selectedPath = $dialog.FileName
+    if (Test-Path -LiteralPath $selectedPath -PathType Container) {
+      Write-Output $selectedPath
+    } else {
+      Write-Output (Split-Path -Parent $selectedPath)
+    }
+  }
+} finally {
+  $owner.Close()
+  $owner.Dispose()
+}
 `, {
     SC_PICKER_TITLE: dialogValue(title, 'Choose folder'),
     SC_PICKER_DEFAULT: dialogValue(defaultPath),
