@@ -6,6 +6,7 @@ import { tmpdir } from 'node:os'
 import { dirname, join } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import mammoth from 'mammoth'
+import JSZip from 'jszip'
 
 const packageRoot = dirname(dirname(fileURLToPath(import.meta.url)))
 const port = Number(process.env.REPORT_HELPER_SMOKE_PORT || 4199)
@@ -14,6 +15,13 @@ const origin = 'http://127.0.0.1:5173'
 const dataDir = mkdtempSync(join(tmpdir(), 'skillcascade-report-helper-data-'))
 const helperApi = '/api/local-report-generator'
 const legacyHelperApi = '/api/local-report-pilot'
+
+async function countDocxTables(docxPath) {
+  const zip = await JSZip.loadAsync(await readFile(docxPath))
+  const xml = await zip.file('word/document.xml')?.async('string')
+  if (!xml) return 0
+  return (xml.match(/<w:tbl[\s>]/g) || []).length
+}
 
 function startServer() {
   const child = spawn(process.execPath, ['src/server.js'], {
@@ -334,8 +342,10 @@ try {
     goal.sourceEvidence.some((item) => Object.prototype.hasOwnProperty.call(item, 'text') || Object.prototype.hasOwnProperty.call(item, 'excerpt'))
   )), false)
   const renderedOutput = await mammoth.extractRawText({ path: runPayload.result.outputPath })
-  assert.match(renderedOutput.value, /Client: Release Client/)
-  assert.match(renderedOutput.value, /Diagnosis And Service Recommendation/)
+  assert.equal(await countDocxTables(runPayload.result.outputPath), 15)
+  assert.match(renderedOutput.value, /Client Name:/)
+  assert.match(renderedOutput.value, /Release Client/)
+  assert.match(renderedOutput.value, /Biopsychosocial Information:/)
   assert.match(renderedOutput.value, /97151/)
   assert.match(renderedOutput.value, /97153/)
   assert.match(renderedOutput.value, /97155/)
@@ -344,16 +354,15 @@ try {
   assert.match(renderedOutput.value, /Maladaptive Behavior Type I/)
   assert.match(renderedOutput.value, /Maladaptive Behavior Type II/)
   assert.match(renderedOutput.value, /Behavior Intervention Plan:/)
-  assert.match(renderedOutput.value, /Source Packet Reviewed/)
-  assert.match(renderedOutput.value, /Biopsychosocial History/)
-  assert.match(renderedOutput.value, /Clinical Profile And Treatment Needs/)
-  assert.match(renderedOutput.value, /Behavior Goals/)
-  assert.match(renderedOutput.value, /Communication Goals/)
-  assert.match(renderedOutput.value, /Social Goals/)
-  assert.match(renderedOutput.value, /Parent Training Goals/)
+  assert.match(renderedOutput.value, /Communication Skills:/)
+  assert.match(renderedOutput.value, /Socialization skills:/)
+  assert.match(renderedOutput.value, /Parent Goals:/)
   assert.match(renderedOutput.value, /Program\/Behavior/)
   assert.equal(renderedOutput.value.includes('Short-Term Goal'), false)
-  assert.match(renderedOutput.value, /BCBA Review Checklist/)
+  assert.equal(renderedOutput.value.includes('Reviewer QA Appendix'), false)
+  assert.equal(renderedOutput.value.includes('Source Packet Reviewed'), false)
+  assert.equal(renderedOutput.value.includes('Write what ABA methods'), false)
+  assert.equal(renderedOutput.value.includes('Please specify specific long term goals'), false)
   assert.ok(runPayload.result.goalPlan.goals.length >= 30)
   assert.ok(renderedOutput.value.split(/\s+/).length >= 3500)
   assert.equal(renderedOutput.value.includes('REVIEW_UNSUPPORTED_TEMPLATE_FIELD'), false)

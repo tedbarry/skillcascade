@@ -9,7 +9,9 @@
     "smoke": "node test/smoke.mjs"
   },
   "dependencies": {
+    "@xmldom/xmldom": "^0.8.13",
     "docx": "^9.7.1",
+    "jszip": "^3.10.1",
     "mammoth": "^1.12.0"
   }
 }

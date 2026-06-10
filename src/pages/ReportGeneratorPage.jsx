@@ -130,22 +130,20 @@ function readHelperError(error) {
   return error.message || 'Local helper request failed.'
 }
 
-function withTimeout(promise, timeoutMs) {
-  if (!timeoutMs) return promise
+function createTimeoutSignal(timeoutMs) {
+  if (!timeoutMs || typeof AbortController === 'undefined') {
+    return { signal: undefined, cleanup: () => {} }
+  }
 
-  return new Promise((resolve, reject) => {
-    const timeoutId = window.setTimeout(() => reject(new Error('helper_probe_timeout')), timeoutMs)
-    promise.then(
-      (value) => {
-        window.clearTimeout(timeoutId)
-        resolve(value)
-      },
-      (error) => {
-        window.clearTimeout(timeoutId)
-        reject(error)
-      },
-    )
-  })
+  const controller = new AbortController()
+  const timeoutId = window.setTimeout(() => {
+    controller.abort(new Error('helper_probe_timeout'))
+  }, timeoutMs)
+
+  return {
+    signal: controller.signal,
+    cleanup: () => window.clearTimeout(timeoutId),
+  }
 }
 
 function getTargetAddressSpace(value) {
@@ -166,13 +164,17 @@ async function fetchHelperJson(helperBase, endpoint, options = {}) {
 
   for (const path of paths) {
     const fetchOptions = { ...requestOptions }
+    const timeout = createTimeoutSignal(timeoutMs)
     if (isLoopbackHelper) {
       fetchOptions.mode = fetchOptions.mode || 'cors'
       fetchOptions.credentials = fetchOptions.credentials || 'omit'
       fetchOptions.targetAddressSpace = getTargetAddressSpace(helperBase)
     }
+    if (timeout.signal && !fetchOptions.signal) {
+      fetchOptions.signal = timeout.signal
+    }
     try {
-      const response = await withTimeout(fetch(`${helperBase}${path}`, fetchOptions), timeoutMs)
+      const response = await fetch(`${helperBase}${path}`, fetchOptions)
       const payload = await response.json().catch(() => null)
       if (response.ok && payload?.ok) return payload
 
@@ -180,9 +182,11 @@ async function fetchHelperJson(helperBase, endpoint, options = {}) {
       if (response.status !== 404) throw new Error(message)
       lastError = new Error(message)
     } catch (error) {
-      lastError = error
+      lastError = error.name === 'AbortError' ? new Error('helper_probe_timeout') : error
       if (path === paths[0]) continue
       throw error
+    } finally {
+      timeout.cleanup()
     }
   }
 
@@ -239,28 +243,22 @@ function helperUpdateRequiredError(url, reason) {
 
 async function discoverHelperStatus(currentUrl) {
   const urls = helperDiscoveryUrls(currentUrl)
-  let lastError = null
-  let incompatibleHelper = null
-
-  for (const url of urls) {
-    try {
-      const payload = await fetchHelperJson(url, '/status', { timeoutMs: HELPER_DISCOVERY_TIMEOUT_MS })
-      const compatibility = getHelperCompatibility(payload)
-      if (!compatibility.ok) {
-        incompatibleHelper = incompatibleHelper || { url, reason: compatibility.reason }
-        lastError = helperUpdateRequiredError(url, compatibility.reason)
-        continue
-      }
-      return { url, payload }
-    } catch (error) {
-      lastError = error
+  const results = await Promise.allSettled(urls.map(async (url) => {
+    const payload = await fetchHelperJson(url, '/status', { timeoutMs: HELPER_DISCOVERY_TIMEOUT_MS })
+    const compatibility = getHelperCompatibility(payload)
+    if (!compatibility.ok) {
+      throw helperUpdateRequiredError(url, compatibility.reason)
     }
-  }
+    return { url, payload }
+  }))
 
-  if (incompatibleHelper) {
-    throw helperUpdateRequiredError(incompatibleHelper.url, incompatibleHelper.reason)
-  }
+  const success = results.find((result) => result.status === 'fulfilled')
+  if (success) return success.value
 
+  const incompatibleHelper = results.find((result) => result.reason?.code === 'helper_update_required')
+  if (incompatibleHelper) throw incompatibleHelper.reason
+
+  const lastError = [...results].reverse().find((result) => result.status === 'rejected')?.reason || null
   const detail = lastError ? ` Last error: ${readHelperError(lastError)}` : ''
   throw new Error(`Local helper was not found. Start or install the helper on this computer, then click Check setup again.${detail}`)
 }

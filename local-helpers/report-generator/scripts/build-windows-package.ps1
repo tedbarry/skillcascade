@@ -53,6 +53,7 @@ Copy-Item -LiteralPath (Join-Path $HelperRoot 'package-lock.json') -Destination 
 Copy-Item -LiteralPath (Join-Path $HelperRoot 'README.md') -Destination $AppDir
 Copy-Item -LiteralPath (Join-Path $HelperRoot 'src') -Destination $AppDir -Recurse
 Copy-Item -LiteralPath (Join-Path $HelperRoot 'test') -Destination $AppDir -Recurse
+Copy-Item -LiteralPath (Join-Path $HelperRoot 'assets') -Destination $AppDir -Recurse
 
 Set-Content -LiteralPath (Join-Path $AppDir 'helper-build-manifest.json') -Encoding ASCII -Value (@{
   packageName = $PackageName
