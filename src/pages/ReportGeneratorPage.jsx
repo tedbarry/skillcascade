@@ -125,7 +125,7 @@ function readHelperError(error) {
     return 'Local helper check timed out. Make sure the helper is running on this computer.'
   }
   if (/Failed to fetch|NetworkError|Load failed/i.test(error.message || '')) {
-    return 'The browser could not reach the local helper. Start the helper, then allow Chrome or Edge Local Network Access if the browser asks. If it still fails, open the helper address directly to confirm it is running.'
+    return 'The browser could not reach the local helper. If Chrome or Edge asks for Local Network Access or Apps on device access, choose Allow. If it was blocked already, open site settings for SkillCascade and allow local/device access, then click Check setup again.'
   }
   return error.message || 'Local helper request failed.'
 }
@@ -276,7 +276,7 @@ function HelperPackagePanel({ packageState, downloadState, helperStatus, helperU
           <p className="text-xs font-semibold uppercase tracking-wide text-sage-700">Setup</p>
           <h2 className="mt-2 text-xl font-bold text-sage-950">Install the local helper</h2>
           <p className="mt-2 max-w-3xl text-sm leading-6 text-sage-800">
-            Install this small helper on the Windows computer that has access to the report files. It runs only on this computer, chooses a safe local address automatically, and does not take over anything another app is using. Then come back here and check setup.
+            Install this small helper on the Windows computer that has access to the report files. It runs only on this computer, chooses a safe local address automatically, and does not take over anything another app is using. Then come back here and check setup. If Chrome or Edge asks to allow local/device access, choose Allow so the site can talk to the helper on this computer.
           </p>
         </div>
         <StatusBadge tone={helperStatus.ok ? 'green' : packageState.ok ? 'blue' : packageState.loading ? 'warm' : 'red'}>
