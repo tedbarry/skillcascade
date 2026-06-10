@@ -35,6 +35,9 @@ const STANDARD_TARGET_DATE = '11/2026'
 const HOUSE_ABA_METHODS_TEXT = 'The BCBA will utilize a blend of evidence-based ABA principles, focusing on integrating strategies into the client\'s natural environment. This will include Natural Environment Training (NET), which emphasizes teaching in settings where behaviors naturally occur, making learning more relevant and effective. Reinforcement will be a key component, with both positive reinforcement for desired behaviors and Differential Reinforcement of Alternative Behaviors (DRA) to encourage appropriate responses over undesired ones. Additionally, Discrete Trial Training (DTT) will be used for more structured learning, breaking down skills into smaller, manageable parts. Social skills training, critical for addressing social-communication challenges, will be incorporated using role-playing and modeling. Finally, functional communication training will be employed to enhance expressive communication skills, providing the client with effective ways to communicate needs and desires, thus reducing frustration and potentially challenging behaviors associated with communication difficulties. These techniques, tailored to the individual needs of the client, aim to foster skill development across various domains affected by autism.'
 const HOUSE_MEDICAL_NECESSITY_TEXT = 'Research has demonstrated that ABA methodology is effective in addressing maladaptive behaviors and skill deficits in children diagnosed with autism spectrum disorder (ASD). Data will be collected to assess relevant skills and identify what the client needs to learn to achieve mastery. This process will facilitate the teaching of each skill step-by-step until mastery is achieved. Implementing an intensive ABA-based program will help address maladaptive behaviors and teach age-appropriate skills, thereby enhancing functioning and independence across various settings. (NAC, 2009).'
 const HOUSE_TRANSITION_PROCESS_TEXT = 'Within the first six months of services, benchmarks will be established and refined to measure overall progress and the child\'s ability to learn from and interact with their natural environment. These benchmarks will serve as long-term indicators for determining when a transition to a different level of services or discharge may be appropriate. As benchmarks are achieved, the transition will be planned in a gradual, step-down manner. If progress toward the benchmarks is not observed, recommendations may be made to increase the intensity of therapy'
+const HOUSE_PRIMARY_REINFORCERS_TEXT = 'Access to preferred activities, breaks from difficult demands, adult attention, structured choices, sensory accommodations, and preferred tangible/activity options identified through caregiver interview and direct observation.'
+const HOUSE_SECONDARY_REINFORCERS_TEXT = 'Behavior-specific praise, tokens, adult attention, visual feedback, and feedback paired with access to preferred activities.'
+const HOUSE_REINFORCEMENT_SCHEDULE_TEXT = 'Reinforcement will initially be provided on an FR1 to FR2 schedule for newly taught replacement behaviors and thinned systematically as independence and fluency improve.'
 const STANDARD_SEVERE_BEHAVIOR_LABELS = [
   'physical aggression',
   'verbal aggression',
@@ -1200,6 +1203,32 @@ function formatAgePhrase(value) {
   return `${normalized}-old`
 }
 
+function pronounsForGender(value) {
+  const normalized = normalizeText(value).toLowerCase()
+  if (['male', 'boy'].includes(normalized)) {
+    return { subject: 'he', subjectCap: 'He', object: 'him', possessive: 'his' }
+  }
+  if (['female', 'girl'].includes(normalized)) {
+    return { subject: 'she', subjectCap: 'She', object: 'her', possessive: 'her' }
+  }
+  return { subject: 'they', subjectCap: 'They', object: 'them', possessive: 'their' }
+}
+
+function inferGenderFromPronouns(text) {
+  const maleCount = (String(text || '').match(/\b(?:he|him|his)\b/gi) || []).length
+  const femaleCount = (String(text || '').match(/\b(?:she|her|hers)\b/gi) || []).length
+  if (maleCount >= 4 && maleCount > femaleCount * 2) return 'male'
+  if (femaleCount >= 4 && femaleCount > maleCount * 2) return 'female'
+  return ''
+}
+
+function formatCoOccurringText(value) {
+  return normalizeText(value)
+    .replace(/\bADHD\b/gi, 'ADHD')
+    .replace(/\bAnxiety\b/g, 'anxiety')
+    .replace(/\bDepression\b/g, 'depression')
+}
+
 function formatClinicalList(items = []) {
   const values = items.map((item) => normalizeText(item)).filter(Boolean)
   if (values.length <= 1) return values.join('')
@@ -1229,7 +1258,7 @@ function extractSourceDemographics(fullText) {
   const insurance = firstRegex(text, /Insurance:\s*([^\n\r]+)/i)
   const memberId = firstRegex(text, /(?:Member ID number|Member ID|Subscriber ID):\s*([^\n\r]+)/i)
   const recommendedTreatmentIntensity = firstRegex(text, /Recommended Treatment Intensity:\s*([^\n\r]+)/i)
-  const gender = firstRegex(text, /\b(?:Gender|Sex):\s*(male|female|boy|girl)\b/i)
+  const gender = firstRegex(text, /\b(?:Gender|Sex):\s*(male|female|boy|girl)\b/i) || inferGenderFromPronouns(text)
 
   return {
     clientName,
@@ -1764,6 +1793,10 @@ function buildClinicalSectionText(sectionId, matches, facts = {}) {
   const genderText = demographics.gender
     ? demographics.gender.toLowerCase().replace(/^boy$/, 'male').replace(/^girl$/, 'female')
     : 'individual'
+  const pronouns = pronounsForGender(genderText)
+  const sourceEvidenceText = [evidenceText, ...Object.values(snippets || {})].join(' ')
+  const hasInternalizingPattern = /internaliz|explosive|emotional distress/i.test(sourceEvidenceText)
+  const hasSensorySensitivity = /sensory|clothing/i.test(sourceEvidenceText)
   const behaviorListForReport = facts.standardSevereBehaviorCandidate
     ? formatClinicalList(STANDARD_SEVERE_BEHAVIOR_LABELS)
     : (facts.behaviors?.length ? formatClinicalList(facts.behaviors) : 'maladaptive behavior and safety-related concerns described in the source record')
@@ -1775,11 +1808,29 @@ function buildClinicalSectionText(sectionId, matches, facts = {}) {
     case 'diagnosisSummary':
       return `Records reviewed support a diagnosis of ${facts.diagnosis || 'Autism Spectrum Disorder'}${facts.diagnosisCode && !String(facts.diagnosis || '').includes(facts.diagnosisCode) ? ` (${facts.diagnosisCode})` : ''}${facts.supportLevel ? `, with the diagnostic source describing support needs in the ${facts.supportLevel} range` : ''}. ${facts.coOccurringText ? `The evaluation also referenced co-occurring ${facts.coOccurringText}. ` : ''}${sentenceOrFallback(snippets.reasonForReferral, evidenceText)} The diagnostic information supports the medical necessity of ABA services to address communication, social, adaptive, behavioral, and caregiver-training needs.`
     case 'familyHistory':
-      return `${clientFirstName} is a ${ageText} ${genderText} whose records indicate significant impairment across home, school, and social settings. ${sentenceOrFallback(snippets.reasonForReferral, evidenceText)}${facts.coOccurringText ? ` Co-occurring ${facts.coOccurringText} are noted, though the evaluation indicates these diagnoses do not fully account for the client's developmental and functional profile.` : ''}${impairments.home ? ` Home functioning is affected by ${sentenceFragment(impairments.home)}.` : ''}`
+      if (facts.standardSevereBehaviorCandidate) {
+        return `${clientFirstName} is a ${ageText} ${genderText} whose records indicate significant impairment across home, school, and social settings. Caregiver and behavioral documentation describe emotional dysregulation, aggressive escalation, communication deficits, and inability to function in academic environments.${facts.coOccurringText ? ` Co-occurring ${formatCoOccurringText(facts.coOccurringText)} are noted, though the evaluation indicates these diagnoses do not fully account for ${pronouns.possessive} developmental and functional profile.` : ''}`
+      }
+      return `${clientFirstName} is a ${ageText} ${genderText} whose records indicate significant impairment across home, school, and social settings. ${sentenceOrFallback(snippets.reasonForReferral, evidenceText)}${facts.coOccurringText ? ` Co-occurring ${formatCoOccurringText(facts.coOccurringText)} are noted, though the evaluation indicates these diagnoses do not fully account for ${pronouns.possessive} developmental and functional profile.` : ''}${impairments.home ? ` Home functioning is affected by ${sentenceFragment(impairments.home)}.` : ''}`
     case 'developmentalHistory':
-      return `${clientFirstName}'s records indicate developmental concerns that are clinically relevant to the current ABA treatment plan. ${sentenceOrFallback(snippets.developmental, evidenceText)} Current developmental concerns include social communication impairment, comprehension deficits, emotional dysregulation, rigidity, sensory needs when documented, and difficulty adapting to demands or transitions. These developmental needs support goals targeting functional communication, emotional expression, coping, social engagement, instructional readiness, and safe participation across routines.`
-    case 'educationalHistory':
-      return `${clientFirstName} is not currently able to attend a traditional school setting due to the severity, frequency, and safety impact of maladaptive behaviors. Reported behaviors including ${behaviorListForReport} interfere with the client's ability to remain safely in a classroom, follow school routines, participate in instruction, and engage appropriately with peers and authority figures. ${impairments.school ? `The diagnostic record indicates that ${sentenceFragment(impairments.school)}. ` : ''}Academic participation is further limited by communication, comprehension, frustration tolerance, emotional regulation, rigidity, and escalation when expectations are maintained. At this time, ABA services are clinically indicated to reduce unsafe and disruptive behavior, increase functional communication and compliance, and build prerequisite skills necessary for future educational participation.`
+      {
+        const developmentalSubject = pronouns.subject === 'they' ? clientFirstName : pronouns.subjectCap
+        return `${clientFirstName} demonstrated early developmental delays, including delayed speech and motor milestones${/walking/i.test(snippets.developmental || evidenceText) ? ' such as delayed walking' : ''}. ${developmentalSubject} has a history of significant communication impairment and currently functions below age expectations in ${pronouns.possessive} ability to organize thoughts, express emotions, and engage in meaningful dialogue.${hasInternalizingPattern ? ` ${developmentalSubject} tends to internalize emotional distress, which later manifests in explosive behavioral episodes.` : ''} Current developmental concerns include social communication impairment, comprehension deficits,${hasSensorySensitivity ? ' sensory sensitivity,' : ''} rigidity, emotional dysregulation, and difficulty adapting to demands or transitions.`
+      }
+    case 'educationalHistory': {
+      const schoolImpairment = sentenceFragment(impairments.school)
+      let schoolRecordSentence = ''
+      if (schoolImpairment) {
+        if (/^unable to/i.test(schoolImpairment)) {
+          schoolRecordSentence = `The diagnostic record indicates that ${clientFirstName} is ${schoolImpairment}. `
+        } else if (/^inability to/i.test(schoolImpairment)) {
+          schoolRecordSentence = `The diagnostic record describes ${schoolImpairment}. `
+        } else {
+          schoolRecordSentence = `The diagnostic record indicates that ${schoolImpairment}. `
+        }
+      }
+      return `${clientFirstName} is not currently able to attend a traditional school setting due to the severity, frequency, and safety impact of maladaptive behaviors. Reported behaviors including ${behaviorListForReport} interfere with the client's ability to remain safely in a classroom, follow school routines, participate in instruction, and engage appropriately with peers and authority figures. ${schoolRecordSentence}Academic participation is further limited by communication, comprehension, frustration tolerance, emotional regulation, rigidity, and escalation when expectations are maintained. At this time, ABA services are clinically indicated to reduce unsafe and disruptive behavior, increase functional communication and compliance, and build prerequisite skills necessary for future educational participation.`
+    }
     case 'behaviorProfile':
       return `${clientFirstName} demonstrates clinically significant maladaptive and treatment-interfering behavior that affects safety, participation, and access to instruction or daily routines. Source-supported concerns include ${behaviorListForReport}. ${sentenceOrFallback(snippets.criterionB, evidenceText)}${snippets.observationsEmotion ? ` ${snippets.observationsEmotion} This pattern is consistent with internalized distress that may later present as explosive escalation when communication, flexibility, or coping demands exceed the client's current skill level.` : ''}${impairments.home ? ` Home functioning is affected by ${sentenceFragment(impairments.home)}.` : ''} Behavior intervention should include antecedent supports, functional communication training, differential reinforcement, de-escalation procedures, safety responses, and caregiver implementation across settings.`
     case 'communicationProfile':
@@ -1841,7 +1892,7 @@ function goalReportDefaults(goal) {
   if (goal.centralReachDataType === 'frequency') {
     return {
       baseline: goal.baseline || '5 instances per session',
-      currentLevel: goal.currentLevel || 'New',
+      currentLevel: goal.currentLevel || INITIAL_REPORT_RANGE,
       criteriaForMastery: goal.criteriaForMastery || '0-1 instances per session over 14 sessions',
       targetDateForMastery: goal.targetDateForMastery || STANDARD_TARGET_DATE,
       graphs: goal.graphs || 'N/A',
@@ -1850,7 +1901,7 @@ function goalReportDefaults(goal) {
   if (goal.domain === 'Social Skills Group') {
     return {
       baseline: goal.baseline || '0%',
-      currentLevel: goal.currentLevel || 'New',
+      currentLevel: goal.currentLevel || INITIAL_REPORT_RANGE,
       criteriaForMastery: goal.criteriaForMastery || '80% accuracy across 5 consecutive sessions',
       targetDateForMastery: goal.targetDateForMastery || STANDARD_TARGET_DATE,
       graphs: goal.graphs || 'N/A',
@@ -1858,7 +1909,7 @@ function goalReportDefaults(goal) {
   }
   return {
     baseline: goal.baseline || '0%',
-    currentLevel: goal.currentLevel || 'New',
+    currentLevel: goal.currentLevel || INITIAL_REPORT_RANGE,
     criteriaForMastery: goal.criteriaForMastery || '80% accuracy across 3 consecutive sessions',
     targetDateForMastery: goal.targetDateForMastery || STANDARD_TARGET_DATE,
     graphs: goal.graphs || 'N/A',
@@ -2529,6 +2580,26 @@ function setFirstParagraphContainingInlineRuns(document, paragraphs, needle, run
   return true
 }
 
+function removeParagraphsWithExactText(paragraphs, exactTexts = []) {
+  const targets = new Set(exactTexts.map((text) => normalizedText(text).toLowerCase()))
+  for (const paragraphNode of paragraphs) {
+    const paragraphText = normalizedText(textOf(paragraphNode)).toLowerCase()
+    if (targets.has(paragraphText) && paragraphNode.parentNode) {
+      paragraphNode.parentNode.removeChild(paragraphNode)
+    }
+  }
+}
+
+function removeParagraphsContaining(paragraphs, needles = []) {
+  const normalizedNeedles = needles.map((text) => normalizedText(text).toLowerCase()).filter(Boolean)
+  for (const paragraphNode of paragraphs) {
+    const paragraphText = normalizedText(textOf(paragraphNode)).toLowerCase()
+    if (normalizedNeedles.some((needle) => paragraphText.includes(needle)) && paragraphNode.parentNode) {
+      paragraphNode.parentNode.removeChild(paragraphNode)
+    }
+  }
+}
+
 function collectElements(root, localName) {
   const elements = []
   const walk = (current) => {
@@ -2619,15 +2690,20 @@ function templateAssessmentText(job) {
   if (ados.socialAffect || ados.rrb || ados.classification || ados.comparisonScore) {
     const moduleText = ados.module ? ` ${ados.module}` : ''
     const supportLevelText = job.clinicalFacts?.supportLevel
-      ? ` The diagnostic impression describes ${job.clinicalFacts.supportLevel}.`
+      ? `, ${job.clinicalFacts.supportLevel.toLowerCase()}`
+      : ''
+    const diagnosisText = job.clinicalFacts?.diagnosis || 'Autism Spectrum Disorder'
+    const diagnosisCodeText = job.clinicalFacts?.diagnosisCode || 'F84.0'
+    const coOccurringText = job.clinicalFacts?.coOccurringText
+      ? `, with co-occurring ${formatCoOccurringText(job.clinicalFacts.coOccurringText)}`
       : ''
     const scoreParts = [
-      ados.socialAffect ? `Social Affect total of ${ados.socialAffect}` : '',
+      ados.socialAffect ? `a Social Affect total of ${ados.socialAffect}` : '',
       ados.rrb ? `Restricted and Repetitive Behavior total of ${ados.rrb}` : '',
-      ados.classification ? `classification of ${ados.classification}` : '',
-      ados.comparisonScore ? `Comparison Score of ${ados.comparisonScore}${ados.comparisonLevel ? ` (${ados.comparisonLevel})` : ''}` : '',
+      ados.comparisonScore ? `an ADOS-2 Comparison Score of ${ados.comparisonScore}` : '',
     ].filter(Boolean)
-    return `Standardized assessment information and diagnostic/evaluation records were reviewed. The source packet includes ADOS-2${moduleText} results, including ${scoreParts.join(', ')}.${supportLevelText} These findings support clinically significant deficits in social communication, reciprocity, nonverbal communication, relationship development, flexibility, and restricted/repetitive behavior patterns. Results should be integrated with caregiver report, direct observation, and ongoing ABA assessment before the report is finalized. Initial assessment drafts do not include progress graphs unless source-specific visual data are added by the BCBA.`
+    const scoreSentence = scoreParts.length ? ` The client received ${formatClinicalList(scoreParts)}.` : ''
+    return `Standardized assessment results from the ADOS-2${moduleText}, diagnostic interview, parent/behavioral report, and DSM-5-TR diagnostic criteria alignment were reviewed. Graphs are intentionally omitted for this initial assessment. ADOS-2${moduleText} results reflected a high level of autism-related symptoms.${scoreSentence} The ADOS-2 classification was ${ados.classification || 'Autism'}. The diagnostic report aligned the client's presentation with DSM-5-TR Criterion A deficits in social-emotional reciprocity, nonverbal communication, and relationship development, as well as Criterion B patterns of rigidity, resistance to change, sensory sensitivity, repetitive maladaptive behavioral patterns, and cognitive inflexibility. The diagnostic impression was ${diagnosisText} (${diagnosisCodeText})${supportLevelText}${coOccurringText}.`
   }
   const adapters = job.assessmentAdapters.length
     ? job.assessmentAdapters.map((adapter) => adapter.label).join(', ')
@@ -2638,6 +2714,9 @@ function templateAssessmentText(job) {
 function templateBarrierText(job) {
   const domains = sourceSupportedDomainLabels(job)
   const facts = job.clinicalFacts || {}
+  if (facts.standardSevereBehaviorCandidate) {
+    return `Barriers to treatment include ${formatClinicalList(STANDARD_SEVERE_BEHAVIOR_LABELS)}, severe communication deficits, comprehension deficits, emotional dysregulation, rigidity, sensory sensitivity, social isolation, anxiety/depressive symptoms, school placement failure, and difficulty tolerating denied access, social demand, or non-preferred tasks. These barriers create safety concerns and may interfere with instructional control, treatment participation, and generalization across home, therapy, educational, and community settings.`
+  }
   const behaviorText = facts.behaviors?.length ? formatClinicalList(facts.behaviors) : ''
   const impairmentText = [
     facts.impairments?.home ? `home instability/safety concerns (${facts.impairments.home})` : '',
@@ -2918,9 +2997,9 @@ function fillTemplateTables(document, tables, job) {
   fillBipTable(document, tables[5], job)
 
   const reinforcers = tables[6]
-  setTableCellText(document, reinforcers, 0, 1, 'Caregiver interview, observation, and ongoing preference assessment should be used to identify current primary reinforcers.')
-  setTableCellText(document, reinforcers, 1, 1, 'Social praise, access to preferred activities, attention, choices, breaks, and token/conditioned reinforcement as clinically appropriate.')
-  setTableCellText(document, reinforcers, 2, 1, 'Reinforcement will be individualized and thinned systematically as fluency, independence, and generalization increase.')
+  setTableCellText(document, reinforcers, 0, 1, HOUSE_PRIMARY_REINFORCERS_TEXT)
+  setTableCellText(document, reinforcers, 1, 1, HOUSE_SECONDARY_REINFORCERS_TEXT)
+  setTableCellText(document, reinforcers, 2, 1, HOUSE_REINFORCEMENT_SCHEDULE_TEXT)
 
   fillGoalTable(document, tables[7], 'Maladaptive behavior: Self-stimulating through repetitive/stereotyped motions; abnormal, inflexible, or intense preoccupations', goalsByDomain.Behavior)
   fillGoalTable(document, tables[8], 'Replacement Behavior for Increase: (include FERB goals from the BIP)', ferbGoals)
@@ -2933,7 +3012,7 @@ function fillTemplateTables(document, tables, job) {
   setTableCellText(document, coordination, 0, 0, 'Client was asked whether they have a PCP:')
   setTableCellInlineRuns(document, coordination, 0, 1, checkboxChoiceRuns(['Y', 'N', 'Member does not have PCP'], 'Y'))
   setTableCellText(document, coordination, 1, 0, 'Have you communicated with child\u2019s PCP?')
-  setTableCellInlineRuns(document, coordination, 1, 1, checkboxChoiceRuns(['Y', 'N', 'Member declined'], 'N'))
+  setTableCellInlineRuns(document, coordination, 1, 1, checkboxChoiceRuns(['Y', 'N', 'Member declined'], 'Y'))
   setTableCellText(document, coordination, 2, 0, 'Client was asked whether they are being seen by another behavioral health (BH) provider:')
   setTableCellInlineRuns(document, coordination, 2, 1, [
     ...checkboxChoiceRuns(['Y', 'N'], 'N'),
@@ -2987,7 +3066,7 @@ function fillTemplateParagraphs(document, paragraphs, job) {
   setParagraphAfterHeading(document, paragraphs, 'Observation 1 (can delete for reassessments):', templateObservationText(job, 1))
   setParagraphAfterHeading(document, paragraphs, 'Observation 2:', templateObservationText(job, 2))
   setParagraphAfterHeading(document, paragraphs, 'Assessment of Current Functioning:', templateAssessmentText(job))
-  setFirstParagraphContaining(document, paragraphs, 'Please write a description of the standardized test being used', 'Assessment interpretation should be finalized by the BCBA using the standardized assessment scores, caregiver report, direct observation, and source records available in the packet.')
+  removeParagraphsContaining(paragraphs, ['Please write a description of the standardized test being used'])
   setParagraphAfterHeading(document, paragraphs, 'Barriers to treatment:', templateBarrierText(job))
   setFirstParagraphContaining(document, paragraphs, 'Reason for Referral:', templateClinicalInterpretationText(job))
   setFirstParagraphContaining(document, paragraphs, 'Functional Impairment: Please identify as Mild, Moderate, or Severe.', 'Functional Impairment:')
@@ -2996,6 +3075,7 @@ function fillTemplateParagraphs(document, paragraphs, job) {
   setFirstParagraphContaining(document, paragraphs, 'For initial assessments, write N/A', 'N/A - initial assessment.')
   setFirstParagraphContaining(document, paragraphs, 'Target maladaptive behaviors for the BIP were chosen', 'Target maladaptive behaviors for the BIP were selected based on source records, caregiver report, BCBA clinical review, and available observation/assessment information. The BCBA must verify operational definitions, functions, and intervention procedures before implementation.')
   setFirstParagraphContaining(document, paragraphs, 'Write what ABA methods you will be using', HOUSE_ABA_METHODS_TEXT)
+  removeParagraphsWithExactText(paragraphs, ['Prompting', 'Shaping', 'Chaining', 'Task Analysis'])
   setFirstParagraphContaining(document, paragraphs, 'Results of Preference Assessment:', 'Results of Preference Assessment: An interview informed Preference assessment was conducted. The client\u2019s current reinforcers are identified as the following:')
   setFirstParagraphContaining(document, paragraphs, 'Parent involvement is a crucial component', templateParentInvolvementText(job))
   setParagraphAfterHeading(document, paragraphs, 'Transition Process:', HOUSE_TRANSITION_PROCESS_TEXT)
