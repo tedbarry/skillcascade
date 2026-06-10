@@ -136,7 +136,7 @@ export const ASSESSMENT_ADAPTERS = [
     id: 'srs2',
     label: 'SRS-2 / Social Responsiveness Report',
     kind: 'social-assessment',
-    keywords: ['srs-2', 'srs2', 'social responsiveness', 'social awareness', 'social cognition', 'social communication', 'restricted interests'],
+    keywords: ['srs-2', 'srs2', 'social responsiveness scale'],
     use: 'social communication, social cognition, social motivation, and restricted/repetitive behavior prioritization',
   },
   {
@@ -150,7 +150,7 @@ export const ASSESSMENT_ADAPTERS = [
     id: 'vbmapp',
     label: 'VB-MAPP',
     kind: 'skill-assessment',
-    keywords: ['vb-mapp', 'vbmapp', 'mand', 'tact', 'listener responding', 'intraverbal', 'milestones assessment'],
+    keywords: ['vb-mapp', 'vbmapp', 'verbal behavior milestones assessment', 'milestones assessment'],
     use: 'early language, listener responding, manding, tacting, and learning-readiness goal families',
   },
   {
@@ -171,22 +171,29 @@ export const ASSESSMENT_ADAPTERS = [
     id: 'speech_language',
     label: 'Speech / Language Evaluation',
     kind: 'related-service',
-    keywords: ['speech', 'language evaluation', 'expressive language', 'receptive language', 'pragmatic language', 'articulation'],
+    keywords: ['speech-language evaluation', 'speech language evaluation', 'speech therapy', 'language evaluation', 'pragmatic language assessment', 'articulation assessment'],
     use: 'communication and pragmatic-language goal rationale',
   },
   {
     id: 'ot_sensory',
     label: 'OT / Sensory Documentation',
     kind: 'related-service',
-    keywords: ['occupational therapy', 'sensory', 'fine motor', 'gross motor', 'adaptive equipment', 'sensory profile'],
+    keywords: ['occupational therapy', 'ot evaluation', 'fine motor', 'gross motor', 'adaptive equipment', 'sensory profile'],
     use: 'sensory, motor, and adaptive support context',
   },
   {
     id: 'school_iep',
     label: 'School / IEP Documentation',
     kind: 'education',
-    keywords: ['iep', 'school', 'classroom', 'teacher', 'educational', 'placement', 'special education'],
+    keywords: ['iep', 'individualized education program', 'school report', 'classroom observation', 'teacher report', 'educational evaluation', 'special education placement'],
     use: 'educational history and school-functioning context when clinically relevant',
+  },
+  {
+    id: 'ados2',
+    label: 'ADOS-2 / Autism Diagnostic Observation Schedule',
+    kind: 'diagnostic-assessment',
+    keywords: ['ados-2', 'ados2', 'autism diagnostic observation schedule', 'social affect total', 'comparison score'],
+    use: 'ADOS classification, autism symptom severity, social affect, and restricted/repetitive behavior score interpretation',
   },
 ]
 
@@ -253,7 +260,7 @@ const SECTION_RULES = [
   {
     id: 'educationalHistory',
     label: 'Educational History',
-    keywords: ['school', 'education', 'iep', 'classroom', 'teacher', 'educational'],
+    keywords: ['school', 'education', 'iep', 'classroom', 'teacher', 'educational', 'academic'],
     fallback: 'Educational history was not clearly supported in the local source packet reviewed.',
   },
   {
@@ -280,6 +287,127 @@ const SECTION_RULES = [
     keywords: ['parent training', 'caregiver', 'parent', 'generalization', 'home', 'family training'],
     fallback: 'Parent/caregiver training needs were not clearly supported in the local source packet reviewed.',
   },
+]
+
+const SOURCE_SECTION_HEADINGS = [
+  'Reason for Referral',
+  'Developmental and Psychosocial History',
+  'Developmental History',
+  'Psychosocial History',
+  'Behavioral Observations',
+  'Behavioral Observation',
+  'ADOS-2 Results',
+  'ADOS-2',
+  'Interpretation of Results',
+  'DSM-5-TR Diagnostic Criteria Alignment',
+  'DSM-5 Diagnostic Criteria Alignment',
+  'Criterion A',
+  'Criterion B',
+  'Differential Diagnosis',
+  'Functional Impairment Across Settings',
+  'Functional Impairment',
+  'Diagnostic Impression',
+  'Diagnosis',
+  'Medical Necessity for ABA Services',
+  'Medical Necessity',
+  'Summary',
+  'Recommendations',
+  'Family History',
+  'Educational History',
+  'Intake',
+  'Parent Report',
+  'Caregiver Report',
+  'Vineland-3',
+  'Vineland',
+  'SRS-2',
+]
+
+const SECTION_PREFERENCES = {
+  diagnosisSummary: [
+    'diagnostic impression',
+    'diagnosis',
+    'dsm-5-tr diagnostic criteria alignment',
+    'dsm-5 diagnostic criteria alignment',
+    'interpretation of results',
+    'summary',
+  ],
+  familyHistory: [
+    'family history',
+    'parent report',
+    'caregiver report',
+    'developmental and psychosocial history',
+    'reason for referral',
+    'functional impairment across settings',
+  ],
+  developmentalHistory: [
+    'developmental and psychosocial history',
+    'developmental history',
+    'psychosocial history',
+    'criterion b',
+  ],
+  educationalHistory: [
+    'educational history',
+    'functional impairment across settings',
+    'functional impairment',
+    'developmental and psychosocial history',
+    'reason for referral',
+  ],
+  behaviorProfile: [
+    'criterion b',
+    'functional impairment across settings',
+    'behavioral observations',
+    'behavioral observation',
+    'reason for referral',
+    'medical necessity for aba services',
+    'medical necessity',
+  ],
+  communicationProfile: [
+    'behavioral observations',
+    'behavioral observation',
+    'criterion a',
+    'developmental and psychosocial history',
+    'medical necessity for aba services',
+    'medical necessity',
+  ],
+  socialProfile: [
+    'behavioral observations',
+    'behavioral observation',
+    'criterion a',
+    'interpretation of results',
+    'developmental and psychosocial history',
+  ],
+  caregiverTraining: [
+    'medical necessity for aba services',
+    'medical necessity',
+    'parent report',
+    'caregiver report',
+    'family history',
+    'functional impairment across settings',
+  ],
+}
+
+const FRONT_MATTER_START_HEADINGS = [
+  'Reason for Referral',
+  'Developmental and Psychosocial History',
+  'Developmental History',
+  'Behavioral Observations',
+  'Intake',
+  'Family History',
+  'Vineland',
+  'SRS-2',
+]
+
+const HEADER_LINE_PATTERNS = [
+  /\bphone\b/i,
+  /\bfax\b/i,
+  /\bemail\b/i,
+  /\baddress\b/i,
+  /\blicense\b/i,
+  /\blicensed\b/i,
+  /\bpsychologist\b/i,
+  /\bprovider\b/i,
+  /\bpage\s+\d+\b/i,
+  /^\d{1,5}\s+\w+.*\b(street|st\.|avenue|ave\.|road|rd\.|suite|ste)\b/i,
 ]
 
 const GOAL_LIBRARY = [
@@ -706,11 +834,69 @@ function normalizeText(value) {
   return String(value || '').replace(/\s+/g, ' ').trim()
 }
 
+function normalizeSourceLineBreaks(value) {
+  return String(value || '')
+    .replace(/\r\n?/g, '\n')
+    .replace(/\u00a0/g, ' ')
+    .split('\n')
+    .map((line) => line.replace(/[ \t]+/g, ' ').trim())
+    .join('\n')
+    .replace(/\n{3,}/g, '\n\n')
+    .trim()
+}
+
+function escapeRegex(value) {
+  return String(value || '').replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
+}
+
+function stripTrailingHeadingPunctuation(value) {
+  return normalizeText(value).replace(/[:\-]+$/g, '').trim()
+}
+
+function sectionKey(value) {
+  return stripTrailingHeadingPunctuation(value).toLowerCase()
+}
+
+function isLikelySourceHeading(line) {
+  const cleaned = stripTrailingHeadingPunctuation(line)
+  if (!cleaned) return false
+  return SOURCE_SECTION_HEADINGS.some((heading) => cleaned.toLowerCase() === heading.toLowerCase())
+}
+
+function cleanExtractedSourceText(value) {
+  let text = normalizeSourceLineBreaks(value)
+  if (!text) return ''
+
+  const startCandidates = FRONT_MATTER_START_HEADINGS
+    .map((heading) => {
+      const match = text.match(new RegExp(`(^|\\n)\\s*${escapeRegex(heading)}\\s*:?`, 'i'))
+      return match ? match.index + (match[1] ? match[1].length : 0) : -1
+    })
+    .filter((index) => index >= 0)
+  if (startCandidates.length) {
+    text = text.slice(Math.min(...startCandidates)).trim()
+  }
+
+  const lines = text.split('\n')
+  const cleanedLines = []
+  for (const line of lines) {
+    if (!line) {
+      cleanedLines.push(line)
+      continue
+    }
+    if (!isLikelySourceHeading(line) && HEADER_LINE_PATTERNS.some((pattern) => pattern.test(line))) {
+      continue
+    }
+    cleanedLines.push(line)
+  }
+  return cleanedLines.join('\n').replace(/\n{3,}/g, '\n\n').trim()
+}
+
 function splitSentences(text) {
-  return normalizeText(text)
-    .split(/(?<=[.!?])\s+/)
+  return normalizeSourceLineBreaks(text)
+    .split(/(?<=[.!?])\s+|\n+/)
     .map((sentence) => sentence.trim())
-    .filter(Boolean)
+    .filter((sentence) => sentence && !HEADER_LINE_PATTERNS.some((pattern) => pattern.test(sentence)))
 }
 
 function sourceHasKeyword(text, keyword) {
@@ -748,6 +934,89 @@ function matchingSentences(sources, keywords, limit = 4) {
         text: sentence.slice(0, 650),
       })
       if (matches.length >= limit) return matches
+    }
+  }
+  return matches
+}
+
+function extractNamedSourceSections(text) {
+  const lines = normalizeSourceLineBreaks(text).split('\n')
+  const sections = []
+  let current = null
+
+  function finishCurrent() {
+    if (!current) return
+    const textValue = current.lines.join('\n').trim()
+    if (textValue) {
+      sections.push({
+        heading: current.heading,
+        key: sectionKey(current.heading),
+        text: textValue,
+      })
+    }
+  }
+
+  for (const line of lines) {
+    if (isLikelySourceHeading(line)) {
+      finishCurrent()
+      current = {
+        heading: stripTrailingHeadingPunctuation(line),
+        lines: [],
+      }
+      continue
+    }
+    if (!current) {
+      current = {
+        heading: 'Source Text',
+        lines: [],
+      }
+    }
+    current.lines.push(line)
+  }
+
+  finishCurrent()
+  return sections
+}
+
+function sourceSectionText(source, preferredKeys = []) {
+  if (!source?.sections?.length) return ''
+  const wanted = preferredKeys.map(sectionKey)
+  const sections = wanted.length
+    ? source.sections.filter((section) => wanted.includes(section.key))
+    : source.sections
+  return sections.map((section) => section.text).filter(Boolean).join('\n\n')
+}
+
+function matchingSectionSentences(sources, sectionId, keywords, limit = 5) {
+  const matches = []
+  const seen = new Set()
+  const preferredKeys = SECTION_PREFERENCES[sectionId] || []
+  const sourcePasses = preferredKeys.length ? ['preferred', 'all'] : ['all']
+
+  for (const pass of sourcePasses) {
+    for (const source of sources) {
+      const sourceText = pass === 'preferred'
+        ? sourceSectionText(source, preferredKeys)
+        : source.text
+      if (!sourceText) continue
+      const sentences = splitSentences(sourceText)
+      for (const sentence of sentences) {
+        const keywordMatched = keywords.some((keyword) => sourceHasKeyword(sentence, keyword))
+        const includePreferredSectionLead = pass === 'preferred'
+          && matches.length === 0
+          && sentence.length >= 35
+        if (!keywordMatched && !includePreferredSectionLead) continue
+        const normalized = normalizeText(sentence).toLowerCase()
+        if (!normalized || seen.has(normalized)) continue
+        seen.add(normalized)
+        matches.push({
+          sourceId: source.id,
+          filename: source.filename,
+          text: sentence.slice(0, 650),
+          section: pass === 'preferred' ? preferredKeys.join(', ') : '',
+        })
+        if (matches.length >= limit) return matches
+      }
     }
   }
   return matches
@@ -812,6 +1081,154 @@ export function buildRequiredEvidenceReadiness(sources) {
 export function detectAssessmentAdapters(sources) {
   return buildSourceRuleMatches(sources, ASSESSMENT_ADAPTERS)
     .filter((adapter) => adapter.status === 'found')
+}
+
+function firstRegex(text, pattern) {
+  const match = String(text || '').match(pattern)
+  return match ? normalizeText(match[1] || match[0]) : ''
+}
+
+function firstSectionText(sources, keys = []) {
+  for (const source of sources || []) {
+    const text = sourceSectionText(source, keys)
+    if (text) return text
+  }
+  return ''
+}
+
+function combinedSectionText(sources, keys = []) {
+  return (sources || [])
+    .map((source) => sourceSectionText(source, keys))
+    .filter(Boolean)
+    .join('\n\n')
+}
+
+function compactEvidenceText(value, maxLength = 620) {
+  const text = normalizeText(value)
+  if (!text) return ''
+  return text.length > maxLength ? `${text.slice(0, maxLength).trim()}...` : text
+}
+
+function firstMeaningfulSentence(text, keywords = []) {
+  const sentences = splitSentences(text)
+  if (!sentences.length) return ''
+  if (keywords.length) {
+    const match = sentences.find((sentence) => keywords.some((keyword) => sourceHasKeyword(sentence, keyword)))
+    if (match) return compactEvidenceText(match, 520)
+  }
+  return compactEvidenceText(sentences[0], 520)
+}
+
+function meaningfulSentenceGroup(text, keywords = [], limit = 2) {
+  const sentences = splitSentences(text)
+  if (!sentences.length) return ''
+  const selected = []
+  const seen = new Set()
+  for (const sentence of sentences) {
+    if (keywords.length && !keywords.some((keyword) => sourceHasKeyword(sentence, keyword))) continue
+    const key = normalizeText(sentence).toLowerCase()
+    if (!key || seen.has(key)) continue
+    seen.add(key)
+    selected.push(sentence)
+    if (selected.length >= limit) break
+  }
+  const fallback = selected.length ? selected : sentences.slice(0, limit)
+  return compactEvidenceText(fallback.join(' '), 760)
+}
+
+function detectSourceBehaviors(text) {
+  const normalized = normalizeText(text).toLowerCase()
+  const behaviorRules = [
+    { label: 'physical aggression', terms: ['physical aggression', 'aggressive behavior', 'aggression', 'explosive aggression'] },
+    { label: 'verbal aggression', terms: ['verbal aggression', 'threatening', 'hostile language', 'yelling', 'screaming'] },
+    { label: 'non-compliance', terms: ['noncompliance', 'non-compliance', 'refusal', 'task refusal'] },
+    { label: 'property destruction', terms: ['property destruction', 'damaging property', 'breaking items', 'throwing objects'] },
+    { label: 'profane language', terms: ['profane language', 'profanity', 'cursing', 'inappropriate language'] },
+    { label: 'elopement', terms: ['elopement', 'elope', 'run away', 'leaving supervised'] },
+    { label: 'unsafe behavior', terms: ['unsafe behavior', 'unsafe behaviors', 'safety concerns', 'safety risk', 'crisis involvement'] },
+    { label: 'emotional dysregulation', terms: ['emotional dysregulation', 'dysregulation', 'explosive behavior', 'distress'] },
+  ]
+  return behaviorRules
+    .filter((rule) => rule.terms.some((term) => normalized.includes(term)))
+    .map((rule) => rule.label)
+}
+
+function uniqueList(items = []) {
+  return Array.from(new Set(items.map((item) => normalizeText(item)).filter(Boolean)))
+}
+
+export function buildLocalClinicalFacts({ sources = [] } = {}) {
+  const fullText = sources.map((source) => source.text || '').join('\n\n')
+  const reasonForReferral = firstSectionText(sources, ['reason for referral'])
+  const developmental = combinedSectionText(sources, [
+    'developmental and psychosocial history',
+    'developmental history',
+    'psychosocial history',
+  ])
+  const observations = combinedSectionText(sources, ['behavioral observations', 'behavioral observation'])
+  const criterionA = combinedSectionText(sources, ['criterion a'])
+  const criterionB = combinedSectionText(sources, ['criterion b'])
+  const interpretation = combinedSectionText(sources, ['interpretation of results'])
+  const impairment = combinedSectionText(sources, [
+    'functional impairment across settings',
+    'functional impairment',
+  ])
+  const diagnosisSection = combinedSectionText(sources, ['diagnostic impression', 'diagnosis'])
+  const medicalNecessity = combinedSectionText(sources, [
+    'medical necessity for aba services',
+    'medical necessity',
+  ])
+
+  const diagnosis = firstRegex(`${diagnosisSection}\n${fullText}`, /(Autism Spectrum Disorder\s*\(?F?84\.0\)?)/i)
+    || firstRegex(fullText, /(autism spectrum disorder)/i)
+  const diagnosisCode = firstRegex(`${diagnosisSection}\n${fullText}`, /(F84\.0)/i)
+  const supportLevel = firstRegex(`${diagnosisSection}\n${fullText}`, /(Level\s*\d+(?:\s*[-–]\s*\d+)?[^.\n]*)/i)
+  const coOccurringText = firstRegex(fullText, /co-?occurring\s+([^.\n]+)/i)
+  const ageText = firstRegex(fullText, /Age at Evaluation:\s*([^\n]+)/i)
+  const adosModule = firstRegex(fullText, /(Module\s*\d+)/i)
+  const adosSocialAffect = firstRegex(fullText, /Social Affect Total:\s*(\d+)/i)
+  const adosRrb = firstRegex(fullText, /(?:RRB|Restricted and Repetitive Behavior) Total:\s*(\d+)/i)
+  const adosClassification = firstRegex(fullText, /ADOS-2 Classification:\s*([A-Za-z ]+)/i)
+  const adosComparisonScore = firstRegex(fullText, /Comparison Score:\s*(\d+)/i)
+  const adosComparisonLevel = firstRegex(fullText, /Comparison Score:\s*\d+\s*\(([^)]+)\)/i)
+  const homeImpairment = firstRegex(impairment, /Home:\s*([^\n]+)/i)
+  const schoolImpairment = firstRegex(impairment, /School:\s*([^\n]+)/i)
+    || firstMeaningfulSentence(`${reasonForReferral}\n${developmental}`, ['academic', 'school', 'educational'])
+  const socialImpairment = firstRegex(impairment, /Social:\s*([^\n]+)/i)
+  const behaviors = uniqueList(detectSourceBehaviors(fullText))
+
+  return {
+    diagnosis,
+    diagnosisCode,
+    supportLevel,
+    coOccurringText,
+    ageText,
+    ados: {
+      module: adosModule,
+      socialAffect: adosSocialAffect,
+      rrb: adosRrb,
+      classification: adosClassification,
+      comparisonScore: adosComparisonScore,
+      comparisonLevel: adosComparisonLevel,
+    },
+    sectionSnippets: {
+      reasonForReferral: firstMeaningfulSentence(reasonForReferral, ['referral', 'aggressive', 'communication', 'academic']),
+      developmental: meaningfulSentenceGroup(developmental, ['developmental', 'delayed', 'communication', 'emotions'], 2),
+      observationsSocial: meaningfulSentenceGroup(observations, ['reciprocal', 'eye contact', 'social', 'initiation', 'nonverbal'], 3),
+      observationsCommunication: meaningfulSentenceGroup(observations, ['communication', 'questions', 'repetition', 'simplification', 'understanding', 'conversation'], 5),
+      observationsEmotion: meaningfulSentenceGroup(observations, ['emotion', 'frustrated', 'explosive', 'internal', 'escalate'], 2),
+      criterionA: firstMeaningfulSentence(criterionA, ['reciprocity', 'nonverbal', 'relationships']),
+      criterionB: firstMeaningfulSentence(criterionB, ['rigidity', 'sensory', 'repetitive', 'inflexibility']),
+      interpretation: firstMeaningfulSentence(interpretation, ['severity', 'communication', 'reciprocity', 'rigidity']),
+      medicalNecessity: firstMeaningfulSentence(medicalNecessity, ['aba', 'communication', 'aggression', 'rigidity']),
+    },
+    impairments: {
+      home: homeImpairment,
+      school: schoolImpairment,
+      social: socialImpairment,
+    },
+    behaviors,
+  }
 }
 
 function firstDeficitEvidence(sources, keywords) {
@@ -935,10 +1352,10 @@ async function extractSourceFile(filePath) {
   const extension = extname(filePath).toLowerCase()
   if (extension === '.docx') {
     const result = await mammoth.extractRawText({ path: filePath })
-    return normalizeText(result.value)
+    return cleanExtractedSourceText(result.value)
   }
   if (extension === '.txt' || extension === '.md') {
-    return normalizeText(await readFile(filePath, 'utf8'))
+    return cleanExtractedSourceText(await readFile(filePath, 'utf8'))
   }
   return ''
 }
@@ -958,6 +1375,7 @@ export async function scanLocalSourceFolder(sourceFolder, options = {}) {
       relativePath: relative(resolvedFolder, filePath),
       extension: extname(filePath).toLowerCase(),
       text,
+      sections: extractNamedSourceSections(text),
       characterCount: text.length,
       containsPhi: true,
       localOnly: true,
@@ -1024,10 +1442,11 @@ export async function preflightLocalReportPilot({
   let supportedFiles = []
   let unsupportedFiles = []
   let sourcePacket = null
+  let clinicalFacts = buildLocalClinicalFacts({ sources: [] })
   let evidenceReadiness = buildRequiredEvidenceReadiness([])
   let assessmentAdapters = []
   let deficitProfile = buildLocalDeficitProfile({ sources: [] })
-  let clinicalProfile = buildLocalClinicalProfile({ clientLabel: 'Local Report Client', sources: [] })
+  let clinicalProfile = buildLocalClinicalProfile({ clientLabel: 'Local Report Client', sources: [], clinicalFacts })
   let goalPlan = buildLocalGoalPlan({ sources: [], deficitProfile })
   let coverageMatrix = buildReportCoverageMatrix({
     evidenceReadiness,
@@ -1045,10 +1464,11 @@ export async function preflightLocalReportPilot({
     if (!supportedFiles.length) blockers.push('No supported source files were found. Add .docx, .txt, or .md source files.')
     if (unsupportedFiles.length) warnings.push(`${unsupportedFiles.length} unsupported file(s) will be listed in review but not extracted.`)
     if (supportedFiles.length) {
+      clinicalFacts = buildLocalClinicalFacts({ sources: sourcePacket.sources })
       evidenceReadiness = buildRequiredEvidenceReadiness(sourcePacket.sources)
       assessmentAdapters = detectAssessmentAdapters(sourcePacket.sources)
       deficitProfile = buildLocalDeficitProfile({ sources: sourcePacket.sources })
-      clinicalProfile = buildLocalClinicalProfile({ clientLabel: 'Local Report Client', sources: sourcePacket.sources })
+      clinicalProfile = buildLocalClinicalProfile({ clientLabel: 'Local Report Client', sources: sourcePacket.sources, clinicalFacts })
       goalPlan = buildLocalGoalPlan({ sources: sourcePacket.sources, deficitProfile })
       coverageMatrix = buildReportCoverageMatrix({
         evidenceReadiness,
@@ -1102,15 +1522,15 @@ export async function preflightLocalReportPilot({
   }
 }
 
-export function buildLocalClinicalProfile({ clientLabel, sources }) {
+export function buildLocalClinicalProfile({ clientLabel, sources, clinicalFacts = buildLocalClinicalFacts({ sources }) }) {
   const sections = SECTION_RULES.map((rule) => {
-    const matches = matchingSentences(sources, rule.keywords, 5)
+    const matches = matchingSectionSentences(sources, rule.id, rule.keywords, 5)
     return {
       id: rule.id,
       label: rule.label,
       status: matches.length ? 'source-supported' : 'missing-source-support',
       text: matches.length
-        ? buildClinicalSectionText(rule.id, matches)
+        ? buildClinicalSectionText(rule.id, matches, clinicalFacts)
         : rule.fallback,
       sourceEvidence: matches,
       missing: !matches.length,
@@ -1140,26 +1560,41 @@ function evidenceSentenceList(matches = []) {
     .slice(0, 4)
 }
 
-function buildClinicalSectionText(sectionId, matches) {
+function sentenceOrFallback(value, fallback = '') {
+  return compactEvidenceText(value) || fallback
+}
+
+function sentenceFragment(value) {
+  return normalizeText(value).replace(/[.]+$/g, '')
+}
+
+function buildClinicalSectionText(sectionId, matches, facts = {}) {
   const evidence = evidenceSentenceList(matches)
   const evidenceText = evidence.join(' ')
+  const snippets = facts.sectionSnippets || {}
+  const impairments = facts.impairments || {}
+  const ados = facts.ados || {}
+  const behaviorList = facts.behaviors?.length
+    ? facts.behaviors.join(', ')
+    : 'maladaptive behavior and safety-related concerns described in the source record'
+
   switch (sectionId) {
     case 'diagnosisSummary':
-      return `Records reviewed support an autism-related clinical presentation and indicate that the client requires ABA treatment to address functional impairments across core developmental domains. ${evidenceText} The BCBA should verify the exact diagnosis, diagnosis date, severity/support level, and any co-occurring conditions against the diagnostic source before finalizing.`
+      return `Records reviewed support a diagnosis of ${facts.diagnosis || 'Autism Spectrum Disorder'}${facts.diagnosisCode && !String(facts.diagnosis || '').includes(facts.diagnosisCode) ? ` (${facts.diagnosisCode})` : ''}${facts.supportLevel ? `, with the diagnostic source describing support needs in the ${facts.supportLevel} range` : ''}. ${facts.coOccurringText ? `The evaluation also referenced co-occurring ${facts.coOccurringText}. ` : ''}${sentenceOrFallback(snippets.reasonForReferral, evidenceText)} The diagnostic information supports the medical necessity of ABA services to address communication, social, adaptive, behavioral, and caregiver-training needs.`
     case 'familyHistory':
-      return `Records reviewed include caregiver and family-context information relevant to treatment planning. ${evidenceText} This information should be used to individualize caregiver training, home generalization, reinforcement planning, and coordination with family routines while avoiding unsupported family-history details.`
+      return `Records reviewed describe a clinically significant history of functional impairment affecting the client's daily participation and family routines. ${sentenceOrFallback(snippets.reasonForReferral, evidenceText)}${impairments.home ? ` At home, records indicate ${sentenceFragment(impairments.home)}.` : ''} This history should be used to individualize caregiver training, safety planning, reinforcement systems, communication supports, and generalization procedures without adding unsupported family-structure details.`
     case 'developmentalHistory':
-      return `Records reviewed indicate developmental concerns that are clinically relevant to the current ABA treatment plan. ${evidenceText} These developmental needs support goals targeting functional communication, adaptive participation, emotional regulation, social engagement, and treatment readiness.`
+      return `Records reviewed indicate developmental concerns that are clinically relevant to the current ABA treatment plan. ${sentenceOrFallback(snippets.developmental, evidenceText)} The source record describes ongoing needs in communication, emotional expression, comprehension, flexibility, regulation, and adaptive participation. These developmental needs support goals targeting functional communication, coping, social engagement, instructional readiness, and safe participation across routines.`
     case 'educationalHistory':
-      return `Records reviewed indicate educational and participation barriers that should be considered in treatment planning. ${evidenceText} When school participation is limited by unsafe or severe maladaptive behavior, the report should clearly connect ABA goals to the prerequisite communication, compliance, regulation, and safety skills needed for future educational access.`
+      return `Records reviewed indicate that the client is not currently able to function successfully in a traditional school environment due to clinically significant communication, comprehension, regulation, and behavior-related barriers. ${impairments.school ? `The evaluation specifically notes that ${sentenceFragment(impairments.school)}. ` : ''}${sentenceOrFallback(evidenceText)} ABA treatment should therefore focus on prerequisite skills needed for future educational access, including functional communication, tolerance of demands and transitions, compliance with safety expectations, coping, flexibility, and reduction of maladaptive behavior.`
     case 'behaviorProfile':
-      return `The client demonstrates clinically significant maladaptive behavior and treatment-interfering behavior that affect safety, participation, and access to instruction or daily routines. ${evidenceText} Behavior intervention should include antecedent supports, functional communication training, differential reinforcement, de-escalation procedures, and caregiver implementation across settings.`
+      return `The client demonstrates clinically significant maladaptive and treatment-interfering behavior that affects safety, participation, and access to instruction or daily routines. Source-supported concerns include ${behaviorList}. ${sentenceOrFallback(snippets.criterionB, evidenceText)}${impairments.home ? ` Home functioning is affected by ${sentenceFragment(impairments.home)}.` : ''} Behavior intervention should include antecedent supports, functional communication training, differential reinforcement, de-escalation procedures, safety responses, and caregiver implementation across settings.`
     case 'communicationProfile':
-      return `The client demonstrates clinically significant communication deficits that interfere with self-advocacy, emotional expression, comprehension, reciprocal interaction, and participation in demands or transitions. ${evidenceText} Communication goals should target requesting, help/break communication, clarification, repair, emotional expression, and contextually appropriate reciprocal communication.`
+      return `The client demonstrates clinically significant communication deficits that interfere with self-advocacy, emotional expression, comprehension, reciprocal interaction, and participation in demands or transitions. ${sentenceOrFallback(snippets.observationsCommunication, evidenceText)} ${sentenceOrFallback(snippets.criterionA)} Communication goals should target requesting, help and break communication, clarification, repair strategies, emotional expression, nonverbal integration, and contextually appropriate reciprocal communication.`
     case 'socialProfile':
-      return `The client demonstrates social-communication and reciprocal-interaction deficits that affect peer/adult engagement, social problem solving, flexibility, and relationship development. ${evidenceText} Social goals should target initiation, response to social bids, perspective taking, conflict repair, flexible participation, and maintaining safe engagement during social demands.`
+      return `The client demonstrates social-communication and reciprocal-interaction deficits that affect peer/adult engagement, social problem solving, flexibility, and relationship development. ${sentenceOrFallback(snippets.observationsSocial, evidenceText)}${impairments.social ? ` Social functioning is further affected by ${sentenceFragment(impairments.social)}.` : ''}${ados.comparisonScore ? ` ADOS-2 results also reflected a high level of autism-spectrum related symptoms, with a Comparison Score of ${ados.comparisonScore}${ados.comparisonLevel ? ` (${ados.comparisonLevel})` : ''}.` : ''} Social goals should target initiation, response to social bids, perspective taking, conflict repair, flexible participation, and maintaining safe engagement during social demands.`
     case 'caregiverTraining':
-      return `Caregiver training is clinically indicated to support consistency, generalization, behavior reduction, replacement-skill use, and safe response to escalation across daily routines. ${evidenceText} Caregiver goals should focus on implementation of antecedent strategies, prompting, reinforcement, data reporting, and crisis-prevention procedures taught by the BCBA.`
+      return `Caregiver training is clinically indicated to support consistency, generalization, behavior reduction, replacement-skill use, and safe response to escalation across daily routines. ${sentenceOrFallback(snippets.medicalNecessity, evidenceText)} Caregiver goals should focus on implementation of antecedent strategies, prompting, reinforcement, functional communication supports, data reporting, and crisis-prevention procedures taught by the BCBA.`
     default:
       return `Records reviewed indicate the following source-supported information: ${evidenceText}`
   }
@@ -1217,6 +1652,16 @@ export function buildLocalGoalPlan({ sources, deficitProfile }) {
     summary[goal.domain] = (summary[goal.domain] || 0) + 1
     return summary
   }, {})
+  const selectedGoalIds = new Set(selectedGoals.map((goal) => goal.id))
+  const excludedDirectEvidenceGoals = GOAL_LIBRARY
+    .filter((goal) => goal.requiresDirectEvidence && !selectedGoalIds.has(goal.id))
+    .map((goal) => ({
+      id: goal.id,
+      domain: goal.domain,
+      longTermGoalName: goal.longTermGoalName,
+      shortTermGoalName: goal.shortTermGoalName,
+      reviewAction: 'add intake, FBA/BIP, caregiver report, or behavior data before selecting this target',
+    }))
 
   return {
     id: 'local-goal-plan',
@@ -1231,6 +1676,7 @@ export function buildLocalGoalPlan({ sources, deficitProfile }) {
         goalDomains: domain.goalDomains,
       })),
     excludedGoalCount: GOAL_LIBRARY.length - selectedGoals.length,
+    excludedDirectEvidenceGoals,
   }
 }
 
@@ -1286,6 +1732,9 @@ export function buildReportCoverageMatrix({
     ...uncoveredGoalDomains
       .filter((domain) => domain.status === 'review-needed-no-goals-selected')
       .map((domain) => `Goal domain has deficit support but no selected goals: ${domain.domain}`),
+    ...((goalPlan?.excludedDirectEvidenceGoals || []).length
+      ? [`Direct behavior target confirmation needed before adding: ${goalPlan.excludedDirectEvidenceGoals.map((goal) => goal.shortTermGoalName).join(', ')}`]
+      : []),
     ...(!assessmentAdapters.length ? ['No known assessment adapter detected.'] : []),
   ]
 
@@ -1836,10 +2285,22 @@ function sourceSupportedDomainLabels(job) {
 function templateMedicalNecessityText(job) {
   const domains = sourceSupportedDomainLabels(job)
   const domainText = domains.length ? domains.join(', ') : 'review-required deficit domains'
-  return `Research has demonstrated that ABA methodology is effective in addressing maladaptive behaviors and skill deficits in children diagnosed with autism spectrum disorder (ASD). Data will be collected to assess relevant skills and identify what the client needs to learn and the appropriate sequence for teaching each skill. Based on the source packet reviewed, treatment is medically necessary to address clinically significant needs in ${domainText}. ABA-based treatment should target the reduction of interfering behaviors, the acquisition of functional communication, social, adaptive, and replacement skills, and caregiver implementation of strategies across settings. The BCBA must review and finalize the service intensity, setting, and payer-specific language before this draft is used.`
+  const necessity = job.clinicalFacts?.sectionSnippets?.medicalNecessity
+  return `Research has demonstrated that ABA methodology is effective in addressing maladaptive behaviors and skill deficits in children diagnosed with autism spectrum disorder (ASD). Data will be collected to assess relevant skills and identify what the client needs to learn and the appropriate sequence for teaching each skill. Based on the source packet reviewed, treatment is medically necessary to address clinically significant needs in ${domainText}.${necessity ? ` ${necessity}` : ''} ABA-based treatment should target the reduction of interfering behaviors, the acquisition of functional communication, social, adaptive, and replacement skills, and caregiver implementation of strategies across settings. The BCBA must review and finalize the service intensity, setting, and payer-specific language before this draft is used.`
 }
 
 function templateAssessmentText(job) {
+  const ados = job.clinicalFacts?.ados || {}
+  if (ados.socialAffect || ados.rrb || ados.classification || ados.comparisonScore) {
+    const moduleText = ados.module ? ` ${ados.module}` : ''
+    const scoreParts = [
+      ados.socialAffect ? `Social Affect total of ${ados.socialAffect}` : '',
+      ados.rrb ? `Restricted and Repetitive Behavior total of ${ados.rrb}` : '',
+      ados.classification ? `classification of ${ados.classification}` : '',
+      ados.comparisonScore ? `Comparison Score of ${ados.comparisonScore}${ados.comparisonLevel ? ` (${ados.comparisonLevel})` : ''}` : '',
+    ].filter(Boolean)
+    return `Standardized assessment information and diagnostic/evaluation records were reviewed. The source packet includes ADOS-2${moduleText} results, including ${scoreParts.join(', ')}. These findings support clinically significant deficits in social communication, reciprocity, nonverbal communication, relationship development, flexibility, and restricted/repetitive behavior patterns. Results should be integrated with caregiver report, direct observation, and ongoing ABA assessment before the report is finalized. Initial assessment drafts do not include progress graphs unless source-specific visual data are added by the BCBA.`
+  }
   const adapters = job.assessmentAdapters.length
     ? job.assessmentAdapters.map((adapter) => adapter.label).join(', ')
     : 'no recognized standardized assessment adapter was detected; BCBA to verify source packet completeness'
@@ -1848,17 +2309,104 @@ function templateAssessmentText(job) {
 
 function templateBarrierText(job) {
   const domains = sourceSupportedDomainLabels(job)
+  const facts = job.clinicalFacts || {}
+  const behaviorText = facts.behaviors?.length ? facts.behaviors.join(', ') : ''
+  const impairmentText = [
+    facts.impairments?.home ? `home instability/safety concerns (${facts.impairments.home})` : '',
+    facts.impairments?.school ? `educational access barriers (${facts.impairments.school})` : '',
+    facts.impairments?.social ? `social impairment (${facts.impairments.social})` : '',
+  ].filter(Boolean).join('; ')
+  if (domains.length && (behaviorText || impairmentText)) {
+    return `Barriers to treatment include source-supported deficits in ${domains.join(', ')}${behaviorText ? `, with maladaptive or interfering behavior concerns including ${behaviorText}` : ''}. ${impairmentText ? `Functional barriers noted in the source packet include ${impairmentText}. ` : ''}These barriers may interfere with safety, learning readiness, communication, participation, generalization, and adaptive functioning across settings.`
+  }
   return domains.length
     ? `Barriers to treatment include source-supported deficits in ${domains.join(', ')}, which may interfere with safety, learning readiness, communication, participation, generalization, and adaptive functioning across settings.`
     : REVIEW_NEEDED
 }
 
 function templateClinicalInterpretationText(job) {
-  return `Reason for Referral: The caregivers sought ABA treatment to address the interfering effects of ASD-related skill deficits and maladaptive behavior. The source packet supports the need for a treatment plan that targets functional communication, social interaction, adaptive participation, reduction of maladaptive behavior, and caregiver implementation of strategies. The BCBA should verify all client-specific details, service recommendations, and treatment priorities before finalizing the report.`
+  const referral = job.clinicalFacts?.sectionSnippets?.reasonForReferral
+  return `Reason for Referral: ${referral || 'The caregivers sought ABA treatment to address the interfering effects of ASD-related skill deficits and maladaptive behavior.'} The source packet supports the need for a treatment plan that targets functional communication, social interaction, adaptive participation, reduction of maladaptive behavior, and caregiver implementation of strategies. The BCBA should verify all client-specific details, service recommendations, and treatment priorities before finalizing the report.`
+}
+
+function templateBehaviorTypeText(job, type) {
+  const facts = job.clinicalFacts || {}
+  const snippets = facts.sectionSnippets || {}
+  if (type === 'typeI') {
+    return `The client demonstrates Maladaptive Behavior Type I needs related to restricted, repetitive, rigid, or inflexible patterns of behavior. ${snippets.criterionB || snippets.interpretation || templateSectionText(job, 'behaviorProfile', 'Maladaptive Behavior Type I evidence')} These concerns should be addressed through antecedent supports, tolerance and flexibility programming, functional communication, reinforcement for adaptive responding, and caregiver-supported generalization.`
+  }
+  const behaviorText = facts.behaviors?.length
+    ? facts.behaviors.join(', ')
+    : 'maladaptive behavior and safety-related escalation described in the source packet'
+  return `The client demonstrates Maladaptive Behavior Type II needs that interfere with safety, participation, and access to instruction or daily routines. Source-supported concerns include ${behaviorText}. ${snippets.reasonForReferral || snippets.observationsEmotion || templateSectionText(job, 'behaviorProfile', 'Maladaptive Behavior Type II evidence')} These behaviors should be targeted through operational definitions, function-based intervention, antecedent strategies, functional communication training, differential reinforcement, de-escalation procedures, and ongoing frequency data collection.`
+}
+
+function templateObservationText(job, observationNumber) {
+  const snippets = job.clinicalFacts?.sectionSnippets || {}
+  if (observationNumber === 1) {
+    return `During the diagnostic observation/source review, the client demonstrated clinically significant social-communication deficits. ${snippets.observationsSocial || snippets.criterionA || templateSectionText(job, 'socialProfile', 'Observation 1')} The observation supports goals targeting reciprocal responding, social initiation, nonverbal integration, and flexible participation with adults and peers.`
+  }
+  return `Additional observation findings indicate clinically significant communication, emotional-regulation, and participation needs. ${snippets.observationsCommunication || snippets.observationsEmotion || templateSectionText(job, 'communicationProfile', 'Observation 2')} These findings support goals targeting comprehension, communication repair, emotional expression, help/break requests, coping, and safe re-engagement following frustration or demands.`
 }
 
 function goalProgramBehavior(goal) {
   return `${goal.longTermGoalName} - ${goal.shortTermGoalName}`
+}
+
+function buildBipBehaviorColumns(job) {
+  const behaviors = job.clinicalFacts?.behaviors || []
+  const lowerBehaviors = behaviors.map((behavior) => behavior.toLowerCase())
+  const hasBehavior = (...terms) => lowerBehaviors.some((behavior) => terms.some((term) => behavior.includes(term)))
+  const columns = []
+
+  if (hasBehavior('aggression', 'emotional dysregulation')) {
+    columns.push({
+      heading: hasBehavior('emotional dysregulation') ? 'Aggression / Emotional Dysregulation' : 'Aggression',
+      behaviorName: 'Aggressive or dysregulated behavior',
+      definition: 'Episodes of aggressive escalation, unsafe contact, hostile escalation, or severe dysregulation that interfere with safety, instruction, communication, or participation.',
+      antecedents: 'Common antecedents may include denied access, difficult tasks, communication breakdowns, social demands, correction, transitions, sensory discomfort, or loss of control. Functions must be verified through ABC data and direct observation.',
+    })
+  }
+  if (hasBehavior('non-compliance', 'property destruction')) {
+    columns.push({
+      heading: hasBehavior('property destruction') ? 'Non-Compliance / Property Destruction' : 'Non-Compliance',
+      behaviorName: 'Refusal or destructive responding',
+      definition: 'Episodes of refusal, failure to follow reasonable safety or instructional directions, or unsafe interaction with materials that disrupts participation or access to instruction.',
+      antecedents: 'Common antecedents may include nonpreferred demands, unclear expectations, transitions, delayed reinforcement, task difficulty, or reduced tolerance for adult-directed activities. Functions must be verified through data.',
+    })
+  }
+  if (hasBehavior('elopement', 'unsafe behavior')) {
+    columns.push({
+      heading: hasBehavior('elopement') ? 'Elopement / Unsafe Behavior' : 'Unsafe Behavior',
+      behaviorName: 'Unsafe movement or safety-risk behavior',
+      definition: 'Episodes of leaving supervision, moving toward unsafe areas, or engaging in behavior that places the client or others at risk and requires adult safety support.',
+      antecedents: 'Common antecedents may include transitions, overwhelming demands, denied access, social demands, avoidance of difficult tasks, or attempts to escape sensory or emotional discomfort. Functions must be verified through data.',
+    })
+  }
+
+  const behaviorGoals = job.goalPlan.goals.filter((goal) => goal.domain === 'Behavior')
+  for (const goal of behaviorGoals) {
+    if (columns.length >= 3) break
+    const heading = goal.shortTermGoalName || goal.longTermGoalName
+    if (columns.some((column) => column.heading.toLowerCase().includes(String(heading).toLowerCase()))) continue
+    columns.push({
+      heading,
+      behaviorName: heading,
+      definition: `${heading} should be operationally defined by the BCBA using caregiver interview, direct observation, and source records before implementation.`,
+      antecedents: 'Probable function should be verified by the BCBA using ABC data, caregiver report, direct observation, and source records. Potential functions may include escape, access, attention, sensory regulation, or control of the interaction when supported by the data.',
+    })
+  }
+
+  while (columns.length < 3) {
+    columns.push({
+      heading: REVIEW_NEEDED,
+      behaviorName: REVIEW_NEEDED,
+      definition: 'A specific maladaptive behavior target was not directly supported in the extracted source packet. Add intake, FBA/BIP, caregiver interview, or behavior data before finalizing this column.',
+      antecedents: 'BCBA review required before assigning hypothesized function or intervention procedures.',
+    })
+  }
+
+  return columns.slice(0, 3)
 }
 
 function fillGoalTable(document, tableNode, title, goals, options = {}) {
@@ -1910,25 +2458,23 @@ function fillGoalTable(document, tableNode, title, goals, options = {}) {
 }
 
 function fillBipTable(document, tableNode, job) {
-  const behaviorGoals = job.goalPlan.goals.filter((goal) => goal.domain === 'Behavior').slice(0, 3)
+  const behaviorGoals = job.goalPlan.goals.filter((goal) => goal.domain === 'Behavior')
   const replacementGoals = job.goalPlan.goals
     .filter((goal) => goal.domain === 'Communication' || goal.domain === 'Social')
     .slice(0, 3)
-  const behaviorNames = behaviorGoals.length
-    ? behaviorGoals.map((goal) => goal.shortTermGoalName || goal.longTermGoalName)
-    : ['Source-supported maladaptive behavior']
+  const behaviorColumns = buildBipBehaviorColumns(job)
 
-  behaviorNames.slice(0, 3).forEach((name, index) => {
-    setTableCellText(document, tableNode, 0, index + 1, name || `Behavior ${index + 1}`, { bold: true })
+  behaviorColumns.forEach((column, index) => {
+    setTableCellText(document, tableNode, 0, index + 1, column.heading || `Behavior ${index + 1}`, { bold: true })
     const goal = behaviorGoals[index] || behaviorGoals[0]
     const replacement = replacementGoals[index] || replacementGoals[0]
-    setTableCellText(document, tableNode, 1, index + 1, goal?.shortTermGoalName || REVIEW_NEEDED)
-    setTableCellText(document, tableNode, 2, index + 1, goal?.objective || templateSectionText(job, 'behaviorProfile', 'Operational definition'))
-    setTableCellText(document, tableNode, 3, index + 1, 'Probable function should be verified by the BCBA using ABC data, caregiver report, direct observation, and source records. Potential functions may include escape, access, attention, sensory regulation, or control of the interaction when supported by the data.')
+    setTableCellText(document, tableNode, 1, index + 1, column.behaviorName || goal?.shortTermGoalName || REVIEW_NEEDED)
+    setTableCellText(document, tableNode, 2, index + 1, column.definition || goal?.objective || templateSectionText(job, 'behaviorProfile', 'Operational definition'))
+    setTableCellText(document, tableNode, 3, index + 1, column.antecedents || 'Probable function should be verified by the BCBA using ABC data, caregiver report, direct observation, and source records.')
     setTableCellText(document, tableNode, 4, index + 1, 'Use antecedent supports including clear expectations, transition warnings, structured choices, visual supports, demand fading, reinforcement for calm responding, and early prompting for functional communication.')
     setTableCellText(document, tableNode, 5, index + 1, replacement?.objective || 'Teach functional communication, help-seeking, tolerance, coping, and contextually appropriate replacement responses matched to the function of behavior.')
     setTableCellText(document, tableNode, 6, index + 1, 'Maintain neutral affect, ensure safety, prompt the replacement response, reinforce appropriate behavior, reduce attention to unsafe/inappropriate behavior when clinically appropriate, and return to instruction once regulated.')
-    setTableCellText(document, tableNode, 7, index + 1, goal?.centralReachDataType === 'Frequency' ? 'Frequency data for maladaptive behavior; goal/probe data for replacement skills.' : 'Frequency or trial/probe data as clinically appropriate.')
+    setTableCellText(document, tableNode, 7, index + 1, goal?.centralReachDataType === 'frequency' ? 'Frequency data for maladaptive behavior; goal/probe data for replacement skills.' : 'Frequency or trial/probe data as clinically appropriate.')
     setTableCellText(document, tableNode, 8, index + 1, goal?.baseline || 'New')
     setTableCellText(document, tableNode, 9, index + 1, goal?.currentLevel || 'N/A for initial assessment')
   })
@@ -2005,7 +2551,7 @@ function fillTemplateParagraphs(document, paragraphs, job) {
   setParagraphAfterHeading(document, paragraphs, 'Educational History:', templateSectionText(job, 'educationalHistory', 'Educational History'))
   setParagraphAfterHeading(document, paragraphs, "Client's Area of Strength:", 'The client demonstrates strengths and interests that should be used to support rapport, motivation, instructional engagement, and generalization. The BCBA should finalize this section using caregiver report, direct observation, and source-specific strengths identified in the evaluation packet.')
 
-  setParagraphAfterHeading(document, paragraphs, 'As Evidenced By:', templateSectionText(job, 'behaviorProfile', 'Maladaptive Behavior Type I and II evidence'))
+  setParagraphAfterHeading(document, paragraphs, 'As Evidenced By:', templateBehaviorTypeText(job, 'typeI'))
   const asEvidencedIndexes = paragraphs
     .map((paragraphNode, index) => ({ paragraphNode, index, text: normalizedText(textOf(paragraphNode)) }))
     .filter((item) => item.text === 'As Evidenced By:')
@@ -2013,7 +2559,7 @@ function fillTemplateParagraphs(document, paragraphs, job) {
   if (asEvidencedIndexes[1] != null) {
     for (let index = asEvidencedIndexes[1] + 1; index < paragraphs.length; index += 1) {
       if (normalizedText(textOf(paragraphs[index]))) {
-        setParagraphText(document, paragraphs[index], templateSectionText(job, 'behaviorProfile', 'Maladaptive Behavior Type II evidence'))
+        setParagraphText(document, paragraphs[index], templateBehaviorTypeText(job, 'typeII'))
         break
       }
     }
@@ -2035,13 +2581,13 @@ function fillTemplateParagraphs(document, paragraphs, job) {
     }
   }
 
-  setParagraphAfterHeading(document, paragraphs, 'Observation 1 (can delete for reassessments):', 'Initial observation details should be finalized by the BCBA based on direct observation and source records. The draft should describe observable communication, social participation, adaptive behavior, safety, and maladaptive behavior patterns without relying on unsupported assumptions.')
-  setParagraphAfterHeading(document, paragraphs, 'Observation 2:', 'Additional observation details should be added if a second observation occurred. If only one observation occurred, the BCBA should mark this section N/A or remove it according to payer/company requirements.')
+  setParagraphAfterHeading(document, paragraphs, 'Observation 1 (can delete for reassessments):', templateObservationText(job, 1))
+  setParagraphAfterHeading(document, paragraphs, 'Observation 2:', templateObservationText(job, 2))
   setParagraphAfterHeading(document, paragraphs, 'Assessment of Current Functioning:', templateAssessmentText(job))
   setFirstParagraphContaining(document, paragraphs, 'Please write a description of the standardized test being used', 'Assessment interpretation should be finalized by the BCBA using the standardized assessment scores, caregiver report, direct observation, and source records available in the packet.')
   setParagraphAfterHeading(document, paragraphs, 'Barriers to treatment:', templateBarrierText(job))
   setFirstParagraphContaining(document, paragraphs, 'Reason for Referral:', templateClinicalInterpretationText(job))
-  setFirstParagraphContaining(document, paragraphs, 'Functional Impairment: Please identify as Mild, Moderate, or Severe.', 'Functional Impairment: Severe. The BCBA should confirm final severity ratings based on the source packet, safety needs, communication deficits, adaptive functioning, social participation, caregiver training needs, and treatment-interfering behaviors.')
+  setFirstParagraphContaining(document, paragraphs, 'Functional Impairment: Please identify as Mild, Moderate, or Severe.', 'Functional Impairment:')
   setFirstParagraphContaining(document, paragraphs, 'Client is recommended to have Comprehensive/Focused services.', 'Client is recommended to receive ABA services at the intensity and model determined medically necessary by the BCBA after review of the source packet, caregiver priorities, safety needs, adaptive functioning, and payer requirements.')
   setFirstParagraphContaining(document, paragraphs, 'Include rationale for lack of progress here', 'N/A - initial assessment.')
   setFirstParagraphContaining(document, paragraphs, 'For initial assessments, write N/A', 'N/A - initial assessment.')
@@ -2215,15 +2761,17 @@ export async function runLocalReportPilot({
     throw new Error(`Required source evidence is missing: ${evidenceReadiness.missingRequired.map((item) => item.label).join(', ')}.`)
   }
   const assessmentAdapters = detectAssessmentAdapters(sourcePacket.sources)
+  const clinicalFacts = buildLocalClinicalFacts({ sources: sourcePacket.sources })
   const deficitProfile = buildLocalDeficitProfile({ sources: sourcePacket.sources })
   if (!deficitProfile.supportedGoalDomains.length) {
     throw new Error('No source-supported deficit domains were detected. Add assessment/evaluation records that clearly describe communication, social, adaptive, behavior, or caregiver-training needs.')
   }
-  const clinicalProfile = buildLocalClinicalProfile({ clientLabel, sources: sourcePacket.sources })
+  const clinicalProfile = buildLocalClinicalProfile({ clientLabel, sources: sourcePacket.sources, clinicalFacts })
   const goalPlan = buildLocalGoalPlan({ sources: sourcePacket.sources, deficitProfile })
   const coverageMatrix = buildReportCoverageMatrix({
     evidenceReadiness,
     assessmentAdapters,
+    clinicalFacts,
     deficitProfile,
     clinicalProfile,
     goalPlan,
@@ -2247,6 +2795,7 @@ export async function runLocalReportPilot({
     standardTemplate: STANDARD_REPORT_TEMPLATE,
     evidenceReadiness,
     assessmentAdapters,
+    clinicalFacts,
     deficitProfile,
     clinicalProfile,
     goalPlan,
@@ -2267,6 +2816,9 @@ export async function runLocalReportPilot({
         ...deficitProfile.missingDeficitDomains.map((domain) => `Deficit domain not clearly supported: ${domain.label}`),
         ...sourcePacket.unsupportedFiles.map((file) => `Unsupported local source not extracted: ${file.relativePath}`),
         ...(goalPlan.goals.length ? [] : ['No source-supported goals were selected automatically.']),
+        ...(goalPlan.excludedDirectEvidenceGoals?.length
+          ? [`Behavior targets requiring direct source support were not auto-added: ${goalPlan.excludedDirectEvidenceGoals.map((goal) => goal.shortTermGoalName).join(', ')}.`]
+          : []),
       ],
       liveWriteAttempted: false,
       autoSignAttempted: false,
@@ -2314,8 +2866,10 @@ export async function runLocalReportPilot({
     outputPath,
   }, null, 2))
 
+  const { clinicalFacts: _clinicalFacts, sourcePacket: _sourcePacket, ...publicJob } = job
+
   return {
-    ...job,
+    ...publicJob,
     reviewPath,
     evidenceLedgerPath,
     clinicalProfile: sanitizeClinicalProfileForResponse(job.clinicalProfile),

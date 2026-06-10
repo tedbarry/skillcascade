@@ -99,9 +99,42 @@ async function createSourceFixture() {
   await mkdir(sourceFolder, { recursive: true })
   await mkdir(outputDir, { recursive: true })
   await writeFile(join(sourceFolder, 'psychological-evaluation.md'), [
-    'Psychological evaluation and diagnostic report document diagnosis of autism spectrum disorder under DSM-5 criteria.',
-    'The evaluation notes adaptive functioning, communication, social, and behavior needs that require ABA treatment planning.',
-  ].join(' '))
+    'Mock Provider Header',
+    'Phone: 555-0000',
+    'License: fake test line that should not appear in the report narrative.',
+    '',
+    'Reason for Referral:',
+    'The client was referred for a comprehensive ADOS-2 evaluation due to severe emotional dysregulation, aggressive escalation, social withdrawal, communication deficits, and inability to function in academic settings.',
+    '',
+    'Developmental and Psychosocial History:',
+    'Records indicate early developmental delays including delayed speech, delayed motor milestones, and delayed walking. Current concerns include communication below age expectations, difficulty articulating thoughts, difficulty expressing emotions, and explosive behavior after internalizing distress.',
+    '',
+    'Behavioral Observations:',
+    'During the evaluation, the client demonstrated difficulty with reciprocal social interaction. Eye contact was inconsistent and poorly integrated with communication, and spontaneous social initiation was limited. Communication was below age expectations, with difficulty organizing thoughts, limited elaboration, poor conversational reciprocity, and need for repetition and simplification of questions. The client appeared emotionally constricted and internally preoccupied and could escalate when challenged or frustrated.',
+    '',
+    'ADOS-2 Results:',
+    'ADOS-2 Module 3 was administered. Social Affect Total: 19. RRB Total: 4. ADOS-2 Classification: Autism. Comparison Score: 10 (High level of autism spectrum-related symptoms).',
+    '',
+    'Interpretation of Results:',
+    'Results indicate high autism symptom severity, severe social communication impairment, limited reciprocity, poor emotional expression, behavioral rigidity, and real-world communication breakdowns.',
+    '',
+    'DSM-5-TR Diagnostic Criteria Alignment:',
+    'Criterion A:',
+    'The client demonstrates severe deficits in social-emotional reciprocity, nonverbal communication, and relationship development.',
+    'Criterion B:',
+    'The client demonstrates rigidity, resistance to change, sensory sensitivity, repetitive maladaptive escalation cycles, and cognitive inflexibility.',
+    '',
+    'Functional Impairment Across Settings:',
+    'Home: internalized distress followed by explosive aggression, instability, and safety concerns.',
+    'School: unable to function in traditional academic environments due to communication, comprehension, and behavior deficits.',
+    'Social: marked isolation and inability to form or maintain relationships.',
+    '',
+    'Diagnostic Impression:',
+    'Autism Spectrum Disorder (F84.0), Level 2-3 support needs, with co-occurring ADHD, anxiety, and depression symptoms.',
+    '',
+    'Medical Necessity for ABA Services:',
+    'ABA services are medically necessary due to severe communication deficits, emotional dysregulation, aggression linked to communication breakdown, rigidity, poor adaptability, and risk of crisis involvement without treatment.',
+  ].join('\n'))
   await writeFile(join(sourceFolder, 'intake.md'), [
     'Intake and caregiver interview identify presenting concerns and parent report.',
     'Family history includes caregiver participation and parent report.',
@@ -258,7 +291,7 @@ try {
   assert.equal(standardPreflightPayload.result.evidenceReadiness.categories.length, 3)
   assert.ok(standardPreflightPayload.result.assessmentAdapters.some((adapter) => adapter.id === 'vineland'))
   assert.ok(standardPreflightPayload.result.deficitProfile.supportedGoalDomains.includes('Communication'))
-  assert.equal(standardPreflightPayload.result.coverageMatrix.status, 'ready-for-draft')
+  assert.equal(standardPreflightPayload.result.coverageMatrix.status, 'review-needed')
   assert.equal(standardPreflightPayload.result.coverageMatrix.sourceTextReturned, false)
   assert.equal(standardPreflightPayload.result.coverageMatrix.summary.requiredEvidenceFound, 3)
   assert.equal(standardPreflightPayload.result.coverageMatrix.summary.sourceSupportedSectionCount, 8)
@@ -321,7 +354,7 @@ try {
   assert.equal(standardRunPayload.result.standardTemplate.customerTemplateUpload, false)
   assert.equal(standardRunPayload.result.evidenceReadiness.ready, true)
   assert.ok(standardRunPayload.result.assessmentAdapters.some((adapter) => adapter.id === 'vineland'))
-  assert.equal(standardRunPayload.result.coverageMatrix.status, 'ready-for-draft')
+  assert.equal(standardRunPayload.result.coverageMatrix.status, 'review-needed')
   assert.equal(standardRunPayload.result.coverageMatrix.summary.selectedGoalCount, standardRunPayload.result.goalPlan.goals.length)
 
   const runResponse = await fetch(`${baseUrl}${helperApi}/run`, {
@@ -351,7 +384,7 @@ try {
   assert.equal(Object.keys(runPayload.result.templateFieldAliases).length, 0)
   assert.equal(runPayload.result.standardTemplate.mode, 'skillcascade-standard-docx')
   assert.equal(runPayload.result.evidenceReadiness.ready, true)
-  assert.equal(runPayload.result.coverageMatrix.status, 'ready-for-draft')
+  assert.equal(runPayload.result.coverageMatrix.status, 'review-needed')
   assert.equal(runPayload.result.coverageMatrix.summary.goalDomainsWithGoals.includes('Behavior'), true)
   assert.equal(runPayload.result.qa.standardTemplateClone.ok, true)
   assert.equal(runPayload.result.qa.standardTemplateClone.highlightCount, 0)
@@ -369,11 +402,11 @@ try {
   assert.equal(evidenceLedger.localOnly, true)
   assert.equal(evidenceLedger.containsPhi, true)
   assert.equal(evidenceLedger.dataPolicy.browserResponseContainsExcerpts, false)
-  assert.equal(evidenceLedger.coverageMatrix.status, 'ready-for-draft')
+  assert.equal(evidenceLedger.coverageMatrix.status, 'review-needed')
   assert.ok(evidenceLedger.sections.some((section) => section.evidence.some((item) => item.excerpt)))
   const reviewSummary = JSON.parse(await readFile(runPayload.result.reviewPath, 'utf8'))
-  assert.equal(reviewSummary.coverageMatrix.status, 'ready-for-draft')
-  assert.equal(reviewSummary.evidenceSummary.coverageStatus, 'ready-for-draft')
+  assert.equal(reviewSummary.coverageMatrix.status, 'review-needed')
+  assert.equal(reviewSummary.evidenceSummary.coverageStatus, 'review-needed')
   assert.equal(reviewSummary.evidenceSummary.missingSectionCount, 0)
   assert.equal(runPayload.result.clinicalProfile.sections.some((section) => (
     section.sourceEvidence.some((item) => Object.prototype.hasOwnProperty.call(item, 'text') || Object.prototype.hasOwnProperty.call(item, 'excerpt'))
@@ -403,6 +436,14 @@ try {
   assert.match(renderedOutput.value, /Communication Skills:/)
   assert.match(renderedOutput.value, /Socialization skills:/)
   assert.match(renderedOutput.value, /Parent Goals:/)
+  assert.match(renderedOutput.value, /ADOS-2/)
+  assert.match(renderedOutput.value, /Social Affect total of 19/)
+  assert.match(renderedOutput.value, /Restricted and Repetitive Behavior total of 4/)
+  assert.match(renderedOutput.value, /Comparison Score of 10/)
+  assert.match(renderedOutput.value, /classification of Autism/)
+  assert.match(renderedOutput.value, /unable to function in traditional academic environments/)
+  assert.match(renderedOutput.value, /Eye contact was inconsistent/)
+  assert.match(renderedOutput.value, /need for repetition and simplification/)
   assert.match(renderedOutput.value, /Program\/Behavior/)
   assert.match(cloneInspection.plainText, new RegExp(`Communication:\\s*${uncheckedBox} Mild\\s+${uncheckedBox} Moderate\\s+${checkedBox} Severe`))
   assert.match(cloneInspection.plainText, new RegExp(`Suicidality\\?\\s*${checkedBox} Not present`))
@@ -413,6 +454,15 @@ try {
   assert.equal(renderedOutput.value.includes('Source Packet Reviewed'), false)
   assert.equal(renderedOutput.value.includes('Write what ABA methods'), false)
   assert.equal(renderedOutput.value.includes('Please specify specific long term goals'), false)
+  assert.equal(renderedOutput.value.includes('Mock Provider Header'), false)
+  assert.equal(renderedOutput.value.includes('License: fake test line'), false)
+  assert.equal(renderedOutput.value.includes('Initial observation details should be finalized'), false)
+  assert.equal(renderedOutput.value.includes('Additional observation details should be added'), false)
+  assert.equal(renderedOutput.value.includes('no recognized standardized assessment adapter'), false)
+  assert.equal(runPayload.result.assessmentAdapters.some((adapter) => adapter.id === 'ados2'), true)
+  assert.equal(runPayload.result.assessmentAdapters.some((adapter) => adapter.id === 'vbmapp'), false)
+  assert.equal(runPayload.result.assessmentAdapters.some((adapter) => adapter.id === 'speech_language'), false)
+  assert.equal(runPayload.result.assessmentAdapters.some((adapter) => adapter.id === 'ot_sensory'), false)
   assert.ok(runPayload.result.goalPlan.goals.length >= 30)
   assert.ok(renderedOutput.value.split(/\s+/).length >= 3500)
   assert.equal(renderedOutput.value.includes('REVIEW_UNSUPPORTED_TEMPLATE_FIELD'), false)
