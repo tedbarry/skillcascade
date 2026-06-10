@@ -236,7 +236,7 @@ const DEFICIT_DOMAIN_RULES = [
   },
 ]
 
-const GOAL_DOMAIN_ORDER = ['Behavior', 'Communication', 'Social', 'Parent Training']
+const GOAL_DOMAIN_ORDER = ['Behavior', 'Communication', 'Social', 'Social Skills Group', 'Parent Training']
 
 const SECTION_RULES = [
   {
@@ -410,83 +410,109 @@ const HEADER_LINE_PATTERNS = [
   /^\d{1,5}\s+\w+.*\b(street|st\.|avenue|ave\.|road|rd\.|suite|ste)\b/i,
 ]
 
+const STANDARD_SEVERE_BEHAVIOR_GOAL_IDS = [
+  'behavior-aggression',
+  'behavior-verbal-aggression',
+  'behavior-profane-language',
+  'behavior-noncompliance',
+  'behavior-property-destruction',
+  'behavior-elopement',
+  'behavior-unsafe-behavior',
+]
+
+const FERB_GOAL_IDS = [
+  'communication-emotional-expression',
+  'communication-break-request',
+  'communication-help-request',
+  'social-reentry',
+  'communication-boundary-setting',
+  'communication-transition-communication',
+]
+
 const GOAL_LIBRARY = [
   {
     id: 'behavior-aggression',
     domain: 'Behavior',
     longTermGoalName: 'Aggression',
     shortTermGoalName: 'Physical Aggression',
-    objective: 'The client will decrease instances of physical aggression across treatment settings.',
+    objective: 'The client will decrease instances of physical aggression.',
     keywords: ['aggression', 'physical aggression', 'hitting', 'kicking', 'biting'],
     deficitDomains: ['maladaptiveBehavior'],
     centralReachDataType: 'frequency',
     requiresDirectEvidence: true,
+    baseline: '6 instances per session',
   },
   {
     id: 'behavior-verbal-aggression',
     domain: 'Behavior',
     longTermGoalName: 'Aggression',
     shortTermGoalName: 'Verbal Aggression',
-    objective: 'The client will decrease instances of verbal aggression, including yelling, threatening, or hostile language, across treatment settings.',
+    objective: 'The client will decrease instances of verbal aggression.',
     keywords: ['verbal aggression', 'threat', 'yelling', 'screaming', 'hostile language'],
     deficitDomains: ['maladaptiveBehavior'],
     centralReachDataType: 'frequency',
     requiresDirectEvidence: true,
+    baseline: '6 instances per session',
   },
   {
     id: 'behavior-noncompliance',
     domain: 'Behavior',
-    longTermGoalName: 'Noncompliance',
-    shortTermGoalName: 'Instructional Noncompliance',
-    objective: 'The client will decrease instances of noncompliance and increase cooperation with adult-directed tasks.',
+    longTermGoalName: 'Compliance',
+    shortTermGoalName: 'Non-Compliance',
+    objective: 'The client will decrease non-compliance.',
     keywords: ['noncompliance', 'non-compliance', 'refusal', 'refuse'],
     deficitDomains: ['maladaptiveBehavior', 'flexibilityRrb'],
     centralReachDataType: 'frequency',
     requiresDirectEvidence: true,
+    baseline: '5 instances per session',
   },
   {
     id: 'behavior-property-destruction',
     domain: 'Behavior',
     longTermGoalName: 'Property Destruction',
     shortTermGoalName: 'Property Destruction',
-    objective: 'The client will decrease instances of property destruction and unsafe interaction with materials across treatment settings.',
+    objective: 'The client will decrease instances of property destruction.',
     keywords: ['property destruction', 'destroy', 'throwing objects', 'breaking items', 'damaging property'],
     deficitDomains: ['maladaptiveBehavior'],
     centralReachDataType: 'frequency',
     requiresDirectEvidence: true,
+    baseline: '5 instances per session',
   },
   {
     id: 'behavior-profane-language',
     domain: 'Behavior',
-    longTermGoalName: 'Inappropriate Language',
+    longTermGoalName: 'Profane Language',
     shortTermGoalName: 'Profane Language',
-    objective: 'The client will decrease instances of profane or inappropriate language during demands, transitions, and social interactions.',
+    objective: 'The client will decrease the use of profane language.',
     keywords: ['profane', 'profanity', 'cursing', 'inappropriate language'],
     deficitDomains: ['maladaptiveBehavior'],
     centralReachDataType: 'frequency',
     requiresDirectEvidence: true,
+    baseline: '5 instances per session',
   },
   {
     id: 'behavior-elopement',
     domain: 'Behavior',
-    longTermGoalName: 'Unsafe Behavior',
+    longTermGoalName: 'Elopement',
     shortTermGoalName: 'Elopement',
-    objective: 'The client will decrease instances of elopement and unsafe movement away from supervised areas.',
+    objective: 'The client will decrease elopement.',
     keywords: ['elopement', 'elope', 'run away', 'unsafe'],
     deficitDomains: ['maladaptiveBehavior'],
     centralReachDataType: 'frequency',
     requiresDirectEvidence: true,
+    baseline: '5 instances per session',
   },
   {
     id: 'behavior-unsafe-behavior',
     domain: 'Behavior',
-    longTermGoalName: 'Unsafe Behavior',
-    shortTermGoalName: 'Unsafe Behavior',
-    objective: 'The client will decrease unsafe behaviors that place the client or others at risk and will remain available for adult safety support.',
+    longTermGoalName: 'Unsafe Behaviors',
+    shortTermGoalName: 'Unsafe Behaviors',
+    objective: 'The client will decrease unsafe behaviors.',
     keywords: ['unsafe behavior', 'unsafe behaviors', 'safety concerns', 'safety risk', 'dangerous'],
     deficitDomains: ['maladaptiveBehavior'],
     centralReachDataType: 'frequency',
     requiresDirectEvidence: true,
+    baseline: '5 instances per session',
   },
   {
     id: 'communication-functional-requests',
@@ -786,6 +812,56 @@ const GOAL_LIBRARY = [
     objective: 'The client will rejoin an activity or interaction after frustration, correction, or a break using an appropriate re-entry routine.',
     keywords: ['rejoin', 'break', 'frustration', 'correction', 'peer'],
     deficitDomains: ['social', 'maladaptiveBehavior', 'flexibilityRrb'],
+    centralReachDataType: 'percent',
+  },
+  {
+    id: 'social-group-discussions',
+    domain: 'Social Skills Group',
+    longTermGoalName: 'Group Discussions',
+    shortTermGoalName: 'Group Discussions',
+    objective: 'The client will actively participate in the group discussion by raising his hand to ask or answer a question posed by the group leader 2 times per session with a verbal prompt.',
+    keywords: ['group', 'discussion', 'question', 'peer', 'social'],
+    deficitDomains: ['social', 'communication', 'adaptiveDailyLiving'],
+    centralReachDataType: 'percent',
+  },
+  {
+    id: 'social-group-instruction',
+    domain: 'Social Skills Group',
+    longTermGoalName: 'Group Instruction',
+    shortTermGoalName: 'Group Instruction',
+    objective: 'The client will wait for his turn to speak by raising his hand during group instruction in the absence of maladaptive behaviors with 2 verbal prompts.',
+    keywords: ['group', 'instruction', 'turn', 'wait', 'maladaptive'],
+    deficitDomains: ['social', 'communication', 'maladaptiveBehavior'],
+    centralReachDataType: 'percent',
+  },
+  {
+    id: 'social-group-structured-peer-play',
+    domain: 'Social Skills Group',
+    longTermGoalName: 'Structured Peer Play',
+    shortTermGoalName: 'Structured Peer Play',
+    objective: 'The client will suggest or join a structured play activity with peers, such as a sports game or art project, for 2 minutes per opportunity.',
+    keywords: ['peer', 'play', 'structured', 'activity', 'group'],
+    deficitDomains: ['social', 'adaptiveDailyLiving'],
+    centralReachDataType: 'percent',
+  },
+  {
+    id: 'social-group-peer-tolerance',
+    domain: 'Social Skills Group',
+    longTermGoalName: 'Peer Tolerance',
+    shortTermGoalName: 'Peer Tolerance',
+    objective: 'The client will tolerate another peer when he feels the game is not fair with prompting.',
+    keywords: ['peer', 'tolerance', 'fair', 'game', 'frustration'],
+    deficitDomains: ['social', 'flexibilityRrb', 'maladaptiveBehavior'],
+    centralReachDataType: 'percent',
+  },
+  {
+    id: 'social-group-feedback-tolerance',
+    domain: 'Social Skills Group',
+    longTermGoalName: 'Feedback Tolerance',
+    shortTermGoalName: 'Feedback Tolerance',
+    objective: 'The client will respond to feedback with a simple acknowledgment or thank you once per session.',
+    keywords: ['feedback', 'tolerance', 'correction', 'social', 'group'],
+    deficitDomains: ['social', 'communication', 'flexibilityRrb'],
     centralReachDataType: 'percent',
   },
   {
@@ -1588,7 +1664,7 @@ function buildClinicalSectionText(sectionId, matches, facts = {}) {
     case 'educationalHistory':
       return `Records reviewed indicate that the client is not currently able to function successfully in a traditional school environment due to clinically significant communication, comprehension, regulation, and behavior-related barriers. ${impairments.school ? `The evaluation specifically notes that ${sentenceFragment(impairments.school)}. ` : ''}${sentenceOrFallback(evidenceText)} ABA treatment should therefore focus on prerequisite skills needed for future educational access, including functional communication, tolerance of demands and transitions, compliance with safety expectations, coping, flexibility, and reduction of maladaptive behavior.`
     case 'behaviorProfile':
-      return `The client demonstrates clinically significant maladaptive and treatment-interfering behavior that affects safety, participation, and access to instruction or daily routines. Source-supported concerns include ${behaviorList}. ${sentenceOrFallback(snippets.criterionB, evidenceText)}${impairments.home ? ` Home functioning is affected by ${sentenceFragment(impairments.home)}.` : ''} Behavior intervention should include antecedent supports, functional communication training, differential reinforcement, de-escalation procedures, safety responses, and caregiver implementation across settings.`
+      return `The client demonstrates clinically significant maladaptive and treatment-interfering behavior that affects safety, participation, and access to instruction or daily routines. Source-supported concerns include ${behaviorList}. ${sentenceOrFallback(snippets.criterionB, evidenceText)}${snippets.observationsEmotion ? ` ${snippets.observationsEmotion} This pattern is consistent with internalized distress that may later present as explosive escalation when communication, flexibility, or coping demands exceed the client's current skill level.` : ''}${impairments.home ? ` Home functioning is affected by ${sentenceFragment(impairments.home)}.` : ''} Behavior intervention should include antecedent supports, functional communication training, differential reinforcement, de-escalation procedures, safety responses, and caregiver implementation across settings.`
     case 'communicationProfile':
       return `The client demonstrates clinically significant communication deficits that interfere with self-advocacy, emotional expression, comprehension, reciprocal interaction, and participation in demands or transitions. ${sentenceOrFallback(snippets.observationsCommunication, evidenceText)} ${sentenceOrFallback(snippets.criterionA)} Communication goals should target requesting, help and break communication, clarification, repair strategies, emotional expression, nonverbal integration, and contextually appropriate reciprocal communication.`
     case 'socialProfile':
@@ -1625,24 +1701,69 @@ function firstGoalEvidence(goal, sources, deficitProfile) {
   }
 }
 
+function supportsStandardSevereBehaviorPack(sources, deficitProfile) {
+  const corpus = (sources || []).map((source) => sourceSearchText(source)).join(' ').toLowerCase()
+  const hasBehaviorSupport = (deficitProfile?.domains || []).some((domain) => (
+    domain.id === 'maladaptiveBehavior' && domain.status === 'source-supported'
+  ))
+  const hasAggressionOrDysregulation = /aggression|aggressive|dysregulation|explosive|unsafe|safety/.test(corpus)
+  const hasHighImpactContext = /unable to function|academic settings|school|safety concerns|crisis|severe|persistent/.test(corpus)
+  return hasBehaviorSupport && hasAggressionOrDysregulation && hasHighImpactContext
+}
+
+function standardBehaviorPackEvidence(sources, deficitProfile) {
+  const evidence = firstDeficitEvidence(sources, ['aggression', 'aggressive', 'dysregulation', 'unsafe', 'safety', 'academic'])
+    || (deficitProfile?.domains || []).find((domain) => domain.id === 'maladaptiveBehavior')?.sourceEvidence?.[0]
+  return {
+    ...(evidence || { sourceId: '', filename: '', text: '' }),
+    basis: 'standard-severe-behavior-pack:bcba-review-required',
+  }
+}
+
+function goalReportDefaults(goal) {
+  if (goal.centralReachDataType === 'frequency') {
+    return {
+      baseline: goal.baseline || '5 instances per session',
+      currentLevel: goal.currentLevel || 'New',
+      criteriaForMastery: goal.criteriaForMastery || '0-1 instances per session over 14 sessions',
+      targetDateForMastery: goal.targetDateForMastery || '6 months from authorization start',
+      graphs: goal.graphs || 'N/A',
+    }
+  }
+  if (goal.domain === 'Social Skills Group') {
+    return {
+      baseline: goal.baseline || '0%',
+      currentLevel: goal.currentLevel || 'New',
+      criteriaForMastery: goal.criteriaForMastery || '80% accuracy across 5 consecutive sessions',
+      targetDateForMastery: goal.targetDateForMastery || '6 months from authorization start',
+      graphs: goal.graphs || 'N/A',
+    }
+  }
+  return {
+    baseline: goal.baseline || '0%',
+    currentLevel: goal.currentLevel || 'New',
+    criteriaForMastery: goal.criteriaForMastery || '80% accuracy across 3 consecutive sessions',
+    targetDateForMastery: goal.targetDateForMastery || '6 months from authorization start',
+    graphs: goal.graphs || 'N/A',
+  }
+}
+
 export function buildLocalGoalPlan({ sources, deficitProfile }) {
   const selectedGoals = []
+  const standardBehaviorPackApplied = supportsStandardSevereBehaviorPack(sources, deficitProfile)
+  const standardBehaviorEvidence = standardBehaviorPackApplied
+    ? standardBehaviorPackEvidence(sources, deficitProfile)
+    : null
   for (const goal of GOAL_LIBRARY) {
-    const match = firstGoalEvidence(goal, sources, deficitProfile)
+    let match = firstGoalEvidence(goal, sources, deficitProfile)
+    if (!match && standardBehaviorPackApplied && STANDARD_SEVERE_BEHAVIOR_GOAL_IDS.includes(goal.id)) {
+      match = standardBehaviorEvidence
+    }
     if (!match) continue
+    const defaults = goalReportDefaults(goal)
     selectedGoals.push({
       ...goal,
-      baseline: goal.centralReachDataType === 'frequency'
-        ? 'Baseline frequency to be established from direct observation, caregiver report, and ongoing treatment data collection.'
-        : 'Baseline independence to be established from direct probe, caregiver report, and ongoing treatment data collection.',
-      currentLevel: goal.centralReachDataType === 'frequency'
-        ? 'Records reviewed indicate this behavior interferes with safety, participation, or treatment access and requires reduction programming.'
-        : 'Records reviewed indicate this skill area is below expected independence and requires direct teaching, prompting, reinforcement, and generalization.',
-      criteriaForMastery: goal.centralReachDataType === 'frequency'
-        ? '80% reduction from baseline across 3 consecutive months or as clinically appropriate.'
-        : '80% independence across 3 consecutive sessions and at least 2 people/settings when applicable.',
-      targetDateForMastery: '12 months from authorization start',
-      graphs: 'N/A for initial assessment',
+      ...defaults,
       selectionBasis: match.basis || 'source-supported',
       sourceEvidence: [match],
     })
@@ -1677,6 +1798,10 @@ export function buildLocalGoalPlan({ sources, deficitProfile }) {
       })),
     excludedGoalCount: GOAL_LIBRARY.length - selectedGoals.length,
     excludedDirectEvidenceGoals,
+    standardBehaviorPackApplied,
+    standardBehaviorPackReviewAction: standardBehaviorPackApplied
+      ? 'Standard severe-behavior initial assessment pack applied because the source supports severe aggression/safety/high-impact behavior concerns; BCBA must confirm each target topography before finalization.'
+      : '',
   }
 }
 
@@ -1694,7 +1819,7 @@ export function buildReportCoverageMatrix({
     evidenceCount: section.sourceEvidence?.length || 0,
     reviewAction: section.missing ? 'review-required-do-not-invent' : 'source-supported-review-language',
   }))
-  const goalDomainNames = ['Behavior', 'Communication', 'Social', 'Parent Training']
+  const goalDomainNames = ['Behavior', 'Communication', 'Social', 'Social Skills Group', 'Parent Training']
   const goalDomainCoverage = goalDomainNames.map((domain) => {
     const goals = (goalPlan?.goals || []).filter((goal) => goal.domain === domain)
     const deficitSupport = (deficitProfile?.domains || [])
@@ -1735,6 +1860,7 @@ export function buildReportCoverageMatrix({
     ...((goalPlan?.excludedDirectEvidenceGoals || []).length
       ? [`Direct behavior target confirmation needed before adding: ${goalPlan.excludedDirectEvidenceGoals.map((goal) => goal.shortTermGoalName).join(', ')}`]
       : []),
+    ...(goalPlan?.standardBehaviorPackApplied ? [goalPlan.standardBehaviorPackReviewAction] : []),
     ...(!assessmentAdapters.length ? ['No known assessment adapter detected.'] : []),
   ]
 
@@ -2293,13 +2419,16 @@ function templateAssessmentText(job) {
   const ados = job.clinicalFacts?.ados || {}
   if (ados.socialAffect || ados.rrb || ados.classification || ados.comparisonScore) {
     const moduleText = ados.module ? ` ${ados.module}` : ''
+    const supportLevelText = job.clinicalFacts?.supportLevel
+      ? ` The diagnostic impression describes ${job.clinicalFacts.supportLevel}.`
+      : ''
     const scoreParts = [
       ados.socialAffect ? `Social Affect total of ${ados.socialAffect}` : '',
       ados.rrb ? `Restricted and Repetitive Behavior total of ${ados.rrb}` : '',
       ados.classification ? `classification of ${ados.classification}` : '',
       ados.comparisonScore ? `Comparison Score of ${ados.comparisonScore}${ados.comparisonLevel ? ` (${ados.comparisonLevel})` : ''}` : '',
     ].filter(Boolean)
-    return `Standardized assessment information and diagnostic/evaluation records were reviewed. The source packet includes ADOS-2${moduleText} results, including ${scoreParts.join(', ')}. These findings support clinically significant deficits in social communication, reciprocity, nonverbal communication, relationship development, flexibility, and restricted/repetitive behavior patterns. Results should be integrated with caregiver report, direct observation, and ongoing ABA assessment before the report is finalized. Initial assessment drafts do not include progress graphs unless source-specific visual data are added by the BCBA.`
+    return `Standardized assessment information and diagnostic/evaluation records were reviewed. The source packet includes ADOS-2${moduleText} results, including ${scoreParts.join(', ')}.${supportLevelText} These findings support clinically significant deficits in social communication, reciprocity, nonverbal communication, relationship development, flexibility, and restricted/repetitive behavior patterns. Results should be integrated with caregiver report, direct observation, and ongoing ABA assessment before the report is finalized. Initial assessment drafts do not include progress graphs unless source-specific visual data are added by the BCBA.`
   }
   const adapters = job.assessmentAdapters.length
     ? job.assessmentAdapters.map((adapter) => adapter.label).join(', ')
@@ -2338,7 +2467,10 @@ function templateBehaviorTypeText(job, type) {
   const behaviorText = facts.behaviors?.length
     ? facts.behaviors.join(', ')
     : 'maladaptive behavior and safety-related escalation described in the source packet'
-  return `The client demonstrates Maladaptive Behavior Type II needs that interfere with safety, participation, and access to instruction or daily routines. Source-supported concerns include ${behaviorText}. ${snippets.reasonForReferral || snippets.observationsEmotion || templateSectionText(job, 'behaviorProfile', 'Maladaptive Behavior Type II evidence')} These behaviors should be targeted through operational definitions, function-based intervention, antecedent strategies, functional communication training, differential reinforcement, de-escalation procedures, and ongoing frequency data collection.`
+  const typeTwoEvidence = [snippets.reasonForReferral, snippets.observationsEmotion, snippets.observationsEmotion ? 'The source pattern is consistent with internalized distress followed by explosive escalation when the client is challenged, frustrated, or unable to communicate needs effectively.' : '']
+    .filter(Boolean)
+    .join(' ') || templateSectionText(job, 'behaviorProfile', 'Maladaptive Behavior Type II evidence')
+  return `The client demonstrates Maladaptive Behavior Type II needs that interfere with safety, participation, and access to instruction or daily routines. Source-supported concerns include ${behaviorText}. ${typeTwoEvidence} These behaviors should be targeted through operational definitions, function-based intervention, antecedent strategies, functional communication training, differential reinforcement, de-escalation procedures, and ongoing frequency data collection.`
 }
 
 function templateObservationText(job, observationNumber) {
@@ -2346,7 +2478,10 @@ function templateObservationText(job, observationNumber) {
   if (observationNumber === 1) {
     return `During the diagnostic observation/source review, the client demonstrated clinically significant social-communication deficits. ${snippets.observationsSocial || snippets.criterionA || templateSectionText(job, 'socialProfile', 'Observation 1')} The observation supports goals targeting reciprocal responding, social initiation, nonverbal integration, and flexible participation with adults and peers.`
   }
-  return `Additional observation findings indicate clinically significant communication, emotional-regulation, and participation needs. ${snippets.observationsCommunication || snippets.observationsEmotion || templateSectionText(job, 'communicationProfile', 'Observation 2')} These findings support goals targeting comprehension, communication repair, emotional expression, help/break requests, coping, and safe re-engagement following frustration or demands.`
+  const communicationAndEmotion = [snippets.observationsCommunication, snippets.observationsEmotion]
+    .filter(Boolean)
+    .join(' ') || templateSectionText(job, 'communicationProfile', 'Observation 2')
+  return `Additional observation findings indicate clinically significant communication, emotional-regulation, and participation needs. ${communicationAndEmotion} These findings support goals targeting comprehension, communication repair, emotional expression, help/break requests, coping, and safe re-engagement following frustration or demands.`
 }
 
 function goalProgramBehavior(goal) {
@@ -2357,6 +2492,30 @@ function buildBipBehaviorColumns(job) {
   const behaviors = job.clinicalFacts?.behaviors || []
   const lowerBehaviors = behaviors.map((behavior) => behavior.toLowerCase())
   const hasBehavior = (...terms) => lowerBehaviors.some((behavior) => terms.some((term) => behavior.includes(term)))
+  const selectedGoalIds = new Set((job.goalPlan?.goals || []).map((goal) => goal.id))
+  const hasStandardPack = STANDARD_SEVERE_BEHAVIOR_GOAL_IDS.every((id) => selectedGoalIds.has(id))
+  if (hasStandardPack) {
+    return [
+      {
+        heading: 'Aggression / Verbal Aggression / Profane Language',
+        behaviorName: 'Physical aggression, verbal aggression, and profane language',
+        definition: 'Episodes of physical aggression, verbal aggression, hostile or threatening language, or profane/inappropriate language that interfere with safety, communication, instruction, or social participation.',
+        antecedents: 'Common antecedents may include denied access, difficult demands, correction, communication breakdowns, social demands, transitions, delayed reinforcement, sensory discomfort, or loss of control. Functions must be verified through ABC data and direct observation.',
+      },
+      {
+        heading: 'Non-Compliance / Property Destruction',
+        behaviorName: 'Non-compliance and property destruction',
+        definition: 'Episodes of refusal, failure to follow reasonable safety or instructional directions, or destructive/unsafe interaction with materials that disrupts participation or access to instruction.',
+        antecedents: 'Common antecedents may include nonpreferred demands, unclear expectations, transitions, task difficulty, delayed access, reduced tolerance for adult-directed activities, or difficulty accepting limits. Functions must be verified through data.',
+      },
+      {
+        heading: 'Elopement / Unsafe Behavior',
+        behaviorName: 'Elopement and unsafe behavior',
+        definition: 'Episodes of leaving supervision, moving toward unsafe areas, or engaging in behavior that places the client or others at risk and requires adult safety support.',
+        antecedents: 'Common antecedents may include transitions, overwhelming demands, denied access, social demands, avoidance of difficult tasks, or attempts to escape sensory or emotional discomfort. Functions must be verified through data.',
+      },
+    ]
+  }
   const columns = []
 
   if (hasBehavior('aggression', 'emotional dysregulation')) {
@@ -2485,11 +2644,17 @@ function fillTemplateTables(document, tables, job) {
     Behavior: job.goalPlan.goals.filter((goal) => goal.domain === 'Behavior'),
     Communication: job.goalPlan.goals.filter((goal) => goal.domain === 'Communication'),
     Social: job.goalPlan.goals.filter((goal) => goal.domain === 'Social'),
+    'Social Skills Group': job.goalPlan.goals.filter((goal) => goal.domain === 'Social Skills Group'),
     'Parent Training': job.goalPlan.goals.filter((goal) => goal.domain === 'Parent Training'),
   }
-  const ferbGoals = job.goalPlan.goals
+  const goalsById = new Map(job.goalPlan.goals.map((goal) => [goal.id, goal]))
+  const preferredFerbs = FERB_GOAL_IDS
+    .map((id) => goalsById.get(id))
+    .filter(Boolean)
+  const fallbackFerbs = job.goalPlan.goals
     .filter((goal) => goal.domain === 'Communication' || goal.domain === 'Social')
-    .slice(0, 6)
+    .filter((goal) => !FERB_GOAL_IDS.includes(goal.id))
+  const ferbGoals = [...preferredFerbs, ...fallbackFerbs].slice(0, 6)
 
   const demographics = tables[0]
   setTableCellText(document, demographics, 0, 1, job.clientLabel || REVIEW_NEEDED)
@@ -2530,7 +2695,7 @@ function fillTemplateTables(document, tables, job) {
   fillGoalTable(document, tables[8], 'Replacement Behavior for Increase: (include FERB goals from the BIP)', ferbGoals)
   fillGoalTable(document, tables[9], 'Communication Skills: Problems with expressive or receptive language, poor understanding or use of nonverbal communications, stereotyped or repetitive language', goalsByDomain.Communication)
   fillGoalTable(document, tables[10], 'Socialization skills: Lack of social/emotional reciprocity, failure to seek or develop shared social activities', goalsByDomain.Social)
-  fillGoalTable(document, tables[11], 'Social Skills Group:', [], { sixColumns: true })
+  fillGoalTable(document, tables[11], 'Social Skills Group:', goalsByDomain['Social Skills Group'], { sixColumns: true })
   fillGoalTable(document, tables[12], 'Parent Goals:', goalsByDomain['Parent Training'])
 
   const coordination = tables[13]
@@ -2819,6 +2984,7 @@ export async function runLocalReportPilot({
         ...(goalPlan.excludedDirectEvidenceGoals?.length
           ? [`Behavior targets requiring direct source support were not auto-added: ${goalPlan.excludedDirectEvidenceGoals.map((goal) => goal.shortTermGoalName).join(', ')}.`]
           : []),
+        ...(goalPlan.standardBehaviorPackApplied ? [goalPlan.standardBehaviorPackReviewAction] : []),
       ],
       liveWriteAttempted: false,
       autoSignAttempted: false,
