@@ -11,7 +11,7 @@ const HELPER_DISCOVERY_END_PORT = 4199
 const HELPER_DISCOVERY_TIMEOUT_MS = 1200
 const HELPER_API_PREFIX = '/api/local-report-generator'
 const LEGACY_HELPER_API_PREFIX = '/api/local-report-pilot'
-const REPORT_GENERATOR_ROUTE_MARKER = 'report-generator-route-20260610'
+const REPORT_GENERATOR_ROUTE_MARKER = 'report-generator-route-20260610-exact-template-v2'
 
 const workflowSteps = [
   {
