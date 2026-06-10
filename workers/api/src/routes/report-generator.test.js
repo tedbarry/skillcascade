@@ -222,6 +222,52 @@ describe('report-generator route contract', () => {
     }))
   })
 
+  it('returns unlimited owner-test credit status only for allowlisted users', async () => {
+    auth.hasPermission.mockImplementation((_profile, category, action) => category === 'reports' && action === 'view')
+    db.query.mockImplementation(async (_env, sql) => {
+      const statement = String(sql)
+      if (statement.includes('SELECT id, credits_delta, event_type')) return { rows: [] }
+      if (statement.includes('COALESCE(SUM(credits_delta)')) return { rows: [{ balance: 2 }] }
+      return { rows: [] }
+    })
+
+    const response = await sendRequest('/credits/status', createProfile({ id: 'owner-user-1' }), {
+      env: { REPORT_GENERATOR_UNLIMITED_USER_IDS: 'owner-user-1' },
+    })
+    const payload = await response.json()
+
+    expect(response.status).toBe(200)
+    expect(payload.ok).toBe(true)
+    expect(payload.data.unlimited).toBe(true)
+    expect(payload.data.creditMode).toBe('owner_unlimited_test')
+    expect(payload.data.balance).toBe(999999)
+    const queriedLedgerBalance = db.query.mock.calls.some((call) => (
+      String(call[1]).includes('COALESCE(SUM(credits_delta)')
+    ))
+    expect(queriedLedgerBalance).toBe(false)
+  })
+
+  it('keeps non-allowlisted users on metered credits when owner test access is configured', async () => {
+    auth.hasPermission.mockImplementation((_profile, category, action) => category === 'reports' && action === 'view')
+    db.query.mockImplementation(async (_env, sql) => {
+      const statement = String(sql)
+      if (statement.includes('COALESCE(SUM(credits_delta)')) return { rows: [{ balance: 2 }] }
+      if (statement.includes('SELECT id, credits_delta, event_type')) return { rows: [] }
+      return { rows: [] }
+    })
+
+    const response = await sendRequest('/credits/status', createProfile({ id: 'different-user-1' }), {
+      env: { REPORT_GENERATOR_UNLIMITED_USER_IDS: 'owner-user-1' },
+    })
+    const payload = await response.json()
+
+    expect(response.status).toBe(200)
+    expect(payload.ok).toBe(true)
+    expect(payload.data.unlimited).toBe(false)
+    expect(payload.data.creditMode).toBe('metered')
+    expect(payload.data.balance).toBe(2)
+  })
+
   it('consumes one report credit with an idempotency key', async () => {
     auth.hasPermission.mockImplementation((_profile, category, action) => (
       category === 'reports' && ['view', 'edit'].includes(action)
@@ -258,6 +304,30 @@ describe('report-generator route contract', () => {
     expect(payload.ok).toBe(true)
     expect(payload.data.consumed).toBe(1)
     expect(db.query.mock.calls.some((call) => String(call[1]).includes('INSERT INTO report_generator_credit_ledger'))).toBe(true)
+  })
+
+  it('does not consume ledger credits for allowlisted owner-test users', async () => {
+    auth.hasPermission.mockImplementation((_profile, category, action) => (
+      category === 'reports' && ['view', 'edit'].includes(action)
+    ))
+
+    const response = await sendRequest('/credits/consume', createProfile({ id: 'owner-user-1' }), {
+      method: 'POST',
+      env: { REPORT_GENERATOR_UNLIMITED_USER_IDS: 'owner-user-1' },
+      body: {
+        externalEventId: 'safe-credit-event-1',
+        helperVersion: '0.1.0',
+        templateMode: 'skillcascade-standard-docx',
+      },
+    })
+    const payload = await response.json()
+
+    expect(response.status).toBe(200)
+    expect(payload.ok).toBe(true)
+    expect(payload.data.unlimited).toBe(true)
+    expect(payload.data.consumed).toBe(0)
+    expect(payload.data.balance).toBe(999999)
+    expect(db.query.mock.calls.some((call) => String(call[1]).includes('INSERT INTO report_generator_credit_ledger'))).toBe(false)
   })
 
   it('blocks manual report credit adjustments for non-admin users', async () => {

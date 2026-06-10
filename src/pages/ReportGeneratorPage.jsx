@@ -696,6 +696,7 @@ export default function ReportGeneratorPage() {
 
   const helperBase = useMemo(() => normalizeHelperBase(helperUrl), [helperUrl])
   const userCanEdit = moduleStatus.data?.userCanEdit === true
+  const creditUnlimited = creditState.data?.unlimited === true
   const creditBalance = Number(creditState.data?.balance || 0)
   const reportCreditBundles = creditState.data?.bundles?.length ? creditState.data.bundles : REPORT_CREDIT_BUNDLES
   const evidenceReady = preflightState.result?.okToRun === true
@@ -957,7 +958,7 @@ export default function ReportGeneratorPage() {
       setRunState({ loading: false, result: null, error: 'Run Check files first. Required source evidence must be present before creating a report draft.' })
       return
     }
-    if (creditBalance <= 0) {
+    if (!creditUnlimited && creditBalance <= 0) {
       setRunState({ loading: false, result: null, error: 'Buy at least one report credit before generating a draft.' })
       return
     }
@@ -1282,7 +1283,10 @@ export default function ReportGeneratorPage() {
                   <p><span className="font-semibold">Assessment inputs detected:</span> {runState.result.assessmentAdapters?.length || 0}</p>
                   <p><span className="font-semibold">Template mode:</span> {runState.result.templateMode}</p>
                   {runState.result.creditResult ? (
-                    <p><span className="font-semibold">Credits left:</span> {runState.result.creditResult.balance}</p>
+                    <p>
+                      <span className="font-semibold">Credits left:</span>{' '}
+                      {runState.result.creditResult.unlimited ? 'Unlimited owner test access' : runState.result.creditResult.balance}
+                    </p>
                   ) : null}
                 </div>
                 {runState.result.creditWarning ? (
@@ -1312,10 +1316,12 @@ export default function ReportGeneratorPage() {
               <div>
                 <p className="text-xs font-semibold uppercase tracking-wide text-blue-700">Report credits</p>
                 <h2 className="mt-2 text-lg font-bold text-blue-950">
-                  {creditState.loading ? 'Checking balance' : `${creditBalance} available`}
+                  {creditState.loading ? 'Checking balance' : creditUnlimited ? 'Unlimited owner test access' : `${creditBalance} available`}
                 </h2>
                 <p className="mt-2 text-sm leading-6 text-blue-900">
-                  One generated Word draft uses one credit. Credits are added after Stripe payment succeeds.
+                  {creditUnlimited
+                    ? 'Owner-only testing bypass is active for this account. Other users still need report credits.'
+                    : 'One generated Word draft uses one credit. Credits are added after Stripe payment succeeds.'}
                 </p>
               </div>
               <button
@@ -1337,20 +1343,26 @@ export default function ReportGeneratorPage() {
                 {creditCheckoutState.error}
               </div>
             ) : null}
-            <div className="mt-4 grid gap-2">
-              {reportCreditBundles.map((bundle) => (
-                <button
-                  key={bundle.id}
-                  type="button"
-                  onClick={() => buyReportCredits(bundle)}
-                  disabled={creditCheckoutState.bundleId === bundle.id}
-                  className="flex min-h-11 items-center justify-between rounded-lg border border-blue-200 bg-white px-3 text-left text-sm font-bold text-blue-950 hover:bg-blue-100 disabled:opacity-60"
-                >
-                  <span>{bundle.name}</span>
-                  <span>{bundle.priceLabel}</span>
-                </button>
-              ))}
-            </div>
+            {creditUnlimited ? (
+              <div className="mt-4 rounded-lg border border-blue-200 bg-white px-3 py-2 text-xs font-semibold leading-5 text-blue-800">
+                Purchase buttons are hidden because this account is in the private test allowlist.
+              </div>
+            ) : (
+              <div className="mt-4 grid gap-2">
+                {reportCreditBundles.map((bundle) => (
+                  <button
+                    key={bundle.id}
+                    type="button"
+                    onClick={() => buyReportCredits(bundle)}
+                    disabled={creditCheckoutState.bundleId === bundle.id}
+                    className="flex min-h-11 items-center justify-between rounded-lg border border-blue-200 bg-white px-3 text-left text-sm font-bold text-blue-950 hover:bg-blue-100 disabled:opacity-60"
+                  >
+                    <span>{bundle.name}</span>
+                    <span>{bundle.priceLabel}</span>
+                  </button>
+                ))}
+              </div>
+            )}
           </section>
 
           <OnboardingChecklistPanel state={onboardingState} />

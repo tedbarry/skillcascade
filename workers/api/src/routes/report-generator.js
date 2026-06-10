@@ -21,6 +21,7 @@ const route = new Hono()
 const REPORT_HELPER_FILENAME = 'SkillCascadeReportHelper-release-20260610-folder-picker-fix.zip'
 const REPORT_HELPER_OBJECT_KEY = `report-generator/${REPORT_HELPER_FILENAME}`
 const REPORT_HELPER_VERSION = 'release-20260610-folder-picker-fix'
+const UNLIMITED_OWNER_TEST_BALANCE = 999999
 const STANDARD_REPORT_TEMPLATE = {
   id: 'skillcascade-standard-initial-assessment-v1',
   label: 'SkillCascade Standard Initial Assessment',
@@ -184,6 +185,18 @@ function rejectUnsafeSeatClaim(c, body) {
   }, 400)
 }
 
+function getUnlimitedReportUserIds(env) {
+  return new Set(String(env.REPORT_GENERATOR_UNLIMITED_USER_IDS || '')
+    .split(/[\s,;]+/)
+    .map((value) => value.trim().toLowerCase())
+    .filter(Boolean))
+}
+
+function hasUnlimitedReportCredits(c, profile) {
+  const allowlist = getUnlimitedReportUserIds(c.env)
+  return Boolean(profile?.id && allowlist.has(String(profile.id).toLowerCase()))
+}
+
 route.get('/status', async (c) => {
   const accessError = getAccessError(c)
   if (accessError) return c.json(accessError.payload, accessError.status)
@@ -225,7 +238,8 @@ route.get('/credits/status', async (c) => {
   if (accessError) return c.json(accessError.payload, accessError.status)
 
   const profile = c.get('profile')
-  const balance = await getReportCreditBalance({
+  const unlimited = hasUnlimitedReportCredits(c, profile)
+  const balance = unlimited ? UNLIMITED_OWNER_TEST_BALANCE : await getReportCreditBalance({
     env: c.env,
     dbQuery: query,
     userId: profile.id,
@@ -241,6 +255,8 @@ route.get('/credits/status', async (c) => {
     ok: true,
     data: {
       balance,
+      unlimited,
+      creditMode: unlimited ? 'owner_unlimited_test' : 'metered',
       unit: 'report_credit',
       bundles: REPORT_CREDIT_BUNDLES,
       ledger,
@@ -259,6 +275,19 @@ route.post('/credits/consume', async (c) => {
 
   try {
     const profile = c.get('profile')
+    if (hasUnlimitedReportCredits(c, profile)) {
+      return c.json({
+        ok: true,
+        data: {
+          balance: UNLIMITED_OWNER_TEST_BALANCE,
+          consumed: 0,
+          alreadyRecorded: false,
+          unlimited: true,
+          creditMode: 'owner_unlimited_test',
+        },
+      })
+    }
+
     const result = await consumeReportCredit({
       env: c.env,
       dbQuery: query,
