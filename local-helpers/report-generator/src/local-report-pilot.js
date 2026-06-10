@@ -20,6 +20,7 @@ const DEFAULT_OUTPUT_DIRECTORY_NAME = 'report-generator-output'
 const LEGACY_OUTPUT_DIRECTORY_NAMES = ['report-pilot-output']
 const SKIP_DIRECTORY_NAMES = new Set(['.git', 'node_modules', DEFAULT_OUTPUT_DIRECTORY_NAME, ...LEGACY_OUTPUT_DIRECTORY_NAMES, 'verification-output'])
 const STANDARD_TEMPLATE_ONLY_BLOCKER = 'Customer Word templates are disabled for this workflow. SkillCascade uses the standard initial assessment template automatically.'
+const REVIEW_NEEDED = 'Review required: source packet should be reviewed by the BCBA before finalizing this field.'
 
 export const STANDARD_REPORT_TEMPLATE = {
   id: 'skillcascade-standard-initial-assessment-v1',
@@ -270,6 +271,18 @@ const GOAL_LIBRARY = [
     keywords: ['aggression', 'physical aggression', 'hitting', 'kicking', 'biting'],
     deficitDomains: ['maladaptiveBehavior'],
     centralReachDataType: 'frequency',
+    requiresDirectEvidence: true,
+  },
+  {
+    id: 'behavior-verbal-aggression',
+    domain: 'Behavior',
+    longTermGoalName: 'Aggression',
+    shortTermGoalName: 'Verbal Aggression',
+    objective: 'The client will decrease instances of verbal aggression, including yelling, threatening, or hostile language, across treatment settings.',
+    keywords: ['verbal aggression', 'threat', 'yelling', 'screaming', 'hostile language'],
+    deficitDomains: ['maladaptiveBehavior'],
+    centralReachDataType: 'frequency',
+    requiresDirectEvidence: true,
   },
   {
     id: 'behavior-noncompliance',
@@ -280,6 +293,29 @@ const GOAL_LIBRARY = [
     keywords: ['noncompliance', 'non-compliance', 'refusal', 'refuse'],
     deficitDomains: ['maladaptiveBehavior', 'flexibilityRrb'],
     centralReachDataType: 'frequency',
+    requiresDirectEvidence: true,
+  },
+  {
+    id: 'behavior-property-destruction',
+    domain: 'Behavior',
+    longTermGoalName: 'Property Destruction',
+    shortTermGoalName: 'Property Destruction',
+    objective: 'The client will decrease instances of property destruction and unsafe interaction with materials across treatment settings.',
+    keywords: ['property destruction', 'destroy', 'throwing objects', 'breaking items', 'damaging property'],
+    deficitDomains: ['maladaptiveBehavior'],
+    centralReachDataType: 'frequency',
+    requiresDirectEvidence: true,
+  },
+  {
+    id: 'behavior-profane-language',
+    domain: 'Behavior',
+    longTermGoalName: 'Inappropriate Language',
+    shortTermGoalName: 'Profane Language',
+    objective: 'The client will decrease instances of profane or inappropriate language during demands, transitions, and social interactions.',
+    keywords: ['profane', 'profanity', 'cursing', 'inappropriate language'],
+    deficitDomains: ['maladaptiveBehavior'],
+    centralReachDataType: 'frequency',
+    requiresDirectEvidence: true,
   },
   {
     id: 'behavior-elopement',
@@ -290,6 +326,18 @@ const GOAL_LIBRARY = [
     keywords: ['elopement', 'elope', 'run away', 'unsafe'],
     deficitDomains: ['maladaptiveBehavior'],
     centralReachDataType: 'frequency',
+    requiresDirectEvidence: true,
+  },
+  {
+    id: 'behavior-unsafe-behavior',
+    domain: 'Behavior',
+    longTermGoalName: 'Unsafe Behavior',
+    shortTermGoalName: 'Unsafe Behavior',
+    objective: 'The client will decrease unsafe behaviors that place the client or others at risk and will remain available for adult safety support.',
+    keywords: ['unsafe behavior', 'unsafe behaviors', 'safety concerns', 'safety risk', 'dangerous'],
+    deficitDomains: ['maladaptiveBehavior'],
+    centralReachDataType: 'frequency',
+    requiresDirectEvidence: true,
   },
   {
     id: 'communication-functional-requests',
@@ -299,6 +347,36 @@ const GOAL_LIBRARY = [
     objective: 'The client will independently use functional communication to request help, items, breaks, or attention across people and settings.',
     keywords: ['communication', 'request', 'mand', 'help', 'break'],
     deficitDomains: ['communication', 'maladaptiveBehavior', 'adaptiveDailyLiving'],
+    centralReachDataType: 'percent',
+  },
+  {
+    id: 'communication-break-request',
+    domain: 'Communication',
+    longTermGoalName: 'Functional Communication',
+    shortTermGoalName: 'Break Request',
+    objective: 'The client will appropriately request a break before escalation when demands, transitions, or sensory load become difficult.',
+    keywords: ['break', 'frustration', 'demand', 'transition', 'sensory'],
+    deficitDomains: ['communication', 'maladaptiveBehavior', 'flexibilityRrb'],
+    centralReachDataType: 'percent',
+  },
+  {
+    id: 'communication-help-request',
+    domain: 'Communication',
+    longTermGoalName: 'Functional Communication',
+    shortTermGoalName: 'Help Request',
+    objective: 'The client will ask for help when a task is difficult, unclear, or overwhelming before disengaging or escalating.',
+    keywords: ['help', 'difficult', 'unclear', 'comprehension', 'confusing'],
+    deficitDomains: ['communication', 'adaptiveDailyLiving', 'maladaptiveBehavior'],
+    centralReachDataType: 'percent',
+  },
+  {
+    id: 'communication-clarification',
+    domain: 'Communication',
+    longTermGoalName: 'Receptive Communication',
+    shortTermGoalName: 'Request Clarification',
+    objective: 'The client will request clarification, repetition, or a demonstration when directions are confusing before refusing or disengaging.',
+    keywords: ['repetition', 'simplification', 'understanding questions', 'comprehension', 'directions'],
+    deficitDomains: ['communication', 'adaptiveDailyLiving'],
     centralReachDataType: 'percent',
   },
   {
@@ -312,12 +390,132 @@ const GOAL_LIBRARY = [
     centralReachDataType: 'percent',
   },
   {
+    id: 'communication-emotional-expression',
+    domain: 'Communication',
+    longTermGoalName: 'Emotional Communication',
+    shortTermGoalName: 'Express Internal State',
+    objective: 'The client will identify and communicate emotional states, frustration, or internal needs before escalation occurs.',
+    keywords: ['emotion', 'emotional', 'internal', 'frustration', 'distress'],
+    deficitDomains: ['communication', 'maladaptiveBehavior', 'flexibilityRrb'],
+    centralReachDataType: 'percent',
+  },
+  {
+    id: 'communication-self-advocacy',
+    domain: 'Communication',
+    longTermGoalName: 'Self-Advocacy',
+    shortTermGoalName: 'Advocate for Needs',
+    objective: 'The client will advocate for a needed accommodation, support, or change in plan using appropriate language.',
+    keywords: ['self-advocacy', 'advocate', 'accommodation', 'support', 'need'],
+    deficitDomains: ['communication', 'adaptiveDailyLiving', 'maladaptiveBehavior'],
+    centralReachDataType: 'percent',
+  },
+  {
+    id: 'communication-boundary-setting',
+    domain: 'Communication',
+    longTermGoalName: 'Self-Advocacy',
+    shortTermGoalName: 'Boundary Setting',
+    objective: 'The client will communicate refusal, boundary-setting, or personal needs appropriately using an effective communication mode.',
+    keywords: ['refusal', 'personal needs', 'boundary', 'space', 'communication'],
+    deficitDomains: ['communication', 'maladaptiveBehavior'],
+    centralReachDataType: 'percent',
+  },
+  {
+    id: 'communication-attention',
+    domain: 'Communication',
+    longTermGoalName: 'Functional Communication',
+    shortTermGoalName: 'Appropriate Attention',
+    objective: 'The client will appropriately initiate attention from adults or peers instead of using disruptive or unsafe communication responses.',
+    keywords: ['attention', 'peer', 'adult', 'initiate', 'disruptive'],
+    deficitDomains: ['communication', 'social', 'maladaptiveBehavior'],
+    centralReachDataType: 'percent',
+  },
+  {
+    id: 'communication-question-asking',
+    domain: 'Communication',
+    longTermGoalName: 'Conversational Communication',
+    shortTermGoalName: 'Ask Relevant Questions',
+    objective: 'The client will ask contextually relevant questions during conversation, instruction, or problem-solving interactions.',
+    keywords: ['conversation', 'question', 'reciprocal', 'social communication'],
+    deficitDomains: ['communication', 'social'],
+    centralReachDataType: 'percent',
+  },
+  {
+    id: 'communication-context-comments',
+    domain: 'Communication',
+    longTermGoalName: 'Conversational Communication',
+    shortTermGoalName: 'Contextual Comments',
+    objective: 'The client will make contextually relevant comments that relate to the activity, listener, or topic during reciprocal exchanges.',
+    keywords: ['comment', 'conversation', 'reciprocal', 'topic'],
+    deficitDomains: ['communication', 'social'],
+    centralReachDataType: 'percent',
+  },
+  {
+    id: 'communication-nonverbal-integration',
+    domain: 'Communication',
+    longTermGoalName: 'Social-Pragmatic Communication',
+    shortTermGoalName: 'Integrate Nonverbal Communication',
+    objective: 'The client will integrate verbal communication with appropriate gaze, gestures, body orientation, or facial affect during interactions.',
+    keywords: ['eye contact', 'gaze', 'gesture', 'nonverbal', 'facial expression', 'body language'],
+    deficitDomains: ['communication', 'social'],
+    centralReachDataType: 'percent',
+  },
+  {
+    id: 'communication-topic-maintenance',
+    domain: 'Communication',
+    longTermGoalName: 'Conversational Communication',
+    shortTermGoalName: 'Maintain Topic',
+    objective: 'The client will maintain a shared topic for multiple conversational turns without shifting exclusively to demands or preferred interests.',
+    keywords: ['conversation', 'topic', 'preferred interests', 'reciprocal'],
+    deficitDomains: ['communication', 'social', 'flexibilityRrb'],
+    centralReachDataType: 'percent',
+  },
+  {
+    id: 'communication-problem-reporting',
+    domain: 'Communication',
+    longTermGoalName: 'Problem Reporting',
+    shortTermGoalName: 'Report Problems',
+    objective: 'The client will report a problem, safety concern, or conflict to an adult using clear and appropriate communication.',
+    keywords: ['problem', 'safety', 'conflict', 'adult support', 'unsafe'],
+    deficitDomains: ['communication', 'maladaptiveBehavior', 'adaptiveDailyLiving'],
+    centralReachDataType: 'percent',
+  },
+  {
+    id: 'communication-transition-communication',
+    domain: 'Communication',
+    longTermGoalName: 'Transition Communication',
+    shortTermGoalName: 'Communicate During Transitions',
+    objective: 'The client will communicate support needs during transitions before engaging in refusal, elopement, or unsafe behavior.',
+    keywords: ['transition', 'refusal', 'elopement', 'support'],
+    deficitDomains: ['communication', 'maladaptiveBehavior', 'flexibilityRrb'],
+    centralReachDataType: 'percent',
+  },
+  {
     id: 'social-reciprocity',
     domain: 'Social',
     longTermGoalName: 'Reciprocal Social Engagement',
     shortTermGoalName: 'Reciprocal Responses',
     objective: 'The client will respond to and initiate reciprocal social exchanges using contextually appropriate comments, questions, or gestures.',
     keywords: ['social', 'reciprocal', 'peer', 'conversation'],
+    deficitDomains: ['social', 'communication'],
+    centralReachDataType: 'percent',
+  },
+  {
+    id: 'social-initiation',
+    domain: 'Social',
+    longTermGoalName: 'Social Initiation',
+    shortTermGoalName: 'Initiate Social Interaction',
+    objective: 'The client will initiate appropriate social interaction with adults or peers using a greeting, comment, question, or shared activity bid.',
+    keywords: ['initiate', 'social initiation', 'peer', 'adult', 'social'],
+    deficitDomains: ['social', 'communication'],
+    centralReachDataType: 'percent',
+  },
+  {
+    id: 'social-response',
+    domain: 'Social',
+    longTermGoalName: 'Social Responsiveness',
+    shortTermGoalName: 'Respond to Social Bids',
+    objective: 'The client will respond to social bids from adults or peers with an appropriate verbal, gestural, or activity-based response.',
+    keywords: ['respond', 'social bids', 'peer', 'reciprocal', 'social'],
     deficitDomains: ['social', 'communication'],
     centralReachDataType: 'percent',
   },
@@ -332,6 +530,116 @@ const GOAL_LIBRARY = [
     centralReachDataType: 'percent',
   },
   {
+    id: 'social-turn-taking',
+    domain: 'Social',
+    longTermGoalName: 'Cooperative Participation',
+    shortTermGoalName: 'Turn Taking',
+    objective: 'The client will participate in turn-taking routines while waiting, sharing materials, and responding to the actions of others.',
+    keywords: ['turn', 'sharing', 'peer', 'play', 'cooperative'],
+    deficitDomains: ['social', 'adaptiveDailyLiving'],
+    centralReachDataType: 'percent',
+  },
+  {
+    id: 'social-perspective-taking',
+    domain: 'Social',
+    longTermGoalName: 'Perspective Taking',
+    shortTermGoalName: 'Identify Others Perspectives',
+    objective: 'The client will identify another person\u2019s perspective, emotion, or possible reason for behavior during structured social problem-solving.',
+    keywords: ['perspective', 'emotion', 'social insight', 'relationship', 'peer'],
+    deficitDomains: ['social', 'communication'],
+    centralReachDataType: 'percent',
+  },
+  {
+    id: 'social-conflict-repair',
+    domain: 'Social',
+    longTermGoalName: 'Social Problem Solving',
+    shortTermGoalName: 'Conflict Repair',
+    objective: 'The client will use an appropriate repair response following conflict, correction, or social misunderstanding.',
+    keywords: ['conflict', 'repair', 'social problem', 'misunderstanding', 'peer'],
+    deficitDomains: ['social', 'communication', 'maladaptiveBehavior'],
+    centralReachDataType: 'percent',
+  },
+  {
+    id: 'social-accept-different-opinion',
+    domain: 'Social',
+    longTermGoalName: 'Flexible Social Responding',
+    shortTermGoalName: 'Accept Differing Opinions',
+    objective: 'The client will accept a differing opinion or adult/peer perspective in a constructive manner without arguing or escalating.',
+    keywords: ['opinion', 'arguing', 'rigid', 'flexibility', 'perspective'],
+    deficitDomains: ['social', 'flexibilityRrb', 'maladaptiveBehavior'],
+    centralReachDataType: 'percent',
+  },
+  {
+    id: 'social-flexible-play',
+    domain: 'Social',
+    longTermGoalName: 'Flexible Social Participation',
+    shortTermGoalName: 'Flexible Play or Activity',
+    objective: 'The client will tolerate changes in shared play, activity rules, or peer suggestions while maintaining safe and appropriate participation.',
+    keywords: ['flexibility', 'play', 'transition', 'change', 'peer'],
+    deficitDomains: ['social', 'flexibilityRrb'],
+    centralReachDataType: 'percent',
+  },
+  {
+    id: 'social-group-participation',
+    domain: 'Social',
+    longTermGoalName: 'Group Participation',
+    shortTermGoalName: 'Participate in Group Activity',
+    objective: 'The client will participate in a structured group activity by following group expectations and responding to peers or adults appropriately.',
+    keywords: ['group', 'classroom', 'peer', 'participation', 'school'],
+    deficitDomains: ['social', 'adaptiveDailyLiving'],
+    centralReachDataType: 'percent',
+  },
+  {
+    id: 'social-emotional-sharing',
+    domain: 'Social',
+    longTermGoalName: 'Social-Emotional Reciprocity',
+    shortTermGoalName: 'Share Emotions or Interests',
+    objective: 'The client will share emotions, interests, or experiences with another person during structured or natural interactions.',
+    keywords: ['share', 'emotion', 'interests', 'reciprocal', 'affect'],
+    deficitDomains: ['social', 'communication'],
+    centralReachDataType: 'percent',
+  },
+  {
+    id: 'social-friendship-skills',
+    domain: 'Social',
+    longTermGoalName: 'Relationship Skills',
+    shortTermGoalName: 'Friendship Skills',
+    objective: 'The client will demonstrate friendship-building behaviors such as joining, inviting, responding, and maintaining shared activities.',
+    keywords: ['friend', 'relationship', 'peer', 'social isolation', 'social'],
+    deficitDomains: ['social'],
+    centralReachDataType: 'percent',
+  },
+  {
+    id: 'social-personal-space',
+    domain: 'Social',
+    longTermGoalName: 'Social Boundaries',
+    shortTermGoalName: 'Personal Space',
+    objective: 'The client will maintain appropriate personal space and body orientation during adult or peer interactions.',
+    keywords: ['personal space', 'body orientation', 'peer', 'social', 'nonverbal'],
+    deficitDomains: ['social', 'communication'],
+    centralReachDataType: 'percent',
+  },
+  {
+    id: 'social-calm-advocacy',
+    domain: 'Social',
+    longTermGoalName: 'Social Self-Advocacy',
+    shortTermGoalName: 'Calm Advocacy',
+    objective: 'The client will state a concern or disagreement using calm, respectful language and an appropriate request.',
+    keywords: ['concern', 'disagreement', 'arguing', 'frustration', 'fair'],
+    deficitDomains: ['social', 'communication', 'maladaptiveBehavior'],
+    centralReachDataType: 'percent',
+  },
+  {
+    id: 'social-reentry',
+    domain: 'Social',
+    longTermGoalName: 'Social Re-Engagement',
+    shortTermGoalName: 'Rejoin After Frustration',
+    objective: 'The client will rejoin an activity or interaction after frustration, correction, or a break using an appropriate re-entry routine.',
+    keywords: ['rejoin', 'break', 'frustration', 'correction', 'peer'],
+    deficitDomains: ['social', 'maladaptiveBehavior', 'flexibilityRrb'],
+    centralReachDataType: 'percent',
+  },
+  {
     id: 'parent-training',
     domain: 'Parent Training',
     longTermGoalName: 'Caregiver Implementation',
@@ -339,6 +647,36 @@ const GOAL_LIBRARY = [
     objective: 'The caregiver will implement prompting, reinforcement, and generalization procedures as trained by the BCBA.',
     keywords: ['parent', 'caregiver', 'generalization', 'home'],
     deficitDomains: ['caregiverTraining', 'maladaptiveBehavior', 'adaptiveDailyLiving'],
+    centralReachDataType: 'percent',
+  },
+  {
+    id: 'parent-training-behavior-plan',
+    domain: 'Parent Training',
+    longTermGoalName: 'Caregiver Implementation',
+    shortTermGoalName: 'Behavior Plan Implementation',
+    objective: 'The caregiver will implement antecedent strategies, prompting procedures, reinforcement, and response strategies from the behavior plan with fidelity.',
+    keywords: ['caregiver', 'parent', 'behavior plan', 'bip', 'reinforcement'],
+    deficitDomains: ['caregiverTraining', 'maladaptiveBehavior'],
+    centralReachDataType: 'percent',
+  },
+  {
+    id: 'parent-training-data',
+    domain: 'Parent Training',
+    longTermGoalName: 'Caregiver Data and Generalization',
+    shortTermGoalName: 'Home Data Collection',
+    objective: 'The caregiver will collect or report behavior and replacement-skill data needed to support treatment decisions and generalization.',
+    keywords: ['caregiver', 'parent', 'data', 'home', 'generalization'],
+    deficitDomains: ['caregiverTraining', 'maladaptiveBehavior', 'adaptiveDailyLiving'],
+    centralReachDataType: 'percent',
+  },
+  {
+    id: 'parent-training-crisis-prevention',
+    domain: 'Parent Training',
+    longTermGoalName: 'Caregiver Safety Support',
+    shortTermGoalName: 'Crisis Prevention',
+    objective: 'The caregiver will implement prevention and de-escalation strategies during early signs of dysregulation or unsafe behavior.',
+    keywords: ['caregiver', 'parent', 'safety', 'de-escalation', 'unsafe'],
+    deficitDomains: ['caregiverTraining', 'maladaptiveBehavior'],
     centralReachDataType: 'percent',
   },
 ]
@@ -371,6 +709,27 @@ function firstMatchingSentence(sources, keywords) {
     }
   }
   return null
+}
+
+function matchingSentences(sources, keywords, limit = 4) {
+  const matches = []
+  const seen = new Set()
+  for (const source of sources) {
+    const sentences = splitSentences(source.text)
+    for (const sentence of sentences) {
+      if (!keywords.some((keyword) => sourceHasKeyword(sentence, keyword))) continue
+      const normalized = normalizeText(sentence).toLowerCase()
+      if (!normalized || seen.has(normalized)) continue
+      seen.add(normalized)
+      matches.push({
+        sourceId: source.id,
+        filename: source.filename,
+        text: sentence.slice(0, 650),
+      })
+      if (matches.length >= limit) return matches
+    }
+  }
+  return matches
 }
 
 function sourceSearchText(source) {
@@ -724,16 +1083,16 @@ export async function preflightLocalReportPilot({
 
 export function buildLocalClinicalProfile({ clientLabel, sources }) {
   const sections = SECTION_RULES.map((rule) => {
-    const match = firstMatchingSentence(sources, rule.keywords)
+    const matches = matchingSentences(sources, rule.keywords, 5)
     return {
       id: rule.id,
       label: rule.label,
-      status: match ? 'source-supported' : 'missing-source-support',
-      text: match
-        ? `Records reviewed indicate the following source-supported information: ${match.text}`
+      status: matches.length ? 'source-supported' : 'missing-source-support',
+      text: matches.length
+        ? buildClinicalSectionText(rule.id, matches)
         : rule.fallback,
-      sourceEvidence: match ? [match] : [],
-      missing: !match,
+      sourceEvidence: matches,
+      missing: !matches.length,
     }
   })
 
@@ -753,6 +1112,38 @@ export function buildLocalClinicalProfile({ clientLabel, sources }) {
   }
 }
 
+function evidenceSentenceList(matches = []) {
+  return matches
+    .map((match) => normalizeText(match.text))
+    .filter(Boolean)
+    .slice(0, 4)
+}
+
+function buildClinicalSectionText(sectionId, matches) {
+  const evidence = evidenceSentenceList(matches)
+  const evidenceText = evidence.join(' ')
+  switch (sectionId) {
+    case 'diagnosisSummary':
+      return `Records reviewed support an autism-related clinical presentation and indicate that the client requires ABA treatment to address functional impairments across core developmental domains. ${evidenceText} The BCBA should verify the exact diagnosis, diagnosis date, severity/support level, and any co-occurring conditions against the diagnostic source before finalizing.`
+    case 'familyHistory':
+      return `Records reviewed include caregiver and family-context information relevant to treatment planning. ${evidenceText} This information should be used to individualize caregiver training, home generalization, reinforcement planning, and coordination with family routines while avoiding unsupported family-history details.`
+    case 'developmentalHistory':
+      return `Records reviewed indicate developmental concerns that are clinically relevant to the current ABA treatment plan. ${evidenceText} These developmental needs support goals targeting functional communication, adaptive participation, emotional regulation, social engagement, and treatment readiness.`
+    case 'educationalHistory':
+      return `Records reviewed indicate educational and participation barriers that should be considered in treatment planning. ${evidenceText} When school participation is limited by unsafe or severe maladaptive behavior, the report should clearly connect ABA goals to the prerequisite communication, compliance, regulation, and safety skills needed for future educational access.`
+    case 'behaviorProfile':
+      return `The client demonstrates clinically significant maladaptive behavior and treatment-interfering behavior that affect safety, participation, and access to instruction or daily routines. ${evidenceText} Behavior intervention should include antecedent supports, functional communication training, differential reinforcement, de-escalation procedures, and caregiver implementation across settings.`
+    case 'communicationProfile':
+      return `The client demonstrates clinically significant communication deficits that interfere with self-advocacy, emotional expression, comprehension, reciprocal interaction, and participation in demands or transitions. ${evidenceText} Communication goals should target requesting, help/break communication, clarification, repair, emotional expression, and contextually appropriate reciprocal communication.`
+    case 'socialProfile':
+      return `The client demonstrates social-communication and reciprocal-interaction deficits that affect peer/adult engagement, social problem solving, flexibility, and relationship development. ${evidenceText} Social goals should target initiation, response to social bids, perspective taking, conflict repair, flexible participation, and maintaining safe engagement during social demands.`
+    case 'caregiverTraining':
+      return `Caregiver training is clinically indicated to support consistency, generalization, behavior reduction, replacement-skill use, and safe response to escalation across daily routines. ${evidenceText} Caregiver goals should focus on implementation of antecedent strategies, prompting, reinforcement, data reporting, and crisis-prevention procedures taught by the BCBA.`
+    default:
+      return `Records reviewed indicate the following source-supported information: ${evidenceText}`
+  }
+}
+
 function firstGoalEvidence(goal, sources, deficitProfile) {
   const directMatch = firstMatchingSentence(sources, goal.keywords)
   if (directMatch) {
@@ -761,6 +1152,8 @@ function firstGoalEvidence(goal, sources, deficitProfile) {
       basis: 'direct-goal-keyword',
     }
   }
+
+  if (goal.requiresDirectEvidence) return null
 
   const supportedDeficit = (deficitProfile?.domains || []).find((domain) => (
     goal.deficitDomains?.includes(domain.id)
@@ -783,8 +1176,12 @@ export function buildLocalGoalPlan({ sources, deficitProfile }) {
     if (!match) continue
     selectedGoals.push({
       ...goal,
-      baseline: 'Baseline to be established from direct observation and ongoing treatment data collection.',
-      currentLevel: `Source support identified in ${match.filename}.`,
+      baseline: goal.centralReachDataType === 'frequency'
+        ? 'Baseline frequency to be established from direct observation, caregiver report, and ongoing treatment data collection.'
+        : 'Baseline independence to be established from direct probe, caregiver report, and ongoing treatment data collection.',
+      currentLevel: goal.centralReachDataType === 'frequency'
+        ? 'Records reviewed indicate this behavior interferes with safety, participation, or treatment access and requires reduction programming.'
+        : 'Records reviewed indicate this skill area is below expected independence and requires direct teaching, prompting, reinforcement, and generalization.',
       criteriaForMastery: goal.centralReachDataType === 'frequency'
         ? '80% reduction from baseline across 3 consecutive months or as clinically appropriate.'
         : '80% independence across 3 consecutive sessions and at least 2 people/settings when applicable.',
@@ -1018,26 +1415,24 @@ function buildGoalTable(goals) {
   const header = new TableRow({
     children: [
       tableCell('Program/Behavior', true),
-      tableCell('Short-Term Goal', true),
       tableCell('Objective', true),
       tableCell('Baseline', true),
       tableCell('Current Level', true),
       tableCell('Criteria for Mastery', true),
       tableCell('Target date for Mastery', true),
-      tableCell('Data / Graphs', true),
+      tableCell('Graphs', true),
     ],
   })
 
   const rows = goals.map((goal) => new TableRow({
     children: [
-      tableCell(goal.longTermGoalName),
-      tableCell(goal.shortTermGoalName),
+      tableCell(`${goal.longTermGoalName} - ${goal.shortTermGoalName}`),
       tableCell(goal.objective),
       tableCell(goal.baseline),
       tableCell(goal.currentLevel),
       tableCell(goal.criteriaForMastery),
       tableCell(goal.targetDateForMastery),
-      tableCell(`${goal.centralReachDataType}; ${goal.graphs}`),
+      tableCell(goal.graphs),
     ],
   }))
 
@@ -1083,6 +1478,92 @@ function buildReviewChecklist(job) {
   ]
 }
 
+function sectionText(job, id) {
+  return sectionById(job, id)?.text || REVIEW_NEEDED
+}
+
+function buildDiagnosisAndServiceSection(job) {
+  return [
+    heading('Diagnosis And Service Recommendation'),
+    paragraph('Diagnosis:', { spacing: { after: 60 }, boldText: true }),
+    sectionDraftParagraph(sectionById(job, 'diagnosisSummary')),
+    paragraph('Date of Diagnosis: ' + REVIEW_NEEDED, { spacing: { after: 80 } }),
+    paragraph('97151: Initial assessment and report development. Hours and units must be verified by the BCBA against the authorization request and payer requirements.', { spacing: { after: 60 } }),
+    paragraph('97153: Direct treatment hours to be determined by medical necessity, treatment tolerance, caregiver availability, and payer authorization. Review required before finalization.', { spacing: { after: 60 } }),
+    paragraph('97155: BCBA supervision and protocol modification hours to be determined by clinical need, behavior intensity, and treatment-team requirements. Review required before finalization.', { spacing: { after: 60 } }),
+    paragraph('97156: Parent/caregiver training hours to be determined by caregiver goals, generalization needs, and family availability. Review required before finalization.', { spacing: { after: 160 } }),
+    paragraph('Suicidality / self-harm review: ' + REVIEW_NEEDED, { spacing: { after: 60 } }),
+    paragraph('Severity / support level review: ' + REVIEW_NEEDED, { spacing: { after: 160 } }),
+  ]
+}
+
+function buildMedicalNecessityNarrative(job) {
+  return [
+    heading('Medical Necessity:'),
+    paragraph('Research has demonstrated that ABA methodology is effective in addressing maladaptive behaviors and skill deficits in children diagnosed with autism spectrum disorder. Data will be collected to assess relevant skills, identify instructional needs, and teach each skill step-by-step until mastery is achieved. ABA-based treatment is medically necessary to reduce interfering behaviors, teach age-appropriate and functional skills, and increase independence across settings.', { spacing: { after: 120 } }),
+    paragraph('Treatment will use evidence-based ABA procedures including discrete trial teaching, natural environment teaching, functional communication training, antecedent-based interventions, differential reinforcement, prompting and prompt fading, social skills training, caregiver training, and ongoing BCBA review of data. The BCBA must verify the final intensity, setting, and service recommendations before the report is used.', { spacing: { after: 160 } }),
+    ...buildMedicalNecessitySection(job).slice(1),
+  ]
+}
+
+function buildDsmCriteriaAndClinicalNeeds(job) {
+  return [
+    heading('Maladaptive Behavior Type I (includes restrictive repetitive patterns of behavior of activities):'),
+    paragraph('DSM V Criteria: Insistence on sameness, inflexible adherence to routines, or ritualized patterns of verbal or nonverbal behavior; highly restricted, fixated interests that are abnormal in intensity or focus.', { spacing: { after: 80 } }),
+    paragraph(sectionText(job, 'behaviorProfile'), { spacing: { after: 160 } }),
+    heading('Maladaptive Behavior Type II (includes SIB and aggression):'),
+    paragraph('The client displays or is at risk for clinically significant maladaptive behavior that may include aggression, property destruction, elopement, unsafe behavior, non-compliance, or other treatment-interfering responses when supported by the source packet.', { spacing: { after: 80 } }),
+    paragraph(sectionText(job, 'behaviorProfile'), { spacing: { after: 160 } }),
+    heading('2. Communication Skills:'),
+    paragraph('DSM V Criteria: Deficits in nonverbal communicative behaviors used for social interaction, including deficits in integrated verbal and nonverbal communication, eye contact, body language, gestures, facial expressions, and nonverbal communication.', { spacing: { after: 80 } }),
+    paragraph(sectionText(job, 'communicationProfile'), { spacing: { after: 160 } }),
+    heading('3. Social Skills:'),
+    paragraph('DSM V Criteria: Deficits in social-emotional reciprocity and deficits in developing, maintaining, and understanding relationships, including difficulty with back-and-forth interaction, sharing interests or emotions, initiating/responding socially, and adjusting behavior to social contexts.', { spacing: { after: 80 } }),
+    paragraph(sectionText(job, 'socialProfile'), { spacing: { after: 160 } }),
+  ]
+}
+
+function buildAssessmentResultsAndBarriers(job) {
+  return [
+    heading('Assessment Results And Clinical Barriers'),
+    paragraph('Standardized assessment results, diagnostic evaluation findings, caregiver report, and clinical records were reviewed when present in the local source packet. Graphs are intentionally omitted for an initial assessment unless the BCBA adds source-specific visual data.', { spacing: { after: 120 } }),
+    paragraph(`Detected assessment inputs: ${job.assessmentAdapters.length ? job.assessmentAdapters.map((adapter) => adapter.label).join(', ') : 'No recognized assessment adapter detected; review required.'}`, { spacing: { after: 120 } }),
+    paragraph(`Barriers to treatment include the following source-supported domains: ${job.deficitProfile.domains.filter((domain) => domain.status === 'source-supported').map((domain) => domain.label).join(', ') || 'review required'}. These barriers may interfere with safety, instructional control, participation, generalization, and adaptive functioning across settings.`, { spacing: { after: 160 } }),
+    paragraph('Reason for Referral: The caregivers sought ABA treatment to address the interfering effects of ASD-related skill deficits and maladaptive behavior. The report should be finalized to reflect the caregiver priorities, diagnostic findings, and functional needs supported by the source packet.', { spacing: { after: 160 } }),
+  ]
+}
+
+function buildTreatmentModelSection() {
+  return [
+    heading('Treatment Model And ABA Methods'),
+    paragraph('A focused treatment model targets specific behaviors or skill deficits that are most critical for immediate safety, functioning, and quality of life. A comprehensive treatment model addresses multiple developmental and behavioral domains when the client requires broad support across communication, social, adaptive, and behavior-reduction needs. The final treatment model and hours must be selected by the BCBA based on medical necessity and authorization requirements.', { spacing: { after: 120 } }),
+    paragraph('The BCBA will utilize a blend of evidence-based ABA principles, including Natural Environment Teaching, Discrete Trial Training, Functional Communication Training, Differential Reinforcement of Alternative Behavior, antecedent-based interventions, social skills instruction, modeling, role-play, shaping, task analysis, and prompt fading. Procedures should be individualized to the client and implemented with ongoing data review.', { spacing: { after: 120 } }),
+    paragraph('Potential reinforcers and motivating operations should be identified through caregiver interview, preference assessment, direct observation, and ongoing treatment data. Access to preferred activities, breaks, adult attention, structured choices, sensory accommodations, and preferred tangible/activity options may be used when clinically appropriate.', { spacing: { after: 160 } }),
+  ]
+}
+
+function buildBehaviorInterventionPlanSection(job) {
+  return [
+    heading('Behavior Intervention Plan:'),
+    paragraph('Target maladaptive behaviors for the BIP should be selected based on caregiver report, source records, ABC data, BCBA direct observation, and any available functional assessment information. The BCBA must verify the final operational definitions and hypothesized functions before use.', { spacing: { after: 120 } }),
+    paragraph(`Target behavior profile: ${sectionText(job, 'behaviorProfile')}`, { spacing: { after: 120 } }),
+    paragraph('Common antecedents may include denied access, transitions, non-preferred demands, communication breakdowns, social demand, correction, sensory discomfort, peer conflict, or changes in routine when supported by the records. Probable functions should be verified by the BCBA and may include escape, access, attention, sensory regulation, or control of the interaction.', { spacing: { after: 120 } }),
+    paragraph('Antecedent strategies should include clear expectations, visual supports, concrete language, pre-correction, repetition/simplification of demands, structured choices, shortened demand intervals, reinforcement for calm communication, transition warnings, and early prompting for coping/help-seeking responses.', { spacing: { after: 120 } }),
+    paragraph('Consequence and de-escalation strategies should include neutral affect, safety-focused blocking or environmental arrangement when necessary, prompting functional communication, differential reinforcement of replacement behaviors, planned ignoring when clinically appropriate, and return to task through least-to-most prompting once regulated.', { spacing: { after: 120 } }),
+    paragraph('Data collection should include frequency recording for maladaptive behaviors and probe or trial-based data for replacement communication, coping, social, and caregiver-training goals. The BCBA should adjust interventions based on ongoing data trends.', { spacing: { after: 160 } }),
+  ]
+}
+
+function buildMissingFieldsSection(job) {
+  const missingFields = job.clinicalProfile.missingFields
+  return [
+    heading('Missing / Review-Required Fields'),
+    ...(missingFields.length
+      ? missingFields.map((field) => paragraph(`${field.label}: ${field.behavior}`, { spacing: { after: 60 } }))
+      : [paragraph('No automatically detected clinical-profile fields were marked missing. BCBA review is still required for accuracy, service hours, signatures, and payer-specific language.', { spacing: { after: 120 } })]),
+  ]
+}
+
 async function writeGeneratedDocx({ outputPath, job }) {
   const doc = new Document({
     sections: [
@@ -1098,6 +1579,18 @@ async function writeGeneratedDocx({ outputPath, job }) {
           paragraph(`Generated locally: ${job.generatedAt}`, { spacing: { after: 300 } }),
           paragraph(`Template: ${job.standardTemplate.label}`, { spacing: { after: 180 } }),
           paragraph('Review status: Draft for BCBA review. This local helper does not sign, submit, or finalize reports.', { spacing: { after: 300 } }),
+          ...buildDiagnosisAndServiceSection(job),
+          ...buildMedicalNecessityNarrative(job),
+          ...buildBiopsychosocialSection(job),
+          ...buildClinicalProfileSection(job),
+          ...buildDsmCriteriaAndClinicalNeeds(job),
+          ...buildAssessmentResultsAndBarriers(job),
+          ...buildTreatmentModelSection(job),
+          heading('Recommended Goals'),
+          ...buildGoalDomainSections(job),
+          ...buildBehaviorInterventionPlanSection(job),
+          ...buildMissingFieldsSection(job),
+          heading('Reviewer QA Appendix'),
           ...buildSourcePacketSection(job),
           heading('Evidence Readiness'),
           ...job.evidenceReadiness.categories.map((category) => paragraph(`${category.label}: ${category.status}`, { spacing: { after: 80 } })),
@@ -1110,13 +1603,6 @@ async function writeGeneratedDocx({ outputPath, job }) {
           heading('Report Coverage Matrix'),
           paragraph(`Coverage status: ${job.coverageMatrix.status}. Source-supported sections: ${job.coverageMatrix.summary.sourceSupportedSectionCount}/${job.coverageMatrix.summary.sectionCount}. Selected goals: ${job.coverageMatrix.summary.selectedGoalCount}.`, { spacing: { after: 120 } }),
           ...job.coverageMatrix.goalDomainCoverage.map((domain) => paragraph(`${domain.domain}: ${domain.status} (${domain.goalCount} goal${domain.goalCount === 1 ? '' : 's'})`, { spacing: { after: 80 } })),
-          ...buildMedicalNecessitySection(job),
-          ...buildBiopsychosocialSection(job),
-          ...buildClinicalProfileSection(job),
-          heading('Recommended Goals'),
-          ...buildGoalDomainSections(job),
-          heading('Missing / Review-Required Fields'),
-          ...job.clinicalProfile.missingFields.map((field) => paragraph(`${field.label}: ${field.behavior}`)),
           ...buildReviewChecklist(job),
         ],
       },
