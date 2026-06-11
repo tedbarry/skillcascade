@@ -3180,7 +3180,11 @@ function fillTemplateParagraphs(document, paragraphs, job) {
   setFirstParagraphContaining(document, paragraphs, 'Include rationale for lack of progress here', 'N/A - initial assessment.')
   setFirstParagraphContaining(document, paragraphs, 'For initial assessments, write N/A', 'N/A - initial assessment.')
   setFirstParagraphContaining(document, paragraphs, 'Target maladaptive behaviors for the BIP were chosen', 'Target maladaptive behaviors for the BIP were selected based on source records, caregiver report, BCBA clinical review, and available observation/assessment information. The BCBA must verify operational definitions, functions, and intervention procedures before implementation.')
-  setFirstParagraphContaining(document, paragraphs, 'Write what ABA methods you will be using', HOUSE_ABA_METHODS_TEXT)
+  removeParagraphsContaining(paragraphs, [
+    'Write what ABA methods you will be using',
+    'The following techniques will be utilized to support the client in acquiring the skills that are related to the core deficits of autism',
+    HOUSE_ABA_METHODS_TEXT,
+  ])
   removeParagraphsWithExactText(paragraphs, ['Prompting', 'Shaping', 'Chaining', 'Task Analysis'])
   setFirstParagraphContaining(document, paragraphs, 'Results of Preference Assessment:', 'Results of Preference Assessment: An interview informed Preference assessment was conducted. The client\u2019s current reinforcers are identified as the following:')
   setFirstParagraphContaining(document, paragraphs, 'Parent involvement is a crucial component', templateParentInvolvementText(job))

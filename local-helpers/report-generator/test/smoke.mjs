@@ -475,7 +475,8 @@ try {
   assert.match(renderedOutput.value, /unable to function in traditional academic environments/)
   assert.match(renderedOutput.value, /Eye contact was inconsistent/)
   assert.match(renderedOutput.value, /need for repetition and simplification/)
-  assert.match(renderedOutput.value, /The BCBA will utilize a blend of evidence-based ABA principles/)
+  assert.equal(renderedOutput.value.includes('The following techniques will be utilized to support the client in acquiring the skills that are related to the core deficits of autism'), false)
+  assert.equal(renderedOutput.value.includes('The BCBA will utilize a blend of evidence-based ABA principles'), false)
   for (const standaloneTechnique of ['Prompting', 'Shaping', 'Chaining', 'Task Analysis']) {
     assert.equal(new RegExp(`(^|\\n)${standaloneTechnique}(\\n|$)`).test(renderedOutput.value), false)
   }
