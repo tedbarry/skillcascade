@@ -28,6 +28,8 @@ const unresolvedTemplatePhrases = [
   'Click or tap here',
   'REVIEW_UNSUPPORTED_TEMPLATE_FIELD',
   'Review required:',
+  'source packet',
+  'can delete',
 ]
 
 async function countDocxTables(docxPath) {
@@ -55,7 +57,8 @@ async function inspectDocxCloneContract(docxPath) {
     highlightCount: (allXml.match(/<w:highlight[\s>]/g) || []).length,
     contentControlCount: (documentXml.match(/<w:sdt[\s>]/g) || []).length,
     checkboxControlCount: (allXml.match(/<w14:checkbox|<w:checkBox|FORMCHECKBOX/g) || []).length,
-    checkboxFontRunCount: (allXml.match(/MS Gothic/g) || []).length,
+    checkboxFontRunCount: (documentXml.match(/Segoe UI Symbol/g) || []).length,
+    legacyCheckboxFontRunCount: (documentXml.match(/MS Gothic/g) || []).length,
     unresolvedPhraseHits: unresolvedTemplatePhrases.filter((phrase) => plainText.includes(phrase)),
     plainText,
   }
@@ -177,6 +180,9 @@ try {
   assert.ok(statusPayload.helperVersion)
   assert.equal(statusPayload.customerTemplateUpload, false)
   assert.equal(statusPayload.standardTemplate.mode, 'skillcascade-standard-docx')
+  assert.equal(statusPayload.supervisorReviewedStyle.id, 'supervisor-reviewed-aba-initial-v1')
+  assert.equal(statusPayload.supervisorReviewedStyle.checkboxFont, 'Segoe UI Symbol')
+  assert.equal(statusPayload.supervisorReviewedStyle.outputPolicy.standardTemplateOnly, true)
   assert.equal(statusPayload.requiredEvidenceCategories.length, 3)
   assert.ok(statusPayload.assessmentAdapters.some((adapter) => adapter.id === 'vineland'))
   assert.equal(statusPayload.installState.localDataPolicy.updatesPreserveCustomerData, true)
@@ -287,6 +293,8 @@ try {
   assert.equal(standardPreflightPayload.result.sourceSummary.supportedFileCount, 3)
   assert.equal(standardPreflightPayload.result.sourceSummary.unsupportedFileCount, 1)
   assert.equal(standardPreflightPayload.result.standardTemplate.mode, 'skillcascade-standard-docx')
+  assert.equal(standardPreflightPayload.result.supervisorReviewedStyle.id, 'supervisor-reviewed-aba-initial-v1')
+  assert.equal(standardPreflightPayload.result.templateSummary.styleRuleId, 'supervisor-reviewed-aba-initial-v1')
   assert.equal(standardPreflightPayload.result.templateSummary.customerTemplateUpload, false)
   assert.equal(standardPreflightPayload.result.evidenceReadiness.ready, true)
   assert.equal(standardPreflightPayload.result.evidenceReadiness.categories.length, 3)
@@ -384,10 +392,15 @@ try {
   assert.equal(runPayload.result.templateProfileLabel, '')
   assert.equal(Object.keys(runPayload.result.templateFieldAliases).length, 0)
   assert.equal(runPayload.result.standardTemplate.mode, 'skillcascade-standard-docx')
+  assert.equal(runPayload.result.supervisorReviewedStyle.id, 'supervisor-reviewed-aba-initial-v1')
   assert.equal(runPayload.result.evidenceReadiness.ready, true)
   assert.equal(runPayload.result.coverageMatrix.status, 'review-needed')
   assert.equal(runPayload.result.coverageMatrix.summary.goalDomainsWithGoals.includes('Behavior'), true)
   assert.equal(runPayload.result.qa.standardTemplateClone.ok, true)
+  assert.equal(runPayload.result.qa.standardTemplateClone.styleRuleId, 'supervisor-reviewed-aba-initial-v1')
+  assert.equal(runPayload.result.qa.standardTemplateClone.checkboxFont, 'Segoe UI Symbol')
+  assert.deepEqual(runPayload.result.qa.standardTemplateClone.visibleArtifactHits, [])
+  assert.deepEqual(runPayload.result.qa.standardTemplateClone.unsupportedAssessmentReferences, [])
   assert.ok(runPayload.result.qa.standardTemplateClone.highlightCount >= 1)
   assert.equal(runPayload.result.qa.standardTemplateClone.contentControlCount, 0)
   assert.equal(runPayload.result.sourcePacket.sources.some((source) => 'text' in source), false)
@@ -407,6 +420,7 @@ try {
   assert.ok(evidenceLedger.sections.some((section) => section.evidence.some((item) => item.excerpt)))
   const reviewSummary = JSON.parse(await readFile(runPayload.result.reviewPath, 'utf8'))
   assert.equal(reviewSummary.coverageMatrix.status, 'review-needed')
+  assert.equal(reviewSummary.supervisorReviewedStyle.id, 'supervisor-reviewed-aba-initial-v1')
   assert.equal(reviewSummary.evidenceSummary.coverageStatus, 'review-needed')
   assert.equal(reviewSummary.evidenceSummary.missingSectionCount, 0)
   assert.equal(runPayload.result.clinicalProfile.sections.some((section) => (
@@ -423,6 +437,7 @@ try {
   assert.equal(cloneInspection.contentControlCount, 0)
   assert.equal(cloneInspection.checkboxControlCount, 0)
   assert.ok(cloneInspection.checkboxFontRunCount >= 10)
+  assert.equal(cloneInspection.legacyCheckboxFontRunCount, 0)
   assert.deepEqual(cloneInspection.unresolvedPhraseHits, [])
   assert.match(renderedOutput.value, /Client Name:/)
   assert.match(renderedOutput.value, /Release Client/)
@@ -485,6 +500,8 @@ try {
   assert.equal(renderedOutput.value.includes('Short-Term Goal'), false)
   assert.equal(renderedOutput.value.includes('Reviewer QA Appendix'), false)
   assert.equal(renderedOutput.value.includes('Source Packet Reviewed'), false)
+  assert.equal(/source packet/i.test(renderedOutput.value), false)
+  assert.equal(/can delete/i.test(renderedOutput.value), false)
   assert.equal(renderedOutput.value.includes('Write what ABA methods'), false)
   assert.equal(renderedOutput.value.includes('Please specify specific long term goals'), false)
   assert.equal(renderedOutput.value.includes('Not provided in the source packet; BCBA to verify before finalization.'), false)

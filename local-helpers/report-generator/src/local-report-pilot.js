@@ -29,6 +29,7 @@ const STANDARD_TEMPLATE_ONLY_BLOCKER = 'Customer Word templates are disabled for
 const REVIEW_NEEDED = 'Not provided in reviewed records'
 const CHECKED_BOX = '\u2612'
 const UNCHECKED_BOX = '\u2610'
+const CHECKBOX_SYMBOL_FONT = 'Segoe UI Symbol'
 const STANDARD_TEMPLATE_TABLE_COUNT = 15
 const INITIAL_REPORT_RANGE = 'N/A - Initial Assessment'
 const STANDARD_TARGET_DATE = '11/2026'
@@ -58,7 +59,57 @@ const UNRESOLVED_TEMPLATE_PHRASES = [
   'Click or tap here',
   'REVIEW_UNSUPPORTED_TEMPLATE_FIELD',
   'Review required:',
+  'Observation 1 (can delete for reassessments):',
 ]
+const REPORT_VISIBLE_ARTIFACT_PHRASES = [
+  'source packet',
+  'local source packet',
+  'provided source',
+  'sample rationales',
+  'can delete',
+  'TBD',
+  'TODO',
+]
+const ASSESSMENT_REFERENCE_RULES = [
+  { adapterId: 'vineland', terms: ['Vineland', 'Vineland-3', 'VABS'] },
+  { adapterId: 'srs2', terms: ['SRS-2', 'SRS2', 'Social Responsiveness Scale'] },
+  { adapterId: 'abas', terms: ['ABAS', 'Adaptive Behavior Assessment System'] },
+  { adapterId: 'vbmapp', terms: ['VB-MAPP', 'VBMAPP'] },
+  { adapterId: 'ablls_afls', terms: ['ABLLS', 'ABLLS-R', 'AFLS'] },
+  { adapterId: 'ados2', terms: ['ADOS-2', 'ADOS2', 'Autism Diagnostic Observation Schedule'] },
+]
+
+export const SUPERVISOR_REVIEWED_REPORT_STYLE = {
+  id: 'supervisor-reviewed-aba-initial-v1',
+  label: 'Supervisor-reviewed ABA initial report style',
+  appliesTo: 'initial-assessment',
+  writingRules: [
+    'Write report prose as current clinical functioning when supported by records, not as one-time observation language outside observation sections.',
+    'Use only source-supported facts; missing facts remain visible as review-needed fields instead of being invented.',
+    'Use SkillCascade standard initial assessment wording, transition language, medical-necessity language, risk boxes, and PCP coordination defaults.',
+    'Do not mention assessment instruments, scores, graphics, or profile images unless that assessment is detected in the current local records.',
+    'Do not leave internal workflow phrases, template instructions, reviewer scaffolding, or customer-template remnants in the visible report.',
+    'Use stable text checkboxes with a symbol font; do not leave Word checkbox controls or broken glyphs.',
+  ],
+  requiredEvidence: [
+    'diagnostic_or_psychological_evaluation',
+    'intake_or_caregiver_history',
+    'adaptive_or_functional_assessment',
+  ],
+  checkboxFont: CHECKBOX_SYMBOL_FONT,
+  blockedVisibleReportPhrases: REPORT_VISIBLE_ARTIFACT_PHRASES,
+  sourceRequiredAssessmentReferences: ASSESSMENT_REFERENCE_RULES.map((rule) => ({
+    adapterId: rule.adapterId,
+    terms: rule.terms,
+  })),
+  outputPolicy: {
+    standardTemplateOnly: true,
+    customerTemplateUpload: false,
+    copySourceImages: false,
+    graphsForInitialAssessments: false,
+    reviewBeforeUse: true,
+  },
+}
 
 export const STANDARD_REPORT_TEMPLATE = {
   id: 'skillcascade-standard-initial-assessment-v1',
@@ -260,49 +311,49 @@ const SECTION_RULES = [
     id: 'diagnosisSummary',
     label: 'Diagnosis Summary',
     keywords: ['diagnosis', 'autism', 'asd', 'diagnosed', 'diagnostic'],
-    fallback: 'Diagnosis information was not clearly supported in the local source packet reviewed.',
+    fallback: 'Diagnosis information was not clearly supported in the reviewed records.',
   },
   {
     id: 'familyHistory',
     label: 'Family History',
     keywords: ['family history', 'family', 'mother', 'father', 'parent', 'sibling', 'caregiver'],
-    fallback: 'Family history was not clearly supported in the local source packet reviewed.',
+    fallback: 'Family history was not clearly supported in the reviewed records.',
   },
   {
     id: 'developmentalHistory',
     label: 'Developmental History',
     keywords: ['developmental', 'milestone', 'birth', 'pregnancy', 'early intervention', 'delayed'],
-    fallback: 'Developmental history was not clearly supported in the local source packet reviewed.',
+    fallback: 'Developmental history was not clearly supported in the reviewed records.',
   },
   {
     id: 'educationalHistory',
     label: 'Educational History',
     keywords: ['school', 'education', 'iep', 'classroom', 'teacher', 'educational', 'academic'],
-    fallback: 'Educational history was not clearly supported in the local source packet reviewed.',
+    fallback: 'Educational history was not clearly supported in the reviewed records.',
   },
   {
     id: 'behaviorProfile',
     label: 'Maladaptive Behavior Profile',
     keywords: ['aggression', 'noncompliance', 'non-compliance', 'property destruction', 'elopement', 'unsafe', 'tantrum', 'profane'],
-    fallback: 'Maladaptive behavior profile was not clearly supported in the local source packet reviewed.',
+    fallback: 'Maladaptive behavior profile was not clearly supported in the reviewed records.',
   },
   {
     id: 'communicationProfile',
     label: 'Communication Profile',
     keywords: ['communication', 'request', 'mand', 'language', 'expressive', 'receptive', 'conversation'],
-    fallback: 'Communication profile was not clearly supported in the local source packet reviewed.',
+    fallback: 'Communication profile was not clearly supported in the reviewed records.',
   },
   {
     id: 'socialProfile',
     label: 'Social Profile',
     keywords: ['social', 'peer', 'reciprocal', 'play', 'conversation', 'joint attention'],
-    fallback: 'Social profile was not clearly supported in the local source packet reviewed.',
+    fallback: 'Social profile was not clearly supported in the reviewed records.',
   },
   {
     id: 'caregiverTraining',
     label: 'Parent / Caregiver Training',
     keywords: ['parent training', 'caregiver', 'parent', 'generalization', 'home', 'family training'],
-    fallback: 'Parent/caregiver training needs were not clearly supported in the local source packet reviewed.',
+    fallback: 'Parent/caregiver training needs were not clearly supported in the reviewed records.',
   },
 ]
 
@@ -1712,6 +1763,7 @@ export async function preflightLocalReportPilot({
       supportedExtensions: Array.from(SUPPORTED_SOURCE_EXTENSIONS),
     },
     standardTemplate: STANDARD_REPORT_TEMPLATE,
+    supervisorReviewedStyle: SUPERVISOR_REVIEWED_REPORT_STYLE,
     evidenceReadiness,
     assessmentAdapters,
     deficitProfile: sanitizeDeficitProfileForResponse(deficitProfile),
@@ -1722,6 +1774,7 @@ export async function preflightLocalReportPilot({
       customerTemplateUpload: false,
       customTemplateAccepted: false,
       controlledBy: STANDARD_REPORT_TEMPLATE.controlledBy,
+      styleRuleId: SUPERVISOR_REVIEWED_REPORT_STYLE.id,
     },
     blockers,
     warnings,
@@ -2078,7 +2131,7 @@ function paragraph(text, options = {}) {
 
 function evidenceParagraph(section) {
   if (!section.sourceEvidence.length) {
-    return paragraph('Source support: Not found in the local source packet; BCBA to verify before finalization.', { spacing: { after: 180 } })
+    return paragraph('Source support: Not found in the reviewed records; BCBA to verify before finalization.', { spacing: { after: 180 } })
   }
   return paragraph(`Source support: ${section.sourceEvidence.map((item) => item.filename).join(', ')}`, { spacing: { after: 180 } })
 }
@@ -2116,7 +2169,7 @@ function checkboxChoiceRuns(choices, selectedChoice, options = {}) {
     if (index > 0) runs.push({ text: '   ' })
     runs.push({
       text: choice.toLowerCase() === selected ? CHECKED_BOX : UNCHECKED_BOX,
-      font: 'MS Gothic',
+      font: CHECKBOX_SYMBOL_FONT,
       size: options.size || '24',
     })
     runs.push({ text: ` ${choice}`, size: options.size || '24' })
@@ -2190,7 +2243,7 @@ function buildSourcePacketSection(job) {
   ))
 
   return [
-    heading('Source Packet Reviewed'),
+    heading('Records Reviewed'),
     ...(sourceItems.length ? sourceItems : [reviewMarker('No supported source files were extracted.')]),
     ...(unsupportedItems.length
       ? [
@@ -2210,8 +2263,8 @@ function buildMedicalNecessitySection(job) {
   return [
     heading('Medical Necessity And Clinical Rationale'),
     supportedDeficits.length
-      ? paragraph(`The local source packet supports clinically significant needs in the following areas: ${supportedDeficits.join(', ')}. Recommended goals are included only where the available sources support a related deficit domain.`, { spacing: { after: 120 } })
-      : reviewMarker('No source-supported deficit domains were detected. Do not finalize goals until the source packet supports the clinical rationale.'),
+      ? paragraph(`The reviewed records support clinically significant needs in the following areas: ${supportedDeficits.join(', ')}. Recommended goals are included only where the available records support a related deficit domain.`, { spacing: { after: 120 } })
+      : reviewMarker('No source-supported deficit domains were detected. Do not finalize goals until the reviewed records support the clinical rationale.'),
     supportedGoalDomains.length
       ? paragraph(`Goal domains with source-supported recommendations in this draft: ${supportedGoalDomains.join(', ')}.`, { spacing: { after: 120 } })
       : reviewMarker('No goal domains currently have source-supported recommendations.'),
@@ -2301,7 +2354,7 @@ function buildReviewChecklist(job) {
     paragraph('Before using this draft, the BCBA should confirm the following:', { spacing: { after: 100 } }),
     paragraph('1. All source-supported sections accurately reflect the records reviewed.', { spacing: { after: 60 } }),
     paragraph('2. Missing or unsupported areas are corrected manually and not invented.', { spacing: { after: 60 } }),
-    paragraph('3. Each recommended goal is clinically appropriate for the client and tied to source-supported deficits.', { spacing: { after: 60 } }),
+    paragraph('3. Each recommended goal is clinically appropriate for the client and tied to record-supported deficits.', { spacing: { after: 60 } }),
     paragraph('4. Service recommendations, titration, signatures, payer language, and final formatting are reviewed before use.', { spacing: { after: 140 } }),
     heading('QA Warnings', HeadingLevel.HEADING_3),
     ...warnings.map((warning) => paragraph(warning, { spacing: { after: 60 } })),
@@ -2342,7 +2395,7 @@ function buildDsmCriteriaAndClinicalNeeds(job) {
     paragraph('DSM V Criteria: Insistence on sameness, inflexible adherence to routines, or ritualized patterns of verbal or nonverbal behavior; highly restricted, fixated interests that are abnormal in intensity or focus.', { spacing: { after: 80 } }),
     paragraph(sectionText(job, 'behaviorProfile'), { spacing: { after: 160 } }),
     heading('Maladaptive Behavior Type II (includes SIB and aggression):'),
-    paragraph('The client displays or is at risk for clinically significant maladaptive behavior that may include aggression, property destruction, elopement, unsafe behavior, non-compliance, or other treatment-interfering responses when supported by the source packet.', { spacing: { after: 80 } }),
+    paragraph('The client displays or is at risk for clinically significant maladaptive behavior that may include aggression, property destruction, elopement, unsafe behavior, non-compliance, or other treatment-interfering responses when supported by the reviewed records.', { spacing: { after: 80 } }),
     paragraph(sectionText(job, 'behaviorProfile'), { spacing: { after: 160 } }),
     heading('2. Communication Skills:'),
     paragraph('DSM V Criteria: Deficits in nonverbal communicative behaviors used for social interaction, including deficits in integrated verbal and nonverbal communication, eye contact, body language, gestures, facial expressions, and nonverbal communication.', { spacing: { after: 80 } }),
@@ -2356,10 +2409,10 @@ function buildDsmCriteriaAndClinicalNeeds(job) {
 function buildAssessmentResultsAndBarriers(job) {
   return [
     heading('Assessment Results And Clinical Barriers'),
-    paragraph('Standardized assessment results, diagnostic evaluation findings, caregiver report, and clinical records were reviewed when present in the local source packet. Graphs are intentionally omitted for an initial assessment unless the BCBA adds source-specific visual data.', { spacing: { after: 120 } }),
+    paragraph('Standardized assessment results, diagnostic evaluation findings, caregiver report, and clinical records were reviewed when present in the records. Graphs are intentionally omitted for an initial assessment unless the BCBA adds record-specific visual data.', { spacing: { after: 120 } }),
     paragraph(`Detected assessment inputs: ${job.assessmentAdapters.length ? job.assessmentAdapters.map((adapter) => adapter.label).join(', ') : 'No recognized assessment adapter detected; review required.'}`, { spacing: { after: 120 } }),
-    paragraph(`Barriers to treatment include the following source-supported domains: ${job.deficitProfile.domains.filter((domain) => domain.status === 'source-supported').map((domain) => domain.label).join(', ') || 'review required'}. These barriers may interfere with safety, instructional control, participation, generalization, and adaptive functioning across settings.`, { spacing: { after: 160 } }),
-    paragraph('Reason for Referral: The caregivers sought ABA treatment to address the interfering effects of ASD-related skill deficits and maladaptive behavior. The report should be finalized to reflect the caregiver priorities, diagnostic findings, and functional needs supported by the source packet.', { spacing: { after: 160 } }),
+    paragraph(`Barriers to treatment include the following record-supported domains: ${job.deficitProfile.domains.filter((domain) => domain.status === 'source-supported').map((domain) => domain.label).join(', ') || 'review required'}. These barriers may interfere with safety, instructional control, participation, generalization, and adaptive functioning across settings.`, { spacing: { after: 160 } }),
+    paragraph('Reason for Referral: The caregivers sought ABA treatment to address the interfering effects of ASD-related skill deficits and maladaptive behavior. The report should be finalized to reflect the caregiver priorities, diagnostic findings, and functional needs supported by the reviewed records.', { spacing: { after: 160 } }),
   ]
 }
 
@@ -2641,11 +2694,44 @@ function documentPlainText(root) {
     .trim()
 }
 
-function buildStandardTemplateCloneQa(document, bodyTables) {
+function reportTextContainsTerm(text, term) {
+  const value = String(text || '')
+  const escaped = escapeRegex(term)
+  const boundaryWrapped = /^[a-z0-9][a-z0-9 -]*[a-z0-9]$/i.test(term)
+  const pattern = boundaryWrapped
+    ? `(^|[^a-z0-9])${escaped}([^a-z0-9]|$)`
+    : escaped
+  return new RegExp(pattern, 'i').test(value)
+}
+
+function unsupportedAssessmentReferenceHits(plainText, job = {}) {
+  const detectedAdapterIds = new Set((job.assessmentAdapters || []).map((adapter) => adapter.id))
+  return ASSESSMENT_REFERENCE_RULES.flatMap((rule) => (
+    rule.terms
+      .filter((term) => reportTextContainsTerm(plainText, term) && !detectedAdapterIds.has(rule.adapterId))
+      .map((term) => `${term} was named in the report without detected ${rule.adapterId} source evidence`)
+  ))
+}
+
+function runFontValues(document) {
+  return collectElements(document, 'rFonts').flatMap((node) => (
+    ['ascii', 'hAnsi', 'eastAsia', 'cs']
+      .map((attributeName) => node.getAttribute(`w:${attributeName}`) || node.getAttribute(attributeName) || '')
+      .filter(Boolean)
+  ))
+}
+
+function buildStandardTemplateCloneQa(document, bodyTables, job = {}) {
   const plainText = documentPlainText(document)
   const unresolvedPhraseHits = UNRESOLVED_TEMPLATE_PHRASES.filter((phrase) => plainText.includes(phrase))
+  const visibleArtifactHits = REPORT_VISIBLE_ARTIFACT_PHRASES.filter((phrase) => reportTextContainsTerm(plainText, phrase))
+  const unsupportedAssessmentReferences = unsupportedAssessmentReferenceHits(plainText, job)
   const contentControlCount = collectElements(document, 'sdt').length
   const highlightCount = collectElements(document, 'highlight').length
+  const fonts = runFontValues(document)
+  const checkboxSymbolFontRunCount = fonts.filter((font) => font === CHECKBOX_SYMBOL_FONT).length
+  const legacyCheckboxFontRunCount = fonts.filter((font) => font === 'MS Gothic').length
+  const checkboxSymbolsPresent = plainText.includes(CHECKED_BOX) || plainText.includes(UNCHECKED_BOX)
   const tableCount = bodyTables.length
   const blockerMessages = [
     ...(tableCount !== STANDARD_TEMPLATE_TABLE_COUNT
@@ -2653,14 +2739,28 @@ function buildStandardTemplateCloneQa(document, bodyTables) {
       : []),
     ...(contentControlCount ? [`Generated report still contains ${contentControlCount} Word content-control widget(s).`] : []),
     ...unresolvedPhraseHits.map((phrase) => `Generated report still contains unresolved template phrase: ${phrase}`),
+    ...visibleArtifactHits.map((phrase) => `Generated report still contains internal/template artifact phrase: ${phrase}`),
+    ...unsupportedAssessmentReferences,
+    ...(checkboxSymbolsPresent && !checkboxSymbolFontRunCount
+      ? [`Generated report contains checkbox glyphs without ${CHECKBOX_SYMBOL_FONT} font runs.`]
+      : []),
+    ...(legacyCheckboxFontRunCount
+      ? ['Generated report still contains legacy MS Gothic checkbox font runs.']
+      : []),
   ]
 
   return {
     ok: blockerMessages.length === 0,
+    styleRuleId: SUPERVISOR_REVIEWED_REPORT_STYLE.id,
     tableCount,
     highlightCount,
     contentControlCount,
     unresolvedPhraseHits,
+    visibleArtifactHits,
+    unsupportedAssessmentReferences,
+    checkboxFont: CHECKBOX_SYMBOL_FONT,
+    checkboxSymbolFontRunCount,
+    legacyCheckboxFontRunCount,
     blockerMessages,
   }
 }
@@ -2707,7 +2807,7 @@ function templateAssessmentText(job) {
   }
   const adapters = job.assessmentAdapters.length
     ? job.assessmentAdapters.map((adapter) => adapter.label).join(', ')
-    : 'no recognized standardized assessment adapter was detected; BCBA to verify source packet completeness'
+    : 'no recognized standardized assessment adapter was detected; BCBA to verify record completeness'
   return `Standardized assessment information, diagnostic/evaluation records, caregiver report, and clinical source documents were reviewed when available. Detected assessment inputs include: ${adapters}. These results should be reviewed by the BCBA and integrated with direct observation and caregiver interview before the report is finalized. Initial assessment drafts do not include progress graphs unless source-specific visual data are added by the BCBA.`
 }
 
@@ -2724,10 +2824,10 @@ function templateBarrierText(job) {
     facts.impairments?.social ? `social impairment (${facts.impairments.social})` : '',
   ].filter(Boolean).join('; ')
   if (domains.length && (behaviorText || impairmentText)) {
-    return `Barriers to treatment include source-supported deficits in ${domains.join(', ')}${behaviorText ? `, with maladaptive or interfering behavior concerns including ${behaviorText}` : ''}. ${impairmentText ? `Functional barriers noted in the source packet include ${impairmentText}. ` : ''}These barriers may interfere with safety, learning readiness, communication, participation, generalization, and adaptive functioning across settings.`
+    return `Barriers to treatment include record-supported deficits in ${domains.join(', ')}${behaviorText ? `, with maladaptive or interfering behavior concerns including ${behaviorText}` : ''}. ${impairmentText ? `Functional barriers noted in the reviewed records include ${impairmentText}. ` : ''}These barriers may interfere with safety, learning readiness, communication, participation, generalization, and adaptive functioning across settings.`
   }
   return domains.length
-    ? `Barriers to treatment include source-supported deficits in ${domains.join(', ')}, which may interfere with safety, learning readiness, communication, participation, generalization, and adaptive functioning across settings.`
+    ? `Barriers to treatment include record-supported deficits in ${domains.join(', ')}, which may interfere with safety, learning readiness, communication, participation, generalization, and adaptive functioning across settings.`
     : REVIEW_NEEDED
 }
 
@@ -2753,7 +2853,7 @@ function transitionCriteriaText(kind, job) {
 
 function templateClinicalInterpretationText(job) {
   const referral = job.clinicalFacts?.sectionSnippets?.reasonForReferral
-  return `Reason for Referral: ${referral || 'The caregivers sought ABA treatment to address the interfering effects of ASD-related skill deficits and maladaptive behavior.'} The source packet supports the need for a treatment plan that targets functional communication, social interaction, adaptive participation, reduction of maladaptive behavior, and caregiver implementation of strategies. The BCBA should verify all client-specific details, service recommendations, and treatment priorities before finalizing the report.`
+  return `Reason for Referral: ${referral || 'The caregivers sought ABA treatment to address the interfering effects of ASD-related skill deficits and maladaptive behavior.'} The reviewed records support the need for a treatment plan that targets functional communication, social interaction, adaptive participation, reduction of maladaptive behavior, and caregiver implementation of strategies. The BCBA should verify all client-specific details, service recommendations, and treatment priorities before finalizing the report.`
 }
 
 function templateBehaviorTypeText(job, type) {
@@ -2766,7 +2866,7 @@ function templateBehaviorTypeText(job, type) {
     ? formatClinicalList(STANDARD_SEVERE_BEHAVIOR_LABELS)
     : facts.behaviors?.length
     ? formatClinicalList(facts.behaviors)
-    : 'maladaptive behavior and safety-related escalation described in the source packet'
+    : 'maladaptive behavior and safety-related escalation described in the reviewed records'
   const typeTwoEvidence = [snippets.reasonForReferral, snippets.observationsEmotion, snippets.observationsEmotion ? 'The source pattern is consistent with internalized distress followed by explosive escalation when the client is challenged, frustrated, or unable to communicate needs effectively.' : '']
     .filter(Boolean)
     .join(' ') || templateSectionText(job, 'behaviorProfile', 'Maladaptive Behavior Type II evidence')
@@ -2860,7 +2960,7 @@ function buildBipBehaviorColumns(job) {
     columns.push({
       heading: REVIEW_NEEDED,
       behaviorName: REVIEW_NEEDED,
-      definition: 'A specific maladaptive behavior target was not directly supported in the extracted source packet. Add intake, FBA/BIP, caregiver interview, or behavior data before finalizing this column.',
+      definition: 'A specific maladaptive behavior target was not directly supported in the reviewed records. Add intake, FBA/BIP, caregiver interview, or behavior data before finalizing this column.',
       antecedents: 'BCBA review required before assigning hypothesized function or intervention procedures.',
     })
   }
@@ -3064,13 +3164,14 @@ function fillTemplateParagraphs(document, paragraphs, job) {
   }
 
   setParagraphAfterHeading(document, paragraphs, 'Observation 1 (can delete for reassessments):', templateObservationText(job, 1))
+  setFirstParagraphContaining(document, paragraphs, 'Observation 1 (can delete for reassessments):', 'Observation 1:')
   setParagraphAfterHeading(document, paragraphs, 'Observation 2:', templateObservationText(job, 2))
   setParagraphAfterHeading(document, paragraphs, 'Assessment of Current Functioning:', templateAssessmentText(job))
   removeParagraphsContaining(paragraphs, ['Please write a description of the standardized test being used'])
   setParagraphAfterHeading(document, paragraphs, 'Barriers to treatment:', templateBarrierText(job))
   setFirstParagraphContaining(document, paragraphs, 'Reason for Referral:', templateClinicalInterpretationText(job))
   setFirstParagraphContaining(document, paragraphs, 'Functional Impairment: Please identify as Mild, Moderate, or Severe.', 'Functional Impairment:')
-  setFirstParagraphContaining(document, paragraphs, 'Client is recommended to have Comprehensive/Focused services.', 'Client is recommended to receive ABA services at the intensity and model determined medically necessary by the BCBA after review of the source packet, caregiver priorities, safety needs, adaptive functioning, and payer requirements.')
+  setFirstParagraphContaining(document, paragraphs, 'Client is recommended to have Comprehensive/Focused services.', 'Client is recommended to receive ABA services at the intensity and model determined medically necessary by the BCBA after review of the available records, caregiver priorities, safety needs, adaptive functioning, and payer requirements.')
   setFirstParagraphContaining(document, paragraphs, 'Include rationale for lack of progress here', 'N/A - initial assessment.')
   setFirstParagraphContaining(document, paragraphs, 'For initial assessments, write N/A', 'N/A - initial assessment.')
   setFirstParagraphContaining(document, paragraphs, 'Target maladaptive behaviors for the BIP were chosen', 'Target maladaptive behaviors for the BIP were selected based on source records, caregiver report, BCBA clinical review, and available observation/assessment information. The BCBA must verify operational definitions, functions, and intervention procedures before implementation.')
@@ -3088,11 +3189,11 @@ function fillTemplateParagraphs(document, paragraphs, job) {
   setFirstParagraphContaining(document, paragraphs, 'Client will engage in only expected behaviors during conversational exchanges', transitionCriteriaText('communication', job))
   setFirstParagraphContaining(document, paragraphs, 'The malaptive behaviors of ____', transitionCriteriaText('social', job))
   setFirstParagraphContainingInlineRuns(document, paragraphs, 'This treatment plan was developed and reviewed with parent/caregiver', [
-    { text: CHECKED_BOX, font: 'MS Gothic', size: '24' },
+    { text: CHECKED_BOX, font: CHECKBOX_SYMBOL_FONT, size: '24' },
     { text: ' This treatment plan was developed and reviewed with parent/caregiver' },
   ])
   setFirstParagraphContainingInlineRuns(document, paragraphs, 'This treatment plan was not developed and reviewed with parent/caregiver', [
-    { text: UNCHECKED_BOX, font: 'MS Gothic', size: '24' },
+    { text: UNCHECKED_BOX, font: CHECKBOX_SYMBOL_FONT, size: '24' },
     { text: ' This treatment plan was not developed and reviewed with parent/caregiver' },
   ])
 }
@@ -3119,7 +3220,7 @@ async function writeGeneratedDocx({ outputPath, job }) {
   fillTemplateTables(document, bodyTables, job)
   fillTemplateParagraphs(document, bodyParagraphs, job)
 
-  const cloneQa = buildStandardTemplateCloneQa(document, directChildren(body, 'tbl'))
+  const cloneQa = buildStandardTemplateCloneQa(document, directChildren(body, 'tbl'), job)
   if (!cloneQa.ok) {
     throw new Error(`Generated report failed standard template clone QA: ${cloneQa.blockerMessages.join(' ')}`)
   }
@@ -3160,6 +3261,7 @@ function buildEvidenceLedger(job) {
       browserResponseContainsExcerpts: false,
     },
     standardTemplate: job.standardTemplate,
+    supervisorReviewedStyle: SUPERVISOR_REVIEWED_REPORT_STYLE,
     sourceFiles: job.sourcePacket.sources.map((source) => ({
       id: source.id,
       filename: source.filename,
@@ -3287,6 +3389,7 @@ export async function runLocalReportPilot({
     generatedAt,
     sourcePacket,
     standardTemplate: STANDARD_REPORT_TEMPLATE,
+    supervisorReviewedStyle: SUPERVISOR_REVIEWED_REPORT_STYLE,
     evidenceReadiness,
     assessmentAdapters,
     clinicalFacts,
@@ -3340,6 +3443,7 @@ export async function runLocalReportPilot({
     })),
     unsupportedFiles: sourcePacket.unsupportedFiles,
     standardTemplate: STANDARD_REPORT_TEMPLATE,
+    supervisorReviewedStyle: SUPERVISOR_REVIEWED_REPORT_STYLE,
     evidenceReadiness,
     assessmentAdapters,
     deficitProfile: sanitizeDeficitProfileForResponse(deficitProfile),

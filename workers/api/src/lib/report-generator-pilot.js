@@ -41,18 +41,18 @@ export const REPORT_GENERATOR_ONBOARDING_STEPS = [
     description: 'Return to this page and confirm the helper is connected.',
   },
   {
-    id: 'template_profile',
-    label: 'Choose template',
+    id: 'source_folder_ready',
+    label: 'Choose source folder',
     owner: 'workstation',
     required: true,
-    description: 'Use the default report format or save the agency Word template for reuse.',
+    description: 'Choose the folder with the diagnostic/evaluation, intake, adaptive assessment, and related source records.',
   },
   {
-    id: 'alias_map_reviewed',
-    label: 'Review template fields',
+    id: 'evidence_check_reviewed',
+    label: 'Check evidence',
     owner: 'bcba',
     required: true,
-    description: 'Match any template fields that are not recognized automatically.',
+    description: 'Run Check files and review missing evidence before creating a Word draft.',
   },
   {
     id: 'local_draft_generated',
@@ -62,6 +62,15 @@ export const REPORT_GENERATOR_ONBOARDING_STEPS = [
     description: 'Create an editable Word draft and review it before use.',
   },
 ]
+
+export const REPORT_GENERATOR_SUPERVISOR_REVIEWED_STYLE = {
+  id: 'supervisor-reviewed-aba-initial-v1',
+  label: 'Supervisor-reviewed ABA initial report style',
+  appliesTo: 'initial-assessment',
+  standardTemplateOnly: true,
+  reviewGate: 'helper-blocks-visible-template-artifacts-and-unsupported-assessment-references',
+  summary: 'Initial drafts should read like the reviewed house reports from the start: source-supported facts, present-functioning clinical language, standard SkillCascade template sections, clean checkboxes, and no unsupported assessment/tool references.',
+}
 
 function flattenKeys(value, prefix = '') {
   if (!value || typeof value !== 'object') return []
@@ -155,6 +164,7 @@ export function buildReportGeneratorOnboarding({ profile, userCanEdit = false } 
       ],
       cloudUploadsSourceFiles: false,
     },
+    clinicalWriting: REPORT_GENERATOR_SUPERVISOR_REVIEWED_STYLE,
     serverEndpoints: {
       status: '/api/report-generator/status',
       onboarding: '/api/report-generator/onboarding',

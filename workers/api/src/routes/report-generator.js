@@ -18,9 +18,9 @@ import {
 } from '../lib/report-credits.js'
 
 const route = new Hono()
-const REPORT_HELPER_FILENAME = 'SkillCascadeReportHelper-release-20260610-house-style-report-v6.zip'
+const REPORT_HELPER_FILENAME = 'SkillCascadeReportHelper-release-20260611-supervisor-style-qa-v7.zip'
 const REPORT_HELPER_OBJECT_KEY = `report-generator/${REPORT_HELPER_FILENAME}`
-const REPORT_HELPER_VERSION = 'release-20260610-house-style-report-v6'
+const REPORT_HELPER_VERSION = 'release-20260611-supervisor-style-qa-v7'
 const UNLIMITED_OWNER_TEST_BALANCE = 999999
 const STANDARD_REPORT_TEMPLATE = {
   id: 'skillcascade-standard-initial-assessment-v1',
@@ -50,6 +50,29 @@ const REQUIRED_EVIDENCE_CATEGORIES = [
     examples: 'Vineland, ABAS, AFLS, VB-MAPP, ABLLS, or similar adaptive/skill assessment',
   },
 ]
+const SUPERVISOR_REVIEWED_REPORT_STYLE = {
+  id: 'supervisor-reviewed-aba-initial-v1',
+  label: 'Supervisor-reviewed ABA initial report style',
+  appliesTo: 'initial-assessment',
+  standardTemplateOnly: true,
+  checkboxFont: 'Segoe UI Symbol',
+  writingRules: [
+    'Write report prose as current clinical functioning when supported by records, not as one-time observation language outside observation sections.',
+    'Use only source-supported facts; missing facts remain visible as review-needed fields instead of being invented.',
+    'Do not mention assessment instruments, scores, graphics, or profile images unless that assessment is detected in the current local records.',
+    'Do not leave internal workflow phrases, template instructions, reviewer scaffolding, or customer-template remnants in the visible report.',
+    'Use SkillCascade standard initial assessment wording, transition language, medical-necessity language, risk boxes, and PCP coordination defaults.',
+  ],
+  blockedVisibleReportPhrases: [
+    'source packet',
+    'local source packet',
+    'provided source',
+    'sample rationales',
+    'can delete',
+    'TBD',
+    'TODO',
+  ],
+}
 
 const REPORT_GENERATOR_CONTRACT = {
   moduleId: 'report-generator',
@@ -87,6 +110,7 @@ const REPORT_GENERATOR_CONTRACT = {
     phiBoundary: 'This route returns configuration and review gates only. Source document extraction stays in the local helper.',
   },
   standardTemplate: STANDARD_REPORT_TEMPLATE,
+  supervisorReviewedStyle: SUPERVISOR_REVIEWED_REPORT_STYLE,
   templatePolicy: {
     customerTemplateUpload: false,
     customTemplateAccepted: false,
@@ -112,6 +136,7 @@ const REPORT_GENERATOR_CONTRACT = {
       'speech_language',
       'ot_sensory',
       'school_iep',
+      'ados2',
     ],
     output: 'detected assessment inputs, source-supported deficit domains, missing-evidence blockers, and goal-domain readiness',
   },
@@ -135,6 +160,7 @@ const REPORT_GENERATOR_CONTRACT = {
     'No live CentralReach, Passage, payer, email, or Word Online write from this module.',
     'Unsupported or missing source fields must stay visible in QA.',
     'Required diagnosis/evaluation, intake/history, and adaptive/functional assessment evidence must be present before generation.',
+    'Visible report text must pass the supervisor-reviewed ABA initial report style QA gate before the helper writes the draft DOCX.',
   ],
   supportedSourceTypes: ['.docx', '.txt', '.md'],
   plannedAdapters: [

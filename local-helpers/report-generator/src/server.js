@@ -7,6 +7,7 @@ import {
   ASSESSMENT_ADAPTERS,
   REQUIRED_EVIDENCE_CATEGORIES,
   STANDARD_REPORT_TEMPLATE,
+  SUPERVISOR_REVIEWED_REPORT_STYLE,
   preflightLocalReportPilot,
   runLocalReportPilot,
 } from './local-report-pilot.js'
@@ -281,6 +282,7 @@ createServer(async (req, res) => {
         unsupportedFileBehavior: 'warn-do-not-extract',
         output: 'editable-docx',
         standardTemplate: STANDARD_REPORT_TEMPLATE,
+        supervisorReviewedStyle: SUPERVISOR_REVIEWED_REPORT_STYLE,
         templateMode: STANDARD_REPORT_TEMPLATE.mode,
         customerTemplateUpload: false,
         requiredEvidenceCategories: REQUIRED_EVIDENCE_CATEGORIES,
