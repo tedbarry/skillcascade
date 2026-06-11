@@ -3073,6 +3073,7 @@ function fillTemplateTables(document, tables, job) {
   setTableCellValueOrReview(document, demographics, 0, 1, demographicsFacts.clientName || job.clinicalProfile?.clientLabel || job.clientLabel)
   setTableCellValueOrReview(document, demographics, 0, 3, demographicsFacts.dateOfBirth)
   setTableCellText(document, demographics, 1, 1, 'Autism Spectrum Disorder F84.0')
+  // Teddy-only default. Replace with account/provider-profile values before external multi-user use.
   setTableCellText(document, demographics, 1, 3, 'Teddy Bahary BCBA, LBA-NY/NJ, CBSS')
   setTableCellText(document, demographics, 2, 1, new Date(job.generatedAt).toLocaleDateString('en-US'))
   setTableCellText(document, demographics, 2, 3, INITIAL_REPORT_RANGE)
