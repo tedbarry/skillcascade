@@ -248,6 +248,29 @@ function safePath(urlPath) {
   return resolved
 }
 
+async function buildReportRunProof(result) {
+  const installState = await helperInstallState()
+  const packageVersion = installState.buildManifest?.packageVersion
+    || installState.buildManifest?.releaseVersion
+    || installState.helperVersion
+    || ''
+
+  return {
+    idempotencyKey: result.id,
+    localRunId: result.id,
+    helperVersion: installState.helperVersion || '',
+    packageVersion,
+    templateMode: result.templateMode || result.standardTemplate?.mode || '',
+    templateId: result.standardTemplate?.id || '',
+    generatedAt: result.generatedAt || new Date().toISOString(),
+    qaStatus: result.qa?.status || '',
+    outputCreated: Boolean(result.outputPath),
+    reviewCreated: Boolean(result.reviewPath),
+    evidenceLedgerCreated: Boolean(result.evidenceLedgerPath),
+    localOnly: true,
+  }
+}
+
 createServer(async (req, res) => {
   const corsHeaders = buildCorsHeaders(req)
 
@@ -275,12 +298,14 @@ createServer(async (req, res) => {
         port,
         portDiscovery,
         helperVersion: installState.helperVersion,
+        runProofVersion: 1,
         installState,
         licenseReadiness,
         supportedSourceExtensions: ['.docx', '.txt', '.md'],
         sourceScanning: 'recursive-with-output-folder-exclusion-and-same-folder-artifact-skip',
         unsupportedFileBehavior: 'warn-do-not-extract',
         output: 'editable-docx',
+        creditProof: 'server-validated-run-proof-v1',
         standardTemplate: STANDARD_REPORT_TEMPLATE,
         supervisorReviewedStyle: SUPERVISOR_REVIEWED_REPORT_STYLE,
         templateMode: STANDARD_REPORT_TEMPLATE.mode,
@@ -419,7 +444,8 @@ createServer(async (req, res) => {
       try {
         const body = await readJsonBody(req)
         const result = await runLocalReportPilot(body)
-        sendJson(res, { ok: true, result }, corsHeaders)
+        const runProof = await buildReportRunProof(result)
+        sendJson(res, { ok: true, result: { ...result, runProof } }, corsHeaders)
       } catch (error) {
         sendError(res, 400, error.message, corsHeaders)
       }

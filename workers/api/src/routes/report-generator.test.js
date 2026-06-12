@@ -62,6 +62,24 @@ function createArtifactBucket() {
   }
 }
 
+function validRunProof(overrides = {}) {
+  return {
+    idempotencyKey: 'proof-1',
+    localRunId: 'local-report-1',
+    helperVersion: '0.1.0',
+    packageVersion: 'release-20260611-supervisor-style-qa-v7',
+    templateMode: 'skillcascade-standard-docx',
+    templateId: 'skillcascade-standard-initial-assessment-v1',
+    generatedAt: '2026-06-11T00:00:00.000Z',
+    qaStatus: 'ready-for-bcba-review',
+    outputCreated: true,
+    reviewCreated: true,
+    evidenceLedgerCreated: true,
+    localOnly: true,
+    ...overrides,
+  }
+}
+
 describe('report-generator route contract', () => {
   beforeEach(() => {
     auth.hasPermission.mockReset()
@@ -110,6 +128,7 @@ describe('report-generator route contract', () => {
     expect(payload.data.localHelper.nativePathPicker.sourceFolderCanAlsoBeOutputFolder).toBe(true)
     expect(payload.data.localHelper.nativePathPicker.returnsPathOnly).toBe(true)
     expect(payload.data.installAndLicensing.helperReportsLocalInstallFingerprint).toBe(true)
+    expect(payload.data.installAndLicensing.latestHelperManifestEndpoint).toBe('/api/report-generator/helper/latest')
     expect(payload.data.installAndLicensing.helperPackageStatusEndpoint).toBe('/api/report-generator/helper/status')
     expect(payload.data.installAndLicensing.helperPackageDownloadEndpoint).toBe('/api/report-generator/helper/download')
     expect(payload.data.installAndLicensing.helperCanGrantAccess).toBe(false)
@@ -146,8 +165,30 @@ describe('report-generator route contract', () => {
     expect(response.status).toBe(200)
     expect(payload.ok).toBe(true)
     expect(payload.filename).toMatch(/SkillCascadeReportHelper/)
+    expect(payload.currentVersion).toBe('release-20260611-supervisor-style-qa-v7')
+    expect(payload.minimumVersion).toBe('release-20260611-supervisor-style-qa-v7')
+    expect(payload.installerName).toBe('Install-ReportGeneratorHelper.exe')
+    expect(payload.sha256).toMatch(/[A-F0-9]{64}/)
     expect(payload.downloadPath).toBe('/api/report-generator/helper/download')
     expect(payload.installSteps).toContain('Download the helper package.')
+    expect(bucket.head).toHaveBeenCalled()
+  })
+
+  it('returns the latest helper manifest metadata for authorized users', async () => {
+    auth.hasPermission.mockImplementation((_profile, category, action) => category === 'reports' && action === 'view')
+    const bucket = createArtifactBucket()
+
+    const response = await sendRequest('/helper/latest', createProfile(), {
+      env: { CONNECTOR_ARTIFACTS: bucket },
+    })
+    const payload = await response.json()
+
+    expect(response.status).toBe(200)
+    expect(payload.ok).toBe(true)
+    expect(payload.version).toBe('release-20260611-supervisor-style-qa-v7')
+    expect(payload.minimumVersion).toBe('release-20260611-supervisor-style-qa-v7')
+    expect(payload.installerName).toBe('Install-ReportGeneratorHelper.exe')
+    expect(payload.downloadPath).toBe('/api/report-generator/helper/download')
     expect(bucket.head).toHaveBeenCalled()
   })
 
@@ -164,6 +205,8 @@ describe('report-generator route contract', () => {
     expect(response.headers.get('content-disposition')).toMatch(/SkillCascadeReportHelper/)
     expect(response.headers.get('cache-control')).toBe('private, no-store')
     expect(response.headers.get('x-skillcascade-report-helper-version')).toBe('release-20260611-supervisor-style-qa-v7')
+    expect(response.headers.get('x-skillcascade-report-helper-minimum-version')).toBe('release-20260611-supervisor-style-qa-v7')
+    expect(response.headers.get('x-skillcascade-report-helper-sha256')).toMatch(/[A-F0-9]{64}/)
     expect(bucket.get).toHaveBeenCalled()
   })
 
@@ -300,9 +343,7 @@ describe('report-generator route contract', () => {
     const response = await sendRequest('/credits/consume', createProfile(), {
       method: 'POST',
       body: {
-        externalEventId: 'safe-credit-event-1',
-        helperVersion: '0.1.0',
-        templateMode: 'default',
+        runProof: validRunProof(),
       },
     })
     const payload = await response.json()
@@ -310,7 +351,46 @@ describe('report-generator route contract', () => {
     expect(response.status).toBe(200)
     expect(payload.ok).toBe(true)
     expect(payload.data.consumed).toBe(1)
+    expect(payload.data.runProofAccepted).toBe(true)
     expect(db.query.mock.calls.some((call) => String(call[1]).includes('INSERT INTO report_generator_credit_ledger'))).toBe(true)
+  })
+
+  it('rejects credit consumption without successful helper run proof', async () => {
+    auth.hasPermission.mockImplementation((_profile, category, action) => (
+      category === 'reports' && ['view', 'edit'].includes(action)
+    ))
+
+    const response = await sendRequest('/credits/consume', createProfile(), {
+      method: 'POST',
+      body: {},
+    })
+    const payload = await response.json()
+
+    expect(response.status).toBe(400)
+    expect(payload.detailCode).toBe('report_run_proof_required')
+    expect(db.query.mock.calls.some((call) => String(call[1]).includes('INSERT INTO report_generator_credit_ledger'))).toBe(false)
+  })
+
+  it('rejects credit consumption from an outdated helper run proof', async () => {
+    auth.hasPermission.mockImplementation((_profile, category, action) => (
+      category === 'reports' && ['view', 'edit'].includes(action)
+    ))
+
+    const response = await sendRequest('/credits/consume', createProfile(), {
+      method: 'POST',
+      body: {
+        runProof: validRunProof({
+          helperVersion: '0.0.1',
+          packageVersion: 'release-20260601-old',
+        }),
+      },
+    })
+    const payload = await response.json()
+
+    expect(response.status).toBe(400)
+    expect(payload.detailCode).toBe('helper_update_required')
+    expect(payload.requiredVersion).toBe('release-20260611-supervisor-style-qa-v7')
+    expect(db.query.mock.calls.some((call) => String(call[1]).includes('INSERT INTO report_generator_credit_ledger'))).toBe(false)
   })
 
   it('does not consume ledger credits for allowlisted owner-test users', async () => {
@@ -322,9 +402,7 @@ describe('report-generator route contract', () => {
       method: 'POST',
       env: { REPORT_GENERATOR_UNLIMITED_USER_IDS: 'owner-user-1' },
       body: {
-        externalEventId: 'safe-credit-event-1',
-        helperVersion: '0.1.0',
-        templateMode: 'skillcascade-standard-docx',
+        runProof: validRunProof(),
       },
     })
     const payload = await response.json()
@@ -333,6 +411,7 @@ describe('report-generator route contract', () => {
     expect(payload.ok).toBe(true)
     expect(payload.data.unlimited).toBe(true)
     expect(payload.data.consumed).toBe(0)
+    expect(payload.data.runProofAccepted).toBe(true)
     expect(payload.data.balance).toBe(999999)
     expect(db.query.mock.calls.some((call) => String(call[1]).includes('INSERT INTO report_generator_credit_ledger'))).toBe(false)
   })
@@ -424,11 +503,17 @@ describe('report-generator route contract', () => {
             org_id: params[0],
             user_id: params[1],
             install_fingerprint: params[2],
-            helper_version: params[3],
-            package_version: params[4],
-            helper_url: params[5],
-            status: 'claimed',
-            metadata: JSON.parse(params[6]),
+            device_fingerprint: params[3],
+            device_label: params[4],
+            hostname_hash: params[5],
+            platform: params[6],
+            arch: params[7],
+            helper_version: params[8],
+            package_version: params[9],
+            required_helper_version: params[10],
+            helper_url: params[11],
+            status: params[12],
+            metadata: JSON.parse(params[13]),
             first_claimed_at: '2026-06-04T00:00:00.000Z',
             last_seen_at: '2026-06-04T00:00:00.000Z',
           }],
@@ -441,8 +526,13 @@ describe('report-generator route contract', () => {
       method: 'POST',
       body: {
         installFingerprint: 'safeinstall123',
+        deviceFingerprint: 'devicehash123',
+        deviceLabel: 'Computer devicehas',
+        hostnameHash: 'devicehash123',
+        platform: 'win32',
+        arch: 'x64',
         helperVersion: '0.1.0',
-        packageVersion: 'release-1',
+        packageVersion: 'release-20260611-supervisor-style-qa-v7',
         helperUrl: 'http://127.0.0.1:4181',
         readinessStatus: 'ready-for-skillcascade-license-check',
         standardTemplateId: 'skillcascade-standard-initial-assessment-v1',
@@ -456,8 +546,12 @@ describe('report-generator route contract', () => {
     expect(payload.data.phiStored).toBe(false)
     expect(payload.data.helperCanGrantAccess).toBe(false)
     expect(payload.data.claim.installFingerprint).toBe('safeinstall123')
+    expect(payload.data.claim.deviceFingerprint).toBe('devicehash123')
     expect(payload.data.claim.helperVersion).toBe('0.1.0')
+    expect(payload.data.claim.requiredHelperVersion).toBe('release-20260611-supervisor-style-qa-v7')
+    expect(payload.data.claim.status).toBe('active')
     expect(db.query.mock.calls.some((call) => String(call[1]).includes('CREATE TABLE IF NOT EXISTS report_generator_install_claims'))).toBe(true)
+    expect(db.query.mock.calls.some((call) => String(call[1]).includes('ADD COLUMN IF NOT EXISTS device_fingerprint'))).toBe(true)
     expect(db.query.mock.calls.some((call) => String(call[1]).includes('INSERT INTO report_generator_install_claims'))).toBe(true)
   })
 
@@ -471,10 +565,16 @@ describe('report-generator route contract', () => {
             org_id: 'org-1',
             user_id: 'user-1',
             install_fingerprint: 'safeinstall123',
+            device_fingerprint: 'devicehash123',
+            device_label: 'Computer devicehas',
+            hostname_hash: 'devicehash123',
+            platform: 'win32',
+            arch: 'x64',
             helper_version: '0.1.0',
             package_version: 'release-1',
+            required_helper_version: 'release-20260611-supervisor-style-qa-v7',
             helper_url: 'http://127.0.0.1:4181',
-            status: 'claimed',
+            status: 'active',
             first_claimed_at: '2026-06-04T00:00:00.000Z',
             last_seen_at: '2026-06-04T00:00:00.000Z',
           }],
@@ -491,5 +591,7 @@ describe('report-generator route contract', () => {
     expect(payload.data.phiStored).toBe(false)
     expect(payload.data.claimCount).toBe(1)
     expect(payload.data.claims[0].installFingerprint).toBe('safeinstall123')
+    expect(payload.data.claims[0].deviceFingerprint).toBe('devicehash123')
+    expect(payload.data.claims[0].requiredHelperVersion).toBe('release-20260611-supervisor-style-qa-v7')
   })
 })

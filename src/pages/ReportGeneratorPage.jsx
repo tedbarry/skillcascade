@@ -216,6 +216,7 @@ function getHelperCompatibility(payload) {
   const hasFolderPicker = Boolean(payload?.pathPickers?.supported || payload?.endpoints?.pickFolder || payload?.legacyEndpoints?.pickFolder)
   const usesStandardTemplate = payload?.templateMode === 'skillcascade-standard-docx' || payload?.standardTemplate?.mode === 'skillcascade-standard-docx'
   const blocksCustomerTemplates = payload?.customerTemplateUpload === false || payload?.standardTemplate?.customerTemplateUpload === false
+  const supportsRunProof = Number(payload?.runProofVersion || 0) >= 1
 
   if (!hasFolderPicker) {
     return {
@@ -229,8 +230,63 @@ function getHelperCompatibility(payload) {
       reason: 'This helper is an older report-template build. The current Report Generator requires the standard-template helper.',
     }
   }
+  if (!supportsRunProof) {
+    return {
+      ok: false,
+      reason: 'This helper is missing the successful-run proof required by the current Report Generator.',
+    }
+  }
 
   return { ok: true, reason: '' }
+}
+
+function getHelperPackageRelease(packageData) {
+  return packageData?.release || packageData?.helperPackage || packageData || {}
+}
+
+function getInstalledHelperVersions(payload) {
+  return {
+    packageVersion: payload?.installState?.buildManifest?.packageVersion
+      || payload?.installState?.buildManifest?.releaseVersion
+      || payload?.licenseReadiness?.packageVersion
+      || payload?.installState?.packageVersion
+      || '',
+    helperVersion: payload?.helperVersion
+      || payload?.installState?.helperVersion
+      || payload?.licenseReadiness?.helperVersion
+      || '',
+  }
+}
+
+function getHelperReleaseCompatibility(payload, packageData) {
+  const release = getHelperPackageRelease(packageData)
+  const acceptedVersions = new Set([
+    ...(Array.isArray(release.supportedVersions) ? release.supportedVersions : []),
+    release.version,
+    release.currentVersion,
+    release.minimumVersion,
+    release.requiredVersion,
+    release.helperRuntimeVersion,
+  ].map((value) => String(value || '').trim()).filter(Boolean))
+  const requiredVersion = String(release.minimumVersion || release.requiredVersion || release.version || '').trim()
+  const installed = getInstalledHelperVersions(payload)
+  const installedVersions = [installed.packageVersion, installed.helperVersion].filter(Boolean)
+
+  if (!acceptedVersions.size) {
+    return { ok: true, status: 'unknown', reason: '', installed, requiredVersion }
+  }
+  if (installedVersions.some((version) => acceptedVersions.has(version))) {
+    return { ok: true, status: 'current', reason: '', installed, requiredVersion }
+  }
+
+  const installedLabel = installed.packageVersion || installed.helperVersion || 'unknown'
+  return {
+    ok: false,
+    status: 'outdated',
+    reason: `Helper connected, but outdated. Installed: ${installedLabel}. Required: ${requiredVersion || 'latest'}.`,
+    installed,
+    requiredVersion,
+  }
 }
 
 function helperUpdateRequiredError(url, reason) {
@@ -241,7 +297,7 @@ function helperUpdateRequiredError(url, reason) {
   return error
 }
 
-async function discoverHelperStatus(currentUrl) {
+async function discoverHelperStatus(currentUrl, packageData) {
   const urls = helperDiscoveryUrls(currentUrl)
   const results = await Promise.allSettled(urls.map(async (url) => {
     const payload = await fetchHelperJson(url, '/status', { timeoutMs: HELPER_DISCOVERY_TIMEOUT_MS })
@@ -249,7 +305,11 @@ async function discoverHelperStatus(currentUrl) {
     if (!compatibility.ok) {
       throw helperUpdateRequiredError(url, compatibility.reason)
     }
-    return { url, payload }
+    const releaseCompatibility = getHelperReleaseCompatibility(payload, packageData)
+    if (!releaseCompatibility.ok) {
+      throw helperUpdateRequiredError(url, releaseCompatibility.reason)
+    }
+    return { url, payload, releaseCompatibility }
   }))
 
   const success = results.find((result) => result.status === 'fulfilled')
@@ -265,9 +325,13 @@ async function discoverHelperStatus(currentUrl) {
 
 function HelperPackagePanel({ packageState, downloadState, helperStatus, helperUrl, onRefresh, onDownload, onCheck }) {
   const readyToDownload = packageState.ok && !downloadState.loading
+  const release = getHelperPackageRelease(packageState.data)
   const packageLabel = packageState.data?.filename || 'Report Generator helper'
+  const currentVersion = release.currentVersion || release.version || packageState.data?.version || ''
+  const minimumVersion = release.minimumVersion || release.requiredVersion || packageState.data?.minimumVersion || ''
   const sizeLabel = packageState.data?.size ? ` (${formatFileSize(packageState.data.size)})` : ''
   const helperStatusUrl = `${normalizeHelperBase(helperUrl)}${HELPER_API_PREFIX}/status`
+  const updateRequired = /outdated|update required|needs an update|download.*latest/i.test(helperStatus.error || '')
 
   return (
     <section className="rounded-2xl border border-sage-200 bg-sage-50 p-5 shadow-sm">
@@ -279,8 +343,8 @@ function HelperPackagePanel({ packageState, downloadState, helperStatus, helperU
             Install this small helper on the Windows computer that has access to the report files. It runs only on this computer, chooses a safe local address automatically, and does not take over anything another app is using. Then come back here and check setup. If Chrome or Edge asks to allow local/device access, choose Allow so the site can talk to the helper on this computer.
           </p>
         </div>
-        <StatusBadge tone={helperStatus.ok ? 'green' : packageState.ok ? 'blue' : packageState.loading ? 'warm' : 'red'}>
-          {helperStatus.ok ? 'Setup ready' : packageState.ok ? 'Download ready' : packageState.loading ? 'Checking package' : 'Package unavailable'}
+        <StatusBadge tone={helperStatus.ok ? 'green' : updateRequired ? 'red' : packageState.ok ? 'blue' : packageState.loading ? 'warm' : 'red'}>
+          {helperStatus.ok ? 'Setup ready' : updateRequired ? 'Update required' : packageState.ok ? 'Download ready' : packageState.loading ? 'Checking package' : 'Package unavailable'}
         </StatusBadge>
       </div>
 
@@ -302,7 +366,7 @@ function HelperPackagePanel({ packageState, downloadState, helperStatus, helperU
           disabled={!readyToDownload}
           className="min-h-[44px] rounded-full bg-sage-600 px-5 py-2 text-sm font-semibold text-white shadow-sm hover:bg-sage-700 disabled:cursor-not-allowed disabled:bg-warm-300"
         >
-          {downloadState.loading ? 'Preparing download...' : `Download helper${sizeLabel}`}
+          {downloadState.loading ? 'Preparing download...' : `${updateRequired ? 'Download update' : 'Download helper'}${sizeLabel}`}
         </button>
         <button
           type="button"
@@ -354,7 +418,7 @@ function HelperPackagePanel({ packageState, downloadState, helperStatus, helperU
       ) : null}
       {packageState.ok ? (
         <p className="mt-3 text-xs leading-5 text-sage-700">
-          Package: {packageLabel}. Only download and setup information is handled here; client documents stay on the workstation.
+          Package: {packageLabel}{currentVersion ? `, current ${currentVersion}` : ''}{minimumVersion ? `, minimum ${minimumVersion}` : ''}. Only download and setup information is handled here; client documents stay on the workstation.
         </p>
       ) : null}
     </section>
@@ -822,7 +886,7 @@ export default function ReportGeneratorPage() {
   async function checkHelper() {
     setHelperStatus({ checked: true, loading: true, ok: false, data: null, error: '', discoveredUrl: '', message: '' })
     try {
-      const result = await discoverHelperStatus(helperBase)
+      const result = await discoverHelperStatus(helperBase, helperPackageState.data)
       setHelperUrl(result.url)
       setHelperStatus({
         checked: true,
@@ -831,7 +895,7 @@ export default function ReportGeneratorPage() {
         data: result.payload,
         error: '',
         discoveredUrl: result.url,
-        message: result.url !== helperBase ? 'Helper found automatically at a safe local address.' : '',
+        message: result.url !== helperBase ? 'Helper found automatically at a safe local address.' : 'Helper is current.',
       })
     } catch (error) {
       setHelperStatus({ checked: true, loading: false, ok: false, data: null, error: readHelperError(error), discoveredUrl: '', message: '' })
@@ -839,10 +903,15 @@ export default function ReportGeneratorPage() {
   }
 
   async function resolveHelperBaseForLocalAction() {
-    if (helperStatus.ok && getHelperCompatibility(helperStatus.data).ok) return helperBase
+    if (helperStatus.ok) {
+      const compatibility = getHelperCompatibility(helperStatus.data)
+      const releaseCompatibility = getHelperReleaseCompatibility(helperStatus.data, helperPackageState.data)
+      if (compatibility.ok && releaseCompatibility.ok) return helperBase
+      throw helperUpdateRequiredError(helperBase, compatibility.reason || releaseCompatibility.reason)
+    }
 
     setHelperStatus({ checked: true, loading: true, ok: false, data: null, error: '', discoveredUrl: '', message: '' })
-    const result = await discoverHelperStatus(helperBase)
+    const result = await discoverHelperStatus(helperBase, helperPackageState.data)
     setHelperUrl(result.url)
     setHelperStatus({
       checked: true,
@@ -851,7 +920,7 @@ export default function ReportGeneratorPage() {
       data: result.payload,
       error: '',
       discoveredUrl: result.url,
-      message: result.url !== helperBase ? 'Helper found automatically at a safe local address.' : '',
+      message: result.url !== helperBase ? 'Helper found automatically at a safe local address.' : 'Helper is current.',
     })
     return result.url
   }
@@ -892,6 +961,7 @@ export default function ReportGeneratorPage() {
   async function claimLocalInstall() {
     const readiness = helperStatus.data?.licenseReadiness
     const installState = helperStatus.data?.installState || {}
+    const machine = readiness?.machine || {}
     const fingerprint = readiness?.installFingerprint || ''
     if (!fingerprint) {
       setSeatClaimState({ loading: false, data: null, error: 'Check the local helper first so it can report an install fingerprint.' })
@@ -904,8 +974,13 @@ export default function ReportGeneratorPage() {
         method: 'POST',
         body: JSON.stringify({
           installFingerprint: fingerprint,
+          deviceFingerprint: machine.hostnameHash || fingerprint,
+          deviceLabel: machine.hostnameHash ? `Computer ${String(machine.hostnameHash).slice(0, 8)}` : 'This computer',
+          hostnameHash: machine.hostnameHash || '',
+          platform: machine.platform || '',
+          arch: machine.arch || '',
           helperVersion: readiness.helperVersion || installState.helperVersion || '',
-          packageVersion: installState.buildManifest?.packageVersion || '',
+          packageVersion: installState.buildManifest?.packageVersion || installState.buildManifest?.releaseVersion || '',
           helperUrl: helperBase,
           readinessStatus: readiness.status || '',
           standardTemplateId: moduleStatus.data?.standardTemplate?.id || 'skillcascade-standard-initial-assessment-v1',
@@ -962,7 +1037,6 @@ export default function ReportGeneratorPage() {
       return
     }
 
-    const creditEventId = globalThis.crypto?.randomUUID?.() || `report-run-${Date.now()}-${Math.random().toString(16).slice(2)}`
     setRunState({ loading: true, result: null, error: '' })
     try {
       const activeHelperBase = await resolveHelperBaseForLocalAction()
@@ -979,12 +1053,13 @@ export default function ReportGeneratorPage() {
       let creditResult = null
       let creditWarning = ''
       try {
+        if (!payload.result?.runProof) {
+          throw new Error('The local helper generated a draft but did not return the required run proof. Download the latest helper and try again.')
+        }
         const consumeResponse = await api.fetch('/api/report-generator/credits/consume', {
           method: 'POST',
           body: JSON.stringify({
-            externalEventId: creditEventId,
-            helperVersion: helperStatus.data?.helperVersion || helperStatus.data?.version || '',
-            templateMode: payload.result?.templateMode || '',
+            runProof: payload.result.runProof,
           }),
         })
         const consumePayload = await consumeResponse.json().catch(() => null)

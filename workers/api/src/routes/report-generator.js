@@ -18,9 +18,20 @@ import {
 } from '../lib/report-credits.js'
 
 const route = new Hono()
-const REPORT_HELPER_FILENAME = 'SkillCascadeReportHelper-release-20260611-supervisor-style-qa-v7.zip'
-const REPORT_HELPER_OBJECT_KEY = `report-generator/${REPORT_HELPER_FILENAME}`
-const REPORT_HELPER_VERSION = 'release-20260611-supervisor-style-qa-v7'
+const DEFAULT_REPORT_HELPER_RELEASE = {
+  channel: 'controlled-release',
+  version: 'release-20260611-supervisor-style-qa-v7',
+  minimumVersion: 'release-20260611-supervisor-style-qa-v7',
+  helperRuntimeVersion: '0.1.0',
+  filename: 'SkillCascadeReportHelper-release-20260611-supervisor-style-qa-v7.zip',
+  objectKey: 'report-generator/SkillCascadeReportHelper-release-20260611-supervisor-style-qa-v7.zip',
+  sha256: '49E2E4D96FDC9B9FCAA13E4F68505EDF0CC2E3882D1F7DA88F901AFC74D2DA9A',
+  installerName: 'Install-ReportGeneratorHelper.exe',
+  packageRootName: 'SkillCascadeReportHelper-release-20260611-supervisor-style-qa-v7',
+  requiredInstallFlow: 'download-zip-extract-run-installer-from-extracted-folder',
+  autoUpdateEnabled: false,
+}
+const REPORT_HELPER_MANIFEST_KEY = 'report-generator/latest-helper.json'
 const UNLIMITED_OWNER_TEST_BALANCE = 999999
 const STANDARD_REPORT_TEMPLATE = {
   id: 'skillcascade-standard-initial-assessment-v1',
@@ -143,6 +154,7 @@ const REPORT_GENERATOR_CONTRACT = {
   installAndLicensing: {
     helperReportsVersion: true,
     helperReportsLocalInstallFingerprint: true,
+    latestHelperManifestEndpoint: '/api/report-generator/helper/latest',
     serverSeatClaimEndpoint: '/api/report-generator/seat-claims',
     helperPackageStatusEndpoint: '/api/report-generator/helper/status',
     helperPackageDownloadEndpoint: '/api/report-generator/helper/download',
@@ -223,11 +235,132 @@ function hasUnlimitedReportCredits(c, profile) {
   return Boolean(profile?.id && allowlist.has(String(profile.id).toLowerCase()))
 }
 
+function normalizeHelperRelease(value = {}) {
+  const source = value && typeof value === 'object' ? value : {}
+  const version = String(source.version || source.currentVersion || DEFAULT_REPORT_HELPER_RELEASE.version).trim()
+  const filename = String(source.filename || source.helperZip || DEFAULT_REPORT_HELPER_RELEASE.filename).trim()
+  const objectKey = String(source.objectKey || source.r2ObjectKey || (filename ? `report-generator/${filename}` : DEFAULT_REPORT_HELPER_RELEASE.objectKey)).trim()
+  const minimumVersion = String(source.minimumVersion || source.requiredVersion || version || DEFAULT_REPORT_HELPER_RELEASE.minimumVersion).trim()
+  const supportedVersions = Array.isArray(source.supportedVersions)
+    ? source.supportedVersions.map((item) => String(item || '').trim()).filter(Boolean)
+    : []
+
+  return {
+    channel: String(source.channel || source.releaseChannel || DEFAULT_REPORT_HELPER_RELEASE.channel).trim(),
+    version,
+    currentVersion: version,
+    minimumVersion,
+    requiredVersion: minimumVersion,
+    helperRuntimeVersion: String(source.helperRuntimeVersion || source.helperVersion || DEFAULT_REPORT_HELPER_RELEASE.helperRuntimeVersion).trim(),
+    filename,
+    objectKey,
+    sha256: String(source.sha256 || source.helperZipSha256 || DEFAULT_REPORT_HELPER_RELEASE.sha256).trim(),
+    installerName: String(source.installerName || source.installerLauncher || DEFAULT_REPORT_HELPER_RELEASE.installerName).trim(),
+    packageRootName: String(source.packageRootName || source.packageName || filename.replace(/\.zip$/i, '') || DEFAULT_REPORT_HELPER_RELEASE.packageRootName).trim(),
+    requiredInstallFlow: String(source.requiredInstallFlow || DEFAULT_REPORT_HELPER_RELEASE.requiredInstallFlow).trim(),
+    autoUpdateEnabled: source.autoUpdateEnabled === true,
+    supportedVersions: [...new Set([version, minimumVersion, ...supportedVersions].filter(Boolean))],
+    downloadPath: '/api/report-generator/helper/download',
+    latestPath: '/api/report-generator/helper/latest',
+  }
+}
+
+async function readJsonObjectFromR2(bucket, objectKey) {
+  if (!bucket || !objectKey) return null
+  try {
+    const object = await bucket.get(objectKey)
+    if (!object) return null
+    const text = typeof object.text === 'function'
+      ? await object.text()
+      : typeof object.body?.text === 'function'
+        ? await object.body.text()
+        : ''
+    if (!text) return null
+    return JSON.parse(text)
+  } catch {
+    return null
+  }
+}
+
+async function getReportHelperRelease(c) {
+  const bucket = c.env.CONNECTOR_ARTIFACTS
+  const manifestKey = String(c.env.REPORT_HELPER_LATEST_MANIFEST_KEY || REPORT_HELPER_MANIFEST_KEY)
+  const manifest = await readJsonObjectFromR2(bucket, manifestKey)
+  return normalizeHelperRelease(manifest || DEFAULT_REPORT_HELPER_RELEASE)
+}
+
+function helperReleaseAcceptsVersion(release, packageVersion = '', helperVersion = '') {
+  const accepted = new Set([
+    ...(release?.supportedVersions || []),
+    release?.version,
+    release?.minimumVersion,
+    release?.helperRuntimeVersion,
+  ].map((value) => String(value || '').trim()).filter(Boolean))
+  const installedPackage = String(packageVersion || '').trim()
+  const installedHelper = String(helperVersion || '').trim()
+  return Boolean((installedPackage && accepted.has(installedPackage)) || (installedHelper && accepted.has(installedHelper)))
+}
+
+function validateReportRunProof(body = {}, release) {
+  const proof = body.runProof && typeof body.runProof === 'object' ? body.runProof : null
+  if (!proof) {
+    const error = new Error('A successful helper run proof is required before consuming a report credit.')
+    error.code = 'report_run_proof_required'
+    throw error
+  }
+
+  const normalized = {
+    idempotencyKey: String(proof.idempotencyKey || proof.localRunId || '').trim().slice(0, 160),
+    localRunId: String(proof.localRunId || '').trim().slice(0, 160),
+    helperVersion: String(proof.helperVersion || '').trim().slice(0, 80),
+    packageVersion: String(proof.packageVersion || '').trim().slice(0, 80),
+    templateMode: String(proof.templateMode || '').trim().slice(0, 120),
+    templateId: String(proof.templateId || '').trim().slice(0, 120),
+    generatedAt: String(proof.generatedAt || '').trim().slice(0, 80),
+    qaStatus: String(proof.qaStatus || '').trim().slice(0, 80),
+    outputCreated: proof.outputCreated === true,
+    reviewCreated: proof.reviewCreated === true,
+    evidenceLedgerCreated: proof.evidenceLedgerCreated === true,
+    localOnly: proof.localOnly !== false,
+  }
+
+  if (!normalized.idempotencyKey || !normalized.localRunId) {
+    const error = new Error('Run proof must include a local run id and idempotency key.')
+    error.code = 'report_run_proof_invalid'
+    throw error
+  }
+  if (!normalized.outputCreated || !normalized.reviewCreated || !normalized.evidenceLedgerCreated) {
+    const error = new Error('Run proof must show that the draft, review summary, and evidence ledger were created.')
+    error.code = 'report_run_not_created'
+    throw error
+  }
+  if (normalized.qaStatus !== 'ready-for-bcba-review') {
+    const error = new Error('Run proof must come from a draft that passed the helper QA gate.')
+    error.code = 'report_run_qa_not_ready'
+    throw error
+  }
+  if (normalized.templateMode !== STANDARD_REPORT_TEMPLATE.mode || normalized.templateId !== STANDARD_REPORT_TEMPLATE.id) {
+    const error = new Error('Run proof must use the current SkillCascade standard report template.')
+    error.code = 'report_run_template_mismatch'
+    throw error
+  }
+  if (!helperReleaseAcceptsVersion(release, normalized.packageVersion, normalized.helperVersion)) {
+    const error = new Error('Helper connected, but outdated. Download the latest helper before consuming report credits.')
+    error.code = 'helper_update_required'
+    error.installed = normalized.packageVersion || normalized.helperVersion || ''
+    error.required = release?.minimumVersion || release?.version || ''
+    throw error
+  }
+
+  return normalized
+}
+
 route.get('/status', async (c) => {
   const accessError = getAccessError(c)
   if (accessError) return c.json(accessError.payload, accessError.status)
 
   const profile = c.get('profile')
+  const helperRelease = await getReportHelperRelease(c)
 
   return c.json({
     ok: true,
@@ -235,10 +368,10 @@ route.get('/status', async (c) => {
       ...REPORT_GENERATOR_CONTRACT,
       userCanEdit: hasPermission(profile, 'reports', 'edit'),
       helperPackage: {
-        filename: REPORT_HELPER_FILENAME,
-        version: REPORT_HELPER_VERSION,
+        ...helperRelease,
         statusPath: '/api/report-generator/helper/status',
         downloadPath: '/api/report-generator/helper/download',
+        latestPath: '/api/report-generator/helper/latest',
       },
       checkedAt: new Date().toISOString(),
     },
@@ -301,6 +434,10 @@ route.post('/credits/consume', async (c) => {
 
   try {
     const profile = c.get('profile')
+    const helperRelease = await getReportHelperRelease(c)
+    const runProof = validateReportRunProof(body, helperRelease)
+    const externalEventId = `report-run:${profile.id}:${runProof.idempotencyKey}`
+
     if (hasUnlimitedReportCredits(c, profile)) {
       return c.json({
         ok: true,
@@ -310,6 +447,7 @@ route.post('/credits/consume', async (c) => {
           alreadyRecorded: false,
           unlimited: true,
           creditMode: 'owner_unlimited_test',
+          runProofAccepted: true,
         },
       })
     }
@@ -320,11 +458,17 @@ route.post('/credits/consume', async (c) => {
       userId: profile.id,
       orgId: profile.org_id || null,
       credits: 1,
-      externalEventId: String(body.externalEventId || ''),
+      externalEventId,
       description: 'Report draft generated',
       metadata: {
-        helperVersion: String(body.helperVersion || ''),
-        templateMode: String(body.templateMode || ''),
+        helperVersion: runProof.helperVersion,
+        packageVersion: runProof.packageVersion,
+        templateMode: runProof.templateMode,
+        templateId: runProof.templateId,
+        localRunId: runProof.localRunId,
+        qaStatus: runProof.qaStatus,
+        generatedAt: runProof.generatedAt,
+        proofSource: 'local-helper-run-proof',
       },
     })
     const balance = await getReportCreditBalance({
@@ -338,6 +482,7 @@ route.post('/credits/consume', async (c) => {
         balance,
         consumed: result.alreadyRecorded ? 0 : 1,
         alreadyRecorded: result.alreadyRecorded,
+        runProofAccepted: true,
       },
     })
   } catch (error) {
@@ -351,6 +496,9 @@ route.post('/credits/consume', async (c) => {
     return c.json({
       error: error.message || 'Could not consume report credit.',
       code: 'report_credit_consume_failed',
+      detailCode: error.code || 'unknown',
+      requiredVersion: error.required || undefined,
+      installedVersion: error.installed || undefined,
     }, 400)
   }
 })
@@ -412,26 +560,61 @@ route.post('/credits/manual-adjustment', async (c) => {
   }
 })
 
+route.get('/helper/latest', async (c) => {
+  const accessError = getAccessError(c)
+  if (accessError) return c.json(accessError.payload, accessError.status)
+
+  const release = await getReportHelperRelease(c)
+  const bucket = c.env.CONNECTOR_ARTIFACTS
+  const head = bucket ? await bucket.head(release.objectKey) : null
+
+  return c.json({
+    ok: Boolean(head),
+    release,
+    filename: release.filename,
+    version: release.version,
+    currentVersion: release.currentVersion,
+    minimumVersion: release.minimumVersion,
+    requiredVersion: release.requiredVersion,
+    sha256: release.sha256,
+    installerName: release.installerName,
+    packageRootName: release.packageRootName,
+    downloadPath: release.downloadPath,
+    size: head?.size || 0,
+    uploadedAt: head?.uploaded?.toISOString?.() || '',
+    error: head ? '' : 'Helper package is not available yet.',
+  }, head ? 200 : 404)
+})
+
 route.get('/helper/status', async (c) => {
   const accessError = getAccessError(c)
   if (accessError) return c.json(accessError.payload, accessError.status)
 
   const bucket = c.env.CONNECTOR_ARTIFACTS
+  const release = await getReportHelperRelease(c)
   if (!bucket) {
     return c.json({
       ok: false,
       code: 'helper_bucket_missing',
-      filename: REPORT_HELPER_FILENAME,
-      version: REPORT_HELPER_VERSION,
+      release,
+      filename: release.filename,
+      version: release.version,
       error: 'Helper package storage is not configured.',
     }, 503)
   }
 
-  const head = await bucket.head(REPORT_HELPER_OBJECT_KEY)
+  const head = await bucket.head(release.objectKey)
   return c.json({
     ok: Boolean(head),
-    filename: REPORT_HELPER_FILENAME,
-    version: REPORT_HELPER_VERSION,
+    release,
+    filename: release.filename,
+    version: release.version,
+    currentVersion: release.currentVersion,
+    minimumVersion: release.minimumVersion,
+    requiredVersion: release.requiredVersion,
+    sha256: release.sha256,
+    installerName: release.installerName,
+    packageRootName: release.packageRootName,
     size: head?.size || 0,
     uploadedAt: head?.uploaded?.toISOString?.() || '',
     downloadPath: '/api/report-generator/helper/download',
@@ -450,6 +633,7 @@ route.get('/helper/download', async (c) => {
   if (accessError) return c.json(accessError.payload, accessError.status)
 
   const bucket = c.env.CONNECTOR_ARTIFACTS
+  const release = await getReportHelperRelease(c)
   if (!bucket) {
     return c.json({
       ok: false,
@@ -458,21 +642,23 @@ route.get('/helper/download', async (c) => {
     }, 503)
   }
 
-  const object = await bucket.get(REPORT_HELPER_OBJECT_KEY)
+  const object = await bucket.get(release.objectKey)
   if (!object) {
     return c.json({
       ok: false,
       code: 'helper_package_missing',
-      filename: REPORT_HELPER_FILENAME,
+      filename: release.filename,
       error: 'Helper package was not found.',
     }, 404)
   }
 
   const headers = new Headers()
   headers.set('Content-Type', object.httpMetadata?.contentType || 'application/zip')
-  headers.set('Content-Disposition', `attachment; filename="${REPORT_HELPER_FILENAME}"`)
+  headers.set('Content-Disposition', `attachment; filename="${release.filename}"`)
   headers.set('Cache-Control', 'private, no-store')
-  headers.set('X-SkillCascade-Report-Helper-Version', REPORT_HELPER_VERSION)
+  headers.set('X-SkillCascade-Report-Helper-Version', release.version)
+  headers.set('X-SkillCascade-Report-Helper-Minimum-Version', release.minimumVersion)
+  if (release.sha256) headers.set('X-SkillCascade-Report-Helper-SHA256', release.sha256)
   if (object.size) headers.set('Content-Length', String(object.size))
   return new Response(object.body, { headers })
 })
@@ -504,6 +690,7 @@ route.post('/seat-claims', async (c) => {
       dbQuery: query,
       profile: c.get('profile'),
       body,
+      release: await getReportHelperRelease(c),
     })
     return c.json({ ok: true, data }, 201)
   } catch (error) {

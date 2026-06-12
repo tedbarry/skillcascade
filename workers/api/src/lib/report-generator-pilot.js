@@ -94,10 +94,24 @@ export function normalizeInstallClaimPayload(body = {}) {
     throw new Error('installFingerprint must be 8-128 safe characters from the local helper license-readiness endpoint.')
   }
 
+  const machine = body.machine && typeof body.machine === 'object' ? body.machine : {}
+  const rawDeviceFingerprint = String(
+    body.deviceFingerprint
+    || body.hostnameHash
+    || machine.hostnameHash
+    || installFingerprint
+  ).trim()
+  const deviceFingerprint = INSTALL_FINGERPRINT_RE.test(rawDeviceFingerprint)
+    ? rawDeviceFingerprint
+    : installFingerprint
   const helperVersion = String(body.helperVersion || '').trim().slice(0, 64)
   const packageVersion = String(body.packageVersion || '').trim().slice(0, 64)
   const helperUrl = String(body.helperUrl || '').trim().slice(0, 120)
   const readinessStatus = String(body.readinessStatus || '').trim().slice(0, 80)
+  const deviceLabel = String(body.deviceLabel || machine.deviceLabel || '').trim().replace(/\s+/g, ' ').slice(0, 80)
+  const hostnameHash = String(body.hostnameHash || machine.hostnameHash || '').trim().slice(0, 128)
+  const platform = String(body.platform || machine.platform || '').trim().slice(0, 40)
+  const arch = String(body.arch || machine.arch || '').trim().slice(0, 40)
   const templateProfileCount = Number.isFinite(Number(body.templateProfileCount))
     ? Math.max(0, Math.min(999, Number(body.templateProfileCount)))
     : 0
@@ -107,6 +121,11 @@ export function normalizeInstallClaimPayload(body = {}) {
 
   return {
     installFingerprint,
+    deviceFingerprint,
+    deviceLabel,
+    hostnameHash,
+    platform,
+    arch,
     helperVersion,
     packageVersion,
     helperUrl,
@@ -116,6 +135,11 @@ export function normalizeInstallClaimPayload(body = {}) {
     metadata: {
       localOnly: true,
       sourceTextReceived: false,
+      deviceFingerprint,
+      deviceLabel,
+      hostnameHash,
+      platform,
+      arch,
       helperVersion,
       packageVersion,
       readinessStatus,
@@ -123,6 +147,27 @@ export function normalizeInstallClaimPayload(body = {}) {
       aliasCount,
     },
   }
+}
+
+export function getReportGeneratorInstallStatus(normalized = {}, release = {}) {
+  const acceptedVersions = new Set([
+    ...(Array.isArray(release.supportedVersions) ? release.supportedVersions : []),
+    release.version,
+    release.currentVersion,
+    release.minimumVersion,
+    release.requiredVersion,
+    release.helperRuntimeVersion,
+  ].map((value) => String(value || '').trim()).filter(Boolean))
+  const installedVersions = [
+    normalized.packageVersion,
+    normalized.helperVersion,
+  ].map((value) => String(value || '').trim()).filter(Boolean)
+
+  if (!installedVersions.length) return 'needs_setup'
+  if (acceptedVersions.size && !installedVersions.some((version) => acceptedVersions.has(version))) {
+    return 'outdated'
+  }
+  return 'active'
 }
 
 export function buildReportGeneratorOnboarding({ profile, userCanEdit = false } = {}) {
@@ -176,6 +221,11 @@ export function buildReportGeneratorOnboarding({ profile, userCanEdit = false } 
       acceptsPhi: false,
       acceptedSeatClaimFields: [
         'installFingerprint',
+        'deviceFingerprint',
+        'deviceLabel',
+        'hostnameHash',
+        'platform',
+        'arch',
         'helperVersion',
         'packageVersion',
         'helperUrl',
@@ -205,8 +255,14 @@ export async function ensureReportGeneratorInstallClaimsTable(env, dbQuery) {
       org_id uuid NOT NULL,
       user_id uuid NOT NULL,
       install_fingerprint text NOT NULL,
+      device_fingerprint text,
+      device_label text,
+      hostname_hash text,
+      platform text,
+      arch text,
       helper_version text,
       package_version text,
+      required_helper_version text,
       helper_url text,
       status text NOT NULL DEFAULT 'claimed',
       metadata jsonb NOT NULL DEFAULT '{}'::jsonb,
@@ -215,46 +271,81 @@ export async function ensureReportGeneratorInstallClaimsTable(env, dbQuery) {
       UNIQUE (org_id, user_id, install_fingerprint)
     )
   `)
+  await dbQuery(env, `ALTER TABLE report_generator_install_claims ADD COLUMN IF NOT EXISTS device_fingerprint text`)
+  await dbQuery(env, `ALTER TABLE report_generator_install_claims ADD COLUMN IF NOT EXISTS device_label text`)
+  await dbQuery(env, `ALTER TABLE report_generator_install_claims ADD COLUMN IF NOT EXISTS hostname_hash text`)
+  await dbQuery(env, `ALTER TABLE report_generator_install_claims ADD COLUMN IF NOT EXISTS platform text`)
+  await dbQuery(env, `ALTER TABLE report_generator_install_claims ADD COLUMN IF NOT EXISTS arch text`)
+  await dbQuery(env, `ALTER TABLE report_generator_install_claims ADD COLUMN IF NOT EXISTS required_helper_version text`)
   installClaimsTableEnsured = true
 }
 
-export async function claimReportGeneratorInstall({ env, dbQuery, profile, body }) {
+export async function claimReportGeneratorInstall({ env, dbQuery, profile, body, release = {} }) {
   const normalized = normalizeInstallClaimPayload(body)
+  const status = getReportGeneratorInstallStatus(normalized, release)
+  const requiredHelperVersion = String(release.minimumVersion || release.version || '').trim()
+  const metadata = {
+    ...normalized.metadata,
+    releaseVersion: String(release.version || '').trim(),
+    requiredHelperVersion,
+    releaseStatus: status,
+  }
   await ensureReportGeneratorInstallClaimsTable(env, dbQuery)
   const result = await dbQuery(env, `
     INSERT INTO report_generator_install_claims (
-      org_id, user_id, install_fingerprint, helper_version, package_version, helper_url, status, metadata
+      org_id, user_id, install_fingerprint, device_fingerprint, device_label, hostname_hash,
+      platform, arch, helper_version, package_version, required_helper_version, helper_url, status, metadata
     )
-    VALUES ($1, $2, $3, $4, $5, $6, 'claimed', $7::jsonb)
+    VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14::jsonb)
     ON CONFLICT (org_id, user_id, install_fingerprint)
     DO UPDATE SET
+      device_fingerprint = EXCLUDED.device_fingerprint,
+      device_label = EXCLUDED.device_label,
+      hostname_hash = EXCLUDED.hostname_hash,
+      platform = EXCLUDED.platform,
+      arch = EXCLUDED.arch,
       helper_version = EXCLUDED.helper_version,
       package_version = EXCLUDED.package_version,
+      required_helper_version = EXCLUDED.required_helper_version,
       helper_url = EXCLUDED.helper_url,
-      status = 'claimed',
+      status = EXCLUDED.status,
       metadata = EXCLUDED.metadata,
       last_seen_at = NOW()
-    RETURNING id, org_id, user_id, install_fingerprint, helper_version, package_version,
+    RETURNING id, org_id, user_id, install_fingerprint, device_fingerprint, device_label,
+              hostname_hash, platform, arch, helper_version, package_version, required_helper_version,
               helper_url, status, metadata, first_claimed_at, last_seen_at
   `, [
     profile.org_id,
     profile.id,
     normalized.installFingerprint,
+    normalized.deviceFingerprint || null,
+    normalized.deviceLabel || null,
+    normalized.hostnameHash || null,
+    normalized.platform || null,
+    normalized.arch || null,
     normalized.helperVersion || null,
     normalized.packageVersion || null,
+    requiredHelperVersion || null,
     normalized.helperUrl || null,
-    JSON.stringify(normalized.metadata),
+    status,
+    JSON.stringify(metadata),
   ])
 
   const row = result.rows?.[0] || {
     org_id: profile.org_id,
     user_id: profile.id,
     install_fingerprint: normalized.installFingerprint,
+    device_fingerprint: normalized.deviceFingerprint,
+    device_label: normalized.deviceLabel,
+    hostname_hash: normalized.hostnameHash,
+    platform: normalized.platform,
+    arch: normalized.arch,
     helper_version: normalized.helperVersion,
     package_version: normalized.packageVersion,
+    required_helper_version: requiredHelperVersion,
     helper_url: normalized.helperUrl,
-    status: 'claimed',
-    metadata: normalized.metadata,
+    status,
+    metadata,
   }
 
   return {
@@ -267,10 +358,16 @@ export async function claimReportGeneratorInstall({ env, dbQuery, profile, body 
       orgId: row.org_id,
       userId: row.user_id,
       installFingerprint: row.install_fingerprint,
+      deviceFingerprint: row.device_fingerprint || '',
+      deviceLabel: row.device_label || '',
+      hostnameHash: row.hostname_hash || '',
+      platform: row.platform || '',
+      arch: row.arch || '',
       helperVersion: row.helper_version || '',
       packageVersion: row.package_version || '',
+      requiredHelperVersion: row.required_helper_version || requiredHelperVersion || '',
       helperUrl: row.helper_url || '',
-      status: row.status || 'claimed',
+      status: row.status || status,
       firstClaimedAt: row.first_claimed_at || '',
       lastSeenAt: row.last_seen_at || '',
     },
@@ -280,7 +377,8 @@ export async function claimReportGeneratorInstall({ env, dbQuery, profile, body 
 export async function listReportGeneratorInstallClaims({ env, dbQuery, profile }) {
   await ensureReportGeneratorInstallClaimsTable(env, dbQuery)
   const result = await dbQuery(env, `
-    SELECT id, org_id, user_id, install_fingerprint, helper_version, package_version,
+    SELECT id, org_id, user_id, install_fingerprint, device_fingerprint, device_label,
+           hostname_hash, platform, arch, helper_version, package_version, required_helper_version,
            helper_url, status, metadata, first_claimed_at, last_seen_at
     FROM report_generator_install_claims
     WHERE org_id = $1 AND user_id = $2
@@ -296,8 +394,14 @@ export async function listReportGeneratorInstallClaims({ env, dbQuery, profile }
       orgId: row.org_id,
       userId: row.user_id,
       installFingerprint: row.install_fingerprint,
+      deviceFingerprint: row.device_fingerprint || '',
+      deviceLabel: row.device_label || '',
+      hostnameHash: row.hostname_hash || '',
+      platform: row.platform || '',
+      arch: row.arch || '',
       helperVersion: row.helper_version || '',
       packageVersion: row.package_version || '',
+      requiredHelperVersion: row.required_helper_version || '',
       helperUrl: row.helper_url || '',
       status: row.status || 'claimed',
       firstClaimedAt: row.first_claimed_at || '',

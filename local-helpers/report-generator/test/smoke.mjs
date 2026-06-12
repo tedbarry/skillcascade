@@ -178,6 +178,8 @@ try {
   assert.equal(statusPayload.portDiscovery.endPort, 4199)
   assert.equal(statusPayload.safety.cloudUpload, false)
   assert.ok(statusPayload.helperVersion)
+  assert.equal(statusPayload.runProofVersion, 1)
+  assert.equal(statusPayload.creditProof, 'server-validated-run-proof-v1')
   assert.equal(statusPayload.customerTemplateUpload, false)
   assert.equal(statusPayload.standardTemplate.mode, 'skillcascade-standard-docx')
   assert.equal(statusPayload.supervisorReviewedStyle.id, 'supervisor-reviewed-aba-initial-v1')
@@ -384,6 +386,16 @@ try {
   const runPayload = await runResponse.json()
   assert.equal(runPayload.ok, true)
   assert.equal(runPayload.result.localOnly, true)
+  assert.equal(runPayload.result.runProof.localOnly, true)
+  assert.equal(runPayload.result.runProof.localRunId, runPayload.result.id)
+  assert.equal(runPayload.result.runProof.idempotencyKey, runPayload.result.id)
+  assert.equal(runPayload.result.runProof.helperVersion, statusPayload.helperVersion)
+  assert.equal(runPayload.result.runProof.templateMode, 'skillcascade-standard-docx')
+  assert.equal(runPayload.result.runProof.templateId, 'skillcascade-standard-initial-assessment-v1')
+  assert.equal(runPayload.result.runProof.qaStatus, 'ready-for-bcba-review')
+  assert.equal(runPayload.result.runProof.outputCreated, true)
+  assert.equal(runPayload.result.runProof.reviewCreated, true)
+  assert.equal(runPayload.result.runProof.evidenceLedgerCreated, true)
   assert.equal(runPayload.result.qa.liveWriteAttempted, false)
   assert.equal(runPayload.result.qa.autoSignAttempted, false)
   assert.equal(runPayload.result.qa.autoSubmitAttempted, false)
@@ -584,6 +596,7 @@ try {
     outputCreated: true,
     reviewCreated: true,
     evidenceLedgerCreated: true,
+    runProofCreated: Boolean(runPayload.result.runProof),
     liveWriteAttempted: runPayload.result.qa.liveWriteAttempted,
     autoSignAttempted: runPayload.result.qa.autoSignAttempted,
     autoSubmitAttempted: runPayload.result.qa.autoSubmitAttempted,
