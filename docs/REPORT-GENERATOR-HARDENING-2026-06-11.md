@@ -31,3 +31,4 @@
 - `npm run build` passed the Vite production build.
 - The release zip `SkillCascadeReportHelper-release-20260611-supervisor-style-qa-v7.zip` contains `Install-ReportGeneratorHelper.exe`, `Install-ReportGeneratorHelper.cmd`, and `app/helper-build-manifest.json`.
 - The release zip SHA256 is `49E2E4D96FDC9B9FCAA13E4F68505EDF0CC2E3882D1F7DA88F901AFC74D2DA9A`, matching the server fallback manifest.
+- `build-release-bundle.ps1` now emits `latest-helper.json`; a no-smoke temp run confirmed the manifest includes the helper zip R2 object key, current/minimum version, SHA256, installer name, and supported versions.

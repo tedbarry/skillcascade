@@ -94,6 +94,24 @@ try {
   }
   Set-Content -LiteralPath (Join-Path $BundleRoot 'release-manifest.json') -Encoding ASCII -Value ($manifest | ConvertTo-Json -Depth 4)
 
+  $latestHelperManifest = [ordered]@{
+    channel = 'controlled-release'
+    version = $Version
+    currentVersion = $Version
+    minimumVersion = $Version
+    requiredVersion = $Version
+    helperRuntimeVersion = '0.1.0'
+    filename = (Split-Path -Leaf $bundleHelperZip)
+    objectKey = "report-generator/$(Split-Path -Leaf $bundleHelperZip)"
+    sha256 = $hash.Hash
+    installerName = 'Install-ReportGeneratorHelper.exe'
+    packageRootName = "SkillCascadeReportHelper-$Version"
+    requiredInstallFlow = 'download-zip-extract-run-installer-from-extracted-folder'
+    autoUpdateEnabled = $false
+    supportedVersions = @($Version)
+  }
+  Set-Content -LiteralPath (Join-Path $BundleRoot 'latest-helper.json') -Encoding ASCII -Value ($latestHelperManifest | ConvertTo-Json -Depth 4)
+
   $readme = @"
 SkillCascade Report Generator Release Bundle
 Version: $Version
@@ -149,6 +167,7 @@ Privacy boundary:
 Verification included:
 - SHA256 checksum: checksums.sha256.txt
 - Release manifest: release-manifest.json
+- Latest-helper manifest for SkillCascade/R2: latest-helper.json
 "@
   Set-Content -LiteralPath (Join-Path $BundleRoot 'README-FIRST.txt') -Encoding ASCII -Value $readme
 
@@ -159,6 +178,7 @@ Verification included:
     helperZip = $bundleHelperZip
     checksumPath = Join-Path $BundleRoot 'checksums.sha256.txt'
     manifestPath = Join-Path $BundleRoot 'release-manifest.json'
+    latestHelperManifestPath = Join-Path $BundleRoot 'latest-helper.json'
     readmePath = Join-Path $BundleRoot 'README-FIRST.txt'
     smokeRun = (-not $NoSmoke)
     packageBuildDir = if ($KeepPackageBuild) { $PackageBuildDir } else { $null }
