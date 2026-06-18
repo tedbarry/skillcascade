@@ -26,6 +26,24 @@ export const INITIAL_ASSESSMENT_LEARNING_TREE_CONTRACT = {
   approvalRequiredForExternalWrite: true,
 }
 
+export const LIVE_DESTINATION_ADAPTER_CONTRACT = {
+  id: 'initial-assessment-learning-tree-live-adapter-v1',
+  status: 'adapter-boundary-ready',
+  liveWritesDefault: false,
+  supportedDestinations: ['centralreach', 'passage'],
+  supportedModes: ['local_setup_package', 'adapter_dry_run', 'live_external_write'],
+  approval: {
+    requiredForLiveExternalWrite: true,
+    requiredConfirmation: 'CREATE LEARNING TREE',
+  },
+  safety: {
+    phiStoredBySkillCascade: false,
+    autoSign: false,
+    autoSubmit: false,
+    hiddenExternalWrites: false,
+  },
+}
+
 const DOMAIN_ALIASES = {
   behavior: 'Behavior',
   maladaptive: 'Behavior',
@@ -42,6 +60,14 @@ const DOMAIN_ALIASES = {
 
 function cleanText(value) {
   return String(value || '').replace(/\s+/g, ' ').trim()
+}
+
+function normalizeExecutionMode(body = {}) {
+  const requested = cleanText(body.executionMode || body.writeMode || '').toLowerCase()
+  if (requested === 'live' || requested === 'live_external_write') return 'live_external_write'
+  if (requested === 'dry_run' || requested === 'adapter_dry_run') return 'adapter_dry_run'
+  if (body.liveExternalWrite === true) return 'live_external_write'
+  return 'local_setup_package'
 }
 
 function normalizeId(value) {
@@ -220,9 +246,79 @@ function collectGoals(goalPlanOrBody = {}) {
   return []
 }
 
+export function evaluateLiveDestinationAdapterBoundary(body = {}) {
+  const destination = cleanText(body.destination || 'centralreach').toLowerCase()
+  const executionMode = normalizeExecutionMode(body)
+  const adapter = body.destinationAdapter && typeof body.destinationAdapter === 'object'
+    ? body.destinationAdapter
+    : body.adapter && typeof body.adapter === 'object'
+      ? body.adapter
+      : {}
+  const approval = body.approval && typeof body.approval === 'object' ? body.approval : {}
+  const confirmation = cleanText(approval.confirmation || approval.confirmationPhrase || '')
+  const blockers = []
+  const warnings = []
+
+  if (!LIVE_DESTINATION_ADAPTER_CONTRACT.supportedDestinations.includes(destination)) {
+    blockers.push(`Unsupported learning-tree destination: ${destination || 'unknown'}.`)
+  }
+
+  if (!LIVE_DESTINATION_ADAPTER_CONTRACT.supportedModes.includes(executionMode)) {
+    blockers.push(`Unsupported learning-tree execution mode: ${executionMode || 'unknown'}.`)
+  }
+
+  const liveRequested = executionMode === 'live_external_write'
+  const adapterDryRunRequested = executionMode === 'adapter_dry_run'
+  if (liveRequested || adapterDryRunRequested) {
+    if (approval.approved !== true) {
+      blockers.push('BCBA review approval is required before preparing any destination adapter action.')
+    }
+    if (liveRequested && approval.externalWriteApproved !== true) {
+      blockers.push('Explicit external-write approval is required before any live destination write.')
+    }
+    if (liveRequested && confirmation !== LIVE_DESTINATION_ADAPTER_CONTRACT.approval.requiredConfirmation) {
+      blockers.push(`Type ${LIVE_DESTINATION_ADAPTER_CONTRACT.approval.requiredConfirmation} to confirm a live learning-tree write.`)
+    }
+    if (adapter.enabled !== true) {
+      blockers.push('No live destination adapter is enabled for this helper install.')
+    }
+    if (cleanText(adapter.capability) !== 'learning_tree_setup_v1') {
+      blockers.push('Destination adapter capability learning_tree_setup_v1 is not present.')
+    }
+  }
+
+  if (adapterDryRunRequested) {
+    warnings.push('Adapter dry-run mode creates proof only and does not write to the external destination.')
+  }
+
+  if (liveRequested) {
+    blockers.push('Live CentralReach/Passage learning-tree writes are not implemented in this helper release.')
+  }
+
+  return {
+    contract: LIVE_DESTINATION_ADAPTER_CONTRACT,
+    destination,
+    executionMode,
+    liveRequested,
+    adapterDryRunRequested,
+    adapterPresent: Boolean(adapter.enabled),
+    adapterCapability: cleanText(adapter.capability),
+    approved: approval.approved === true,
+    externalWriteApproved: approval.externalWriteApproved === true,
+    confirmationAccepted: confirmation === LIVE_DESTINATION_ADAPTER_CONTRACT.approval.requiredConfirmation,
+    canAttemptLiveWrite: false,
+    liveExternalWritesEnabled: false,
+    liveExternalWriteAttempted: false,
+    currentMode: executionMode === 'adapter_dry_run' ? 'adapter_dry_run_proof_only' : executionMode,
+    blockers,
+    warnings,
+  }
+}
+
 export function buildInitialAssessmentLearningTreePlan(goalPlanOrBody = {}, {
   destination = 'centralreach',
   clientLabel = '',
+  executionMode = 'local_setup_package',
 } = {}) {
   const goals = collectGoals(goalPlanOrBody)
   const normalizedGoals = goals.map(normalizeLearningTreeGoal).filter((goal) => goal.objective || goal.shortTermGoal)
@@ -279,7 +375,9 @@ export function buildInitialAssessmentLearningTreePlan(goalPlanOrBody = {}, {
 
   const plan = {
     contract: INITIAL_ASSESSMENT_LEARNING_TREE_CONTRACT,
+    liveAdapterContract: LIVE_DESTINATION_ADAPTER_CONTRACT,
     destination,
+    executionMode,
     clientLabel: cleanText(clientLabel),
     root,
     expectedRows,
@@ -288,7 +386,7 @@ export function buildInitialAssessmentLearningTreePlan(goalPlanOrBody = {}, {
     externalWrite: {
       approvalRequired: true,
       liveWriteAttempted: false,
-      currentMode: 'preview_or_local_setup_package',
+      currentMode: executionMode === 'adapter_dry_run' ? 'adapter_dry_run_proof_only' : 'preview_or_local_setup_package',
     },
   }
   return {
@@ -336,10 +434,12 @@ export function hashPlan(plan = {}) {
 
 export async function previewInitialAssessmentLearningTree(body = {}) {
   const destination = cleanText(body.destination || 'centralreach').toLowerCase()
+  const adapterBoundary = evaluateLiveDestinationAdapterBoundary(body)
   const clientLabel = cleanText(body.clientLabel || body.reportResult?.clientLabel || '')
   const treePlan = buildInitialAssessmentLearningTreePlan(body.goalPlan || body, {
     destination,
     clientLabel,
+    executionMode: adapterBoundary.executionMode,
   })
   return {
     okToPrepare: treePlan.summary.goalCount > 0 && treePlan.warnings.length === 0,
@@ -351,6 +451,7 @@ export async function previewInitialAssessmentLearningTree(body = {}) {
       liveExternalWriteAttempted: false,
       approvalRequiredBeforeExternalWrite: true,
     },
+    adapterBoundary,
   }
 }
 
@@ -377,6 +478,21 @@ export async function prepareInitialAssessmentLearningTree(body = {}) {
     }
   }
 
+  const liveBlockers = preview.adapterBoundary.executionMode === 'local_setup_package'
+    ? []
+    : preview.adapterBoundary.blockers
+  if (liveBlockers.length > 0) {
+    return {
+      ...preview,
+      prepared: false,
+      blocked: true,
+      blockers: [
+        ...preview.blockers,
+        ...liveBlockers,
+      ],
+    }
+  }
+
   const outputDir = cleanText(body.outputDir || body.reportResult?.outputDir || '')
   const clientLabel = cleanText(body.clientLabel || body.reportResult?.clientLabel || 'client')
   const generatedAt = new Date().toISOString()
@@ -391,7 +507,11 @@ export async function prepareInitialAssessmentLearningTree(body = {}) {
     localOnly: true,
     approvalRecorded: true,
     liveExternalWriteAttempted: false,
-    externalWriteMode: 'not_attempted_local_setup_package_only',
+    externalWriteMode: preview.adapterBoundary.executionMode === 'adapter_dry_run'
+      ? 'adapter_dry_run_proof_only'
+      : 'not_attempted_local_setup_package_only',
+    destinationAdapterContractId: preview.adapterBoundary.contract.id,
+    destinationAdapterStatus: preview.adapterBoundary.currentMode,
   }
 
   let setupPackagePath = ''

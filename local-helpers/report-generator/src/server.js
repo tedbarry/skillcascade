@@ -15,6 +15,7 @@ import { helperInstallState } from './helper-metadata.js'
 import { localLicenseReadiness } from './license-readiness.js'
 import {
   INITIAL_ASSESSMENT_LEARNING_TREE_CONTRACT,
+  LIVE_DESTINATION_ADAPTER_CONTRACT,
   prepareInitialAssessmentLearningTree,
   previewInitialAssessmentLearningTree,
   verifyInitialAssessmentLearningTree,
@@ -365,10 +366,13 @@ createServer(async (req, res) => {
         programSetup: {
           workflow: 'initial-assessment-learning-tree',
           contract: INITIAL_ASSESSMENT_LEARNING_TREE_CONTRACT,
+          liveAdapterContract: LIVE_DESTINATION_ADAPTER_CONTRACT,
           destinations: ['centralreach', 'passage'],
           externalWritesRequireApproval: true,
           liveExternalWrites: false,
           currentWriteMode: 'local-setup-package-and-verification-proof',
+          supportedWriteModes: LIVE_DESTINATION_ADAPTER_CONTRACT.supportedModes,
+          requiredLiveConfirmation: LIVE_DESTINATION_ADAPTER_CONTRACT.approval.requiredConfirmation,
         },
         skillCascadeBridge: {
           allowedOrigins: defaultAllowedOrigins,

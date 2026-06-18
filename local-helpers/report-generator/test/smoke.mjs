@@ -207,6 +207,10 @@ try {
   assert.equal(statusPayload.programSetup.workflow, 'initial-assessment-learning-tree')
   assert.equal(statusPayload.programSetup.contract.id, 'initial-assessment-learning-tree-v1')
   assert.equal(statusPayload.programSetup.contract.centralReach.percentTrialCount, 10)
+  assert.equal(statusPayload.programSetup.liveAdapterContract.id, 'initial-assessment-learning-tree-live-adapter-v1')
+  assert.equal(statusPayload.programSetup.liveAdapterContract.liveWritesDefault, false)
+  assert.ok(statusPayload.programSetup.supportedWriteModes.includes('live_external_write'))
+  assert.equal(statusPayload.programSetup.requiredLiveConfirmation, 'CREATE LEARNING TREE')
   assert.equal(statusPayload.programSetup.liveExternalWrites, false)
   assert.equal(statusPayload.programSetup.currentWriteMode, 'local-setup-package-and-verification-proof')
   assert.equal(statusPayload.licenseReadiness.localOnly, true)
@@ -644,6 +648,66 @@ try {
   assert.equal(setupVerifyPayload.result.verification.planHashMatches, true)
   assert.equal(setupVerifyPayload.result.verification.liveExternalWriteAttempted, false)
 
+  const setupLiveWriteResponse = await fetch(`${baseUrl}${helperApi}/program-setup/write`, {
+    method: 'POST',
+    headers: {
+      Origin: origin,
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify({
+      reportResult: runPayload.result,
+      goalPlan: runPayload.result.goalPlan,
+      outputDir,
+      clientLabel: 'Release Client',
+      destination: 'centralreach',
+      executionMode: 'live_external_write',
+      destinationAdapter: {
+        enabled: true,
+        capability: 'learning_tree_setup_v1',
+      },
+      approval: {
+        approved: true,
+        externalWriteApproved: true,
+        confirmation: 'CREATE LEARNING TREE',
+      },
+    }),
+  })
+  assert.equal(setupLiveWriteResponse.status, 200)
+  const setupLiveWritePayload = await setupLiveWriteResponse.json()
+  assert.equal(setupLiveWritePayload.ok, true)
+  assert.equal(setupLiveWritePayload.result.prepared, false)
+  assert.equal(setupLiveWritePayload.result.blocked, true)
+  assert.equal(setupLiveWritePayload.result.adapterBoundary.liveExternalWriteAttempted, false)
+  assert.ok(setupLiveWritePayload.result.blockers.some((blocker) => /not implemented/i.test(blocker)))
+
+  const setupAdapterDryRunResponse = await fetch(`${baseUrl}${helperApi}/program-setup/write`, {
+    method: 'POST',
+    headers: {
+      Origin: origin,
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify({
+      reportResult: runPayload.result,
+      goalPlan: runPayload.result.goalPlan,
+      outputDir,
+      clientLabel: 'Release Client',
+      destination: 'centralreach',
+      executionMode: 'adapter_dry_run',
+      destinationAdapter: {
+        enabled: true,
+        capability: 'learning_tree_setup_v1',
+      },
+      approval: { approved: true },
+    }),
+  })
+  assert.equal(setupAdapterDryRunResponse.status, 200)
+  const setupAdapterDryRunPayload = await setupAdapterDryRunResponse.json()
+  assert.equal(setupAdapterDryRunPayload.ok, true)
+  assert.equal(setupAdapterDryRunPayload.result.prepared, true)
+  assert.equal(setupAdapterDryRunPayload.result.writeProof.externalWriteMode, 'adapter_dry_run_proof_only')
+  assert.equal(setupAdapterDryRunPayload.result.writeProof.liveExternalWriteAttempted, false)
+  assert.equal(setupAdapterDryRunPayload.result.writeProof.destinationAdapterContractId, 'initial-assessment-learning-tree-live-adapter-v1')
+
   const sameFolderRunResponse = await fetch(`${baseUrl}${helperApi}/run`, {
     method: 'POST',
     headers: {
@@ -705,6 +769,8 @@ try {
     learningTreeSetupPreviewed: setupPreviewPayload.result.okToPrepare,
     learningTreeSetupPrepared: setupWritePayload.result.prepared,
     learningTreeSetupVerified: setupVerifyPayload.result.verified,
+    liveWriteBlocked: setupLiveWritePayload.result.blocked,
+    adapterDryRunPrepared: setupAdapterDryRunPayload.result.prepared,
     outputCreated: true,
     reviewCreated: true,
     evidenceLedgerCreated: true,

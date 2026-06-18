@@ -48,7 +48,8 @@ async function sendRequest(path, profile = createProfile(), options = {}) {
   }, options.env || {})
 }
 
-function createArtifactBucket() {
+function createArtifactBucket(options = {}) {
+  const manifest = options.manifest || null
   const uploaded = new Date('2026-06-04T00:00:00.000Z')
   const object = {
     size: 1234,
@@ -56,9 +57,24 @@ function createArtifactBucket() {
     httpMetadata: { contentType: 'application/zip' },
     body: new Blob(['zip-content'], { type: 'application/zip' }),
   }
+  const manifestObject = manifest
+    ? {
+        size: JSON.stringify(manifest).length,
+        uploaded,
+        httpMetadata: { contentType: 'application/json' },
+        text: vi.fn(async () => JSON.stringify(manifest)),
+      }
+    : null
   return {
-    head: vi.fn(async () => ({ size: object.size, uploaded })),
-    get: vi.fn(async () => object),
+    head: vi.fn(async (key) => {
+      if (manifest && key === manifest.objectKey) return { size: object.size, uploaded }
+      if (!manifest || key !== 'report-generator/latest-helper.json') return { size: object.size, uploaded }
+      return { size: manifestObject.size, uploaded }
+    }),
+    get: vi.fn(async (key) => {
+      if (manifestObject && key === 'report-generator/latest-helper.json') return manifestObject
+      return object
+    }),
   }
 }
 
@@ -146,6 +162,14 @@ describe('report-generator route contract', () => {
     expect(payload.data.assessmentAdapters.supportedFamilies).toContain('vineland')
     expect(payload.data.assessmentAdapters.supportedFamilies).toContain('srs2')
     expect(payload.data.assessmentAdapters.supportedFamilies).toContain('ados2')
+    expect(payload.data.programSetup.id).toBe('initial-assessment-learning-tree-v1')
+    expect(payload.data.programSetup.destinations).toEqual(['centralreach', 'passage'])
+    expect(payload.data.programSetup.dataRules.maladaptiveBehaviorType).toBe('datafrequency2')
+    expect(payload.data.programSetup.dataRules.percentTargetType).toBe('datapercent')
+    expect(payload.data.programSetup.dataRules.percentTrialCount).toBe(10)
+    expect(payload.data.programSetup.liveAdapter.contractId).toBe('initial-assessment-learning-tree-live-adapter-v1')
+    expect(payload.data.programSetup.liveAdapter.liveWritesCurrentlyEnabled).toBe(false)
+    expect(payload.data.programSetup.liveAdapter.requiredConfirmation).toBe('CREATE LEARNING TREE')
     expect(payload.data.reviewGates).toContain('No automatic signing.')
     expect(payload.data.reviewGates.some((gate) => gate.includes('Required diagnosis'))).toBe(true)
     expect(payload.data.reviewGates.some((gate) => gate.includes('supervisor-reviewed ABA initial report style'))).toBe(true)
@@ -190,6 +214,41 @@ describe('report-generator route contract', () => {
     expect(payload.installerName).toBe('Install-ReportGeneratorHelper.exe')
     expect(payload.downloadPath).toBe('/api/report-generator/helper/download')
     expect(bucket.head).toHaveBeenCalled()
+  })
+
+  it('uses the R2 latest-helper manifest instead of only the fallback helper release', async () => {
+    auth.hasPermission.mockImplementation((_profile, category, action) => category === 'reports' && action === 'view')
+    const manifest = {
+      version: 'release-20260618-commercial-ready-v9',
+      minimumVersion: 'release-20260618-commercial-ready-v9',
+      filename: 'SkillCascadeReportHelper-release-20260618-commercial-ready-v9.zip',
+      objectKey: 'report-generator/SkillCascadeReportHelper-release-20260618-commercial-ready-v9.zip',
+      sha256: 'A'.repeat(64),
+      installerName: 'Install-ReportGeneratorHelper.exe',
+      packageRootName: 'SkillCascadeReportHelper-release-20260618-commercial-ready-v9',
+      supportedVersions: ['release-20260618-commercial-ready-v9'],
+    }
+    const bucket = createArtifactBucket({ manifest })
+
+    const latestResponse = await sendRequest('/helper/latest', createProfile(), {
+      env: { CONNECTOR_ARTIFACTS: bucket },
+    })
+    const latestPayload = await latestResponse.json()
+
+    expect(latestResponse.status).toBe(200)
+    expect(latestPayload.version).toBe('release-20260618-commercial-ready-v9')
+    expect(latestPayload.filename).toBe('SkillCascadeReportHelper-release-20260618-commercial-ready-v9.zip')
+    expect(bucket.get).toHaveBeenCalledWith('report-generator/latest-helper.json')
+    expect(bucket.head).toHaveBeenCalledWith('report-generator/SkillCascadeReportHelper-release-20260618-commercial-ready-v9.zip')
+
+    const downloadResponse = await sendRequest('/helper/download', createProfile(), {
+      env: { CONNECTOR_ARTIFACTS: bucket },
+    })
+
+    expect(downloadResponse.status).toBe(200)
+    expect(downloadResponse.headers.get('x-skillcascade-report-helper-version')).toBe('release-20260618-commercial-ready-v9')
+    expect(downloadResponse.headers.get('content-disposition')).toContain('SkillCascadeReportHelper-release-20260618-commercial-ready-v9.zip')
+    expect(bucket.get).toHaveBeenCalledWith('report-generator/SkillCascadeReportHelper-release-20260618-commercial-ready-v9.zip')
   })
 
   it('downloads the protected helper package as a zip', async () => {

@@ -41,6 +41,33 @@ const STANDARD_REPORT_TEMPLATE = {
   controlledBy: 'skillcascade',
   customerTemplateUpload: false,
 }
+const INITIAL_ASSESSMENT_PROGRAM_SETUP = {
+  id: 'initial-assessment-learning-tree-v1',
+  workflow: 'initial-assessment',
+  destinations: ['centralreach', 'passage'],
+  domainOrder: ['Behavior', 'Communication', 'Social', 'Parent Training'],
+  hierarchy: ['domain', 'long_term_cumulative', 'short_term_cumulative', 'final_data_collection_target'],
+  dataRules: {
+    maladaptiveBehaviorType: 'datafrequency2',
+    percentTargetType: 'datapercent',
+    percentTrialCount: 10,
+    activateCreatedBranches: true,
+  },
+  localHelperEndpoints: {
+    preview: '/api/local-report-generator/program-setup/preview',
+    write: '/api/local-report-generator/program-setup/write',
+    verify: '/api/local-report-generator/program-setup/verify',
+  },
+  liveAdapter: {
+    contractId: 'initial-assessment-learning-tree-live-adapter-v1',
+    supportedModes: ['local_setup_package', 'adapter_dry_run', 'live_external_write'],
+    liveWritesDefault: false,
+    liveWritesCurrentlyEnabled: false,
+    approvalRequired: true,
+    requiredConfirmation: 'CREATE LEARNING TREE',
+    currentWriteMode: 'local_setup_package_and_adapter_proof_only',
+  },
+}
 const REQUIRED_EVIDENCE_CATEGORIES = [
   {
     id: 'diagnostic_or_psychological_evaluation',
@@ -151,6 +178,7 @@ const REPORT_GENERATOR_CONTRACT = {
     ],
     output: 'detected assessment inputs, source-supported deficit domains, missing-evidence blockers, and goal-domain readiness',
   },
+  programSetup: INITIAL_ASSESSMENT_PROGRAM_SETUP,
   installAndLicensing: {
     helperReportsVersion: true,
     helperReportsLocalInstallFingerprint: true,
