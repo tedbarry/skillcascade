@@ -45,7 +45,7 @@ export const REPORT_GENERATOR_ONBOARDING_STEPS = [
     label: 'Choose source folder',
     owner: 'workstation',
     required: true,
-    description: 'Choose the folder with the diagnostic/evaluation, intake, adaptive assessment, and related source records.',
+    description: 'Choose the folder with the diagnostic/evaluation, adaptive assessment such as Vineland, and any optional intake or related source records.',
   },
   {
     id: 'evidence_check_reviewed',

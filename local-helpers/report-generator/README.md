@@ -80,7 +80,7 @@ powershell -NoProfile -ExecutionPolicy Bypass -File local-helpers/report-generat
 
 The smoke test starts the helper on a temporary port, calls status, preflight, and run endpoints with a SkillCascade local-dev origin, then verifies that a local draft `.docx`, review `.json`, and evidence-ledger `.json` were created without live-write, auto-sign, or auto-submit flags.
 
-The smoke test verifies the standard SkillCascade template path, required-evidence preflight, assessment adapter detection, deficit-domain readiness, local draft creation, review JSON creation, and evidence-ledger creation.
+The smoke test verifies the standard SkillCascade template path, required-evidence preflight, optional intake handling, assessment adapter detection, deficit-domain readiness, local draft creation, review JSON creation, and evidence-ledger creation.
 
 The smoke test verifies `/api/local-report-generator/install-state`, including helper version, update-safe local data policy, and the rule that SkillCascade workflow-pack access remains the licensing authority.
 
@@ -88,7 +88,7 @@ The smoke test verifies `/api/local-report-generator/license-readiness`, includi
 
 The smoke test verifies that evidence excerpts are stored in the local evidence ledger while the helper response contains only sanitized evidence references.
 
-The smoke test verifies `/api/local-report-generator/preflight`, including source file counts, unsupported file counts, required clinical evidence categories, detected assessment inputs, supported deficit domains, and no source text in the response.
+The smoke test verifies `/api/local-report-generator/preflight`, including source file counts, unsupported file counts, required and recommended clinical evidence categories, detected assessment inputs, supported deficit domains, and no source text in the response.
 
 ## Standard Template
 
@@ -117,7 +117,7 @@ Content-Type: application/json
 }
 ```
 
-Preflight validates the local source folder, counts supported and unsupported files, verifies required diagnosis/evaluation, intake/history, and adaptive/functional assessment evidence, detects known assessment inputs such as Vineland and SRS-2, identifies source-supported deficit domains, and returns blockers/warnings without extracting source text into the browser response.
+Preflight validates the local source folder, counts supported and unsupported files, verifies required diagnosis/evaluation and adaptive/functional assessment evidence, treats intake/caregiver history as recommended but optional, detects known assessment inputs such as Vineland and SRS-2, identifies source-supported deficit domains, and returns blockers/warnings without extracting source text into the browser response.
 
 ## License Readiness
 

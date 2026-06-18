@@ -20,14 +20,14 @@ import {
 const route = new Hono()
 const DEFAULT_REPORT_HELPER_RELEASE = {
   channel: 'controlled-release',
-  version: 'release-20260618-tree-adapter-v9',
-  minimumVersion: 'release-20260618-tree-adapter-v9',
+  version: 'release-20260618-optional-intake-v10',
+  minimumVersion: 'release-20260618-optional-intake-v10',
   helperRuntimeVersion: '0.1.0',
-  filename: 'SkillCascadeReportHelper-release-20260618-tree-adapter-v9.zip',
-  objectKey: 'report-generator/SkillCascadeReportHelper-release-20260618-tree-adapter-v9.zip',
-  sha256: 'D83B3E735AC5BBD8EB8A5FD4229543C6E2869EA5E16AE560210A2A4C7588F58F',
+  filename: 'SkillCascadeReportHelper-release-20260618-optional-intake-v10.zip',
+  objectKey: 'report-generator/SkillCascadeReportHelper-release-20260618-optional-intake-v10.zip',
+  sha256: '28EA1E76DF3262706B5C8DEBD4EAD46D13ADD14E33487B068F90CD8E3EE92872',
   installerName: 'Install-ReportGeneratorHelper.exe',
-  packageRootName: 'SkillCascadeReportHelper-release-20260618-tree-adapter-v9',
+  packageRootName: 'SkillCascadeReportHelper-release-20260618-optional-intake-v10',
   requiredInstallFlow: 'download-zip-extract-run-installer-from-extracted-folder',
   autoUpdateEnabled: false,
 }
@@ -78,8 +78,9 @@ const REQUIRED_EVIDENCE_CATEGORIES = [
   {
     id: 'intake_or_caregiver_history',
     label: 'Intake / Caregiver History',
-    required: true,
-    examples: 'intake form, caregiver interview, or parent history document',
+    required: false,
+    recommended: true,
+    examples: 'intake form, caregiver interview, parent history document, or similar caregiver-context source when available',
   },
   {
     id: 'adaptive_or_functional_assessment',
@@ -200,7 +201,7 @@ const REPORT_GENERATOR_CONTRACT = {
     'No automatic submission.',
     'No live CentralReach, Passage, payer, email, or Word Online write from this module.',
     'Unsupported or missing source fields must stay visible in QA.',
-    'Required diagnosis/evaluation, intake/history, and adaptive/functional assessment evidence must be present before generation.',
+    'Required diagnosis/evaluation and adaptive/functional assessment evidence must be present before generation; intake/caregiver history is recommended when available.',
     'Visible report text must pass the supervisor-reviewed ABA initial report style QA gate before the helper writes the draft DOCX.',
   ],
   supportedSourceTypes: ['.docx', '.txt', '.md'],

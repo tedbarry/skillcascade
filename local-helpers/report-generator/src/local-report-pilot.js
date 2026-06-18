@@ -93,7 +93,6 @@ export const SUPERVISOR_REVIEWED_REPORT_STYLE = {
   ],
   requiredEvidence: [
     'diagnostic_or_psychological_evaluation',
-    'intake_or_caregiver_history',
     'adaptive_or_functional_assessment',
   ],
   checkboxFont: CHECKBOX_SYMBOL_FONT,
@@ -143,7 +142,8 @@ export const REQUIRED_EVIDENCE_CATEGORIES = [
   {
     id: 'intake_or_caregiver_history',
     label: 'Intake / Caregiver History',
-    required: true,
+    required: false,
+    recommended: true,
     keywords: [
       'intake',
       'caregiver interview',
@@ -154,7 +154,7 @@ export const REQUIRED_EVIDENCE_CATEGORIES = [
       'caregiver reported',
       'presenting concerns',
     ],
-    examples: 'intake form, caregiver interview, or parent history document',
+    examples: 'intake form, caregiver interview, parent history document, or similar caregiver-context source when available',
   },
   {
     id: 'adaptive_or_functional_assessment',
@@ -1202,6 +1202,7 @@ function buildSourceRuleMatches(sources, rules) {
       id: rule.id,
       label: rule.label,
       required: Boolean(rule.required),
+      recommended: Boolean(rule.recommended),
       kind: rule.kind || '',
       use: rule.use || '',
       examples: rule.examples || '',
@@ -2068,11 +2069,14 @@ export function buildReportCoverageMatrix({
     id: category.id,
     label: category.label,
     required: Boolean(category.required),
+    recommended: Boolean(category.recommended),
     status: category.status,
     evidenceCount: category.evidence?.length || 0,
   }))
   const missingSections = sectionCoverage.filter((section) => section.status !== 'source-supported')
   const missingRequiredEvidence = requiredEvidenceCoverage.filter((category) => category.required && category.status !== 'found')
+  const requiredEvidenceItems = requiredEvidenceCoverage.filter((category) => category.required)
+  const recommendedEvidenceItems = requiredEvidenceCoverage.filter((category) => !category.required && category.recommended)
   const uncoveredGoalDomains = goalDomainCoverage.filter((domain) => domain.status !== 'source-supported-goals-present')
   const blockers = [
     ...missingRequiredEvidence.map((category) => `Missing required evidence category: ${category.label}`),
@@ -2097,8 +2101,10 @@ export function buildReportCoverageMatrix({
     status: blockers.length ? 'blocked' : warnings.length ? 'review-needed' : 'ready-for-draft',
     summary: {
       requiredEvidenceReady: Boolean(evidenceReadiness?.ready),
-      requiredEvidenceFound: requiredEvidenceCoverage.filter((category) => category.status === 'found').length,
-      requiredEvidenceTotal: requiredEvidenceCoverage.length,
+      requiredEvidenceFound: requiredEvidenceItems.filter((category) => category.status === 'found').length,
+      requiredEvidenceTotal: requiredEvidenceItems.length,
+      recommendedEvidenceFound: recommendedEvidenceItems.filter((category) => category.status === 'found').length,
+      recommendedEvidenceTotal: recommendedEvidenceItems.length,
       detectedAssessmentInputCount: assessmentAdapters.length,
       sourceSupportedSectionCount: sectionCoverage.filter((section) => section.status === 'source-supported').length,
       sectionCount: sectionCoverage.length,

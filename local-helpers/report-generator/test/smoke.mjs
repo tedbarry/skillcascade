@@ -159,6 +159,29 @@ async function createSourceFixture() {
   return { sourceFolder, outputDir }
 }
 
+async function createEvaluationAndVinelandOnlyFixture() {
+  const root = await mkdtemp(join(tmpdir(), 'skillcascade-report-helper-no-intake-'))
+  const sourceFolder = join(root, 'source')
+  const outputDir = join(root, 'output')
+  await mkdir(sourceFolder, { recursive: true })
+  await mkdir(outputDir, { recursive: true })
+  await writeFile(join(sourceFolder, 'psychological-evaluation.md'), [
+    'Psychological evaluation and diagnostic report.',
+    'Diagnosis: Autism Spectrum Disorder F84.0.',
+    'Records describe aggression, non-compliance, unsafe behavior, rigid thinking, transitions, and functional impairment.',
+    'Communication deficits include expressive language, receptive language, pragmatic language, conversation, and functional communication needs.',
+    'Social deficits include reciprocal interaction, peer interaction, social communication, play, and perspective-taking needs.',
+    'Caregiver training needs include home generalization, reinforcement, prompting, and parent training.',
+  ].join('\n'))
+  await writeFile(join(sourceFolder, 'vineland.md'), [
+    'Vineland-3 adaptive behavior report.',
+    'Adaptive Behavior Composite, Communication domain, Daily Living Skills, and Socialization domain results support adaptive functioning needs.',
+    'Daily living, community, self-care, socialization, expressive communication, and receptive communication deficits are noted.',
+  ].join('\n'))
+
+  return { sourceFolder, outputDir }
+}
+
 const server = startServer()
 
 try {
@@ -186,6 +209,10 @@ try {
   assert.equal(statusPayload.supervisorReviewedStyle.checkboxFont, 'Segoe UI Symbol')
   assert.equal(statusPayload.supervisorReviewedStyle.outputPolicy.standardTemplateOnly, true)
   assert.equal(statusPayload.requiredEvidenceCategories.length, 3)
+  assert.equal(
+    statusPayload.requiredEvidenceCategories.find((category) => category.id === 'intake_or_caregiver_history')?.required,
+    false,
+  )
   assert.ok(statusPayload.assessmentAdapters.some((adapter) => adapter.id === 'vineland'))
   assert.equal(statusPayload.installState.localDataPolicy.updatesPreserveCustomerData, true)
   assert.equal(statusPayload.installState.localPortPolicy.collisionBehavior, 'choose-next-available-loopback-port')
@@ -317,9 +344,36 @@ try {
   assert.ok(standardPreflightPayload.result.deficitProfile.supportedGoalDomains.includes('Communication'))
   assert.equal(standardPreflightPayload.result.coverageMatrix.status, 'review-needed')
   assert.equal(standardPreflightPayload.result.coverageMatrix.sourceTextReturned, false)
-  assert.equal(standardPreflightPayload.result.coverageMatrix.summary.requiredEvidenceFound, 3)
+  assert.equal(standardPreflightPayload.result.coverageMatrix.summary.requiredEvidenceFound, 2)
+  assert.equal(standardPreflightPayload.result.coverageMatrix.summary.requiredEvidenceTotal, 2)
+  assert.equal(standardPreflightPayload.result.coverageMatrix.summary.recommendedEvidenceFound, 1)
+  assert.equal(standardPreflightPayload.result.coverageMatrix.summary.recommendedEvidenceTotal, 1)
   assert.equal(standardPreflightPayload.result.coverageMatrix.summary.sourceSupportedSectionCount, 8)
   assert.ok(standardPreflightPayload.result.coverageMatrix.goalDomainCoverage.some((domain) => domain.domain === 'Communication' && domain.goalCount > 0))
+
+  const noIntakeFixture = await createEvaluationAndVinelandOnlyFixture()
+  const noIntakePreflightResponse = await fetch(`${baseUrl}${helperApi}/preflight`, {
+    method: 'POST',
+    headers: {
+      Origin: origin,
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify(noIntakeFixture),
+  })
+  assert.equal(noIntakePreflightResponse.status, 200)
+  const noIntakePreflightPayload = await noIntakePreflightResponse.json()
+  assert.equal(noIntakePreflightPayload.ok, true)
+  assert.equal(noIntakePreflightPayload.result.okToRun, true)
+  assert.equal(noIntakePreflightPayload.result.evidenceReadiness.ready, true)
+  assert.equal(noIntakePreflightPayload.result.evidenceReadiness.missingRequired.length, 0)
+  assert.equal(
+    noIntakePreflightPayload.result.evidenceReadiness.categories.find((category) => category.id === 'intake_or_caregiver_history')?.status,
+    'missing',
+  )
+  assert.equal(noIntakePreflightPayload.result.coverageMatrix.summary.requiredEvidenceFound, 2)
+  assert.equal(noIntakePreflightPayload.result.coverageMatrix.summary.requiredEvidenceTotal, 2)
+  assert.equal(noIntakePreflightPayload.result.coverageMatrix.summary.recommendedEvidenceFound, 0)
+  assert.equal(noIntakePreflightPayload.result.coverageMatrix.summary.recommendedEvidenceTotal, 1)
 
   const customTemplatePreflightResponse = await fetch(`${baseUrl}${helperApi}/preflight`, {
     method: 'POST',

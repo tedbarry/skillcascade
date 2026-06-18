@@ -84,7 +84,7 @@ try {
     legacyHelperApiPrefix = '/api/local-report-pilot'
     phiBoundary = 'Source folders, generated drafts, review JSON, and evidence ledgers stay on the buyer workstation.'
     reviewGates = @(
-      'Required diagnosis/evaluation, intake/history, and adaptive/functional assessment evidence must be present before generation.',
+      'Required diagnosis/evaluation and adaptive/functional assessment evidence must be present before generation; intake/caregiver history is recommended when available.',
       'Deficit domains must be supported by source evidence before goals are drafted.',
       'BCBA review required before use.',
       'No automatic signing.',
