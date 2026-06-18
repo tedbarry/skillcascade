@@ -40,6 +40,7 @@ const HOUSE_TRANSITION_PROCESS_TEXT = 'Within the first six months of services, 
 const HOUSE_PRIMARY_REINFORCERS_TEXT = 'Access to preferred activities, breaks from difficult demands, adult attention, structured choices, sensory accommodations, and preferred tangible/activity options identified through caregiver interview and direct observation.'
 const HOUSE_SECONDARY_REINFORCERS_TEXT = 'Behavior-specific praise, tokens, adult attention, visual feedback, and feedback paired with access to preferred activities.'
 const HOUSE_REINFORCEMENT_SCHEDULE_TEXT = 'Reinforcement will initially be provided on an FR1 to FR2 schedule for newly taught replacement behaviors and thinned systematically as independence and fluency improve.'
+const HOUSE_CLINICAL_INTERPRETATION_REASON_TEXT = 'Reason for Referral: The client\'s parents sought ABA treatment to mitigate the interfering effects of their child\'s ASD diagnosis. Consequently, the client was referred for evaluation to identify strengths and weaknesses and develop a suitable therapy plan. The parents are particularly concerned that the plan adequately addresses the client\'s social, communication, and sensory/emotional needs. They have observed that the client struggles with transitions, has difficulty maintaining conversations, and exhibits rigid thinking and inflexibility. The parents are committed to helping the client by providing the skills and strategies necessary for a more productive and independent life.'
 const STANDARD_SEVERE_BEHAVIOR_LABELS = [
   'physical aggression',
   'verbal aggression',
@@ -70,6 +71,11 @@ const REPORT_VISIBLE_ARTIFACT_PHRASES = [
   'can delete',
   'TBD',
   'TODO',
+]
+const SEVERITY_RUBRIC_PHRASES = [
+  'The individual exhibits some difficulty or delay in acquiring skills',
+  'The individual exhibits significant difficulty or delay in acquiring skills',
+  'The individual exhibits extreme difficulty or delay in acquiring skills',
 ]
 const ASSESSMENT_REFERENCE_RULES = [
   { adapterId: 'vineland', terms: ['Vineland', 'Vineland-3', 'VABS'] },
@@ -2111,9 +2117,7 @@ function buildClinicalSectionText(sectionId, matches, facts = {}) {
   const vinelandCommunication = vinelandDomain(vineland, 'Communication')
   const vinelandDailyLiving = vinelandDomain(vineland, 'Daily Living Skills')
   const vinelandSocialization = vinelandDomain(vineland, 'Socialization')
-  const behaviorListForReport = facts.standardSevereBehaviorCandidate
-    ? formatClinicalList(STANDARD_SEVERE_BEHAVIOR_LABELS)
-    : (facts.behaviors?.length ? formatClinicalList(facts.behaviors) : 'restricted/repetitive behavior, rigidity, emotional regulation, or other treatment-interfering concerns described in the source record')
+  const behaviorListForReport = supportedBehaviorListText(facts, 'restricted/repetitive behavior, rigidity, emotional regulation, or other treatment-interfering concerns described in the source record')
   const behaviorList = facts.behaviors?.length
     ? formatClinicalList(facts.behaviors)
     : 'restricted/repetitive behavior, rigidity, emotional regulation, or other treatment-interfering concerns described in the source record'
@@ -2147,7 +2151,7 @@ function buildClinicalSectionText(sectionId, matches, facts = {}) {
         }
       }
       if (facts.education?.unableToAttendSchool) {
-        return `${clientFirstName} is not currently able to attend a traditional school setting based on the reviewed records. ${schoolRecordSentence || (facts.education.evidence ? `${facts.education.evidence}. ` : '')}Reported behaviors and skill deficits including ${behaviorListForReport} interfere with the client's ability to remain safely in a classroom, follow school routines, participate in instruction, and engage appropriately with peers and authority figures. At this time, ABA services are clinically indicated to reduce unsafe and disruptive behavior, increase functional communication and compliance, and build prerequisite skills necessary for future educational participation.`
+        return `${clientFirstName} is not currently able to attend a traditional school setting based on the reviewed records. ${schoolRecordSentence || (facts.education.evidence ? `${facts.education.evidence}. ` : '')}Reported behaviors and skill deficits including ${behaviorListForReport} interfere with ${pronouns.possessive} ability to remain safely in a classroom, follow school routines, participate in instruction, and engage appropriately with peers and authority figures. At this time, ABA services are clinically indicated to reduce unsafe and disruptive behavior, increase functional communication and compliance, and build prerequisite skills necessary for future educational participation.`
       }
       const attendanceSentence = facts.education?.attendsSchool
         ? `${clientFirstName} is reported to attend school or participate in an educational program. `
@@ -2155,11 +2159,11 @@ function buildClinicalSectionText(sectionId, matches, facts = {}) {
       return `${attendanceSentence}${schoolRecordSentence || (facts.education?.evidence ? `${facts.education.evidence}. ` : '')}Educational functioning is impacted by ASD-related communication, comprehension, social reciprocity, frustration tolerance, emotional regulation, rigidity, and difficulty adapting when expectations are maintained. ABA services are clinically indicated to support functional communication, compliance with adult direction, coping, flexibility, social participation, and prerequisite skills that improve access to instruction and daily educational routines.`
     }
     case 'behaviorProfile':
-      return `${clientFirstName} demonstrates clinically significant maladaptive and treatment-interfering behavior that affects participation and access to instruction or daily routines. Source-supported concerns include ${behaviorListForReport}. ${sentenceOrFallback(snippets.criterionB, evidenceText)}${vineland.maladaptive?.internalizingVScale || vineland.maladaptive?.externalizingVScale ? ` Vineland-3 maladaptive behavior findings should be interpreted with direct observation and caregiver report before finalizing target topographies.` : ''}${snippets.observationsEmotion ? ` ${snippets.observationsEmotion} This pattern is consistent with internalized distress that may later present as explosive escalation when communication, flexibility, or coping demands exceed the client's current skill level.` : ''}${impairments.home ? ` Home functioning is affected by ${sentenceFragment(impairments.home)}.` : ''} Behavior intervention should include antecedent supports, functional communication training, differential reinforcement, de-escalation procedures, safety responses when directly indicated, and caregiver implementation across settings.`
+      return `${clientFirstName} demonstrates clinically significant maladaptive and treatment-interfering behavior that affects participation and access to instruction or daily routines. Source-supported concerns include ${behaviorListForReport}. ${sentenceOrFallback(snippets.criterionB, evidenceText)}${vineland.maladaptive?.internalizingVScale || vineland.maladaptive?.externalizingVScale ? ` Vineland-3 maladaptive behavior findings should be interpreted with direct observation and caregiver report before finalizing target topographies.` : ''}${snippets.observationsEmotion ? ` ${snippets.observationsEmotion} This pattern is consistent with internalized distress that may later present as explosive escalation when communication, flexibility, or coping demands exceed ${clientFirstName}'s current skill level.` : ''}${impairments.home ? ` Home functioning is affected by ${sentenceFragment(impairments.home)}.` : ''} Behavior intervention should include antecedent supports, functional communication training, differential reinforcement, de-escalation procedures, safety responses when directly indicated, and caregiver implementation across settings.`
     case 'communicationProfile':
-      return `The client demonstrates clinically significant communication deficits that interfere with self-advocacy, emotional expression, comprehension, reciprocal interaction, and participation in demands or transitions. ${sentenceOrFallback(snippets.observationsCommunication, evidenceText)} ${vinelandCommunication.standardScore ? `Vineland-3 Communication results reflected a standard score of ${vinelandCommunication.standardScore}${vinelandCommunication.percentileRank ? `, percentile rank ${vinelandCommunication.percentileRank}` : ''}. ` : ''}${sentenceOrFallback(snippets.criterionA)} Communication goals should target requesting, help and break communication, clarification, repair strategies, emotional expression, nonverbal integration, and contextually appropriate reciprocal communication.`
+      return `${clientFirstName} demonstrates clinically significant communication deficits that interfere with self-advocacy, emotional expression, comprehension, reciprocal interaction, and participation in demands or transitions. ${sentenceOrFallback(snippets.observationsCommunication, evidenceText)} ${vinelandCommunication.standardScore ? `Vineland-3 Communication results reflected a standard score of ${vinelandCommunication.standardScore}${vinelandCommunication.percentileRank ? `, percentile rank ${vinelandCommunication.percentileRank}` : ''}. ` : ''}${sentenceOrFallback(snippets.criterionA)} Communication goals should target requesting, help and break communication, clarification, repair strategies, emotional expression, nonverbal integration, and contextually appropriate reciprocal communication.`
     case 'socialProfile':
-      return `The client demonstrates social-communication and reciprocal-interaction deficits that affect peer/adult engagement, social problem solving, flexibility, and relationship development. ${sentenceOrFallback(snippets.observationsSocial, evidenceText)}${vinelandSocialization.standardScore ? ` Vineland-3 Socialization results reflected a standard score of ${vinelandSocialization.standardScore}${vinelandSocialization.percentileRank ? `, percentile rank ${vinelandSocialization.percentileRank}` : ''}.` : ''}${vinelandDailyLiving.standardScore ? ` Daily Living Skills results also reflected adaptive-functioning needs with a standard score of ${vinelandDailyLiving.standardScore}${vinelandDailyLiving.percentileRank ? `, percentile rank ${vinelandDailyLiving.percentileRank}` : ''}.` : ''}${impairments.social ? ` Social functioning is further affected by ${sentenceFragment(impairments.social)}.` : ''}${ados.comparisonScore ? ` ADOS-2 results also reflected a high level of autism-spectrum related symptoms, with a Comparison Score of ${ados.comparisonScore}${ados.comparisonLevel ? ` (${ados.comparisonLevel})` : ''}.` : ''} Social goals should target initiation, response to social bids, perspective taking, conflict repair, flexible participation, and maintaining safe engagement during social demands.`
+      return `${clientFirstName} demonstrates social-communication and reciprocal-interaction deficits that affect peer/adult engagement, social problem solving, flexibility, and relationship development. ${sentenceOrFallback(snippets.observationsSocial, evidenceText)}${vinelandSocialization.standardScore ? ` Vineland-3 Socialization results reflected a standard score of ${vinelandSocialization.standardScore}${vinelandSocialization.percentileRank ? `, percentile rank ${vinelandSocialization.percentileRank}` : ''}.` : ''}${vinelandDailyLiving.standardScore ? ` Daily Living Skills results also reflected adaptive-functioning needs with a standard score of ${vinelandDailyLiving.standardScore}${vinelandDailyLiving.percentileRank ? `, percentile rank ${vinelandDailyLiving.percentileRank}` : ''}.` : ''}${impairments.social ? ` Social functioning is further affected by ${sentenceFragment(impairments.social)}.` : ''}${ados.comparisonScore ? ` ADOS-2 results also reflected a high level of autism-spectrum related symptoms, with a Comparison Score of ${ados.comparisonScore}${ados.comparisonLevel ? ` (${ados.comparisonLevel})` : ''}.` : ''} Social goals should target initiation, response to social bids, perspective taking, conflict repair, flexible participation, and maintaining safe engagement during social demands.`
     case 'caregiverTraining':
       return `Caregiver training is clinically indicated to support consistency, generalization, behavior reduction, replacement-skill use, and safe response to escalation across daily routines. ${sentenceOrFallback(snippets.medicalNecessity, evidenceText)} Caregiver goals should focus on implementation of antecedent strategies, prompting, reinforcement, functional communication supports, data reporting, and crisis-prevention procedures taught by the BCBA.`
     default:
@@ -3008,7 +3012,9 @@ function buildStandardTemplateCloneQa(document, bodyTables, job = {}) {
   const plainText = documentPlainText(document)
   const unresolvedPhraseHits = UNRESOLVED_TEMPLATE_PHRASES.filter((phrase) => plainText.includes(phrase))
   const visibleArtifactHits = REPORT_VISIBLE_ARTIFACT_PHRASES.filter((phrase) => reportTextContainsTerm(plainText, phrase))
+  const severityRubricHits = SEVERITY_RUBRIC_PHRASES.filter((phrase) => plainText.includes(phrase))
   const unsupportedAssessmentReferences = unsupportedAssessmentReferenceHits(plainText, job)
+  const hasHouseClinicalInterpretation = plainText.includes(HOUSE_CLINICAL_INTERPRETATION_REASON_TEXT)
   const contentControlCount = collectElements(document, 'sdt').length
   const highlightCount = collectElements(document, 'highlight').length
   const fonts = runFontValues(document)
@@ -3023,6 +3029,8 @@ function buildStandardTemplateCloneQa(document, bodyTables, job = {}) {
     ...(contentControlCount ? [`Generated report still contains ${contentControlCount} Word content-control widget(s).`] : []),
     ...unresolvedPhraseHits.map((phrase) => `Generated report still contains unresolved template phrase: ${phrase}`),
     ...visibleArtifactHits.map((phrase) => `Generated report still contains internal/template artifact phrase: ${phrase}`),
+    ...severityRubricHits.map((phrase) => `Generated report still contains severity rubric helper text: ${phrase}`),
+    ...(!hasHouseClinicalInterpretation ? ['Generated report did not preserve the standard Clinical Interpretation/Response to Treatment reason-for-referral paragraph.'] : []),
     ...unsupportedAssessmentReferences,
     ...(checkboxSymbolsPresent && !checkboxSymbolFontRunCount
       ? [`Generated report contains checkbox glyphs without ${CHECKBOX_SYMBOL_FONT} font runs.`]
@@ -3040,6 +3048,8 @@ function buildStandardTemplateCloneQa(document, bodyTables, job = {}) {
     contentControlCount,
     unresolvedPhraseHits,
     visibleArtifactHits,
+    severityRubricHits,
+    hasHouseClinicalInterpretation,
     unsupportedAssessmentReferences,
     checkboxFont: CHECKBOX_SYMBOL_FONT,
     checkboxSymbolFontRunCount,
@@ -3064,11 +3074,23 @@ function sourceSupportedDomainLabels(job) {
     .map((domain) => domain.label)
 }
 
+function supportedBehaviorListText(facts = {}, fallback = 'targeted maladaptive behaviors') {
+  return facts.behaviors?.length ? formatClinicalList(facts.behaviors) : fallback
+}
+
+function reportClientFirstName(job) {
+  const demographics = job.clinicalFacts?.demographics || {}
+  return demographics.firstName
+    || firstNameFromFullName(demographics.clientName || job.clinicalProfile?.clientLabel || job.clientLabel)
+    || 'The client'
+}
+
 function templateMedicalNecessityText(job) {
   return HOUSE_MEDICAL_NECESSITY_TEXT
 }
 
 function templateAssessmentText(job) {
+  const clientFirstName = reportClientFirstName(job)
   const ados = job.clinicalFacts?.ados || {}
   const vinelandSummary = vinelandSummaryText(job.clinicalFacts?.vineland)
   if (ados.socialAffect || ados.rrb || ados.classification || ados.comparisonScore) {
@@ -3086,8 +3108,8 @@ function templateAssessmentText(job) {
       ados.rrb ? `Restricted and Repetitive Behavior total of ${ados.rrb}` : '',
       ados.comparisonScore ? `an ADOS-2 Comparison Score of ${ados.comparisonScore}` : '',
     ].filter(Boolean)
-    const scoreSentence = scoreParts.length ? ` The client received ${formatClinicalList(scoreParts)}.` : ''
-    return `Standardized assessment results from the ADOS-2${moduleText}, diagnostic interview, parent/behavioral report, DSM-5-TR diagnostic criteria alignment${vinelandSummary ? ', and Vineland-3 adaptive behavior results' : ''} were reviewed. Graphs are intentionally omitted for this initial assessment. ADOS-2${moduleText} results reflected a high level of autism-related symptoms.${scoreSentence} The ADOS-2 classification was ${ados.classification || 'Autism'}. The diagnostic report aligned the client's presentation with DSM-5-TR Criterion A deficits in social-emotional reciprocity, nonverbal communication, and relationship development, as well as Criterion B patterns of rigidity, resistance to change, sensory sensitivity, repetitive maladaptive behavioral patterns, and cognitive inflexibility.${vinelandSummary ? ` ${vinelandSummary}` : ''} The diagnostic impression was ${diagnosisText} (${diagnosisCodeText})${supportLevelText}${coOccurringText}.`
+    const scoreSentence = scoreParts.length ? ` ${clientFirstName} received ${formatClinicalList(scoreParts)}.` : ''
+    return `Standardized assessment results from the ADOS-2${moduleText}, diagnostic interview, parent/behavioral report, DSM-5-TR diagnostic criteria alignment${vinelandSummary ? ', and Vineland-3 adaptive behavior results' : ''} were reviewed. Graphs are intentionally omitted for this initial assessment. ADOS-2${moduleText} results reflected a high level of autism-related symptoms.${scoreSentence} The ADOS-2 classification was ${ados.classification || 'Autism'}. The diagnostic report aligned ${clientFirstName}'s presentation with DSM-5-TR Criterion A deficits in social-emotional reciprocity, nonverbal communication, and relationship development, as well as Criterion B patterns of rigidity, resistance to change, sensory sensitivity, repetitive maladaptive behavioral patterns, and cognitive inflexibility.${vinelandSummary ? ` ${vinelandSummary}` : ''} The diagnostic impression was ${diagnosisText} (${diagnosisCodeText})${supportLevelText}${coOccurringText}.`
   }
   const adapters = job.assessmentAdapters.length
     ? job.assessmentAdapters.map((adapter) => adapter.label).join(', ')
@@ -3099,7 +3121,7 @@ function templateBarrierText(job) {
   const domains = sourceSupportedDomainLabels(job)
   const facts = job.clinicalFacts || {}
   if (facts.standardSevereBehaviorCandidate && facts.education?.unableToAttendSchool) {
-    return `Barriers to treatment include ${formatClinicalList(STANDARD_SEVERE_BEHAVIOR_LABELS)}, severe communication deficits, comprehension deficits, emotional dysregulation, rigidity, sensory sensitivity, social isolation, anxiety/depressive symptoms, school placement failure, and difficulty tolerating denied access, social demand, or non-preferred tasks. These barriers create safety concerns and may interfere with instructional control, treatment participation, and generalization across home, therapy, educational, and community settings.`
+    return `Barriers to treatment include ${supportedBehaviorListText(facts)}, severe communication deficits, comprehension deficits, emotional dysregulation, rigidity, sensory sensitivity, social isolation, anxiety/depressive symptoms, school placement failure, and difficulty tolerating denied access, social demand, or non-preferred tasks. These barriers create safety concerns and may interfere with instructional control, treatment participation, and generalization across home, therapy, educational, and community settings.`
   }
   const behaviorText = facts.behaviors?.length ? formatClinicalList(facts.behaviors) : ''
   const impairmentText = [
@@ -3116,16 +3138,14 @@ function templateBarrierText(job) {
 }
 
 function templateParentInvolvementText(job) {
-  const behaviors = job.clinicalFacts?.standardSevereBehaviorCandidate
-    ? 'aggression, safety concerns, emotional dysregulation, and communication breakdowns'
+  const behaviors = job.clinicalFacts?.behaviors?.length
+    ? `${supportedBehaviorListText(job.clinicalFacts)}, emotional dysregulation, and communication breakdowns`
     : 'communication, social, adaptive, and behavior-related needs'
   return `Parent involvement is expected to be a central component of treatment due to the severity of ${behaviors} across daily routines. Caregivers will be trained to implement behavior supports, reinforce functional communication, respond consistently to escalation, collect behavior data, and promote generalization across home and community routines. Parent proficiency with ABA strategies is currently emerging, and no barriers to caregiver participation were documented in the reviewed records. Caregivers are anticipated to be involved for 2 hours per month with the goals listed below.`
 }
 
 function transitionCriteriaText(kind, job) {
-  const behaviorList = job.clinicalFacts?.standardSevereBehaviorCandidate
-    ? formatClinicalList(STANDARD_SEVERE_BEHAVIOR_LABELS)
-    : (job.clinicalFacts?.behaviors?.length ? formatClinicalList(job.clinicalFacts.behaviors) : 'targeted maladaptive behaviors')
+  const behaviorList = supportedBehaviorListText(job.clinicalFacts || {}, 'targeted maladaptive behaviors')
   if (kind === 'behavior') {
     if (!job.clinicalFacts?.behaviors?.length && !job.goalPlan?.goals?.some((goal) => goal.domain === 'Behavior')) {
       return 'Source-supported maladaptive behavior reduction criteria should be finalized by the BCBA after target behaviors are confirmed through caregiver report, direct observation, intake, FBA/BIP, or behavior data.'
@@ -3139,31 +3159,28 @@ function transitionCriteriaText(kind, job) {
 }
 
 function templateClinicalInterpretationText(job) {
-  const referral = job.clinicalFacts?.sectionSnippets?.reasonForReferral
-  return `Reason for Referral: ${referral || 'The caregivers sought ABA treatment to address the interfering effects of ASD-related skill deficits and maladaptive behavior.'} The reviewed records support the need for a treatment plan that targets functional communication, social interaction, adaptive participation, reduction of maladaptive behavior, and caregiver implementation of strategies. The BCBA should verify all client-specific details, service recommendations, and treatment priorities before finalizing the report.`
+  return HOUSE_CLINICAL_INTERPRETATION_REASON_TEXT
 }
 
 function templateBehaviorTypeText(job, type) {
   const facts = job.clinicalFacts || {}
   const snippets = facts.sectionSnippets || {}
+  const clientFirstName = reportClientFirstName(job)
   if (type === 'typeI') {
-    return `The client demonstrates Maladaptive Behavior Type I needs related to restricted, repetitive, rigid, or inflexible patterns of behavior. ${snippets.criterionB || snippets.interpretation || templateSectionText(job, 'behaviorProfile', 'Maladaptive Behavior Type I evidence')} These concerns should be addressed through antecedent supports, tolerance and flexibility programming, functional communication, reinforcement for adaptive responding, and caregiver-supported generalization.`
+    return `${clientFirstName} demonstrates Maladaptive Behavior Type I needs related to restricted, repetitive, rigid, or inflexible patterns of behavior. ${snippets.criterionB || snippets.interpretation || templateSectionText(job, 'behaviorProfile', 'Maladaptive Behavior Type I evidence')} These concerns should be addressed through antecedent supports, tolerance and flexibility programming, functional communication, reinforcement for adaptive responding, and caregiver-supported generalization.`
   }
-  const behaviorText = facts.standardSevereBehaviorCandidate
-    ? formatClinicalList(STANDARD_SEVERE_BEHAVIOR_LABELS)
-    : facts.behaviors?.length
-    ? formatClinicalList(facts.behaviors)
-    : 'maladaptive behavior targets that must be confirmed from caregiver report, intake, FBA/BIP, direct observation, or behavior data before finalization'
+  const behaviorText = supportedBehaviorListText(facts, 'maladaptive behavior targets that must be confirmed from caregiver report, intake, FBA/BIP, direct observation, or behavior data before finalization')
   const typeTwoEvidence = [snippets.reasonForReferral, snippets.observationsEmotion, snippets.observationsEmotion ? 'The source pattern is consistent with internalized distress followed by explosive escalation when the client is challenged, frustrated, or unable to communicate needs effectively.' : '']
     .filter(Boolean)
     .join(' ') || templateSectionText(job, 'behaviorProfile', 'Maladaptive Behavior Type II evidence')
-  return `The client demonstrates Maladaptive Behavior Type II needs that interfere with safety, participation, and access to instruction or daily routines. Source-supported concerns include ${behaviorText}. ${typeTwoEvidence} These behaviors should be targeted through operational definitions, function-based intervention, antecedent strategies, functional communication training, differential reinforcement, de-escalation procedures, and ongoing frequency data collection.`
+  return `${clientFirstName} demonstrates Maladaptive Behavior Type II needs that interfere with safety, participation, and access to instruction or daily routines. Source-supported concerns include ${behaviorText}. ${typeTwoEvidence} These behaviors should be targeted through operational definitions, function-based intervention, antecedent strategies, functional communication training, differential reinforcement, de-escalation procedures, and ongoing frequency data collection.`
 }
 
 function templateObservationText(job, observationNumber) {
+  const clientFirstName = reportClientFirstName(job)
   const snippets = job.clinicalFacts?.sectionSnippets || {}
   if (observationNumber === 1) {
-    return `During the diagnostic observation/source review, the client demonstrated clinically significant social-communication deficits. ${snippets.observationsSocial || snippets.criterionA || templateSectionText(job, 'socialProfile', 'Observation 1')} The observation supports goals targeting reciprocal responding, social initiation, nonverbal integration, and flexible participation with adults and peers.`
+    return `During the diagnostic observation/source review, ${clientFirstName} demonstrated clinically significant social-communication deficits. ${snippets.observationsSocial || snippets.criterionA || templateSectionText(job, 'socialProfile', 'Observation 1')} The observation supports goals targeting reciprocal responding, social initiation, nonverbal integration, and flexible participation with adults and peers.`
   }
   const communicationAndEmotion = [snippets.observationsCommunication, snippets.observationsEmotion]
     .filter(Boolean)
@@ -3420,11 +3437,12 @@ function fillTemplateTables(document, tables, job) {
 }
 
 function fillTemplateParagraphs(document, paragraphs, job) {
+  const clientFirstName = reportClientFirstName(job)
   setFirstParagraphContaining(document, paragraphs, 'Research has demonstrated that ABA methodology is effective', templateMedicalNecessityText(job))
   setParagraphAfterHeading(document, paragraphs, 'Family History:', templateSectionText(job, 'familyHistory', 'Family History'))
   setParagraphAfterHeading(document, paragraphs, 'Developmental History:', templateSectionText(job, 'developmentalHistory', 'Developmental History'))
   setParagraphAfterHeading(document, paragraphs, 'Educational History:', templateSectionText(job, 'educationalHistory', 'Educational History'))
-  setParagraphAfterHeading(document, paragraphs, "Client's Area of Strength:", 'The client demonstrates strengths and interests that should be used to support rapport, motivation, instructional engagement, and generalization. The BCBA should finalize this section using caregiver report, direct observation, and source-specific strengths identified in the evaluation packet.')
+  setParagraphAfterHeading(document, paragraphs, "Client's Area of Strength:", `${clientFirstName} demonstrates strengths and interests that should be used to support rapport, motivation, instructional engagement, and generalization. The BCBA should finalize this section using caregiver report, direct observation, and source-specific strengths identified in the evaluation packet.`)
 
   setParagraphAfterHeading(document, paragraphs, 'As Evidenced By:', templateBehaviorTypeText(job, 'typeI'))
   const asEvidencedIndexes = paragraphs
@@ -3464,6 +3482,13 @@ function fillTemplateParagraphs(document, paragraphs, job) {
   setParagraphAfterHeading(document, paragraphs, 'Barriers to treatment:', templateBarrierText(job))
   setFirstParagraphContaining(document, paragraphs, 'Reason for Referral:', templateClinicalInterpretationText(job))
   setFirstParagraphContaining(document, paragraphs, 'Functional Impairment: Please identify as Mild, Moderate, or Severe.', 'Functional Impairment:')
+  removeParagraphsContaining(paragraphs, [
+    '*Mild*',
+    'The individual exhibits some difficulty or delay in acquiring skills',
+    'The impact on daily life is relatively minimal',
+    'The individual exhibits significant difficulty or delay in acquiring skills',
+    'The individual exhibits extreme difficulty or delay in acquiring skills',
+  ])
   setFirstParagraphContaining(document, paragraphs, 'Client is recommended to have Comprehensive/Focused services.', 'Client is recommended to receive ABA services at the intensity and model determined medically necessary by the BCBA after review of the available records, caregiver priorities, safety needs, adaptive functioning, and payer requirements.')
   setFirstParagraphContaining(document, paragraphs, 'Include rationale for lack of progress here', 'N/A - initial assessment.')
   setFirstParagraphContaining(document, paragraphs, 'For initial assessments, write N/A', 'N/A - initial assessment.')

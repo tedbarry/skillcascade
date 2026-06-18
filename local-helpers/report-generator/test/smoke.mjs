@@ -731,9 +731,16 @@ try {
   assert.match(renderedOutput.value, /FR1 to FR2 schedule/)
   assert.match(renderedOutput.value, /Parent involvement is expected to be a central component/)
   assert.match(renderedOutput.value, /Maladaptive behaviors to decrease/)
-  assert.match(renderedOutput.value, /The maladaptive behaviors of physical aggression, verbal aggression, non-compliance, property destruction, profane language, elopement, and unsafe behaviors/)
+  assert.match(renderedOutput.value, /The maladaptive behaviors of/)
+  for (const behaviorLabel of ['physical aggression', 'verbal aggression', 'non-compliance', 'property destruction', 'profane language', 'elopement', 'unsafe behavior']) {
+    assert.match(renderedOutput.value, new RegExp(behaviorLabel, 'i'))
+  }
   assert.match(renderedOutput.value, /Client will engage in reciprocal, functional communication/)
   assert.match(renderedOutput.value, /Client will engage in socially appropriate interaction/)
+  assert.equal(renderedOutput.value.includes('The individual exhibits some difficulty or delay in acquiring skills'), false)
+  assert.equal(renderedOutput.value.includes('The individual exhibits significant difficulty or delay in acquiring skills'), false)
+  assert.equal(renderedOutput.value.includes('The individual exhibits extreme difficulty or delay in acquiring skills'), false)
+  assert.match(renderedOutput.value, /Reason for Referral: The client's parents sought ABA treatment to mitigate the interfering effects of their child's ASD diagnosis/)
   assert.match(renderedOutput.value, /Program\/Behavior/)
   assert.match(cloneInspection.plainText, new RegExp(`Communication:\\s*${uncheckedBox} Mild\\s+${uncheckedBox} Moderate\\s+${checkedBox} Severe`))
   assert.match(cloneInspection.plainText, new RegExp(`Have you communicated with child.s PCP\\?\\s*${checkedBox} Y\\s+${uncheckedBox} N\\s+${uncheckedBox} Member declined`))
