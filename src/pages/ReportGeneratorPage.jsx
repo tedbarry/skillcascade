@@ -149,9 +149,9 @@ function createTimeoutSignal(timeoutMs) {
 function getTargetAddressSpace(value) {
   try {
     const hostname = new URL(String(value || '')).hostname.replace(/^\[|\]$/g, '').toLowerCase()
-    if (hostname === 'localhost' || hostname === '127.0.0.1' || hostname === '::1') return 'loopback'
+    if (hostname === 'localhost' || hostname === '127.0.0.1' || hostname === '::1') return 'local'
   } catch {
-    return 'loopback'
+    return 'local'
   }
   return 'local'
 }
