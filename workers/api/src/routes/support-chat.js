@@ -188,7 +188,7 @@ Go to Intelligence tab. Start with Overview for the big picture. Check Status Ma
 
 ## Current Products And Pricing
 - Passage Runner: $1,500/mo pilot for Passage note draft automation. Local helper required. Never signs notes.
-- Report Generator: credit-based, starting at $50/report. One generated Word draft consumes one report credit. Volume packs may reduce the per-report cost.
+- Report Generator: credit-based, temporarily set to $1/report for testing. One generated Word draft consumes one report credit after the local helper creates it.
 - Agency Ops: $799/mo pilot while workflows are scoped and approval-gated.
 - SkillCascade Platform: custom access while the older Solo/Practice/Enterprise self-serve plans are retired.
 

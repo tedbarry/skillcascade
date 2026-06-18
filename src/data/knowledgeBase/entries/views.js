@@ -996,9 +996,9 @@ Practitioners can submit their own templates and tools for review. Approved cont
 
 ## Report Generator
 
-- **$50/report** for a single report credit
-- **$225** for 5 report credits ($45/report)
-- **$400** for 10 report credits ($40/report)
+- **$1/report** for the current testing credit price
+- **$5** for 5 report credits
+- **$10** for 10 report credits
 - One generated Word draft consumes one credit after the local helper creates it
 - BCBA review and approval are still required
 

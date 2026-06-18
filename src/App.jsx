@@ -211,9 +211,7 @@ export default function App() {
               element={
                 <motion.div {...pageFade}>
                   <ProtectedRoute>
-                    <WorkflowPackGate packId={WORKFLOW_PACK_IDS.reportGenerator}>
-                      <ReportGeneratorPage />
-                    </WorkflowPackGate>
+                    <ReportGeneratorPage />
                   </ProtectedRoute>
                 </motion.div>
               }
@@ -223,9 +221,7 @@ export default function App() {
               element={
                 <motion.div {...pageFade}>
                   <ProtectedRoute>
-                    <WorkflowPackGate packId={WORKFLOW_PACK_IDS.reportGenerator}>
-                      <ReportGeneratorPage />
-                    </WorkflowPackGate>
+                    <ReportGeneratorPage />
                   </ProtectedRoute>
                 </motion.div>
               }

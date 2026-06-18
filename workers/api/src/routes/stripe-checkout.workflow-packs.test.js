@@ -163,7 +163,7 @@ describe('workflow-pack Stripe checkout', () => {
     expect(sessionParams.mode).toBe('payment')
     expect(sessionParams.success_url).toBe('https://app.skillcascade.test/workflow-packs/report-generator/onboarding?checkout=report-credits-success')
     expect(sessionParams.cancel_url).toBe('https://app.skillcascade.test/pricing#report-credits')
-    expect(sessionParams.line_items[0].price_data.unit_amount).toBe(22500)
+    expect(sessionParams.line_items[0].price_data.unit_amount).toBe(500)
     expect(sessionParams.metadata).toMatchObject({
       user_id: 'user-1',
       plan: 'report_generator',

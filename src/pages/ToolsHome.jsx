@@ -35,8 +35,8 @@ function packPrimaryOutcome(pack) {
 function getPackState(pack) {
   if (pack.hasAccess) return 'active'
   if (pack.status === 'planned') return 'planned'
+  if (pack.id === WORKFLOW_PACK_IDS.reportGenerator) return 'setup'
   if (pack.id === WORKFLOW_PACK_IDS.skillcascadeCore) return 'sales'
-  if (pack.id === WORKFLOW_PACK_IDS.reportGenerator) return 'credits'
   if (pack.billing?.checkoutConfigured && (pack.purchaseMode === 'checkout' || pack.purchaseMode === 'checkout-or-sales')) return 'checkout'
   return 'sales'
 }
@@ -85,9 +85,13 @@ export default function ToolsHome() {
     }))
   }, [billingStatus.data, hasPack, packs])
 
-  const activePacks = enrichedPacks.filter((pack) => pack.hasAccess)
+  const setupFirstPackIds = new Set([WORKFLOW_PACK_IDS.reportGenerator])
+  const activePacks = enrichedPacks.filter((pack) => pack.hasAccess || setupFirstPackIds.has(pack.id))
   const inactivePacks = enrichedPacks.filter((pack) => !pack.hasAccess)
-  const setupPacks = enrichedPacks.filter((pack) => pack.hasAccess && pack.id !== WORKFLOW_PACK_IDS.skillcascadeCore)
+  const setupPacks = enrichedPacks.filter((pack) => (
+    (pack.hasAccess && pack.id !== WORKFLOW_PACK_IDS.skillcascadeCore)
+    || setupFirstPackIds.has(pack.id)
+  ))
   const visiblePacks = activeTab === 'mine'
     ? activePacks
     : activeTab === 'setup'
@@ -279,6 +283,7 @@ function ToolCard({ pack, checkoutLoading, onCheckout }) {
   const checkoutReady = pack.billing?.checkoutConfigured === true
   const canCheckout = state === 'checkout'
   const usesCredits = state === 'credits'
+  const setupAvailable = state === 'setup'
   const contactSubject = encodeURIComponent(`${pack.name} Access`)
 
   return (
@@ -289,7 +294,7 @@ function ToolCard({ pack, checkoutLoading, onCheckout }) {
           <h2 className="mt-2 text-2xl font-black text-warm-950">{pack.name}</h2>
         </div>
         <span className={`rounded-md border px-2.5 py-1 text-xs font-black uppercase ${statusTone(pack.hasAccess)}`}>
-          {pack.hasAccess ? 'Active' : pack.status}
+          {pack.hasAccess ? 'Active' : setupAvailable ? 'Setup' : pack.status}
         </span>
       </div>
 
@@ -306,6 +311,15 @@ function ToolCard({ pack, checkoutLoading, onCheckout }) {
           <Link to={pack.route} className="inline-flex min-h-11 items-center justify-center rounded-md bg-sage-600 px-4 text-sm font-bold text-white hover:bg-sage-700">
             Open tool
           </Link>
+        ) : setupAvailable ? (
+          <>
+            <Link to={pack.route} className="inline-flex min-h-11 items-center justify-center rounded-md bg-sage-600 px-4 text-sm font-bold text-white hover:bg-sage-700">
+              Open setup
+            </Link>
+            <Link to="/pricing#report-credits" className="inline-flex min-h-11 items-center justify-center rounded-md border border-blue-200 bg-blue-50 px-4 text-sm font-bold text-blue-900 hover:bg-blue-100">
+              Buy report credits
+            </Link>
+          </>
         ) : usesCredits ? (
           <Link to="/pricing#report-credits" className="inline-flex min-h-11 items-center justify-center rounded-md bg-blue-700 px-4 text-sm font-bold text-white hover:bg-blue-800">
             Buy report credits

@@ -2,7 +2,7 @@ import { Hono } from 'hono'
 import { query } from '../db.js'
 import { hasPermission } from '../middleware/auth.js'
 import { requireAdmin } from '../middleware/access.js'
-import { hasWorkflowPack, WORKFLOW_PACK_IDS } from '../lib/workflow-packs.js'
+import { WORKFLOW_PACK_IDS } from '../lib/workflow-packs.js'
 import {
   buildReportGeneratorOnboarding,
   claimReportGeneratorInstall,
@@ -189,7 +189,8 @@ const REPORT_GENERATOR_CONTRACT = {
     licenseReadinessMode: 'helper-identifies-install-skillcascade-authorizes-access',
     helperStoresBillingSecrets: false,
     helperCanGrantAccess: false,
-    skillCascadeWorkflowPackIsAuthority: true,
+    skillCascadeAccountIsAuthority: true,
+    skillCascadeCreditLedgerIsAuthority: true,
     updatesPreserveCustomerData: true,
     autoUpdateEnabledInRelease: false,
   },
@@ -221,16 +222,6 @@ function getAccessError(c, action = 'view') {
 
   if (!hasPermission(profile, 'reports', action)) {
     return { status: 403, payload: { error: 'Forbidden', code: 'permission_required' } }
-  }
-  if (!hasWorkflowPack(profile, WORKFLOW_PACK_IDS.reportGenerator)) {
-    return {
-      status: 403,
-      payload: {
-        error: 'Report Generator access required.',
-        code: 'workflow_pack_required',
-        requiredPack: WORKFLOW_PACK_IDS.reportGenerator,
-      },
-    }
   }
 
   return null

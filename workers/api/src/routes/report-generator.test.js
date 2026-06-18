@@ -113,15 +113,15 @@ describe('report-generator route contract', () => {
     expect(payload.error).toMatch(/forbidden/i)
   })
 
-  it('blocks module status without Report Generator workflow-pack access', async () => {
+  it('allows module status without Report Generator workflow-pack access', async () => {
     auth.hasPermission.mockImplementation((_profile, category, action) => category === 'reports' && action === 'view')
 
     const response = await sendRequest('/status', createProfile({ workflow_pack_access: {} }))
     const payload = await response.json()
 
-    expect(response.status).toBe(403)
-    expect(payload.code).toBe('workflow_pack_required')
-    expect(payload.requiredPack).toBe('report-generator')
+    expect(response.status).toBe(200)
+    expect(payload.ok).toBe(true)
+    expect(payload.data.moduleId).toBe('report-generator')
   })
 
   it('returns local-helper module contract with reports.view', async () => {
@@ -149,7 +149,8 @@ describe('report-generator route contract', () => {
     expect(payload.data.installAndLicensing.helperPackageDownloadEndpoint).toBe('/api/report-generator/helper/download')
     expect(payload.data.installAndLicensing.helperCanGrantAccess).toBe(false)
     expect(payload.data.installAndLicensing.helperStoresBillingSecrets).toBe(false)
-    expect(payload.data.installAndLicensing.skillCascadeWorkflowPackIsAuthority).toBe(true)
+    expect(payload.data.installAndLicensing.skillCascadeAccountIsAuthority).toBe(true)
+    expect(payload.data.installAndLicensing.skillCascadeCreditLedgerIsAuthority).toBe(true)
     expect(payload.data.standardTemplate.customerTemplateUpload).toBe(false)
     expect(payload.data.standardTemplate.mode).toBe('skillcascade-standard-docx')
     expect(payload.data.supervisorReviewedStyle.id).toBe('supervisor-reviewed-aba-initial-v1')
@@ -269,18 +270,17 @@ describe('report-generator route contract', () => {
     expect(bucket.get).toHaveBeenCalled()
   })
 
-  it('does not expose helper downloads without workflow-pack access', async () => {
+  it('exposes helper downloads for report-view users before credit purchase', async () => {
     auth.hasPermission.mockImplementation((_profile, category, action) => category === 'reports' && action === 'view')
     const bucket = createArtifactBucket()
 
     const response = await sendRequest('/helper/download', createProfile({ workflow_pack_access: {} }), {
       env: { CONNECTOR_ARTIFACTS: bucket },
     })
-    const payload = await response.json()
 
-    expect(response.status).toBe(403)
-    expect(payload.code).toBe('workflow_pack_required')
-    expect(bucket.get).not.toHaveBeenCalled()
+    expect(response.status).toBe(200)
+    expect(response.headers.get('content-type')).toBe('application/zip')
+    expect(bucket.get).toHaveBeenCalled()
   })
 
   it('returns a PHI-free onboarding contract for the buyer setup flow', async () => {
@@ -327,7 +327,7 @@ describe('report-generator route contract', () => {
     expect(payload.data.bundles).toContainEqual(expect.objectContaining({
       id: 'report-credit-1',
       credits: 1,
-      amountCents: 5000,
+      amountCents: 100,
     }))
   })
 
