@@ -444,6 +444,53 @@ route.get('/credits/status', async (c) => {
   })
 })
 
+route.get('/credits/admin-status', async (c) => {
+  const accessError = getAccessError(c, 'edit')
+  if (accessError) return c.json(accessError.payload, accessError.status)
+
+  const profile = c.get('profile')
+  if (!requireAdmin(profile)) {
+    return c.json({ error: 'Admin access required.', code: 'admin_required' }, 403)
+  }
+
+  const targetUserId = String(c.req.query('targetUserId') || profile.id || '').trim()
+  if (!targetUserId) return c.json({ error: 'targetUserId is required.', code: 'target_user_required' }, 400)
+  if (targetUserId !== profile.id && !profile.is_super_admin) {
+    return c.json({ error: 'Only super admins can inspect another user.', code: 'super_admin_required' }, 403)
+  }
+
+  const targetProfile = await query(c.env,
+    'SELECT id, org_id FROM profiles WHERE id = $1 LIMIT 1',
+    [targetUserId],
+  )
+  if (!targetProfile.rows[0]) {
+    return c.json({ error: 'Target profile not found.', code: 'target_profile_not_found' }, 404)
+  }
+
+  const balance = await getReportCreditBalance({
+    env: c.env,
+    dbQuery: query,
+    userId: targetUserId,
+  })
+  const ledger = await listReportCreditLedger({
+    env: c.env,
+    dbQuery: query,
+    userId: targetUserId,
+    limit: 20,
+  })
+
+  return c.json({
+    ok: true,
+    data: {
+      targetUserId,
+      targetOrgId: targetProfile.rows[0].org_id || null,
+      balance,
+      ledger,
+      checkedAt: new Date().toISOString(),
+    },
+  })
+})
+
 route.post('/credits/consume', async (c) => {
   const accessError = getAccessError(c, 'edit')
   if (accessError) return c.json(accessError.payload, accessError.status)
