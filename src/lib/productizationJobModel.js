@@ -66,6 +66,30 @@ export const PRODUCT_EXTERNAL_ACTIONS = {
   },
 }
 
+export const INITIAL_ASSESSMENT_LEARNING_TREE_CONTRACT = {
+  id: 'initial-assessment-learning-tree-v1',
+  sourceWorkflow: 'initial_assessment',
+  createMode: 'fresh_contact_learning_tree',
+  domainOrder: ['Behavior', 'Communication', 'Social', 'Parent Training'],
+  hierarchy: ['domain', 'long_term_cumulative', 'short_term_cumulative', 'final_data_collection_target'],
+  centralReach: {
+    domainItemType: 'page',
+    cumulativeItemType: 'page',
+    percentTargetType: 'datapercent',
+    frequencyTargetType: 'datafrequency2',
+    percentTrialCount: 10,
+    activateDomainsWithChildren: true,
+    saveGoalMetadataForCumulatives: true,
+    saveGoalMetadataForTargets: true,
+    verifyWithBundleData: true,
+  },
+  passage: {
+    supported: true,
+    writeMode: 'review_approved_program_setup',
+  },
+  approvalRequiredForExternalWrite: true,
+}
+
 const DOMAIN_ALIASES = {
   behavior: 'Behavior',
   maladaptive: 'Behavior',
@@ -76,8 +100,6 @@ const DOMAIN_ALIASES = {
   parent: 'Parent Training',
   caregiver: 'Parent Training',
 }
-
-const TREE_DOMAIN_ORDER = ['Behavior', 'Communication', 'Social', 'Parent Training']
 
 function cleanText(value) {
   return String(value || '').replace(/\s+/g, ' ').trim()
@@ -183,6 +205,12 @@ export function normalizeGoalRow(row = {}, index = 0) {
     dataType: behaviorFrequency
       ? 'Frequency'
       : getFirstText(row, ['dataType', 'data_type', 'measurementType', 'measurement_type']) || 'Percentage',
+    dataCollectionType: behaviorFrequency
+      ? INITIAL_ASSESSMENT_LEARNING_TREE_CONTRACT.centralReach.frequencyTargetType
+      : INITIAL_ASSESSMENT_LEARNING_TREE_CONTRACT.centralReach.percentTargetType,
+    trialCount: behaviorFrequency
+      ? null
+      : INITIAL_ASSESSMENT_LEARNING_TREE_CONTRACT.centralReach.percentTrialCount,
     sourceRefs: unique(row.sourceRefs || row.source_refs || []),
     needsReview: objective.length === 0,
   }
@@ -207,15 +235,74 @@ function getOrCreateBranch(parent, name, type, extra = {}) {
   return branch
 }
 
+function centralReachBranchContract(role, goal = {}) {
+  const contract = INITIAL_ASSESSMENT_LEARNING_TREE_CONTRACT.centralReach
+
+  if (role === 'domain') {
+    return {
+      role,
+      itemType: contract.domainItemType,
+      hasGoal: false,
+      status: 'active',
+      activateWithChildren: true,
+      saveGoalMetadata: false,
+    }
+  }
+
+  if (role === 'long_term' || role === 'short_term') {
+    return {
+      role,
+      itemType: contract.cumulativeItemType,
+      hasGoal: true,
+      status: 'active',
+      activateWithChildren: false,
+      saveGoalMetadata: true,
+    }
+  }
+
+  const isFrequency = goal.dataCollectionType === contract.frequencyTargetType
+  return {
+    role: 'target',
+    itemType: isFrequency ? contract.frequencyTargetType : contract.percentTargetType,
+    hasGoal: true,
+    status: 'active',
+    activateWithChildren: false,
+    saveGoalMetadata: true,
+    dataType: isFrequency ? 'Frequency' : 'Percentage',
+    maxTrials: isFrequency ? null : contract.percentTrialCount,
+    trialCount: isFrequency ? null : contract.percentTrialCount,
+    dataSettings: isFrequency
+      ? {
+          yAxisLabel: 'Frequency',
+          dataGrouping: 'none',
+          sessionType: 1,
+        }
+      : {
+          graphMin: 0,
+          graphMax: 100,
+          yAxisLabel: 'Percent Correct',
+          dataGrouping: 'none',
+          sessionType: 1,
+          maxTrials: contract.percentTrialCount,
+        },
+  }
+}
+
 export function buildCentralReachTreePlan(goalRows = []) {
   const root = { id: 'learning-tree-root', name: 'Learning Tree', type: 'root', children: [] }
   const normalizedGoals = goalRows.map(normalizeGoalRow).filter((goal) => goal.objective || goal.shortTermGoal)
   const warnings = []
 
   for (const goal of normalizedGoals) {
-    const domain = getOrCreateBranch(root, goal.domain, 'resource')
-    const longTermGoal = getOrCreateBranch(domain, goal.longTermGoal, 'cumulative')
-    const shortTermGoal = getOrCreateBranch(longTermGoal, goal.shortTermGoal, 'cumulative')
+    const domain = getOrCreateBranch(root, goal.domain, 'resource', {
+      centralReach: centralReachBranchContract('domain'),
+    })
+    const longTermGoal = getOrCreateBranch(domain, goal.longTermGoal, 'cumulative', {
+      centralReach: centralReachBranchContract('long_term'),
+    })
+    const shortTermGoal = getOrCreateBranch(longTermGoal, goal.shortTermGoal, 'cumulative', {
+      centralReach: centralReachBranchContract('short_term'),
+    })
 
     if (!goal.objective) {
       warnings.push(`${goal.domain} / ${goal.longTermGoal} / ${goal.shortTermGoal} needs objective text before export.`)
@@ -224,21 +311,39 @@ export function buildCentralReachTreePlan(goalRows = []) {
 
     shortTermGoal.children.push(createBranch(goal.objective, 'data_collection', {
       dataType: goal.dataType,
+      dataCollectionType: goal.dataCollectionType,
+      trialCount: goal.trialCount,
+      maxTrials: goal.trialCount,
+      centralReach: centralReachBranchContract('target', goal),
       sourceRefs: goal.sourceRefs,
     }))
   }
 
   root.children.sort((a, b) => {
-    const aIndex = TREE_DOMAIN_ORDER.indexOf(a.name)
-    const bIndex = TREE_DOMAIN_ORDER.indexOf(b.name)
+    const aIndex = INITIAL_ASSESSMENT_LEARNING_TREE_CONTRACT.domainOrder.indexOf(a.name)
+    const bIndex = INITIAL_ASSESSMENT_LEARNING_TREE_CONTRACT.domainOrder.indexOf(b.name)
     return (aIndex === -1 ? 99 : aIndex) - (bIndex === -1 ? 99 : bIndex)
   })
 
+  const expectedRows = normalizedGoals
+    .filter((goal) => goal.objective)
+    .map((goal) => ({
+      domain: goal.domain,
+      longTermGoal: goal.longTermGoal,
+      shortTermGoal: goal.shortTermGoal,
+      objective: goal.objective,
+      dataCollectionType: goal.dataCollectionType,
+      trialCount: goal.trialCount,
+    }))
+
   return {
+    contract: INITIAL_ASSESSMENT_LEARNING_TREE_CONTRACT,
     root,
     domainCount: root.children.length,
     goalCount: normalizedGoals.filter((goal) => goal.objective).length,
     behaviorFrequencyGoalCount: normalizedGoals.filter((goal) => goal.domain === 'Behavior' && goal.dataType === 'Frequency').length,
+    percentGoalCount: normalizedGoals.filter((goal) => goal.objective && goal.dataCollectionType === INITIAL_ASSESSMENT_LEARNING_TREE_CONTRACT.centralReach.percentTargetType).length,
+    expectedRows,
     warnings,
   }
 }

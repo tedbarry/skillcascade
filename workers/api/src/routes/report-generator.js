@@ -20,14 +20,14 @@ import {
 const route = new Hono()
 const DEFAULT_REPORT_HELPER_RELEASE = {
   channel: 'controlled-release',
-  version: 'release-20260611-supervisor-style-qa-v7',
-  minimumVersion: 'release-20260611-supervisor-style-qa-v7',
+  version: 'release-20260618-initial-tree-setup-v8',
+  minimumVersion: 'release-20260618-initial-tree-setup-v8',
   helperRuntimeVersion: '0.1.0',
-  filename: 'SkillCascadeReportHelper-release-20260611-supervisor-style-qa-v7.zip',
-  objectKey: 'report-generator/SkillCascadeReportHelper-release-20260611-supervisor-style-qa-v7.zip',
-  sha256: '49E2E4D96FDC9B9FCAA13E4F68505EDF0CC2E3882D1F7DA88F901AFC74D2DA9A',
+  filename: 'SkillCascadeReportHelper-release-20260618-initial-tree-setup-v8.zip',
+  objectKey: 'report-generator/SkillCascadeReportHelper-release-20260618-initial-tree-setup-v8.zip',
+  sha256: '4785E36B485366BD2989877201AFABFA178D85672DB5BD4EB707DF62D327CC92',
   installerName: 'Install-ReportGeneratorHelper.exe',
-  packageRootName: 'SkillCascadeReportHelper-release-20260611-supervisor-style-qa-v7',
+  packageRootName: 'SkillCascadeReportHelper-release-20260618-initial-tree-setup-v8',
   requiredInstallFlow: 'download-zip-extract-run-installer-from-extracted-folder',
   autoUpdateEnabled: false,
 }

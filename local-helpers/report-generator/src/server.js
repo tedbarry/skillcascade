@@ -13,6 +13,12 @@ import {
 } from './local-report-pilot.js'
 import { helperInstallState } from './helper-metadata.js'
 import { localLicenseReadiness } from './license-readiness.js'
+import {
+  INITIAL_ASSESSMENT_LEARNING_TREE_CONTRACT,
+  prepareInitialAssessmentLearningTree,
+  previewInitialAssessmentLearningTree,
+  verifyInitialAssessmentLearningTree,
+} from './learning-tree-setup.js'
 
 const rootDir = fileURLToPath(new URL('.', import.meta.url))
 const webDir = join(rootDir, 'web')
@@ -323,6 +329,9 @@ createServer(async (req, res) => {
           pickFolder: helperEndpoint('/pick-folder'),
           preflight: helperEndpoint('/preflight'),
           run: helperEndpoint('/run'),
+          programSetupPreview: helperEndpoint('/program-setup/preview'),
+          programSetupWrite: helperEndpoint('/program-setup/write'),
+          programSetupVerify: helperEndpoint('/program-setup/verify'),
         },
         legacyEndpoints: {
           installState: legacyHelperEndpoint('/install-state'),
@@ -330,6 +339,9 @@ createServer(async (req, res) => {
           pickFolder: legacyHelperEndpoint('/pick-folder'),
           preflight: legacyHelperEndpoint('/preflight'),
           run: legacyHelperEndpoint('/run'),
+          programSetupPreview: legacyHelperEndpoint('/program-setup/preview'),
+          programSetupWrite: legacyHelperEndpoint('/program-setup/write'),
+          programSetupVerify: legacyHelperEndpoint('/program-setup/verify'),
         },
         pathPickers: {
           supported: pathPickerSupported(),
@@ -349,6 +361,14 @@ createServer(async (req, res) => {
           liveExternalWrites: false,
           autoSign: false,
           autoSubmit: false,
+        },
+        programSetup: {
+          workflow: 'initial-assessment-learning-tree',
+          contract: INITIAL_ASSESSMENT_LEARNING_TREE_CONTRACT,
+          destinations: ['centralreach', 'passage'],
+          externalWritesRequireApproval: true,
+          liveExternalWrites: false,
+          currentWriteMode: 'local-setup-package-and-verification-proof',
         },
         skillCascadeBridge: {
           allowedOrigins: defaultAllowedOrigins,
@@ -446,6 +466,39 @@ createServer(async (req, res) => {
         const result = await runLocalReportPilot(body)
         const runProof = await buildReportRunProof(result)
         sendJson(res, { ok: true, result: { ...result, runProof } }, corsHeaders)
+      } catch (error) {
+        sendError(res, 400, error.message, corsHeaders)
+      }
+      return
+    }
+
+    if (isHelperEndpoint(pathname, '/program-setup/preview') && method === 'POST') {
+      try {
+        const body = await readJsonBody(req)
+        const result = await previewInitialAssessmentLearningTree(body)
+        sendJson(res, { ok: true, result }, corsHeaders)
+      } catch (error) {
+        sendError(res, 400, error.message, corsHeaders)
+      }
+      return
+    }
+
+    if (isHelperEndpoint(pathname, '/program-setup/write') && method === 'POST') {
+      try {
+        const body = await readJsonBody(req)
+        const result = await prepareInitialAssessmentLearningTree(body)
+        sendJson(res, { ok: true, result }, corsHeaders)
+      } catch (error) {
+        sendError(res, 400, error.message, corsHeaders)
+      }
+      return
+    }
+
+    if (isHelperEndpoint(pathname, '/program-setup/verify') && method === 'POST') {
+      try {
+        const body = await readJsonBody(req)
+        const result = await verifyInitialAssessmentLearningTree(body)
+        sendJson(res, { ok: true, result }, corsHeaders)
       } catch (error) {
         sendError(res, 400, error.message, corsHeaders)
       }

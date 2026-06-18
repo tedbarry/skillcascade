@@ -40,7 +40,7 @@ export const REPORT_GENERATOR_CREDIT_CHECKOUT = {
   checkoutPlan: 'report_generator',
   name: 'Report Generator',
   productName: 'SkillCascade Report Generator Credits',
-  description: 'One-time report draft credits for source-backed ABA assessment and reassessment report drafting.',
+  description: 'One-time credits for source-backed ABA initial assessment report drafting.',
   successPath: '/workflow-packs/report-generator/onboarding?checkout=report-credits-success',
 }
 

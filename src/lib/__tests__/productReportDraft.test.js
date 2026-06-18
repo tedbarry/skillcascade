@@ -122,6 +122,16 @@ describe('productReportDraft', () => {
         longTermGoal: 'Functional Communication',
         shortTermGoal: 'Requesting help',
         dataType: 'Percentage',
+        dataCollectionType: 'datapercent',
+        trialCount: 10,
+        maxTrials: 10,
+        centralReach: expect.objectContaining({
+          role: 'target',
+          itemType: 'datapercent',
+          status: 'active',
+          hasGoal: true,
+          trialCount: 10,
+        }),
       }),
     ])
   })

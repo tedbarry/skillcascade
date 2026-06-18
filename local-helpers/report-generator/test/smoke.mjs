@@ -192,14 +192,23 @@ try {
   assert.equal(statusPayload.installState.licensingPolicy.skillCascadeWorkflowPackIsAuthority, true)
   assert.equal(statusPayload.endpoints.licenseReadiness, `${helperApi}/license-readiness`)
   assert.equal(statusPayload.endpoints.pickFolder, `${helperApi}/pick-folder`)
+  assert.equal(statusPayload.endpoints.programSetupPreview, `${helperApi}/program-setup/preview`)
+  assert.equal(statusPayload.endpoints.programSetupWrite, `${helperApi}/program-setup/write`)
+  assert.equal(statusPayload.endpoints.programSetupVerify, `${helperApi}/program-setup/verify`)
   assert.equal(statusPayload.endpoints.templateProfile, undefined)
   assert.equal(statusPayload.endpoints.templateProfiles, undefined)
   assert.equal(statusPayload.legacyEndpoints.licenseReadiness, `${legacyHelperApi}/license-readiness`)
   assert.equal(statusPayload.legacyEndpoints.pickFolder, `${legacyHelperApi}/pick-folder`)
+  assert.equal(statusPayload.legacyEndpoints.programSetupPreview, `${legacyHelperApi}/program-setup/preview`)
   assert.equal(statusPayload.pathPickers.folderEndpoint, `${helperApi}/pick-folder`)
   assert.equal(statusPayload.pathPickers.fileEndpoint, undefined)
   assert.equal(statusPayload.pathPickers.returnsPathOnly, true)
   assert.equal(statusPayload.templatePolicy.customTemplateAccepted, false)
+  assert.equal(statusPayload.programSetup.workflow, 'initial-assessment-learning-tree')
+  assert.equal(statusPayload.programSetup.contract.id, 'initial-assessment-learning-tree-v1')
+  assert.equal(statusPayload.programSetup.contract.centralReach.percentTrialCount, 10)
+  assert.equal(statusPayload.programSetup.liveExternalWrites, false)
+  assert.equal(statusPayload.programSetup.currentWriteMode, 'local-setup-package-and-verification-proof')
   assert.equal(statusPayload.licenseReadiness.localOnly, true)
   assert.equal(statusPayload.licenseReadiness.authority.localHelperStoresBillingSecrets, false)
   assert.equal(statusPayload.licenseReadiness.authority.localHelperCanGrantAccess, false)
@@ -535,6 +544,106 @@ try {
   assert.ok(renderedOutput.value.split(/\s+/).length >= 3500)
   assert.equal(renderedOutput.value.includes('REVIEW_UNSUPPORTED_TEMPLATE_FIELD'), false)
 
+  const setupPreviewResponse = await fetch(`${baseUrl}${helperApi}/program-setup/preview`, {
+    method: 'POST',
+    headers: {
+      Origin: origin,
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify({
+      reportResult: runPayload.result,
+      goalPlan: runPayload.result.goalPlan,
+      outputDir,
+      clientLabel: 'Release Client',
+      destination: 'centralreach',
+    }),
+  })
+  assert.equal(setupPreviewResponse.status, 200)
+  const setupPreviewPayload = await setupPreviewResponse.json()
+  assert.equal(setupPreviewPayload.ok, true)
+  assert.equal(setupPreviewPayload.result.okToPrepare, true)
+  assert.equal(setupPreviewPayload.result.safety.liveExternalWriteAttempted, false)
+  assert.equal(setupPreviewPayload.result.treePlan.contract.id, 'initial-assessment-learning-tree-v1')
+  assert.equal(setupPreviewPayload.result.treePlan.destination, 'centralreach')
+  assert.equal(setupPreviewPayload.result.treePlan.summary.goalCount, runPayload.result.goalPlan.goals.length)
+  assert.equal(setupPreviewPayload.result.treePlan.summary.frequencyGoalCount, 7)
+  assert.ok(setupPreviewPayload.result.treePlan.summary.percentGoalCount >= 30)
+  assert.equal(setupPreviewPayload.result.treePlan.summary.byDomain.Behavior, 7)
+  assert.equal(setupPreviewPayload.result.treePlan.summary.byDomain.Social, runPayload.result.goalPlan.domains.Social + runPayload.result.goalPlan.domains['Social Skills Group'])
+  assert.ok(setupPreviewPayload.result.treePlan.expectedRows.every((row) => (
+    row.dataCollectionType === 'datafrequency2' || row.trialCount === 10
+  )))
+
+  const setupUnapprovedResponse = await fetch(`${baseUrl}${helperApi}/program-setup/write`, {
+    method: 'POST',
+    headers: {
+      Origin: origin,
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify({
+      reportResult: runPayload.result,
+      goalPlan: runPayload.result.goalPlan,
+      outputDir,
+      clientLabel: 'Release Client',
+      destination: 'centralreach',
+    }),
+  })
+  assert.equal(setupUnapprovedResponse.status, 200)
+  const setupUnapprovedPayload = await setupUnapprovedResponse.json()
+  assert.equal(setupUnapprovedPayload.ok, true)
+  assert.equal(setupUnapprovedPayload.result.prepared, false)
+  assert.equal(setupUnapprovedPayload.result.blocked, true)
+  assert.ok(setupUnapprovedPayload.result.blockers.some((blocker) => /approval is required/i.test(blocker)))
+
+  const setupWriteResponse = await fetch(`${baseUrl}${helperApi}/program-setup/write`, {
+    method: 'POST',
+    headers: {
+      Origin: origin,
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify({
+      reportResult: runPayload.result,
+      goalPlan: runPayload.result.goalPlan,
+      outputDir,
+      clientLabel: 'Release Client',
+      destination: 'centralreach',
+      approval: { approved: true },
+    }),
+  })
+  assert.equal(setupWriteResponse.status, 200)
+  const setupWritePayload = await setupWriteResponse.json()
+  assert.equal(setupWritePayload.ok, true)
+  assert.equal(setupWritePayload.result.prepared, true)
+  assert.equal(setupWritePayload.result.writeProof.localOnly, true)
+  assert.equal(setupWritePayload.result.writeProof.liveExternalWriteAttempted, false)
+  assert.equal(setupWritePayload.result.writeProof.externalWriteMode, 'not_attempted_local_setup_package_only')
+  assert.ok(setupWritePayload.result.setupPackagePath.endsWith('release-client-initial-learning-tree-setup.json'))
+  const setupPackageStats = await stat(setupWritePayload.result.setupPackagePath)
+  assert.ok(setupPackageStats.size > 1000)
+  const setupPackage = JSON.parse(await readFile(setupWritePayload.result.setupPackagePath, 'utf8'))
+  assert.equal(setupPackage.treePlan.planHash, setupWritePayload.result.writeProof.planHash)
+
+  const setupVerifyResponse = await fetch(`${baseUrl}${helperApi}/program-setup/verify`, {
+    method: 'POST',
+    headers: {
+      Origin: origin,
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify({
+      reportResult: runPayload.result,
+      goalPlan: runPayload.result.goalPlan,
+      clientLabel: 'Release Client',
+      destination: 'centralreach',
+      writeProof: setupWritePayload.result.writeProof,
+    }),
+  })
+  assert.equal(setupVerifyResponse.status, 200)
+  const setupVerifyPayload = await setupVerifyResponse.json()
+  assert.equal(setupVerifyPayload.ok, true)
+  assert.equal(setupVerifyPayload.result.verified, true)
+  assert.equal(setupVerifyPayload.result.verification.planHashMatches, true)
+  assert.equal(setupVerifyPayload.result.verification.liveExternalWriteAttempted, false)
+
   const sameFolderRunResponse = await fetch(`${baseUrl}${helperApi}/run`, {
     method: 'POST',
     headers: {
@@ -593,6 +702,9 @@ try {
     runCode: runResponse.status,
     standardTemplateCloneQa: runPayload.result.qa.standardTemplateClone.ok,
     goalCount: runPayload.result.goalPlan.goals.length,
+    learningTreeSetupPreviewed: setupPreviewPayload.result.okToPrepare,
+    learningTreeSetupPrepared: setupWritePayload.result.prepared,
+    learningTreeSetupVerified: setupVerifyPayload.result.verified,
     outputCreated: true,
     reviewCreated: true,
     evidenceLedgerCreated: true,

@@ -28,7 +28,7 @@ const workflowSteps = [
   },
   {
     title: 'BCBA review',
-    detail: 'Review the Word draft, evidence ledger, missing fields, and goals before use.',
+    detail: 'Review the Word draft, evidence ledger, missing fields, goals, and optional learning-tree setup.',
   },
 ]
 
@@ -736,6 +736,162 @@ function TemplateTagList({ title, items, empty }) {
   )
 }
 
+function LearningTreeSetupPanel({
+  runResult,
+  state,
+  onDestinationChange,
+  onApprovalChange,
+  onPreview,
+  onPrepare,
+  onVerify,
+}) {
+  const preview = state.preview || state.writeResult || state.verifyResult
+  const treePlan = preview?.treePlan
+  const summary = treePlan?.summary || {}
+  const rows = treePlan?.expectedRows || []
+  const byDomain = summary.byDomain || {}
+  const ready = preview?.okToPrepare === true || state.writeResult?.prepared === true
+  const verified = state.verifyResult?.verified === true
+
+  return (
+    <section className="mt-5 rounded-xl border border-blue-200 bg-blue-50 p-4">
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+        <div>
+          <p className="text-xs font-semibold uppercase tracking-wide text-blue-700">Initial assessment program setup</p>
+          <h3 className="mt-1 text-base font-bold text-blue-950">Create the learning-tree setup from these report goals</h3>
+          <p className="mt-1 text-sm leading-6 text-blue-900">
+            This uses the generated goal plan to prepare the four-domain learning tree: Behavior, Communication, Social, and Parent Training.
+          </p>
+        </div>
+        <div className="flex flex-wrap gap-2">
+          <StatusBadge tone={ready ? 'green' : 'blue'}>{ready ? 'Preview ready' : 'Needs preview'}</StatusBadge>
+          <StatusBadge tone={verified ? 'green' : 'warm'}>{verified ? 'Verified' : 'No external write'}</StatusBadge>
+        </div>
+      </div>
+
+      <div className="mt-4 grid gap-3 sm:grid-cols-[minmax(0,1fr)_auto] sm:items-end">
+        <label className="block">
+          <span className="text-xs font-semibold uppercase tracking-wide text-blue-700">Destination</span>
+          <select
+            value={state.destination}
+            onChange={(event) => onDestinationChange(event.target.value)}
+            className="mt-1 min-h-[42px] w-full rounded-lg border border-blue-200 bg-white px-3 py-2 text-sm font-semibold text-blue-950 shadow-sm outline-none focus:border-blue-400"
+          >
+            <option value="centralreach">CentralReach</option>
+            <option value="passage">Passage</option>
+          </select>
+        </label>
+        <button
+          type="button"
+          onClick={onPreview}
+          disabled={state.previewLoading || !runResult?.goalPlan?.goals?.length}
+          className="min-h-[42px] rounded-full border border-blue-200 bg-white px-4 py-2 text-sm font-semibold text-blue-800 shadow-sm hover:bg-blue-100 disabled:cursor-not-allowed disabled:bg-warm-100 disabled:text-warm-400"
+        >
+          {state.previewLoading ? 'Previewing...' : 'Preview setup'}
+        </button>
+      </div>
+
+      {state.previewError || state.writeError || state.verifyError ? (
+        <div className="mt-3 rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-sm font-semibold leading-5 text-red-800">
+          {state.previewError || state.writeError || state.verifyError}
+        </div>
+      ) : null}
+
+      {treePlan ? (
+        <div className="mt-4 rounded-lg border border-blue-200 bg-white p-3">
+          <div className="grid gap-2 text-sm text-blue-950 sm:grid-cols-4">
+            <p><span className="font-semibold">Goals:</span> {summary.goalCount || 0}</p>
+            <p><span className="font-semibold">Domains:</span> {summary.domainCount || 0}</p>
+            <p><span className="font-semibold">Frequency:</span> {summary.frequencyGoalCount || 0}</p>
+            <p><span className="font-semibold">10-trial %:</span> {summary.percentGoalCount || 0}</p>
+          </div>
+          <div className="mt-3 flex flex-wrap gap-2">
+            {Object.entries(byDomain).map(([domain, count]) => (
+              <StatusBadge key={domain} tone="blue">{domain}: {count}</StatusBadge>
+            ))}
+          </div>
+          {rows.length ? (
+            <div className="mt-3 overflow-hidden rounded-lg border border-blue-100">
+              <div className="max-h-64 overflow-auto">
+                <table className="w-full text-left text-xs">
+                  <thead className="sticky top-0 bg-blue-100 text-blue-900">
+                    <tr>
+                      <th className="px-3 py-2 font-bold">Domain</th>
+                      <th className="px-3 py-2 font-bold">LTG</th>
+                      <th className="px-3 py-2 font-bold">STG</th>
+                      <th className="px-3 py-2 font-bold">Data</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-blue-100 bg-white text-blue-950">
+                    {rows.slice(0, 18).map((row, index) => (
+                      <tr key={`${row.domain}-${row.longTermGoal}-${row.shortTermGoal}-${index}`}>
+                        <td className="px-3 py-2 align-top">{row.domain}</td>
+                        <td className="px-3 py-2 align-top">{row.longTermGoal}</td>
+                        <td className="px-3 py-2 align-top">{row.shortTermGoal}</td>
+                        <td className="px-3 py-2 align-top">
+                          {row.dataCollectionType === 'datafrequency2' ? 'Frequency' : `Percent, ${row.trialCount || 10} trials`}
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+              {rows.length > 18 ? (
+                <p className="border-t border-blue-100 bg-blue-50 px-3 py-2 text-xs font-semibold text-blue-800">
+                  {rows.length - 18} additional goal rows are included in the setup package.
+                </p>
+              ) : null}
+            </div>
+          ) : null}
+        </div>
+      ) : null}
+
+      <label className="mt-4 flex gap-3 rounded-lg border border-blue-200 bg-white px-3 py-3 text-sm leading-6 text-blue-950">
+        <input
+          type="checkbox"
+          checked={state.approved}
+          onChange={(event) => onApprovalChange(event.target.checked)}
+          className="mt-1 h-4 w-4 rounded border-blue-300 text-blue-600"
+        />
+        <span>
+          I reviewed the generated goals and approve preparing this initial-assessment learning-tree setup package. External platform writes remain blocked until the live destination adapter is explicitly enabled.
+        </span>
+      </label>
+
+      <div className="mt-4 flex flex-wrap gap-3">
+        <button
+          type="button"
+          onClick={onPrepare}
+          disabled={state.writeLoading || !state.preview || !state.approved}
+          className="min-h-[42px] rounded-full bg-blue-700 px-4 py-2 text-sm font-semibold text-white shadow-sm hover:bg-blue-800 disabled:cursor-not-allowed disabled:bg-warm-300"
+        >
+          {state.writeLoading ? 'Preparing...' : 'Prepare setup package'}
+        </button>
+        <button
+          type="button"
+          onClick={onVerify}
+          disabled={state.verifyLoading || !state.writeResult?.writeProof}
+          className="min-h-[42px] rounded-full border border-blue-200 bg-white px-4 py-2 text-sm font-semibold text-blue-800 shadow-sm hover:bg-blue-100 disabled:cursor-not-allowed disabled:bg-warm-100 disabled:text-warm-400"
+        >
+          {state.verifyLoading ? 'Verifying...' : 'Verify setup'}
+        </button>
+      </div>
+
+      {state.writeResult?.setupPackagePath ? (
+        <div className="mt-3 rounded-lg border border-sage-200 bg-sage-50 px-3 py-2 text-sm leading-6 text-sage-900">
+          <p><span className="font-semibold">Setup package:</span> {state.writeResult.setupPackagePath}</p>
+          <p><span className="font-semibold">Proof:</span> {state.writeResult.writeProof?.goalCount || 0} goals, no external write attempted.</p>
+        </div>
+      ) : null}
+      {state.verifyResult ? (
+        <div className={`mt-3 rounded-lg border px-3 py-2 text-sm font-semibold leading-6 ${verified ? 'border-sage-200 bg-sage-50 text-sage-900' : 'border-amber-200 bg-amber-50 text-amber-900'}`}>
+          {verified ? 'Setup proof matches the current learning-tree plan.' : 'Setup proof did not match the current plan. Re-prepare before use.'}
+        </div>
+      ) : null}
+    </section>
+  )
+}
+
 export default function ReportGeneratorPage() {
   const { profile } = useAuth()
   const [moduleStatus, setModuleStatus] = useState({ loading: true, data: null, error: '' })
@@ -750,6 +906,19 @@ export default function ReportGeneratorPage() {
   const [creditCheckoutState, setCreditCheckoutState] = useState({ bundleId: '', error: '' })
   const [preflightState, setPreflightState] = useState({ loading: false, result: null, error: '' })
   const [runState, setRunState] = useState({ loading: false, result: null, error: '' })
+  const [programSetupState, setProgramSetupState] = useState({
+    destination: 'centralreach',
+    approved: false,
+    previewLoading: false,
+    preview: null,
+    previewError: '',
+    writeLoading: false,
+    writeResult: null,
+    writeError: '',
+    verifyLoading: false,
+    verifyResult: null,
+    verifyError: '',
+  })
   const [pathPickerState, setPathPickerState] = useState({ loadingField: '', error: '' })
   const [form, setForm] = useState({
     clientLabel: '',
@@ -1072,8 +1241,154 @@ export default function ReportGeneratorPage() {
         creditWarning = creditError.message || 'Draft was generated, but the credit balance could not be updated.'
       }
       setRunState({ loading: false, result: { ...payload.result, creditResult, creditWarning }, error: '' })
+      setProgramSetupState((prev) => ({
+        ...prev,
+        approved: false,
+        previewLoading: false,
+        preview: null,
+        previewError: '',
+        writeLoading: false,
+        writeResult: null,
+        writeError: '',
+        verifyLoading: false,
+        verifyResult: null,
+        verifyError: '',
+      }))
     } catch (error) {
       setRunState({ loading: false, result: null, error: readHelperError(error) })
+    }
+  }
+
+  function buildProgramSetupPayload(extra = {}) {
+    const reportResult = runState.result || {}
+    return {
+      reportResult,
+      goalPlan: reportResult.goalPlan || null,
+      clientLabel: reportResult.clientLabel || form.clientLabel.trim() || 'Local Report Client',
+      outputDir: reportResult.outputDir || form.outputDir.trim() || form.sourceFolder.trim(),
+      destination: programSetupState.destination,
+      ...extra,
+    }
+  }
+
+  async function previewProgramSetup() {
+    if (!runState.result?.goalPlan?.goals?.length) {
+      setProgramSetupState((prev) => ({
+        ...prev,
+        previewError: 'Generate a report draft with goals before preparing a learning tree.',
+      }))
+      return
+    }
+
+    setProgramSetupState((prev) => ({
+      ...prev,
+      previewLoading: true,
+      previewError: '',
+      writeError: '',
+      verifyError: '',
+    }))
+    try {
+      const activeHelperBase = await resolveHelperBaseForLocalAction()
+      const payload = await fetchHelperJson(activeHelperBase, '/program-setup/preview', {
+        method: 'POST',
+        headers: { 'content-type': 'application/json' },
+        body: JSON.stringify(buildProgramSetupPayload()),
+      })
+      setProgramSetupState((prev) => ({
+        ...prev,
+        previewLoading: false,
+        preview: payload.result,
+        previewError: '',
+        writeResult: null,
+        verifyResult: null,
+      }))
+    } catch (error) {
+      setProgramSetupState((prev) => ({
+        ...prev,
+        previewLoading: false,
+        previewError: readHelperError(error),
+      }))
+    }
+  }
+
+  async function prepareProgramSetup() {
+    if (!programSetupState.approved) {
+      setProgramSetupState((prev) => ({
+        ...prev,
+        writeError: 'Approve the reviewed goal hierarchy before preparing the setup package.',
+      }))
+      return
+    }
+
+    setProgramSetupState((prev) => ({
+      ...prev,
+      writeLoading: true,
+      writeError: '',
+      verifyError: '',
+    }))
+    try {
+      const activeHelperBase = await resolveHelperBaseForLocalAction()
+      const payload = await fetchHelperJson(activeHelperBase, '/program-setup/write', {
+        method: 'POST',
+        headers: { 'content-type': 'application/json' },
+        body: JSON.stringify(buildProgramSetupPayload({
+          approval: {
+            approved: true,
+            approvedAt: new Date().toISOString(),
+          },
+        })),
+      })
+      setProgramSetupState((prev) => ({
+        ...prev,
+        writeLoading: false,
+        writeResult: payload.result,
+        writeError: payload.result?.blocked ? (payload.result.blockers || []).join(' ') : '',
+        verifyResult: null,
+      }))
+    } catch (error) {
+      setProgramSetupState((prev) => ({
+        ...prev,
+        writeLoading: false,
+        writeError: readHelperError(error),
+      }))
+    }
+  }
+
+  async function verifyProgramSetup() {
+    if (!programSetupState.writeResult?.writeProof) {
+      setProgramSetupState((prev) => ({
+        ...prev,
+        verifyError: 'Prepare the setup package before verifying it.',
+      }))
+      return
+    }
+
+    setProgramSetupState((prev) => ({
+      ...prev,
+      verifyLoading: true,
+      verifyError: '',
+    }))
+    try {
+      const activeHelperBase = await resolveHelperBaseForLocalAction()
+      const payload = await fetchHelperJson(activeHelperBase, '/program-setup/verify', {
+        method: 'POST',
+        headers: { 'content-type': 'application/json' },
+        body: JSON.stringify(buildProgramSetupPayload({
+          writeProof: programSetupState.writeResult.writeProof,
+        })),
+      })
+      setProgramSetupState((prev) => ({
+        ...prev,
+        verifyLoading: false,
+        verifyResult: payload.result,
+        verifyError: payload.result?.verified ? '' : (payload.result?.blockers || []).join(' '),
+      }))
+    } catch (error) {
+      setProgramSetupState((prev) => ({
+        ...prev,
+        verifyLoading: false,
+        verifyError: readHelperError(error),
+      }))
     }
   }
 
@@ -1379,6 +1694,28 @@ export default function ReportGeneratorPage() {
                   </div>
                 ) : null}
                 <EvidenceReadinessPanel result={runState.result} />
+                <LearningTreeSetupPanel
+                  runResult={runState.result}
+                  state={programSetupState}
+                  onDestinationChange={(destination) => setProgramSetupState((prev) => ({
+                    ...prev,
+                    destination,
+                    preview: null,
+                    writeResult: null,
+                    verifyResult: null,
+                    previewError: '',
+                    writeError: '',
+                    verifyError: '',
+                  }))}
+                  onApprovalChange={(approved) => setProgramSetupState((prev) => ({
+                    ...prev,
+                    approved,
+                    writeError: '',
+                  }))}
+                  onPreview={previewProgramSetup}
+                  onPrepare={prepareProgramSetup}
+                  onVerify={verifyProgramSetup}
+                />
               </div>
             ) : null}
           </section>

@@ -76,6 +76,10 @@ export function flattenCentralReachTreePlan(treePlan = {}) {
           shortTermGoal: trail[2] || '',
           objective: child.name,
           dataType: child.dataType || 'Percentage',
+          dataCollectionType: child.dataCollectionType || child.centralReach?.itemType || 'datapercent',
+          trialCount: child.trialCount ?? child.centralReach?.trialCount ?? null,
+          maxTrials: child.maxTrials ?? child.centralReach?.maxTrials ?? null,
+          centralReach: child.centralReach || null,
           sourceRefs: child.sourceRefs || [],
         })
       } else {
@@ -136,6 +140,7 @@ export function buildInitialAssessmentDraftPreview({
     'Goal hierarchy summary:',
     `- Total goals staged: ${goalRows.length}`,
     `- Maladaptive behavior goals staged as Frequency: ${behaviorGoals.filter((goal) => goal.dataType === 'Frequency').length}`,
+    `- Percentage goals staged with 10-trial data collection: ${goalRows.filter((goal) => goal.dataCollectionType === 'datapercent' && Number(goal.trialCount) === 10).length}`,
     ...goalRows.slice(0, 12).map((goal) => `- ${goal.domain} / ${goal.longTermGoal} / ${goal.shortTermGoal}: ${goal.objective || '[objective needed]'} (${goal.dataType})`),
     goalRows.length > 12 ? `- ${goalRows.length - 12} additional goal(s) omitted from this preview.` : '',
     '',
@@ -240,6 +245,7 @@ function buildDocxDocumentXml(artifact = {}, {
     docxBullet(`Total goals staged: ${goalSummary.goal_count || goalRows.length}`),
     docxBullet(`Domains staged: ${goalSummary.domain_count || 0}`),
     docxBullet(`Maladaptive behavior goals staged as Frequency: ${goalSummary.behavior_frequency_goal_count || 0}`),
+    docxBullet(`Percentage goals staged with 10-trial data collection: ${goalRows.filter((goal) => goal.dataCollectionType === 'datapercent' && Number(goal.trialCount) === 10).length}`),
     docxSpacer(),
     docxParagraph('Goals', { style: 'Heading1' }),
     ...goalRows.map((goal, index) => docxBullet(`${index + 1}. ${goal.domain} / ${goal.longTermGoal} / ${goal.shortTermGoal}: ${goal.objective || '[objective needed]'} (${goal.dataType || 'Percentage'})`)),

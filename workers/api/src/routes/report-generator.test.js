@@ -67,7 +67,7 @@ function validRunProof(overrides = {}) {
     idempotencyKey: 'proof-1',
     localRunId: 'local-report-1',
     helperVersion: '0.1.0',
-    packageVersion: 'release-20260611-supervisor-style-qa-v7',
+    packageVersion: 'release-20260618-initial-tree-setup-v8',
     templateMode: 'skillcascade-standard-docx',
     templateId: 'skillcascade-standard-initial-assessment-v1',
     generatedAt: '2026-06-11T00:00:00.000Z',
@@ -165,8 +165,8 @@ describe('report-generator route contract', () => {
     expect(response.status).toBe(200)
     expect(payload.ok).toBe(true)
     expect(payload.filename).toMatch(/SkillCascadeReportHelper/)
-    expect(payload.currentVersion).toBe('release-20260611-supervisor-style-qa-v7')
-    expect(payload.minimumVersion).toBe('release-20260611-supervisor-style-qa-v7')
+    expect(payload.currentVersion).toBe('release-20260618-initial-tree-setup-v8')
+    expect(payload.minimumVersion).toBe('release-20260618-initial-tree-setup-v8')
     expect(payload.installerName).toBe('Install-ReportGeneratorHelper.exe')
     expect(payload.sha256).toMatch(/[A-F0-9]{64}/)
     expect(payload.downloadPath).toBe('/api/report-generator/helper/download')
@@ -185,8 +185,8 @@ describe('report-generator route contract', () => {
 
     expect(response.status).toBe(200)
     expect(payload.ok).toBe(true)
-    expect(payload.version).toBe('release-20260611-supervisor-style-qa-v7')
-    expect(payload.minimumVersion).toBe('release-20260611-supervisor-style-qa-v7')
+    expect(payload.version).toBe('release-20260618-initial-tree-setup-v8')
+    expect(payload.minimumVersion).toBe('release-20260618-initial-tree-setup-v8')
     expect(payload.installerName).toBe('Install-ReportGeneratorHelper.exe')
     expect(payload.downloadPath).toBe('/api/report-generator/helper/download')
     expect(bucket.head).toHaveBeenCalled()
@@ -204,8 +204,8 @@ describe('report-generator route contract', () => {
     expect(response.headers.get('content-type')).toBe('application/zip')
     expect(response.headers.get('content-disposition')).toMatch(/SkillCascadeReportHelper/)
     expect(response.headers.get('cache-control')).toBe('private, no-store')
-    expect(response.headers.get('x-skillcascade-report-helper-version')).toBe('release-20260611-supervisor-style-qa-v7')
-    expect(response.headers.get('x-skillcascade-report-helper-minimum-version')).toBe('release-20260611-supervisor-style-qa-v7')
+    expect(response.headers.get('x-skillcascade-report-helper-version')).toBe('release-20260618-initial-tree-setup-v8')
+    expect(response.headers.get('x-skillcascade-report-helper-minimum-version')).toBe('release-20260618-initial-tree-setup-v8')
     expect(response.headers.get('x-skillcascade-report-helper-sha256')).toMatch(/[A-F0-9]{64}/)
     expect(bucket.get).toHaveBeenCalled()
   })
@@ -389,7 +389,7 @@ describe('report-generator route contract', () => {
 
     expect(response.status).toBe(400)
     expect(payload.detailCode).toBe('helper_update_required')
-    expect(payload.requiredVersion).toBe('release-20260611-supervisor-style-qa-v7')
+    expect(payload.requiredVersion).toBe('release-20260618-initial-tree-setup-v8')
     expect(db.query.mock.calls.some((call) => String(call[1]).includes('INSERT INTO report_generator_credit_ledger'))).toBe(false)
   })
 
@@ -532,7 +532,7 @@ describe('report-generator route contract', () => {
         platform: 'win32',
         arch: 'x64',
         helperVersion: '0.1.0',
-        packageVersion: 'release-20260611-supervisor-style-qa-v7',
+        packageVersion: 'release-20260618-initial-tree-setup-v8',
         helperUrl: 'http://127.0.0.1:4181',
         readinessStatus: 'ready-for-skillcascade-license-check',
         standardTemplateId: 'skillcascade-standard-initial-assessment-v1',
@@ -548,7 +548,7 @@ describe('report-generator route contract', () => {
     expect(payload.data.claim.installFingerprint).toBe('safeinstall123')
     expect(payload.data.claim.deviceFingerprint).toBe('devicehash123')
     expect(payload.data.claim.helperVersion).toBe('0.1.0')
-    expect(payload.data.claim.requiredHelperVersion).toBe('release-20260611-supervisor-style-qa-v7')
+    expect(payload.data.claim.requiredHelperVersion).toBe('release-20260618-initial-tree-setup-v8')
     expect(payload.data.claim.status).toBe('active')
     expect(db.query.mock.calls.some((call) => String(call[1]).includes('CREATE TABLE IF NOT EXISTS report_generator_install_claims'))).toBe(true)
     expect(db.query.mock.calls.some((call) => String(call[1]).includes('ADD COLUMN IF NOT EXISTS device_fingerprint'))).toBe(true)
@@ -572,7 +572,7 @@ describe('report-generator route contract', () => {
             arch: 'x64',
             helper_version: '0.1.0',
             package_version: 'release-1',
-            required_helper_version: 'release-20260611-supervisor-style-qa-v7',
+            required_helper_version: 'release-20260618-initial-tree-setup-v8',
             helper_url: 'http://127.0.0.1:4181',
             status: 'active',
             first_claimed_at: '2026-06-04T00:00:00.000Z',
@@ -592,6 +592,6 @@ describe('report-generator route contract', () => {
     expect(payload.data.claimCount).toBe(1)
     expect(payload.data.claims[0].installFingerprint).toBe('safeinstall123')
     expect(payload.data.claims[0].deviceFingerprint).toBe('devicehash123')
-    expect(payload.data.claims[0].requiredHelperVersion).toBe('release-20260611-supervisor-style-qa-v7')
+    expect(payload.data.claims[0].requiredHelperVersion).toBe('release-20260618-initial-tree-setup-v8')
   })
 })

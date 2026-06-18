@@ -61,6 +61,79 @@ describe('productizationJobModel', () => {
     expect(treePlan.root.children[0].children[0].name).toBe('Aggression')
     expect(treePlan.root.children[0].children[0].children[0].name).toBe('Physical aggression')
     expect(treePlan.root.children[0].children[0].children[0].children[0].dataType).toBe('Frequency')
+    expect(treePlan.root.children[0].centralReach).toMatchObject({
+      role: 'domain',
+      itemType: 'page',
+      hasGoal: false,
+      status: 'active',
+      activateWithChildren: true,
+    })
+    expect(treePlan.root.children[0].children[0].centralReach).toMatchObject({
+      role: 'long_term',
+      itemType: 'page',
+      hasGoal: true,
+      status: 'active',
+      saveGoalMetadata: true,
+    })
+    expect(treePlan.root.children[0].children[0].children[0].centralReach).toMatchObject({
+      role: 'short_term',
+      itemType: 'page',
+      hasGoal: true,
+      status: 'active',
+      saveGoalMetadata: true,
+    })
+    expect(treePlan.root.children[0].children[0].children[0].children[0].centralReach).toMatchObject({
+      role: 'target',
+      itemType: 'datafrequency2',
+      hasGoal: true,
+      status: 'active',
+      trialCount: null,
+    })
+    expect(treePlan.root.children[1].children[0].children[0].children[0].centralReach).toMatchObject({
+      role: 'target',
+      itemType: 'datapercent',
+      hasGoal: true,
+      status: 'active',
+      trialCount: 10,
+      maxTrials: 10,
+    })
+    expect(treePlan.expectedRows).toEqual([
+      expect.objectContaining({
+        domain: 'Behavior',
+        longTermGoal: 'Aggression',
+        shortTermGoal: 'Physical aggression',
+        dataCollectionType: 'datafrequency2',
+        trialCount: null,
+      }),
+      expect.objectContaining({
+        domain: 'Communication',
+        longTermGoal: 'Functional Communication',
+        shortTermGoal: 'Requesting help',
+        dataCollectionType: 'datapercent',
+        trialCount: 10,
+      }),
+    ])
+  })
+
+  it('frames the tree writer as an initial-assessment program setup contract', () => {
+    const treePlan = buildCentralReachTreePlan([])
+
+    expect(treePlan.contract).toMatchObject({
+      id: 'initial-assessment-learning-tree-v1',
+      sourceWorkflow: 'initial_assessment',
+      createMode: 'fresh_contact_learning_tree',
+      domainOrder: ['Behavior', 'Communication', 'Social', 'Parent Training'],
+      hierarchy: ['domain', 'long_term_cumulative', 'short_term_cumulative', 'final_data_collection_target'],
+      approvalRequiredForExternalWrite: true,
+      centralReach: {
+        percentTargetType: 'datapercent',
+        frequencyTargetType: 'datafrequency2',
+        percentTrialCount: 10,
+        activateDomainsWithChildren: true,
+        saveGoalMetadataForCumulatives: true,
+        saveGoalMetadataForTargets: true,
+      },
+    })
   })
 
   it('keeps non-behavior goals out of the frequency default', () => {
@@ -72,6 +145,8 @@ describe('productizationJobModel', () => {
     })
 
     expect(communicationGoal.dataType).toBe('Percentage')
+    expect(communicationGoal.dataCollectionType).toBe('datapercent')
+    expect(communicationGoal.trialCount).toBe(10)
   })
 
   it('blocks external actions until the matching gate is approved', () => {
