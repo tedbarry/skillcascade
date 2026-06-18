@@ -1374,10 +1374,35 @@ function firstDateLike(text, pattern) {
   return match ? match[0] : value
 }
 
-function extractSourceDemographics(fullText) {
+function cleanFilenameClientName(filename = '') {
+  const stem = basename(String(filename || ''), extname(String(filename || '')))
+    .replace(/\s*\(\d+\)\s*/g, ' ')
+    .replace(/\b(?:copy|final|draft|report|evaluation|assessment|psychological|diagnostic|vineland|comprehensive|initial)\b/gi, ' ')
+    .replace(/[_-]+/g, ' ')
+    .replace(/\s+/g, ' ')
+    .trim()
+  if (!stem) return ''
+  const tokens = stem
+    .split(/\s+/)
+    .filter((token) => /^[A-Za-z][A-Za-z'-]{1,}$/.test(token))
+  if (tokens.length < 2 || tokens.length > 4) return ''
+  return tokens.join(' ')
+}
+
+function inferClientNameFromSources(sources = []) {
+  for (const source of sources || []) {
+    const sourceName = cleanFilenameClientName(source?.filename || source?.relativePath || '')
+    if (sourceName) return sourceName
+  }
+  return ''
+}
+
+function extractSourceDemographics(fullText, sources = []) {
   const text = String(fullText || '')
-  const clientName = firstRegex(text, /Client Name:\s*([^\n\r]+)/i)
-  const dateOfBirth = firstDateLike(text, /Date of Birth:\s*([^\n\r]+)/i)
+  const clientName = firstRegex(text, /(?:Client|Patient|Child|Student|Examinee|Individual)(?:\s+Name)?\s*[:\-]\s*([^\n\r]+)/i)
+    || firstRegex(text.slice(0, 1600), /(?:^|\n)\s*Name\s*[:\-]\s*([^\n\r]+)/i)
+    || inferClientNameFromSources(sources)
+  const dateOfBirth = firstDateLike(text, /(?:Date of Birth|DOB|Birth Date)\s*[:\-]\s*([^\n\r]+)/i)
   const ageAtEvaluation = firstRegex(text, /Age at Evaluation:\s*([^.\n\r]+?)(?:\s+Date of Evaluation:|$)/i)
   const evaluationDate = firstDateLike(text, /Date of Evaluation:\s*([^\n\r]+)/i)
   let evaluator = normalizePersonCredential(firstRegex(text, /Evaluator:\s*([^\n\r]+)/i))
@@ -1612,7 +1637,7 @@ function extractEducationStatus(sources = [], impairmentText = '') {
 export function buildLocalClinicalFacts({ sources = [] } = {}) {
   const fullText = sources.map((source) => source.text || '').join('\n\n')
   const rawFullText = sources.map((source) => source.rawText || source.text || '').join('\n\n')
-  const demographics = extractSourceDemographics(rawFullText)
+  const demographics = extractSourceDemographics(rawFullText, sources)
   const reasonForReferral = firstSectionText(sources, ['reason for referral'])
   const developmental = combinedSectionText(sources, [
     'developmental and psychosocial history',

@@ -20,14 +20,14 @@ import {
 const route = new Hono()
 const DEFAULT_REPORT_HELPER_RELEASE = {
   channel: 'controlled-release',
-  version: 'release-20260618-source-faithful-v11',
-  minimumVersion: 'release-20260618-source-faithful-v11',
+  version: 'release-20260618-pdf-status-v13',
+  minimumVersion: 'release-20260618-pdf-status-v13',
   helperRuntimeVersion: '0.1.0',
-  filename: 'SkillCascadeReportHelper-release-20260618-source-faithful-v11.zip',
-  objectKey: 'report-generator/SkillCascadeReportHelper-release-20260618-source-faithful-v11.zip',
-  sha256: '6C63B542460428611FED76C350541F951FE7E54106007C6E55BF89C452F51B87',
+  filename: 'SkillCascadeReportHelper-release-20260618-pdf-status-v13.zip',
+  objectKey: 'report-generator/SkillCascadeReportHelper-release-20260618-pdf-status-v13.zip',
+  sha256: '05EF56E1E8ADBC9B6A9360CA1973C7F2FD6A75951D20FAC4399C6D711AE485B6',
   installerName: 'Install-ReportGeneratorHelper.exe',
-  packageRootName: 'SkillCascadeReportHelper-release-20260618-source-faithful-v11',
+  packageRootName: 'SkillCascadeReportHelper-release-20260618-pdf-status-v13',
   requiredInstallFlow: 'download-zip-extract-run-installer-from-extracted-folder',
   autoUpdateEnabled: false,
 }
@@ -204,7 +204,7 @@ const REPORT_GENERATOR_CONTRACT = {
     'Required diagnosis/evaluation and adaptive/functional assessment evidence must be present before generation; intake/caregiver history is recommended when available.',
     'Visible report text must pass the supervisor-reviewed ABA initial report style QA gate before the helper writes the draft DOCX.',
   ],
-  supportedSourceTypes: ['.docx', '.txt', '.md'],
+  supportedSourceTypes: ['.docx', '.pdf', '.txt', '.md'],
   plannedAdapters: [
     'skillcascade_standard_template_renderer',
     'diagnosis_psych_eval_adapter',

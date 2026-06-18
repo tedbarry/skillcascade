@@ -308,7 +308,7 @@ createServer(async (req, res) => {
         runProofVersion: 1,
         installState,
         licenseReadiness,
-        supportedSourceExtensions: ['.docx', '.txt', '.md'],
+        supportedSourceExtensions: ['.docx', '.pdf', '.txt', '.md'],
         sourceScanning: 'recursive-with-output-folder-exclusion-and-same-folder-artifact-skip',
         unsupportedFileBehavior: 'warn-do-not-extract',
         output: 'editable-docx',
