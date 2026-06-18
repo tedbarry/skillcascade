@@ -20,14 +20,14 @@ import {
 const route = new Hono()
 const DEFAULT_REPORT_HELPER_RELEASE = {
   channel: 'controlled-release',
-  version: 'release-20260618-optional-intake-v10',
-  minimumVersion: 'release-20260618-optional-intake-v10',
+  version: 'release-20260618-source-faithful-v11',
+  minimumVersion: 'release-20260618-source-faithful-v11',
   helperRuntimeVersion: '0.1.0',
-  filename: 'SkillCascadeReportHelper-release-20260618-optional-intake-v10.zip',
-  objectKey: 'report-generator/SkillCascadeReportHelper-release-20260618-optional-intake-v10.zip',
-  sha256: '28EA1E76DF3262706B5C8DEBD4EAD46D13ADD14E33487B068F90CD8E3EE92872',
+  filename: 'SkillCascadeReportHelper-release-20260618-source-faithful-v11.zip',
+  objectKey: 'report-generator/SkillCascadeReportHelper-release-20260618-source-faithful-v11.zip',
+  sha256: '6C63B542460428611FED76C350541F951FE7E54106007C6E55BF89C452F51B87',
   installerName: 'Install-ReportGeneratorHelper.exe',
-  packageRootName: 'SkillCascadeReportHelper-release-20260618-optional-intake-v10',
+  packageRootName: 'SkillCascadeReportHelper-release-20260618-source-faithful-v11',
   requiredInstallFlow: 'download-zip-extract-run-installer-from-extracted-folder',
   autoUpdateEnabled: false,
 }

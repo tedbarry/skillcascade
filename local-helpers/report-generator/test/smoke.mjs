@@ -64,6 +64,36 @@ async function inspectDocxCloneContract(docxPath) {
   }
 }
 
+function escapePdfText(value) {
+  return String(value || '').replace(/\\/g, '\\\\').replace(/\(/g, '\\(').replace(/\)/g, '\\)')
+}
+
+function minimalPdfBuffer(lines = []) {
+  const textOps = lines.map((line) => `(${escapePdfText(line)}) Tj T*`).join('\n')
+  const stream = `BT\n/F1 11 Tf\n72 750 Td\n14 TL\n${textOps}\nET`
+  const objects = [
+    '1 0 obj\n<< /Type /Catalog /Pages 2 0 R >>\nendobj\n',
+    '2 0 obj\n<< /Type /Pages /Kids [3 0 R] /Count 1 >>\nendobj\n',
+    '3 0 obj\n<< /Type /Page /Parent 2 0 R /MediaBox [0 0 612 792] /Resources << /Font << /F1 4 0 R >> >> /Contents 5 0 R >>\nendobj\n',
+    '4 0 obj\n<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica >>\nendobj\n',
+    `5 0 obj\n<< /Length ${Buffer.byteLength(stream, 'utf8')} >>\nstream\n${stream}\nendstream\nendobj\n`,
+  ]
+  let pdf = '%PDF-1.4\n'
+  const offsets = [0]
+  for (const object of objects) {
+    offsets.push(Buffer.byteLength(pdf, 'utf8'))
+    pdf += object
+  }
+  const xrefOffset = Buffer.byteLength(pdf, 'utf8')
+  pdf += `xref\n0 ${objects.length + 1}\n`
+  pdf += '0000000000 65535 f \n'
+  for (let index = 1; index < offsets.length; index += 1) {
+    pdf += `${String(offsets[index]).padStart(10, '0')} 00000 n \n`
+  }
+  pdf += `trailer\n<< /Size ${objects.length + 1} /Root 1 0 R >>\nstartxref\n${xrefOffset}\n%%EOF\n`
+  return Buffer.from(pdf, 'utf8')
+}
+
 function startServer() {
   const child = spawn(process.execPath, ['src/server.js'], {
     cwd: packageRoot,
@@ -144,16 +174,20 @@ async function createSourceFixture() {
     'Family history includes caregiver participation and parent report.',
     'Developmental history notes delayed milestones and early intervention.',
     'Educational history includes school placement and IEP support.',
-    'Behavior profile includes aggression, noncompliance, unsafe behavior, and elopement.',
+    'Behavior profile includes physical aggression, verbal aggression, non-compliance, property destruction, profane language, elopement, and unsafe behaviors.',
     'Communication profile indicates functional request and break communication needs.',
     'Social profile indicates reciprocal interaction and peer play needs.',
     'Parent training should address caregiver prompting, reinforcement, generalization, and safety response.',
   ].join(' '))
-  await writeFile(join(sourceFolder, 'vineland.md'), [
-    'Vineland-3 Adaptive Behavior Composite indicates adaptive behavior deficits.',
+  await writeFile(join(sourceFolder, 'vineland.pdf'), minimalPdfBuffer([
+    'Vineland-3 Comprehensive Report.',
+    'The Adaptive Behavior Composite ABC standard score is 60, with a percentile rank of 1.',
+    'Communication standard score is 58, with a percentile rank of 1.',
+    'The standard score for Daily Living Skills is 70, with a percentile rank of 2.',
+    'Socialization standard score is 48, with a percentile rank of 1.',
+    'The Maladaptive Behavior domain includes v-scale scores of 21 for Internalizing and 24 for Externalizing.',
     'Communication domain, Daily Living Skills, and Socialization domain results support functional communication, adaptive, and social goal planning.',
-    'V-scale subdomains include receptive, expressive, interpersonal relationships, play and leisure, coping skills, domestic, and community needs.',
-  ].join(' '))
+  ]))
   await writeFile(join(sourceFolder, 'legacy-report.doc'), 'unsupported binary placeholder')
 
   return { sourceFolder, outputDir }
@@ -178,6 +212,39 @@ async function createEvaluationAndVinelandOnlyFixture() {
     'Adaptive Behavior Composite, Communication domain, Daily Living Skills, and Socialization domain results support adaptive functioning needs.',
     'Daily living, community, self-care, socialization, expressive communication, and receptive communication deficits are noted.',
   ].join('\n'))
+
+  return { sourceFolder, outputDir }
+}
+
+async function createUnsupportedBehaviorFixture() {
+  const root = await mkdtemp(join(tmpdir(), 'skillcascade-report-helper-unsupported-behavior-'))
+  const sourceFolder = join(root, 'source')
+  const outputDir = join(root, 'output')
+  await mkdir(sourceFolder, { recursive: true })
+  await mkdir(outputDir, { recursive: true })
+  await writeFile(join(sourceFolder, 'psychological-evaluation.md'), [
+    'Psychological evaluation and diagnostic report.',
+    'Diagnosis: Autism Spectrum Disorder F84.0.',
+    'Reason for Referral:',
+    'The diagnostic evaluation supports Autism Spectrum Disorder F84.0 and clinically significant social communication deficits, restricted interests, rigidity, transition difficulty, sensory sensitivity, and adaptive functioning delays.',
+    'Educational History:',
+    'The client currently attends school and requires support with classroom participation, reciprocal communication, group instruction, and transitions.',
+    'Behavioral Observations:',
+    'No physical aggression, property destruction, profane language, or elopement was reported in the reviewed evaluation.',
+    'Communication deficits include expressive language, receptive language, pragmatic language, conversation, self-advocacy, and functional communication needs.',
+    'Social deficits include reciprocal interaction, peer interaction, social communication, play, flexibility, and perspective-taking needs.',
+    'Caregiver training needs include home generalization, reinforcement, prompting, visual supports, and parent training.',
+    'ADOS-2 Results:',
+    'ADOS-2 Module 3 was administered. Social Affect Total: 15. RRB Total: 5. ADOS-2 Classification: Autism. Comparison Score: 8 (High level of autism spectrum-related symptoms).',
+  ].join('\n'))
+  await writeFile(join(sourceFolder, 'vineland.pdf'), minimalPdfBuffer([
+    'Vineland-3 Comprehensive Report.',
+    'The Adaptive Behavior Composite ABC standard score is 64, with a percentile rank of 1.',
+    'Communication standard score is 62, with a percentile rank of 1.',
+    'The standard score for Daily Living Skills is 72, with a percentile rank of 3.',
+    'Socialization standard score is 55, with a percentile rank of 1.',
+    'Communication domain, Daily Living Skills, and Socialization domain results support adaptive functioning needs.',
+  ]))
 
   return { sourceFolder, outputDir }
 }
@@ -334,6 +401,7 @@ try {
   assert.equal(standardPreflightPayload.result.sourceTextReturned, false)
   assert.equal(standardPreflightPayload.result.sourceSummary.supportedFileCount, 3)
   assert.equal(standardPreflightPayload.result.sourceSummary.unsupportedFileCount, 1)
+  assert.ok(standardPreflightPayload.result.sourceSummary.supportedExtensions.includes('.pdf'))
   assert.equal(standardPreflightPayload.result.standardTemplate.mode, 'skillcascade-standard-docx')
   assert.equal(standardPreflightPayload.result.supervisorReviewedStyle.id, 'supervisor-reviewed-aba-initial-v1')
   assert.equal(standardPreflightPayload.result.templateSummary.styleRuleId, 'supervisor-reviewed-aba-initial-v1')
@@ -374,6 +442,37 @@ try {
   assert.equal(noIntakePreflightPayload.result.coverageMatrix.summary.requiredEvidenceTotal, 2)
   assert.equal(noIntakePreflightPayload.result.coverageMatrix.summary.recommendedEvidenceFound, 0)
   assert.equal(noIntakePreflightPayload.result.coverageMatrix.summary.recommendedEvidenceTotal, 1)
+
+  const unsupportedBehaviorFixture = await createUnsupportedBehaviorFixture()
+  const unsupportedBehaviorRunResponse = await fetch(`${baseUrl}${helperApi}/run`, {
+    method: 'POST',
+    headers: {
+      Origin: origin,
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify({
+      ...unsupportedBehaviorFixture,
+      clientLabel: 'Unsupported Behavior Guard Client',
+    }),
+  })
+  assert.equal(unsupportedBehaviorRunResponse.status, 200)
+  const unsupportedBehaviorRunPayload = await unsupportedBehaviorRunResponse.json()
+  assert.equal(unsupportedBehaviorRunPayload.ok, true)
+  assert.equal(unsupportedBehaviorRunPayload.result.goalPlan.domains.Behavior || 0, 0)
+  assert.equal(unsupportedBehaviorRunPayload.result.goalPlan.standardBehaviorPackApplied, false)
+  assert.equal(
+    unsupportedBehaviorRunPayload.result.goalPlan.goals.some((goal) => goal.id === 'behavior-aggression' || goal.id === 'behavior-property-destruction' || goal.id === 'behavior-elopement' || goal.id === 'behavior-unsafe-behavior'),
+    false,
+  )
+  assert.equal(unsupportedBehaviorRunPayload.result.assessmentAdapters.some((adapter) => adapter.id === 'vineland'), true)
+  assert.equal(unsupportedBehaviorRunPayload.result.sourcePacket.sources.some((source) => source.extension === '.pdf' && source.pageCount >= 1), true)
+  const unsupportedBehaviorOutput = await mammoth.extractRawText({ path: unsupportedBehaviorRunPayload.result.outputPath })
+  assert.equal(unsupportedBehaviorOutput.value.includes('not currently able to attend a traditional school setting'), false)
+  assert.match(unsupportedBehaviorOutput.value, /currently attends school|attend school or participate in an educational program/)
+  assert.equal(unsupportedBehaviorOutput.value.includes('The client will decrease instances of physical aggression.'), false)
+  assert.equal(unsupportedBehaviorOutput.value.includes('The client will decrease elopement.'), false)
+  assert.equal(unsupportedBehaviorOutput.value.includes('The client will decrease unsafe behaviors.'), false)
+  assert.match(unsupportedBehaviorOutput.value, /Vineland-3 results indicated an Adaptive Behavior Composite standard score of 64/)
 
   const customTemplatePreflightResponse = await fetch(`${baseUrl}${helperApi}/preflight`, {
     method: 'POST',
@@ -483,6 +582,7 @@ try {
   assert.ok(runPayload.result.qa.standardTemplateClone.highlightCount >= 1)
   assert.equal(runPayload.result.qa.standardTemplateClone.contentControlCount, 0)
   assert.equal(runPayload.result.sourcePacket.sources.some((source) => 'text' in source), false)
+  assert.equal(runPayload.result.sourcePacket.sources.some((source) => source.extension === '.pdf' && source.pageCount >= 1), true)
   assert.equal(runPayload.result.sourcePacket.unsupportedFiles.some((source) => source.filename === 'legacy-report.doc'), true)
 
   const outputStats = await stat(runPayload.result.outputPath)
@@ -551,6 +651,9 @@ try {
   assert.match(renderedOutput.value, /Restricted and Repetitive Behavior total of 4/)
   assert.match(renderedOutput.value, /Comparison Score of 10/)
   assert.match(renderedOutput.value, /classification was Autism/)
+  assert.match(renderedOutput.value, /Vineland-3 results indicated an Adaptive Behavior Composite standard score of 60/)
+  assert.match(renderedOutput.value, /Communication results reflected a standard score of 58/)
+  assert.match(renderedOutput.value, /Socialization results reflected a standard score of 48/)
   assert.match(renderedOutput.value, /unable to function in traditional academic environments/)
   assert.match(renderedOutput.value, /Eye contact was inconsistent/)
   assert.match(renderedOutput.value, /need for repetition and simplification/)

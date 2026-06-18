@@ -2,6 +2,7 @@ import { mkdir, readdir, readFile, stat, writeFile } from 'node:fs/promises'
 import { basename, dirname, extname, isAbsolute, join, relative, resolve } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import mammoth from 'mammoth'
+import { PDFParse } from 'pdf-parse'
 import JSZip from 'jszip'
 import { DOMParser, XMLSerializer } from '@xmldom/xmldom'
 import {
@@ -18,7 +19,7 @@ import {
   WidthType,
 } from 'docx'
 
-const SUPPORTED_SOURCE_EXTENSIONS = new Set(['.docx', '.txt', '.md'])
+const SUPPORTED_SOURCE_EXTENSIONS = new Set(['.docx', '.pdf', '.txt', '.md'])
 const MODULE_DIRECTORY = dirname(fileURLToPath(import.meta.url))
 const STANDARD_TEMPLATE_DOCX_PATH = resolve(MODULE_DIRECTORY, '..', 'assets', 'standard-initial-assessment-template.docx')
 const WORD_NS = 'http://schemas.openxmlformats.org/wordprocessingml/2006/main'
@@ -160,6 +161,21 @@ export const REQUIRED_EVIDENCE_CATEGORIES = [
     id: 'adaptive_or_functional_assessment',
     label: 'Adaptive / Functional Assessment',
     required: true,
+    requiredAnyKeywords: [
+      'vineland',
+      'vineland-3',
+      'vabs',
+      'adaptive behavior composite',
+      'adaptive behavior assessment system',
+      'abas',
+      'afls',
+      'vb-mapp',
+      'vbmapp',
+      'ablls',
+      'communication domain',
+      'daily living skills',
+      'socialization domain',
+    ],
     keywords: [
       'vineland',
       'vineland-3',
@@ -202,6 +218,7 @@ export const ASSESSMENT_ADAPTERS = [
     id: 'vineland',
     label: 'Vineland / Adaptive Behavior Report',
     kind: 'adaptive-assessment',
+    requiredAnyKeywords: ['vineland', 'vineland-3', 'vabs'],
     keywords: ['vineland', 'adaptive behavior composite', 'communication domain', 'daily living skills', 'socialization', 'v-scale'],
     use: 'adaptive, communication, daily living, and socialization deficit crosswalks',
   },
@@ -209,6 +226,7 @@ export const ASSESSMENT_ADAPTERS = [
     id: 'srs2',
     label: 'SRS-2 / Social Responsiveness Report',
     kind: 'social-assessment',
+    requiredAnyKeywords: ['srs-2', 'srs2', 'social responsiveness scale'],
     keywords: ['srs-2', 'srs2', 'social responsiveness scale'],
     use: 'social communication, social cognition, social motivation, and restricted/repetitive behavior prioritization',
   },
@@ -216,6 +234,7 @@ export const ASSESSMENT_ADAPTERS = [
     id: 'abas',
     label: 'ABAS / Adaptive Behavior Report',
     kind: 'adaptive-assessment',
+    requiredAnyKeywords: ['abas', 'adaptive behavior assessment system'],
     keywords: ['abas', 'adaptive behavior assessment system', 'conceptual', 'social composite', 'practical composite'],
     use: 'adaptive functioning and daily living deficit crosswalks',
   },
@@ -223,6 +242,7 @@ export const ASSESSMENT_ADAPTERS = [
     id: 'vbmapp',
     label: 'VB-MAPP',
     kind: 'skill-assessment',
+    requiredAnyKeywords: ['vb-mapp', 'vbmapp', 'verbal behavior milestones assessment'],
     keywords: ['vb-mapp', 'vbmapp', 'verbal behavior milestones assessment', 'milestones assessment'],
     use: 'early language, listener responding, manding, tacting, and learning-readiness goal families',
   },
@@ -230,6 +250,7 @@ export const ASSESSMENT_ADAPTERS = [
     id: 'ablls_afls',
     label: 'ABLLS-R / AFLS',
     kind: 'skill-assessment',
+    requiredAnyKeywords: ['ablls', 'ablls-r', 'afls'],
     keywords: ['ablls', 'ablls-r', 'afls', 'basic living', 'home skills', 'community skills', 'functional living'],
     use: 'skill acquisition, functional living, adaptive, and community goal families',
   },
@@ -237,6 +258,7 @@ export const ASSESSMENT_ADAPTERS = [
     id: 'fba_bip',
     label: 'FBA / BIP / Behavior Documentation',
     kind: 'behavior-assessment',
+    requiredAnyKeywords: ['fba', 'functional behavior assessment', 'behavior intervention plan', 'bip'],
     keywords: ['fba', 'functional behavior assessment', 'behavior intervention plan', 'bip', 'antecedent', 'consequence', 'function of behavior'],
     use: 'maladaptive behavior definitions, hypothesized functions, FERBs, and behavior goals',
   },
@@ -244,6 +266,7 @@ export const ASSESSMENT_ADAPTERS = [
     id: 'speech_language',
     label: 'Speech / Language Evaluation',
     kind: 'related-service',
+    requiredAnyKeywords: ['speech-language evaluation', 'speech language evaluation', 'pragmatic language assessment', 'articulation assessment'],
     keywords: ['speech-language evaluation', 'speech language evaluation', 'speech therapy', 'language evaluation', 'pragmatic language assessment', 'articulation assessment'],
     use: 'communication and pragmatic-language goal rationale',
   },
@@ -251,6 +274,7 @@ export const ASSESSMENT_ADAPTERS = [
     id: 'ot_sensory',
     label: 'OT / Sensory Documentation',
     kind: 'related-service',
+    requiredAnyKeywords: ['occupational therapy', 'ot evaluation', 'sensory profile'],
     keywords: ['occupational therapy', 'ot evaluation', 'fine motor', 'gross motor', 'adaptive equipment', 'sensory profile'],
     use: 'sensory, motor, and adaptive support context',
   },
@@ -258,6 +282,7 @@ export const ASSESSMENT_ADAPTERS = [
     id: 'school_iep',
     label: 'School / IEP Documentation',
     kind: 'education',
+    requiredAnyKeywords: ['iep', 'individualized education program', 'school report', 'teacher report', 'educational evaluation', 'special education placement'],
     keywords: ['iep', 'individualized education program', 'school report', 'classroom observation', 'teacher report', 'educational evaluation', 'special education placement'],
     use: 'educational history and school-functioning context when clinically relevant',
   },
@@ -265,6 +290,7 @@ export const ASSESSMENT_ADAPTERS = [
     id: 'ados2',
     label: 'ADOS-2 / Autism Diagnostic Observation Schedule',
     kind: 'diagnostic-assessment',
+    requiredAnyKeywords: ['ados-2', 'ados2', 'autism diagnostic observation schedule'],
     keywords: ['ados-2', 'ados2', 'autism diagnostic observation schedule', 'social affect total', 'comparison score'],
     use: 'ADOS classification, autism symptom severity, social affect, and restricted/repetitive behavior score interpretation',
   },
@@ -510,6 +536,7 @@ const GOAL_LIBRARY = [
     shortTermGoalName: 'Physical Aggression',
     objective: 'The client will decrease instances of physical aggression.',
     keywords: ['aggression', 'physical aggression', 'hitting', 'kicking', 'biting'],
+    directEvidenceKeywords: ['physical aggression', 'physically aggressive', 'hitting', 'hits', 'kicking', 'kicks', 'biting', 'bites', 'punching', 'pushing', 'striking'],
     deficitDomains: ['maladaptiveBehavior'],
     centralReachDataType: 'frequency',
     requiresDirectEvidence: true,
@@ -522,6 +549,7 @@ const GOAL_LIBRARY = [
     shortTermGoalName: 'Verbal Aggression',
     objective: 'The client will decrease instances of verbal aggression.',
     keywords: ['verbal aggression', 'threat', 'yelling', 'screaming', 'hostile language'],
+    directEvidenceKeywords: ['verbal aggression', 'threatening', 'threats', 'yelling', 'screaming', 'hostile language', 'verbal outburst', 'verbal outbursts'],
     deficitDomains: ['maladaptiveBehavior'],
     centralReachDataType: 'frequency',
     requiresDirectEvidence: true,
@@ -534,6 +562,7 @@ const GOAL_LIBRARY = [
     shortTermGoalName: 'Non-Compliance',
     objective: 'The client will decrease non-compliance.',
     keywords: ['noncompliance', 'non-compliance', 'refusal', 'refuse'],
+    directEvidenceKeywords: ['noncompliance', 'non-compliance', 'non compliance', 'refusal', 'task refusal', 'refuses', 'refuse'],
     deficitDomains: ['maladaptiveBehavior', 'flexibilityRrb'],
     centralReachDataType: 'frequency',
     requiresDirectEvidence: true,
@@ -546,6 +575,7 @@ const GOAL_LIBRARY = [
     shortTermGoalName: 'Property Destruction',
     objective: 'The client will decrease instances of property destruction.',
     keywords: ['property destruction', 'destroy', 'throwing objects', 'breaking items', 'damaging property'],
+    directEvidenceKeywords: ['property destruction', 'destroying property', 'damaging property', 'throwing objects', 'breaking items', 'breaks items', 'damages property'],
     deficitDomains: ['maladaptiveBehavior'],
     centralReachDataType: 'frequency',
     requiresDirectEvidence: true,
@@ -558,6 +588,7 @@ const GOAL_LIBRARY = [
     shortTermGoalName: 'Profane Language',
     objective: 'The client will decrease the use of profane language.',
     keywords: ['profane', 'profanity', 'cursing', 'inappropriate language'],
+    directEvidenceKeywords: ['profane language', 'profanity', 'cursing', 'curse words', 'swearing'],
     deficitDomains: ['maladaptiveBehavior'],
     centralReachDataType: 'frequency',
     requiresDirectEvidence: true,
@@ -570,6 +601,7 @@ const GOAL_LIBRARY = [
     shortTermGoalName: 'Elopement',
     objective: 'The client will decrease elopement.',
     keywords: ['elopement', 'elope', 'run away', 'unsafe'],
+    directEvidenceKeywords: ['elopement', 'elopes', 'elope', 'run away', 'runs away', 'bolting', 'wandering away', 'leaving supervised', 'leaves supervised', 'leaves the area without permission'],
     deficitDomains: ['maladaptiveBehavior'],
     centralReachDataType: 'frequency',
     requiresDirectEvidence: true,
@@ -582,6 +614,7 @@ const GOAL_LIBRARY = [
     shortTermGoalName: 'Unsafe Behaviors',
     objective: 'The client will decrease unsafe behaviors.',
     keywords: ['unsafe behavior', 'unsafe behaviors', 'safety concerns', 'safety risk', 'dangerous'],
+    directEvidenceKeywords: ['unsafe behavior', 'unsafe behaviors', 'dangerous behavior', 'dangerous behaviors', 'safety risk', 'safety risks', 'crisis involvement'],
     deficitDomains: ['maladaptiveBehavior'],
     centralReachDataType: 'frequency',
     requiresDirectEvidence: true,
@@ -1033,7 +1066,8 @@ function cleanExtractedSourceText(value) {
       cleanedLines.push(line)
       continue
     }
-    if (!isLikelySourceHeading(line) && HEADER_LINE_PATTERNS.some((pattern) => pattern.test(line))) {
+    const shortHeaderLikeLine = line.length <= 180
+    if (shortHeaderLikeLine && !isLikelySourceHeading(line) && HEADER_LINE_PATTERNS.some((pattern) => pattern.test(line))) {
       continue
     }
     cleanedLines.push(line)
@@ -1045,17 +1079,45 @@ function splitSentences(text) {
   return normalizeSourceLineBreaks(text)
     .split(/(?<=[.!?])\s+|\n+/)
     .map((sentence) => sentence.trim())
-    .filter((sentence) => sentence && !HEADER_LINE_PATTERNS.some((pattern) => pattern.test(sentence)))
+    .filter((sentence) => sentence && !(sentence.length <= 180 && HEADER_LINE_PATTERNS.some((pattern) => pattern.test(sentence))))
+}
+
+function keywordRegex(keyword) {
+  const normalized = normalizeText(keyword)
+  if (!normalized) return null
+  const escaped = escapeRegex(normalized).replace(/\s+/g, '\\s+')
+  const useWordBoundary = /^[a-z0-9][a-z0-9\s./'()-]*[a-z0-9]$/i.test(normalized)
+  return new RegExp(useWordBoundary ? `(^|[^a-z0-9])${escaped}([^a-z0-9]|$)` : escaped, 'i')
 }
 
 function sourceHasKeyword(text, keyword) {
-  return text.toLowerCase().includes(keyword.toLowerCase())
+  const pattern = keywordRegex(keyword)
+  return pattern ? pattern.test(normalizeText(text)) : false
 }
 
-function firstMatchingSentence(sources, keywords) {
+function sentenceNegatesKeyword(sentence, keyword) {
+  const normalizedSentence = normalizeText(sentence)
+  const pattern = keywordRegex(keyword)
+  if (!pattern) return false
+  const match = normalizedSentence.match(pattern)
+  if (!match || match.index == null) return false
+  const before = normalizedSentence.slice(Math.max(0, match.index - 90), match.index)
+  return /\b(?:no|not|none|never|denies|denied|without|absence of|does not|did not|is not|was not|not currently)\b/i.test(before)
+}
+
+function sourceHasAffirmedKeyword(text, keyword) {
+  return sourceHasKeyword(text, keyword) && !sentenceNegatesKeyword(text, keyword)
+}
+
+function sentenceMatchesAnyKeyword(sentence, keywords, options = {}) {
+  const matcher = options.affirmed ? sourceHasAffirmedKeyword : sourceHasKeyword
+  return keywords.some((keyword) => matcher(sentence, keyword))
+}
+
+function firstMatchingSentence(sources, keywords, options = {}) {
   for (const source of sources) {
     const sentences = splitSentences(source.text)
-    const matched = sentences.find((sentence) => keywords.some((keyword) => sourceHasKeyword(sentence, keyword)))
+    const matched = sentences.find((sentence) => sentenceMatchesAnyKeyword(sentence, keywords, options))
     if (matched) {
       return {
         sourceId: source.id,
@@ -1067,13 +1129,13 @@ function firstMatchingSentence(sources, keywords) {
   return null
 }
 
-function matchingSentences(sources, keywords, limit = 4) {
+function matchingSentences(sources, keywords, limit = 4, options = {}) {
   const matches = []
   const seen = new Set()
   for (const source of sources) {
     const sentences = splitSentences(source.text)
     for (const sentence of sentences) {
-      if (!keywords.some((keyword) => sourceHasKeyword(sentence, keyword))) continue
+      if (!sentenceMatchesAnyKeyword(sentence, keywords, options)) continue
       const normalized = normalizeText(sentence).toLowerCase()
       if (!normalized || seen.has(normalized)) continue
       seen.add(normalized)
@@ -1136,7 +1198,7 @@ function sourceSectionText(source, preferredKeys = []) {
   return sections.map((section) => section.text).filter(Boolean).join('\n\n')
 }
 
-function matchingSectionSentences(sources, sectionId, keywords, limit = 5) {
+function matchingSectionSentences(sources, sectionId, keywords, limit = 5, options = {}) {
   const matches = []
   const seen = new Set()
   const preferredKeys = SECTION_PREFERENCES[sectionId] || []
@@ -1150,7 +1212,7 @@ function matchingSectionSentences(sources, sectionId, keywords, limit = 5) {
       if (!sourceText) continue
       const sentences = splitSentences(sourceText)
       for (const sentence of sentences) {
-        const keywordMatched = keywords.some((keyword) => sourceHasKeyword(sentence, keyword))
+        const keywordMatched = sentenceMatchesAnyKeyword(sentence, keywords, options)
         const includePreferredSectionLead = pass === 'preferred'
           && matches.length === 0
           && sentence.length >= 35
@@ -1180,6 +1242,18 @@ function matchedKeywordsForSource(source, keywords = []) {
   return keywords.filter((keyword) => sourceHasKeyword(searchText, keyword))
 }
 
+function sourceSatisfiesRule(source, rule) {
+  const requiredAnyKeywords = rule.requiredAnyKeywords || []
+  const requiredAllKeywords = rule.requiredAllKeywords || []
+  if (requiredAnyKeywords.length && !matchedKeywordsForSource(source, requiredAnyKeywords).length) {
+    return false
+  }
+  if (requiredAllKeywords.length && requiredAllKeywords.some((keyword) => !sourceHasKeyword(sourceSearchText(source), keyword))) {
+    return false
+  }
+  return true
+}
+
 function sourceReference(source, matchedKeywords = []) {
   return {
     sourceId: source.id,
@@ -1193,6 +1267,7 @@ function buildSourceRuleMatches(sources, rules) {
   return rules.map((rule) => {
     const evidence = sources
       .map((source) => {
+        if (!sourceSatisfiesRule(source, rule)) return null
         const matchedKeywords = matchedKeywordsForSource(source, rule.keywords)
         return matchedKeywords.length ? sourceReference(source, matchedKeywords) : null
       })
@@ -1389,25 +1464,149 @@ function meaningfulSentenceGroup(text, keywords = [], limit = 2) {
   return compactEvidenceText(fallback.join(' '), 760)
 }
 
+function sourceHasAnyAffirmedTerm(text, terms = []) {
+  return splitSentences(text).some((sentence) => terms.some((term) => sourceHasAffirmedKeyword(sentence, term)))
+}
+
 function detectSourceBehaviors(text) {
-  const normalized = normalizeText(text).toLowerCase()
   const behaviorRules = [
-    { label: 'physical aggression', terms: ['physical aggression', 'aggressive behavior', 'aggression', 'explosive aggression'] },
-    { label: 'verbal aggression', terms: ['verbal aggression', 'threatening', 'hostile language', 'yelling', 'screaming'] },
-    { label: 'non-compliance', terms: ['noncompliance', 'non-compliance', 'refusal', 'task refusal'] },
-    { label: 'property destruction', terms: ['property destruction', 'damaging property', 'breaking items', 'throwing objects'] },
-    { label: 'profane language', terms: ['profane language', 'profanity', 'cursing', 'inappropriate language'] },
-    { label: 'elopement', terms: ['elopement', 'elope', 'run away', 'leaving supervised'] },
-    { label: 'unsafe behavior', terms: ['unsafe behavior', 'unsafe behaviors', 'safety concerns', 'safety risk', 'crisis involvement'] },
+    { label: 'physical aggression', terms: ['physical aggression', 'physically aggressive', 'hitting', 'hits', 'kicking', 'kicks', 'biting', 'bites', 'punching', 'pushing', 'striking'] },
+    { label: 'verbal aggression', terms: ['verbal aggression', 'threatening', 'threats', 'hostile language', 'yelling', 'screaming', 'verbal outburst', 'verbal outbursts'] },
+    { label: 'non-compliance', terms: ['noncompliance', 'non-compliance', 'non compliance', 'refusal', 'task refusal', 'refuses', 'refuse'] },
+    { label: 'property destruction', terms: ['property destruction', 'destroying property', 'damaging property', 'breaking items', 'breaks items', 'throwing objects', 'damages property'] },
+    { label: 'profane language', terms: ['profane language', 'profanity', 'cursing', 'curse words', 'swearing'] },
+    { label: 'elopement', terms: ['elopement', 'elopes', 'elope', 'run away', 'runs away', 'bolting', 'wandering away', 'leaving supervised', 'leaves supervised', 'leaves the area without permission'] },
+    { label: 'unsafe behavior', terms: ['unsafe behavior', 'unsafe behaviors', 'dangerous behavior', 'dangerous behaviors', 'safety risk', 'safety risks', 'crisis involvement'] },
     { label: 'emotional dysregulation', terms: ['emotional dysregulation', 'dysregulation', 'explosive behavior', 'distress'] },
   ]
   return behaviorRules
-    .filter((rule) => rule.terms.some((term) => normalized.includes(term)))
+    .filter((rule) => sourceHasAnyAffirmedTerm(text, rule.terms))
     .map((rule) => rule.label)
 }
 
 function uniqueList(items = []) {
   return Array.from(new Set(items.map((item) => normalizeText(item)).filter(Boolean)))
+}
+
+function isVinelandSource(source) {
+  const text = sourceSearchText(source)
+  return ['vineland', 'vineland-3', 'vabs'].some((term) => sourceHasKeyword(text, term))
+}
+
+function firstRegexGroup(text, patterns = []) {
+  for (const pattern of patterns) {
+    const match = String(text || '').match(pattern)
+    if (match) return normalizeText(match[1] || '')
+  }
+  return ''
+}
+
+function extractDomainScore(text, label, patterns = []) {
+  const standardScore = firstRegexGroup(text, patterns)
+  const percentileRank = firstRegexGroup(text, [
+    new RegExp(`${escapeRegex(label)}[\\s\\S]{0,420}?percentile rank(?:\\s+of|\\s+is|:)?\\s*([<>]?\\d+)`, 'i'),
+    new RegExp(`${escapeRegex(label)}\\s+(?:Domain\\s+)?${standardScore || '\\d+'}[\\s\\S]{0,160}?\\s([<>]?\\d+)\\s`, 'i'),
+  ])
+  return {
+    label,
+    standardScore,
+    percentileRank,
+  }
+}
+
+function extractVinelandFacts(sources = []) {
+  const vinelandSources = sources.filter(isVinelandSource)
+  if (!vinelandSources.length) {
+    return {
+      detected: false,
+      sourceFilenames: [],
+      domains: [],
+      adaptiveBehaviorComposite: {},
+      maladaptive: {},
+    }
+  }
+
+  const text = vinelandSources.map((source) => source.rawText || source.text || '').join('\n\n')
+  const adaptiveBehaviorComposite = {
+    standardScore: firstRegexGroup(text, [
+      /ABC standard score is\s*(\d+)/i,
+      /Adaptive Behavior Composite[^\n\r]*\s+(\d+)\s+\d+\s*-\s*\d+/i,
+    ]),
+    percentileRank: firstRegexGroup(text, [
+      /ABC standard score is\s*\d+[\s\S]{0,240}?percentile rank(?:\s+of|:)?\s*([<>]?\d+)/i,
+      /Adaptive Behavior Composite[^\n\r]*\s+\d+\s+\d+\s*-\s*\d+\s+([<>]?\d+)/i,
+    ]),
+  }
+  const domains = [
+    extractDomainScore(text, 'Communication', [
+      /Communication standard score is\s*(\d+)/i,
+      /Communication\s+(\d+)\s+\d+\s*-\s*\d+\s+[<>]?\d+/i,
+    ]),
+    extractDomainScore(text, 'Daily Living Skills', [
+      /standard score for Daily Living Skills is\s*(\d+)/i,
+      /Daily Living Skills\s+(\d+)\s+\d+\s*-\s*\d+\s+[<>]?\d+/i,
+    ]),
+    extractDomainScore(text, 'Socialization', [
+      /Socialization[\s\S]{0,120}?standard score is\s*(\d+)/i,
+      /Socialization\s+(\d+)\s+\d+\s*-\s*\d+\s+[<>]?\d+/i,
+    ]),
+  ].filter((domain) => domain.standardScore || domain.percentileRank)
+  const maladaptive = {
+    internalizingVScale: firstRegexGroup(text, [
+      /v-scale scores of\s*(\d+)\s+for Internalizing/i,
+      /Internalizing\s+(\d+)\s+\d+/i,
+    ]),
+    externalizingVScale: firstRegexGroup(text, [
+      /v-scale scores of\s*\d+\s+for Internalizing and\s*(\d+)\s+for Externalizing/i,
+      /Externalizing\s+(\d+)\s+\d+/i,
+    ]),
+  }
+
+  return {
+    detected: true,
+    sourceFilenames: vinelandSources.map((source) => source.filename),
+    adaptiveBehaviorComposite,
+    domains,
+    maladaptive,
+  }
+}
+
+function vinelandDomain(facts, label) {
+  return (facts?.domains || []).find((domain) => domain.label.toLowerCase() === label.toLowerCase()) || {}
+}
+
+function vinelandSummaryText(vineland = {}) {
+  if (!vineland.detected) return ''
+  const abc = vineland.adaptiveBehaviorComposite || {}
+  const domainParts = (vineland.domains || [])
+    .map((domain) => `${domain.label}${domain.standardScore ? ` standard score ${domain.standardScore}` : ''}${domain.percentileRank ? `, percentile rank ${domain.percentileRank}` : ''}`)
+  const abcText = abc.standardScore
+    ? `Vineland-3 results indicated an Adaptive Behavior Composite standard score of ${abc.standardScore}${abc.percentileRank ? `, percentile rank ${abc.percentileRank}` : ''}.`
+    : 'Vineland-3 results indicated clinically relevant adaptive-functioning needs.'
+  const domainText = domainParts.length ? ` Domain results included ${formatClinicalList(domainParts)}.` : ''
+  const maladaptive = vineland.maladaptive || {}
+  const maladaptiveText = maladaptive.internalizingVScale || maladaptive.externalizingVScale
+    ? ` Maladaptive Behavior results included${maladaptive.internalizingVScale ? ` an Internalizing v-scale score of ${maladaptive.internalizingVScale}` : ''}${maladaptive.internalizingVScale && maladaptive.externalizingVScale ? ' and' : ''}${maladaptive.externalizingVScale ? ` an Externalizing v-scale score of ${maladaptive.externalizingVScale}` : ''}, which should be interpreted by the BCBA alongside direct observation and caregiver report.`
+    : ''
+  return `${abcText}${domainText}${maladaptiveText}`.trim()
+}
+
+function extractEducationStatus(sources = [], impairmentText = '') {
+  const corpus = sources.map((source) => source.text || '').join('\n\n')
+  const educationText = [
+    combinedSectionText(sources, ['educational history']),
+    combinedSectionText(sources, ['functional impairment across settings', 'functional impairment']),
+    corpus,
+  ].filter(Boolean).join('\n\n')
+  const unableSentence = firstMeaningfulSentence(educationText, ['not currently attending school', 'not able to attend school', 'unable to attend school', 'cannot attend school', 'homebound instruction', 'removed from school'])
+  const attendsSentence = firstMeaningfulSentence(educationText, ['currently attends', 'attends school', 'is enrolled', 'school', 'grade', 'classroom', 'academic'])
+  const unableToAttendSchool = /\b(?:not currently attending school|not able to attend school|unable to attend school|cannot attend school|homebound instruction|removed from school)\b/i.test(educationText)
+  const attendsSchool = !unableToAttendSchool && /\b(?:currently attends|attends school|is enrolled|enrolled in|grade|classroom)\b/i.test(educationText)
+  return {
+    unableToAttendSchool,
+    attendsSchool,
+    evidence: unableSentence || attendsSentence || sentenceFragment(impairmentText),
+  }
 }
 
 export function buildLocalClinicalFacts({ sources = [] } = {}) {
@@ -1451,8 +1650,13 @@ export function buildLocalClinicalFacts({ sources = [] } = {}) {
     || firstMeaningfulSentence(`${reasonForReferral}\n${developmental}`, ['academic', 'school', 'educational'])
   const socialImpairment = firstRegex(impairment, /Social:\s*([^\n]+)/i)
   const behaviors = uniqueList(detectSourceBehaviors(fullText))
-  const standardSevereBehaviorCandidate = /aggression|aggressive|dysregulation|explosive|unsafe|safety/.test(fullText.toLowerCase())
-    && /unable to function|academic environments|academic settings|school|safety concerns|severe|persistent/.test(fullText.toLowerCase())
+  const sourceSupportedStandardBehaviorCount = STANDARD_SEVERE_BEHAVIOR_LABELS
+    .filter((behavior) => behaviors.some((item) => item.toLowerCase().replace(/s$/, '') === behavior.toLowerCase().replace(/s$/, '')))
+    .length
+  const standardSevereBehaviorCandidate = sourceSupportedStandardBehaviorCount >= 5
+    && /unable to function|academic environments|academic settings|safety risk|crisis|severe|persistent/i.test(fullText)
+  const vineland = extractVinelandFacts(sources)
+  const education = extractEducationStatus(sources, schoolImpairment)
 
   return {
     demographics,
@@ -1487,6 +1691,9 @@ export function buildLocalClinicalFacts({ sources = [] } = {}) {
     },
     behaviors,
     standardSevereBehaviorCandidate,
+    sourceSupportedStandardBehaviorCount,
+    vineland,
+    education,
   }
 }
 
@@ -1616,6 +1823,21 @@ async function extractSourceFile(filePath) {
       text: cleanExtractedSourceText(result.value),
     }
   }
+  if (extension === '.pdf') {
+    const data = await readFile(filePath)
+    const parser = new PDFParse({ data })
+    try {
+      const result = await parser.getText()
+      const rawText = normalizeSourceLineBreaks(result.text || '')
+      return {
+        rawText,
+        text: cleanExtractedSourceText(rawText),
+        pageCount: result.total || 0,
+      }
+    } finally {
+      await parser.destroy()
+    }
+  }
   if (extension === '.txt' || extension === '.md') {
     const rawText = normalizeSourceLineBreaks(await readFile(filePath, 'utf8'))
     return {
@@ -1645,6 +1867,7 @@ export async function scanLocalSourceFolder(sourceFolder, options = {}) {
       rawText: extracted.rawText || text,
       sections: extractNamedSourceSections(text),
       characterCount: text.length,
+      pageCount: extracted.pageCount || null,
       containsPhi: true,
       localOnly: true,
     })
@@ -1729,7 +1952,7 @@ export async function preflightLocalReportPilot({
     })
     supportedFiles = sourcePacket.sources.map((source) => source.path)
     unsupportedFiles = sourcePacket.unsupportedFiles.map((source) => source.path)
-    if (!supportedFiles.length) blockers.push('No supported source files were found. Add .docx, .txt, or .md source files.')
+    if (!supportedFiles.length) blockers.push('No supported source files were found. Add .docx, .pdf, .txt, or .md source files.')
     if (unsupportedFiles.length) warnings.push(`${unsupportedFiles.length} unsupported file(s) will be listed in review but not extracted.`)
     if (supportedFiles.length) {
       clinicalFacts = buildLocalClinicalFacts({ sources: sourcePacket.sources })
@@ -1794,7 +2017,9 @@ export async function preflightLocalReportPilot({
 
 export function buildLocalClinicalProfile({ clientLabel, sources, clinicalFacts = buildLocalClinicalFacts({ sources }) }) {
   const sections = SECTION_RULES.map((rule) => {
-    const matches = matchingSectionSentences(sources, rule.id, rule.keywords, 5)
+    const matches = matchingSectionSentences(sources, rule.id, rule.keywords, 5, {
+      affirmed: rule.id === 'behaviorProfile',
+    })
     return {
       id: rule.id,
       label: rule.label,
@@ -1856,12 +2081,17 @@ function buildClinicalSectionText(sectionId, matches, facts = {}) {
   const sourceEvidenceText = [evidenceText, ...Object.values(snippets || {})].join(' ')
   const hasInternalizingPattern = /internaliz|explosive|emotional distress/i.test(sourceEvidenceText)
   const hasSensorySensitivity = /sensory|clothing/i.test(sourceEvidenceText)
+  const vineland = facts.vineland || {}
+  const vinelandSummary = vinelandSummaryText(vineland)
+  const vinelandCommunication = vinelandDomain(vineland, 'Communication')
+  const vinelandDailyLiving = vinelandDomain(vineland, 'Daily Living Skills')
+  const vinelandSocialization = vinelandDomain(vineland, 'Socialization')
   const behaviorListForReport = facts.standardSevereBehaviorCandidate
     ? formatClinicalList(STANDARD_SEVERE_BEHAVIOR_LABELS)
-    : (facts.behaviors?.length ? formatClinicalList(facts.behaviors) : 'maladaptive behavior and safety-related concerns described in the source record')
+    : (facts.behaviors?.length ? formatClinicalList(facts.behaviors) : 'restricted/repetitive behavior, rigidity, emotional regulation, or other treatment-interfering concerns described in the source record')
   const behaviorList = facts.behaviors?.length
     ? formatClinicalList(facts.behaviors)
-    : 'maladaptive behavior and safety-related concerns described in the source record'
+    : 'restricted/repetitive behavior, rigidity, emotional regulation, or other treatment-interfering concerns described in the source record'
 
   switch (sectionId) {
     case 'diagnosisSummary':
@@ -1874,7 +2104,10 @@ function buildClinicalSectionText(sectionId, matches, facts = {}) {
     case 'developmentalHistory':
       {
         const developmentalSubject = pronouns.subject === 'they' ? clientFirstName : pronouns.subjectCap
-        return `${clientFirstName} demonstrated early developmental delays, including delayed speech and motor milestones${/walking/i.test(snippets.developmental || evidenceText) ? ' such as delayed walking' : ''}. ${developmentalSubject} has a history of significant communication impairment and currently functions below age expectations in ${pronouns.possessive} ability to organize thoughts, express emotions, and engage in meaningful dialogue.${hasInternalizingPattern ? ` ${developmentalSubject} tends to internalize emotional distress, which later manifests in explosive behavioral episodes.` : ''} Current developmental concerns include social communication impairment, comprehension deficits,${hasSensorySensitivity ? ' sensory sensitivity,' : ''} rigidity, emotional dysregulation, and difficulty adapting to demands or transitions.`
+        const adaptiveSentence = vinelandSummary
+          ? ` ${vinelandSummary}`
+          : ''
+        return `${clientFirstName} demonstrated early developmental delays, including delayed speech and motor milestones${/walking/i.test(snippets.developmental || evidenceText) ? ' such as delayed walking' : ''}. ${developmentalSubject} has a history of significant communication impairment and currently functions below age expectations in ${pronouns.possessive} ability to organize thoughts, express emotions, and engage in meaningful dialogue.${adaptiveSentence}${hasInternalizingPattern ? ` ${developmentalSubject} tends to internalize emotional distress, which later manifests in explosive behavioral episodes.` : ''} Current developmental concerns include social communication impairment, comprehension deficits,${hasSensorySensitivity ? ' sensory sensitivity,' : ''} rigidity, emotional dysregulation, adaptive functioning deficits, and difficulty adapting to demands or transitions.`
       }
     case 'educationalHistory': {
       const schoolImpairment = sentenceFragment(impairments.school)
@@ -1888,14 +2121,20 @@ function buildClinicalSectionText(sectionId, matches, facts = {}) {
           schoolRecordSentence = `The diagnostic record indicates that ${schoolImpairment}. `
         }
       }
-      return `${clientFirstName} is not currently able to attend a traditional school setting due to the severity, frequency, and safety impact of maladaptive behaviors. Reported behaviors including ${behaviorListForReport} interfere with the client's ability to remain safely in a classroom, follow school routines, participate in instruction, and engage appropriately with peers and authority figures. ${schoolRecordSentence}Academic participation is further limited by communication, comprehension, frustration tolerance, emotional regulation, rigidity, and escalation when expectations are maintained. At this time, ABA services are clinically indicated to reduce unsafe and disruptive behavior, increase functional communication and compliance, and build prerequisite skills necessary for future educational participation.`
+      if (facts.education?.unableToAttendSchool) {
+        return `${clientFirstName} is not currently able to attend a traditional school setting based on the reviewed records. ${schoolRecordSentence || (facts.education.evidence ? `${facts.education.evidence}. ` : '')}Reported behaviors and skill deficits including ${behaviorListForReport} interfere with the client's ability to remain safely in a classroom, follow school routines, participate in instruction, and engage appropriately with peers and authority figures. At this time, ABA services are clinically indicated to reduce unsafe and disruptive behavior, increase functional communication and compliance, and build prerequisite skills necessary for future educational participation.`
+      }
+      const attendanceSentence = facts.education?.attendsSchool
+        ? `${clientFirstName} is reported to attend school or participate in an educational program. `
+        : ''
+      return `${attendanceSentence}${schoolRecordSentence || (facts.education?.evidence ? `${facts.education.evidence}. ` : '')}Educational functioning is impacted by ASD-related communication, comprehension, social reciprocity, frustration tolerance, emotional regulation, rigidity, and difficulty adapting when expectations are maintained. ABA services are clinically indicated to support functional communication, compliance with adult direction, coping, flexibility, social participation, and prerequisite skills that improve access to instruction and daily educational routines.`
     }
     case 'behaviorProfile':
-      return `${clientFirstName} demonstrates clinically significant maladaptive and treatment-interfering behavior that affects safety, participation, and access to instruction or daily routines. Source-supported concerns include ${behaviorListForReport}. ${sentenceOrFallback(snippets.criterionB, evidenceText)}${snippets.observationsEmotion ? ` ${snippets.observationsEmotion} This pattern is consistent with internalized distress that may later present as explosive escalation when communication, flexibility, or coping demands exceed the client's current skill level.` : ''}${impairments.home ? ` Home functioning is affected by ${sentenceFragment(impairments.home)}.` : ''} Behavior intervention should include antecedent supports, functional communication training, differential reinforcement, de-escalation procedures, safety responses, and caregiver implementation across settings.`
+      return `${clientFirstName} demonstrates clinically significant maladaptive and treatment-interfering behavior that affects participation and access to instruction or daily routines. Source-supported concerns include ${behaviorListForReport}. ${sentenceOrFallback(snippets.criterionB, evidenceText)}${vineland.maladaptive?.internalizingVScale || vineland.maladaptive?.externalizingVScale ? ` Vineland-3 maladaptive behavior findings should be interpreted with direct observation and caregiver report before finalizing target topographies.` : ''}${snippets.observationsEmotion ? ` ${snippets.observationsEmotion} This pattern is consistent with internalized distress that may later present as explosive escalation when communication, flexibility, or coping demands exceed the client's current skill level.` : ''}${impairments.home ? ` Home functioning is affected by ${sentenceFragment(impairments.home)}.` : ''} Behavior intervention should include antecedent supports, functional communication training, differential reinforcement, de-escalation procedures, safety responses when directly indicated, and caregiver implementation across settings.`
     case 'communicationProfile':
-      return `The client demonstrates clinically significant communication deficits that interfere with self-advocacy, emotional expression, comprehension, reciprocal interaction, and participation in demands or transitions. ${sentenceOrFallback(snippets.observationsCommunication, evidenceText)} ${sentenceOrFallback(snippets.criterionA)} Communication goals should target requesting, help and break communication, clarification, repair strategies, emotional expression, nonverbal integration, and contextually appropriate reciprocal communication.`
+      return `The client demonstrates clinically significant communication deficits that interfere with self-advocacy, emotional expression, comprehension, reciprocal interaction, and participation in demands or transitions. ${sentenceOrFallback(snippets.observationsCommunication, evidenceText)} ${vinelandCommunication.standardScore ? `Vineland-3 Communication results reflected a standard score of ${vinelandCommunication.standardScore}${vinelandCommunication.percentileRank ? `, percentile rank ${vinelandCommunication.percentileRank}` : ''}. ` : ''}${sentenceOrFallback(snippets.criterionA)} Communication goals should target requesting, help and break communication, clarification, repair strategies, emotional expression, nonverbal integration, and contextually appropriate reciprocal communication.`
     case 'socialProfile':
-      return `The client demonstrates social-communication and reciprocal-interaction deficits that affect peer/adult engagement, social problem solving, flexibility, and relationship development. ${sentenceOrFallback(snippets.observationsSocial, evidenceText)}${impairments.social ? ` Social functioning is further affected by ${sentenceFragment(impairments.social)}.` : ''}${ados.comparisonScore ? ` ADOS-2 results also reflected a high level of autism-spectrum related symptoms, with a Comparison Score of ${ados.comparisonScore}${ados.comparisonLevel ? ` (${ados.comparisonLevel})` : ''}.` : ''} Social goals should target initiation, response to social bids, perspective taking, conflict repair, flexible participation, and maintaining safe engagement during social demands.`
+      return `The client demonstrates social-communication and reciprocal-interaction deficits that affect peer/adult engagement, social problem solving, flexibility, and relationship development. ${sentenceOrFallback(snippets.observationsSocial, evidenceText)}${vinelandSocialization.standardScore ? ` Vineland-3 Socialization results reflected a standard score of ${vinelandSocialization.standardScore}${vinelandSocialization.percentileRank ? `, percentile rank ${vinelandSocialization.percentileRank}` : ''}.` : ''}${vinelandDailyLiving.standardScore ? ` Daily Living Skills results also reflected adaptive-functioning needs with a standard score of ${vinelandDailyLiving.standardScore}${vinelandDailyLiving.percentileRank ? `, percentile rank ${vinelandDailyLiving.percentileRank}` : ''}.` : ''}${impairments.social ? ` Social functioning is further affected by ${sentenceFragment(impairments.social)}.` : ''}${ados.comparisonScore ? ` ADOS-2 results also reflected a high level of autism-spectrum related symptoms, with a Comparison Score of ${ados.comparisonScore}${ados.comparisonLevel ? ` (${ados.comparisonLevel})` : ''}.` : ''} Social goals should target initiation, response to social bids, perspective taking, conflict repair, flexible participation, and maintaining safe engagement during social demands.`
     case 'caregiverTraining':
       return `Caregiver training is clinically indicated to support consistency, generalization, behavior reduction, replacement-skill use, and safe response to escalation across daily routines. ${sentenceOrFallback(snippets.medicalNecessity, evidenceText)} Caregiver goals should focus on implementation of antecedent strategies, prompting, reinforcement, functional communication supports, data reporting, and crisis-prevention procedures taught by the BCBA.`
     default:
@@ -1904,7 +2143,12 @@ function buildClinicalSectionText(sectionId, matches, facts = {}) {
 }
 
 function firstGoalEvidence(goal, sources, deficitProfile) {
-  const directMatch = firstMatchingSentence(sources, goal.keywords)
+  const directKeywords = goal.requiresDirectEvidence
+    ? (goal.directEvidenceKeywords || goal.keywords || [])
+    : (goal.keywords || [])
+  const directMatch = firstMatchingSentence(sources, directKeywords, {
+    affirmed: Boolean(goal.requiresDirectEvidence),
+  })
   if (directMatch) {
     return {
       ...directMatch,
@@ -1929,13 +2173,16 @@ function firstGoalEvidence(goal, sources, deficitProfile) {
 }
 
 function supportsStandardSevereBehaviorPack(sources, deficitProfile) {
-  const corpus = (sources || []).map((source) => sourceSearchText(source)).join(' ').toLowerCase()
+  const corpus = (sources || []).map((source) => sourceSearchText(source)).join(' ')
   const hasBehaviorSupport = (deficitProfile?.domains || []).some((domain) => (
     domain.id === 'maladaptiveBehavior' && domain.status === 'source-supported'
   ))
-  const hasAggressionOrDysregulation = /aggression|aggressive|dysregulation|explosive|unsafe|safety/.test(corpus)
-  const hasHighImpactContext = /unable to function|academic settings|school|safety concerns|crisis|severe|persistent/.test(corpus)
-  return hasBehaviorSupport && hasAggressionOrDysregulation && hasHighImpactContext
+  const sourceBehaviors = detectSourceBehaviors(corpus)
+  const standardBehaviorCount = STANDARD_SEVERE_BEHAVIOR_LABELS
+    .filter((behavior) => sourceBehaviors.some((item) => item.toLowerCase().replace(/s$/, '') === behavior.toLowerCase().replace(/s$/, '')))
+    .length
+  const hasHighImpactContext = /unable to function|academic settings|safety risk|crisis|severe|persistent/i.test(corpus)
+  return hasBehaviorSupport && standardBehaviorCount === STANDARD_SEVERE_BEHAVIOR_LABELS.length && hasHighImpactContext
 }
 
 function standardBehaviorPackEvidence(sources, deficitProfile) {
@@ -2798,6 +3045,7 @@ function templateMedicalNecessityText(job) {
 
 function templateAssessmentText(job) {
   const ados = job.clinicalFacts?.ados || {}
+  const vinelandSummary = vinelandSummaryText(job.clinicalFacts?.vineland)
   if (ados.socialAffect || ados.rrb || ados.classification || ados.comparisonScore) {
     const moduleText = ados.module ? ` ${ados.module}` : ''
     const supportLevelText = job.clinicalFacts?.supportLevel
@@ -2814,18 +3062,18 @@ function templateAssessmentText(job) {
       ados.comparisonScore ? `an ADOS-2 Comparison Score of ${ados.comparisonScore}` : '',
     ].filter(Boolean)
     const scoreSentence = scoreParts.length ? ` The client received ${formatClinicalList(scoreParts)}.` : ''
-    return `Standardized assessment results from the ADOS-2${moduleText}, diagnostic interview, parent/behavioral report, and DSM-5-TR diagnostic criteria alignment were reviewed. Graphs are intentionally omitted for this initial assessment. ADOS-2${moduleText} results reflected a high level of autism-related symptoms.${scoreSentence} The ADOS-2 classification was ${ados.classification || 'Autism'}. The diagnostic report aligned the client's presentation with DSM-5-TR Criterion A deficits in social-emotional reciprocity, nonverbal communication, and relationship development, as well as Criterion B patterns of rigidity, resistance to change, sensory sensitivity, repetitive maladaptive behavioral patterns, and cognitive inflexibility. The diagnostic impression was ${diagnosisText} (${diagnosisCodeText})${supportLevelText}${coOccurringText}.`
+    return `Standardized assessment results from the ADOS-2${moduleText}, diagnostic interview, parent/behavioral report, DSM-5-TR diagnostic criteria alignment${vinelandSummary ? ', and Vineland-3 adaptive behavior results' : ''} were reviewed. Graphs are intentionally omitted for this initial assessment. ADOS-2${moduleText} results reflected a high level of autism-related symptoms.${scoreSentence} The ADOS-2 classification was ${ados.classification || 'Autism'}. The diagnostic report aligned the client's presentation with DSM-5-TR Criterion A deficits in social-emotional reciprocity, nonverbal communication, and relationship development, as well as Criterion B patterns of rigidity, resistance to change, sensory sensitivity, repetitive maladaptive behavioral patterns, and cognitive inflexibility.${vinelandSummary ? ` ${vinelandSummary}` : ''} The diagnostic impression was ${diagnosisText} (${diagnosisCodeText})${supportLevelText}${coOccurringText}.`
   }
   const adapters = job.assessmentAdapters.length
     ? job.assessmentAdapters.map((adapter) => adapter.label).join(', ')
     : 'no recognized standardized assessment adapter was detected; BCBA to verify record completeness'
-  return `Standardized assessment information, diagnostic/evaluation records, caregiver report, and clinical source documents were reviewed when available. Detected assessment inputs include: ${adapters}. These results should be reviewed by the BCBA and integrated with direct observation and caregiver interview before the report is finalized. Initial assessment drafts do not include progress graphs unless source-specific visual data are added by the BCBA.`
+  return `Standardized assessment information, diagnostic/evaluation records, caregiver report, and clinical source documents were reviewed when available. Detected assessment inputs include: ${adapters}.${vinelandSummary ? ` ${vinelandSummary}` : ''} These results should be reviewed by the BCBA and integrated with direct observation and caregiver interview before the report is finalized. Initial assessment drafts do not include progress graphs unless source-specific visual data are added by the BCBA.`
 }
 
 function templateBarrierText(job) {
   const domains = sourceSupportedDomainLabels(job)
   const facts = job.clinicalFacts || {}
-  if (facts.standardSevereBehaviorCandidate) {
+  if (facts.standardSevereBehaviorCandidate && facts.education?.unableToAttendSchool) {
     return `Barriers to treatment include ${formatClinicalList(STANDARD_SEVERE_BEHAVIOR_LABELS)}, severe communication deficits, comprehension deficits, emotional dysregulation, rigidity, sensory sensitivity, social isolation, anxiety/depressive symptoms, school placement failure, and difficulty tolerating denied access, social demand, or non-preferred tasks. These barriers create safety concerns and may interfere with instructional control, treatment participation, and generalization across home, therapy, educational, and community settings.`
   }
   const behaviorText = facts.behaviors?.length ? formatClinicalList(facts.behaviors) : ''
@@ -2854,6 +3102,9 @@ function transitionCriteriaText(kind, job) {
     ? formatClinicalList(STANDARD_SEVERE_BEHAVIOR_LABELS)
     : (job.clinicalFacts?.behaviors?.length ? formatClinicalList(job.clinicalFacts.behaviors) : 'targeted maladaptive behaviors')
   if (kind === 'behavior') {
+    if (!job.clinicalFacts?.behaviors?.length && !job.goalPlan?.goals?.some((goal) => goal.domain === 'Behavior')) {
+      return 'Source-supported maladaptive behavior reduction criteria should be finalized by the BCBA after target behaviors are confirmed through caregiver report, direct observation, intake, FBA/BIP, or behavior data.'
+    }
     return `The maladaptive behaviors of ${behaviorList} have reduced to 1 or fewer episodes per week with 90% accuracy across settings for 6 consecutive months.`
   }
   if (kind === 'communication') {
@@ -2877,7 +3128,7 @@ function templateBehaviorTypeText(job, type) {
     ? formatClinicalList(STANDARD_SEVERE_BEHAVIOR_LABELS)
     : facts.behaviors?.length
     ? formatClinicalList(facts.behaviors)
-    : 'maladaptive behavior and safety-related escalation described in the reviewed records'
+    : 'maladaptive behavior targets that must be confirmed from caregiver report, intake, FBA/BIP, direct observation, or behavior data before finalization'
   const typeTwoEvidence = [snippets.reasonForReferral, snippets.observationsEmotion, snippets.observationsEmotion ? 'The source pattern is consistent with internalized distress followed by explosive escalation when the client is challenged, frustrated, or unable to communicate needs effectively.' : '']
     .filter(Boolean)
     .join(' ') || templateSectionText(job, 'behaviorProfile', 'Maladaptive Behavior Type II evidence')
@@ -2930,10 +3181,15 @@ function buildBipBehaviorColumns(job) {
   const columns = []
 
   if (hasBehavior('aggression', 'emotional dysregulation')) {
+    const aggressionSupported = hasBehavior('aggression')
     columns.push({
-      heading: hasBehavior('emotional dysregulation') ? 'Aggression / Emotional Dysregulation' : 'Aggression',
-      behaviorName: 'Aggressive or dysregulated behavior',
-      definition: 'Episodes of aggressive escalation, unsafe contact, hostile escalation, or severe dysregulation that interfere with safety, instruction, communication, or participation.',
+      heading: aggressionSupported
+        ? (hasBehavior('emotional dysregulation') ? 'Aggression / Emotional Dysregulation' : 'Aggression')
+        : 'Emotional Dysregulation',
+      behaviorName: aggressionSupported ? 'Aggressive or dysregulated behavior' : 'Dysregulated behavior',
+      definition: aggressionSupported
+        ? 'Episodes of aggressive escalation, unsafe contact, hostile escalation, or severe dysregulation that interfere with safety, instruction, communication, or participation.'
+        : 'Episodes of dysregulation or emotional escalation that interfere with instruction, communication, participation, or adaptive responding. The BCBA must verify whether any unsafe topography is present before adding aggression targets.',
       antecedents: 'Common antecedents may include denied access, difficult tasks, communication breakdowns, social demands, correction, transitions, sensory discomfort, or loss of control. Functions must be verified through ABC data and direct observation.',
     })
   }
@@ -3284,6 +3540,7 @@ function buildEvidenceLedger(job) {
       relativePath: source.relativePath,
       extension: source.extension,
       characterCount: source.characterCount,
+      pageCount: source.pageCount || null,
     })),
     requiredEvidence: job.evidenceReadiness.categories,
     assessmentAdapters: job.assessmentAdapters,
@@ -3456,6 +3713,7 @@ export async function runLocalReportPilot({
       filename: source.filename,
       relativePath: source.relativePath,
       characterCount: source.characterCount,
+      pageCount: source.pageCount || null,
     })),
     unsupportedFiles: sourcePacket.unsupportedFiles,
     standardTemplate: STANDARD_REPORT_TEMPLATE,
@@ -3502,6 +3760,7 @@ export async function runLocalReportPilot({
         relativePath: source.relativePath,
         extension: source.extension,
         characterCount: source.characterCount,
+        pageCount: source.pageCount || null,
         containsPhi: source.containsPhi,
         localOnly: source.localOnly,
       })),
