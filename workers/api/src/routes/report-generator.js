@@ -20,14 +20,14 @@ import {
 const route = new Hono()
 const DEFAULT_REPORT_HELPER_RELEASE = {
   channel: 'controlled-release',
-  version: 'release-20260618-pdf-status-v13',
-  minimumVersion: 'release-20260618-pdf-status-v13',
+  version: 'release-20260618-vineland-behavior-v14',
+  minimumVersion: 'release-20260618-vineland-behavior-v14',
   helperRuntimeVersion: '0.1.0',
-  filename: 'SkillCascadeReportHelper-release-20260618-pdf-status-v13.zip',
-  objectKey: 'report-generator/SkillCascadeReportHelper-release-20260618-pdf-status-v13.zip',
-  sha256: '05EF56E1E8ADBC9B6A9360CA1973C7F2FD6A75951D20FAC4399C6D711AE485B6',
+  filename: 'SkillCascadeReportHelper-release-20260618-vineland-behavior-v14.zip',
+  objectKey: 'report-generator/SkillCascadeReportHelper-release-20260618-vineland-behavior-v14.zip',
+  sha256: '0F07120B7955ED1FE4A5CAF9E223B8E88C1717A83E5A0113549AF49AEC23553F',
   installerName: 'Install-ReportGeneratorHelper.exe',
-  packageRootName: 'SkillCascadeReportHelper-release-20260618-pdf-status-v13',
+  packageRootName: 'SkillCascadeReportHelper-release-20260618-vineland-behavior-v14',
   requiredInstallFlow: 'download-zip-extract-run-installer-from-extracted-folder',
   autoUpdateEnabled: false,
 }

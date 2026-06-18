@@ -249,6 +249,35 @@ async function createUnsupportedBehaviorFixture() {
   return { sourceFolder, outputDir }
 }
 
+async function createVinelandMaladaptiveItemFixture() {
+  const root = await mkdtemp(join(tmpdir(), 'skillcascade-report-helper-vineland-maladaptive-'))
+  const sourceFolder = join(root, 'source')
+  const outputDir = join(root, 'output')
+  await mkdir(sourceFolder, { recursive: true })
+  await mkdir(outputDir, { recursive: true })
+  await writeFile(join(sourceFolder, 'psychological-evaluation.md'), [
+    'Psychological evaluation and diagnostic report.',
+    'Diagnosis: Autism Spectrum Disorder F84.0.',
+    'Communication deficits include expressive language, receptive language, pragmatic language, conversation, and functional communication needs.',
+    'Social deficits include reciprocal interaction, peer interaction, social communication, play, flexibility, and perspective-taking needs.',
+    'Caregiver training needs include home generalization, reinforcement, prompting, and parent training.',
+  ].join('\n'))
+  await writeFile(join(sourceFolder, 'vineland.pdf'), minimalPdfBuffer([
+    'Vineland-3 Comprehensive Report.',
+    'Adaptive Behavior Composite, Communication domain, Daily Living Skills, and Socialization domain results support adaptive functioning needs.',
+    'MALADAPTIVE BEHAVIOR ITEMS.',
+    'Has temper tantrums 1.',
+    'Disobeys those in authority 2.',
+    'Is physically aggressive 2.',
+    'Is verbally abusive 2.',
+    "Destroys their or another's possessions on purpose 2.",
+    'Wanders or darts away without regard for safety 2.',
+    'Threatens to hurt or kill someone 1.',
+  ]))
+
+  return { sourceFolder, outputDir }
+}
+
 const server = startServer()
 
 try {
@@ -473,6 +502,37 @@ try {
   assert.equal(unsupportedBehaviorOutput.value.includes('The client will decrease elopement.'), false)
   assert.equal(unsupportedBehaviorOutput.value.includes('The client will decrease unsafe behaviors.'), false)
   assert.match(unsupportedBehaviorOutput.value, /Vineland-3 results indicated an Adaptive Behavior Composite standard score of 64/)
+
+  const vinelandMaladaptiveFixture = await createVinelandMaladaptiveItemFixture()
+  const vinelandMaladaptiveRunResponse = await fetch(`${baseUrl}${helperApi}/run`, {
+    method: 'POST',
+    headers: {
+      Origin: origin,
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify({
+      ...vinelandMaladaptiveFixture,
+      clientLabel: 'Vineland Maladaptive Item Client',
+    }),
+  })
+  assert.equal(vinelandMaladaptiveRunResponse.status, 200)
+  const vinelandMaladaptiveRunPayload = await vinelandMaladaptiveRunResponse.json()
+  assert.equal(vinelandMaladaptiveRunPayload.ok, true)
+  const vinelandBehaviorGoalIds = new Set(vinelandMaladaptiveRunPayload.result.goalPlan.goals
+    .filter((goal) => goal.domain === 'Behavior')
+    .map((goal) => goal.id))
+  for (const goalId of [
+    'behavior-aggression',
+    'behavior-verbal-aggression',
+    'behavior-noncompliance',
+    'behavior-property-destruction',
+    'behavior-elopement',
+    'behavior-unsafe-behavior',
+  ]) {
+    assert.equal(vinelandBehaviorGoalIds.has(goalId), true, `${goalId} should be selected from Vineland item evidence`)
+  }
+  assert.equal(vinelandBehaviorGoalIds.has('behavior-profane-language'), false)
+  assert.equal(vinelandMaladaptiveRunPayload.result.coverageMatrix.goalDomainCoverage.find((domain) => domain.domain === 'Behavior')?.goalCount, 6)
 
   const customTemplatePreflightResponse = await fetch(`${baseUrl}${helperApi}/preflight`, {
     method: 'POST',
