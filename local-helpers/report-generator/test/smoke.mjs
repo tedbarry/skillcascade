@@ -97,7 +97,12 @@ function minimalPdfBuffer(lines = []) {
 function startServer() {
   const child = spawn(process.execPath, ['src/server.js'], {
     cwd: packageRoot,
-    env: { ...process.env, PORT: String(port), REPORT_HELPER_DATA_DIR: dataDir },
+    env: {
+      ...process.env,
+      PORT: String(port),
+      REPORT_HELPER_DATA_DIR: dataDir,
+      REPORT_HELPER_ALLOW_MOCK_PASSAGE_ADAPTER: '1',
+    },
     stdio: ['ignore', 'pipe', 'pipe'],
   })
   child.stdoutText = ''
@@ -332,10 +337,11 @@ try {
   assert.equal(statusPayload.programSetup.contract.centralReach.percentTrialCount, 10)
   assert.equal(statusPayload.programSetup.liveAdapterContract.id, 'initial-assessment-learning-tree-live-adapter-v1')
   assert.equal(statusPayload.programSetup.liveAdapterContract.liveWritesDefault, false)
+  assert.equal(statusPayload.programSetup.liveAdapterContract.liveAdapters.passage.implemented, true)
   assert.ok(statusPayload.programSetup.supportedWriteModes.includes('live_external_write'))
   assert.equal(statusPayload.programSetup.requiredLiveConfirmation, 'CREATE LEARNING TREE')
-  assert.equal(statusPayload.programSetup.liveExternalWrites, false)
-  assert.equal(statusPayload.programSetup.currentWriteMode, 'local-setup-package-and-verification-proof')
+  assert.equal(statusPayload.programSetup.liveExternalWrites, 'passage-approval-gated')
+  assert.equal(statusPayload.programSetup.currentWriteMode, 'local-setup-package-plus-passage-live-adapter')
   assert.equal(statusPayload.licenseReadiness.localOnly, true)
   assert.equal(statusPayload.licenseReadiness.authority.localHelperStoresBillingSecrets, false)
   assert.equal(statusPayload.licenseReadiness.authority.localHelperCanGrantAccess, false)
@@ -902,7 +908,7 @@ try {
   assert.equal(setupLiveWritePayload.result.prepared, false)
   assert.equal(setupLiveWritePayload.result.blocked, true)
   assert.equal(setupLiveWritePayload.result.adapterBoundary.liveExternalWriteAttempted, false)
-  assert.ok(setupLiveWritePayload.result.blockers.some((blocker) => /not implemented/i.test(blocker)))
+  assert.ok(setupLiveWritePayload.result.blockers.some((blocker) => /CentralReach learning-tree writes are not implemented/i.test(blocker)))
 
   const setupAdapterDryRunResponse = await fetch(`${baseUrl}${helperApi}/program-setup/write`, {
     method: 'POST',
@@ -931,6 +937,72 @@ try {
   assert.equal(setupAdapterDryRunPayload.result.writeProof.externalWriteMode, 'adapter_dry_run_proof_only')
   assert.equal(setupAdapterDryRunPayload.result.writeProof.liveExternalWriteAttempted, false)
   assert.equal(setupAdapterDryRunPayload.result.writeProof.destinationAdapterContractId, 'initial-assessment-learning-tree-live-adapter-v1')
+
+  const passageAdapterDryRunResponse = await fetch(`${baseUrl}${helperApi}/program-setup/write`, {
+    method: 'POST',
+    headers: {
+      Origin: origin,
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify({
+      reportResult: runPayload.result,
+      goalPlan: runPayload.result.goalPlan,
+      outputDir,
+      clientLabel: 'Release Client',
+      destination: 'passage',
+      executionMode: 'adapter_dry_run',
+      destinationAdapter: {
+        enabled: true,
+        capability: 'learning_tree_setup_v1',
+        mockPassage: true,
+        clientName: 'Release Client',
+      },
+      approval: { approved: true },
+    }),
+  })
+  assert.equal(passageAdapterDryRunResponse.status, 200)
+  const passageAdapterDryRunPayload = await passageAdapterDryRunResponse.json()
+  assert.equal(passageAdapterDryRunPayload.ok, true)
+  assert.equal(passageAdapterDryRunPayload.result.prepared, true)
+  assert.equal(passageAdapterDryRunPayload.result.writeProof.externalWriteMode, 'passage_adapter_dry_run')
+  assert.equal(passageAdapterDryRunPayload.result.writeProof.liveExternalWriteAttempted, false)
+  assert.equal(passageAdapterDryRunPayload.result.writeProof.destinationAdapterProof.adapter, 'passage-web-app-trpc')
+  assert.equal(passageAdapterDryRunPayload.result.writeProof.destinationAdapterProof.liveExternalWriteAttempted, false)
+
+  const passageLiveWriteResponse = await fetch(`${baseUrl}${helperApi}/program-setup/write`, {
+    method: 'POST',
+    headers: {
+      Origin: origin,
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify({
+      reportResult: runPayload.result,
+      goalPlan: runPayload.result.goalPlan,
+      outputDir,
+      clientLabel: 'Release Client',
+      destination: 'passage',
+      executionMode: 'live_external_write',
+      destinationAdapter: {
+        enabled: true,
+        capability: 'learning_tree_setup_v1',
+        mockPassage: true,
+        clientName: 'Release Client',
+      },
+      approval: {
+        approved: true,
+        externalWriteApproved: true,
+        confirmation: 'CREATE LEARNING TREE',
+      },
+    }),
+  })
+  assert.equal(passageLiveWriteResponse.status, 200)
+  const passageLiveWritePayload = await passageLiveWriteResponse.json()
+  assert.equal(passageLiveWritePayload.ok, true)
+  assert.equal(passageLiveWritePayload.result.prepared, true)
+  assert.equal(passageLiveWritePayload.result.writeProof.externalWriteMode, 'passage_live_external_write')
+  assert.equal(passageLiveWritePayload.result.writeProof.liveExternalWriteAttempted, true)
+  assert.equal(passageLiveWritePayload.result.writeProof.destinationAdapterProof.verificationSummary.missingGoalCount, 0)
+  assert.equal(passageLiveWritePayload.result.writeProof.destinationAdapterProof.verificationSummary.missingTargetCount, 0)
 
   const sameFolderRunResponse = await fetch(`${baseUrl}${helperApi}/run`, {
     method: 'POST',

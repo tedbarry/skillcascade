@@ -751,8 +751,12 @@ function LearningTreeSetupPanel({
   state,
   onDestinationChange,
   onApprovalChange,
+  onPassageClientNameChange,
+  onLiveApprovalChange,
+  onLiveConfirmationChange,
   onPreview,
   onPrepare,
+  onCreatePassage,
   onVerify,
 }) {
   const preview = state.preview || state.writeResult || state.verifyResult
@@ -868,6 +872,44 @@ function LearningTreeSetupPanel({
         </span>
       </label>
 
+      {state.destination === 'passage' ? (
+        <div className="mt-4 rounded-lg border border-blue-200 bg-white p-3">
+          <p className="text-xs font-semibold uppercase tracking-wide text-blue-700">Passage live setup</p>
+          <p className="mt-1 text-sm leading-6 text-blue-900">
+            This uses the logged-in Passage browser on this computer. Enter the exact Passage client name, review the preview above, then approve the external write.
+          </p>
+          <label className="mt-3 block">
+            <span className="text-xs font-semibold uppercase tracking-wide text-blue-700">Exact Passage client name</span>
+            <input
+              type="text"
+              value={state.passageClientName}
+              onChange={(event) => onPassageClientNameChange(event.target.value)}
+              placeholder="As shown in Passage"
+              className="mt-1 min-h-[42px] w-full rounded-lg border border-blue-200 bg-white px-3 py-2 text-sm font-semibold text-blue-950 shadow-sm outline-none focus:border-blue-400"
+            />
+          </label>
+          <label className="mt-3 flex gap-3 rounded-lg border border-amber-200 bg-amber-50 px-3 py-3 text-sm leading-6 text-amber-950">
+            <input
+              type="checkbox"
+              checked={state.liveExternalWriteApproved}
+              onChange={(event) => onLiveApprovalChange(event.target.checked)}
+              className="mt-1 h-4 w-4 rounded border-amber-300 text-amber-600"
+            />
+            <span>I approve creating/updating this client&apos;s Passage goals and targets from the reviewed report goal plan.</span>
+          </label>
+          <label className="mt-3 block">
+            <span className="text-xs font-semibold uppercase tracking-wide text-blue-700">Type CREATE LEARNING TREE</span>
+            <input
+              type="text"
+              value={state.liveConfirmation}
+              onChange={(event) => onLiveConfirmationChange(event.target.value)}
+              placeholder="CREATE LEARNING TREE"
+              className="mt-1 min-h-[42px] w-full rounded-lg border border-blue-200 bg-white px-3 py-2 text-sm font-semibold text-blue-950 shadow-sm outline-none focus:border-blue-400"
+            />
+          </label>
+        </div>
+      ) : null}
+
       <div className="mt-4 flex flex-wrap gap-3">
         <button
           type="button"
@@ -877,6 +919,16 @@ function LearningTreeSetupPanel({
         >
           {state.writeLoading ? 'Preparing...' : 'Prepare setup package'}
         </button>
+        {state.destination === 'passage' ? (
+          <button
+            type="button"
+            onClick={onCreatePassage}
+            disabled={state.writeLoading || !state.preview || !state.approved || !state.liveExternalWriteApproved || state.liveConfirmation !== 'CREATE LEARNING TREE'}
+            className="min-h-[42px] rounded-full bg-amber-600 px-4 py-2 text-sm font-semibold text-white shadow-sm hover:bg-amber-700 disabled:cursor-not-allowed disabled:bg-warm-300"
+          >
+            {state.writeLoading ? 'Creating...' : 'Create in Passage'}
+          </button>
+        ) : null}
         <button
           type="button"
           onClick={onVerify}
@@ -890,7 +942,11 @@ function LearningTreeSetupPanel({
       {state.writeResult?.setupPackagePath ? (
         <div className="mt-3 rounded-lg border border-sage-200 bg-sage-50 px-3 py-2 text-sm leading-6 text-sage-900">
           <p><span className="font-semibold">Setup package:</span> {state.writeResult.setupPackagePath}</p>
-          <p><span className="font-semibold">Proof:</span> {state.writeResult.writeProof?.goalCount || 0} goals, no external write attempted.</p>
+          <p>
+            <span className="font-semibold">Proof:</span> {state.writeResult.writeProof?.goalCount || 0} goals,
+            {' '}
+            {state.writeResult.writeProof?.liveExternalWriteAttempted ? 'Passage write completed with verification proof.' : 'no external write attempted.'}
+          </p>
         </div>
       ) : null}
       {state.verifyResult ? (
@@ -918,6 +974,9 @@ export default function ReportGeneratorPage() {
   const [runState, setRunState] = useState({ loading: false, result: null, error: '' })
   const [programSetupState, setProgramSetupState] = useState({
     destination: 'centralreach',
+    passageClientName: '',
+    liveExternalWriteApproved: false,
+    liveConfirmation: '',
     approved: false,
     previewLoading: false,
     preview: null,
@@ -1254,6 +1313,9 @@ export default function ReportGeneratorPage() {
       setProgramSetupState((prev) => ({
         ...prev,
         approved: false,
+        passageClientName: '',
+        liveExternalWriteApproved: false,
+        liveConfirmation: '',
         previewLoading: false,
         preview: null,
         previewError: '',
@@ -1344,6 +1406,65 @@ export default function ReportGeneratorPage() {
         body: JSON.stringify(buildProgramSetupPayload({
           approval: {
             approved: true,
+            approvedAt: new Date().toISOString(),
+          },
+        })),
+      })
+      setProgramSetupState((prev) => ({
+        ...prev,
+        writeLoading: false,
+        writeResult: payload.result,
+        writeError: payload.result?.blocked ? (payload.result.blockers || []).join(' ') : '',
+        verifyResult: null,
+      }))
+    } catch (error) {
+      setProgramSetupState((prev) => ({
+        ...prev,
+        writeLoading: false,
+        writeError: readHelperError(error),
+      }))
+    }
+  }
+
+  async function createPassageProgramSetup() {
+    if (programSetupState.destination !== 'passage') {
+      setProgramSetupState((prev) => ({
+        ...prev,
+        writeError: 'Choose Passage before creating a Passage learning tree.',
+      }))
+      return
+    }
+    if (!programSetupState.approved || !programSetupState.liveExternalWriteApproved || programSetupState.liveConfirmation !== 'CREATE LEARNING TREE') {
+      setProgramSetupState((prev) => ({
+        ...prev,
+        writeError: 'Review the goals, approve the Passage write, and type CREATE LEARNING TREE before creating it.',
+      }))
+      return
+    }
+
+    setProgramSetupState((prev) => ({
+      ...prev,
+      writeLoading: true,
+      writeError: '',
+      verifyError: '',
+    }))
+    try {
+      const activeHelperBase = await resolveHelperBaseForLocalAction()
+      const payload = await fetchHelperJson(activeHelperBase, '/program-setup/write', {
+        method: 'POST',
+        headers: { 'content-type': 'application/json' },
+        body: JSON.stringify(buildProgramSetupPayload({
+          executionMode: 'live_external_write',
+          passageClientName: programSetupState.passageClientName.trim(),
+          destinationAdapter: {
+            enabled: true,
+            capability: 'learning_tree_setup_v1',
+            clientName: programSetupState.passageClientName.trim(),
+          },
+          approval: {
+            approved: true,
+            externalWriteApproved: true,
+            confirmation: programSetupState.liveConfirmation,
             approvedAt: new Date().toISOString(),
           },
         })),
@@ -1710,6 +1831,8 @@ export default function ReportGeneratorPage() {
                   onDestinationChange={(destination) => setProgramSetupState((prev) => ({
                     ...prev,
                     destination,
+                    liveExternalWriteApproved: false,
+                    liveConfirmation: '',
                     preview: null,
                     writeResult: null,
                     verifyResult: null,
@@ -1722,8 +1845,24 @@ export default function ReportGeneratorPage() {
                     approved,
                     writeError: '',
                   }))}
+                  onPassageClientNameChange={(passageClientName) => setProgramSetupState((prev) => ({
+                    ...prev,
+                    passageClientName,
+                    writeError: '',
+                  }))}
+                  onLiveApprovalChange={(liveExternalWriteApproved) => setProgramSetupState((prev) => ({
+                    ...prev,
+                    liveExternalWriteApproved,
+                    writeError: '',
+                  }))}
+                  onLiveConfirmationChange={(liveConfirmation) => setProgramSetupState((prev) => ({
+                    ...prev,
+                    liveConfirmation,
+                    writeError: '',
+                  }))}
                   onPreview={previewProgramSetup}
                   onPrepare={prepareProgramSetup}
+                  onCreatePassage={createPassageProgramSetup}
                   onVerify={verifyProgramSetup}
                 />
               </div>

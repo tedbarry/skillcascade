@@ -1,6 +1,7 @@
 import { createHash } from 'node:crypto'
 import { mkdir, writeFile } from 'node:fs/promises'
 import { join, resolve } from 'node:path'
+import { runPassageLearningTreeAdapter } from './passage-learning-tree-adapter.js'
 
 export const INITIAL_ASSESSMENT_LEARNING_TREE_CONTRACT = {
   id: 'initial-assessment-learning-tree-v1',
@@ -41,6 +42,16 @@ export const LIVE_DESTINATION_ADAPTER_CONTRACT = {
     autoSign: false,
     autoSubmit: false,
     hiddenExternalWrites: false,
+  },
+  liveAdapters: {
+    passage: {
+      implemented: true,
+      transport: 'local_browser_passage_web_app_api',
+      requiresLocalLoggedInBrowser: true,
+    },
+    centralreach: {
+      implemented: false,
+    },
   },
 }
 
@@ -291,10 +302,11 @@ export function evaluateLiveDestinationAdapterBoundary(body = {}) {
     warnings.push('Adapter dry-run mode creates proof only and does not write to the external destination.')
   }
 
-  if (liveRequested) {
-    blockers.push('Live CentralReach/Passage learning-tree writes are not implemented in this helper release.')
+  if (liveRequested && destination !== 'passage') {
+    blockers.push('Live CentralReach learning-tree writes are not implemented in this helper release.')
   }
 
+  const canAttemptLiveWrite = liveRequested && destination === 'passage' && blockers.length === 0
   return {
     contract: LIVE_DESTINATION_ADAPTER_CONTRACT,
     destination,
@@ -306,8 +318,8 @@ export function evaluateLiveDestinationAdapterBoundary(body = {}) {
     approved: approval.approved === true,
     externalWriteApproved: approval.externalWriteApproved === true,
     confirmationAccepted: confirmation === LIVE_DESTINATION_ADAPTER_CONTRACT.approval.requiredConfirmation,
-    canAttemptLiveWrite: false,
-    liveExternalWritesEnabled: false,
+    canAttemptLiveWrite,
+    liveExternalWritesEnabled: canAttemptLiveWrite,
     liveExternalWriteAttempted: false,
     currentMode: executionMode === 'adapter_dry_run' ? 'adapter_dry_run_proof_only' : executionMode,
     blockers,
@@ -512,6 +524,42 @@ export async function prepareInitialAssessmentLearningTree(body = {}) {
       : 'not_attempted_local_setup_package_only',
     destinationAdapterContractId: preview.adapterBoundary.contract.id,
     destinationAdapterStatus: preview.adapterBoundary.currentMode,
+    destinationAdapterProof: null,
+  }
+
+  let adapterResult = null
+  if (preview.treePlan.destination === 'passage' && preview.adapterBoundary.executionMode !== 'local_setup_package') {
+    adapterResult = await runPassageLearningTreeAdapter(body, preview.treePlan)
+    if (adapterResult.warnings?.length) {
+      preview.warnings.push(...adapterResult.warnings)
+    }
+    if (!adapterResult.ok) {
+      return {
+        ...preview,
+        prepared: false,
+        blocked: true,
+        blockers: [
+          ...preview.blockers,
+          ...(adapterResult.blockers || ['Passage learning-tree adapter did not complete.']),
+        ],
+        writeProof: {
+          ...writeProof,
+          externalWriteMode: preview.adapterBoundary.executionMode === 'adapter_dry_run'
+            ? 'passage_adapter_dry_run_blocked'
+            : 'passage_live_external_write_blocked',
+          liveExternalWriteAttempted: Boolean(adapterResult.proof?.liveExternalWriteAttempted),
+          destinationAdapterProof: adapterResult.proof || null,
+        },
+      }
+    }
+
+    writeProof.localOnly = false
+    writeProof.liveExternalWriteAttempted = Boolean(adapterResult.proof?.liveExternalWriteAttempted)
+    writeProof.externalWriteMode = preview.adapterBoundary.executionMode === 'adapter_dry_run'
+      ? 'passage_adapter_dry_run'
+      : 'passage_live_external_write'
+    writeProof.destinationAdapterStatus = adapterResult.proof?.adapterMode || preview.adapterBoundary.currentMode
+    writeProof.destinationAdapterProof = adapterResult.proof
   }
 
   let setupPackagePath = ''

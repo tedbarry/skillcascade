@@ -77,6 +77,7 @@ Assert-ZipEntry -ZipPath $zipPath -Pattern '(^|[/\\])Install-ReportGeneratorHelp
 Assert-ZipEntry -ZipPath $zipPath -Pattern '(^|[/\\])Install-ReportGeneratorHelper\.cmd$'
 Assert-ZipEntry -ZipPath $zipPath -Pattern '(^|[/\\])app[/\\]helper-build-manifest\.json$'
 Assert-ZipEntry -ZipPath $zipPath -Pattern '(^|[/\\])app[/\\]src[/\\]learning-tree-setup\.js$'
+Assert-ZipEntry -ZipPath $zipPath -Pattern '(^|[/\\])app[/\\]src[/\\]passage-learning-tree-adapter\.js$'
 
 $publishPlan = [ordered]@{
   ok = $true

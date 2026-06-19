@@ -62,10 +62,12 @@ const INITIAL_ASSESSMENT_PROGRAM_SETUP = {
     contractId: 'initial-assessment-learning-tree-live-adapter-v1',
     supportedModes: ['local_setup_package', 'adapter_dry_run', 'live_external_write'],
     liveWritesDefault: false,
-    liveWritesCurrentlyEnabled: false,
+    liveWritesCurrentlyEnabled: 'passage-approval-gated',
     approvalRequired: true,
     requiredConfirmation: 'CREATE LEARNING TREE',
-    currentWriteMode: 'local_setup_package_and_adapter_proof_only',
+    currentWriteMode: 'local_setup_package_and_passage_live_adapter',
+    implementedDestinations: ['passage'],
+    blockedDestinations: ['centralreach'],
   },
 }
 const REQUIRED_EVIDENCE_CATEGORIES = [
@@ -199,7 +201,7 @@ const REPORT_GENERATOR_CONTRACT = {
     'BCBA review required before report finalization.',
     'No automatic signing.',
     'No automatic submission.',
-    'No live CentralReach, Passage, payer, email, or Word Online write from this module.',
+    'Passage learning-tree writes require explicit BCBA approval and local logged-in browser verification; CentralReach, payer, email, and Word Online writes remain blocked.',
     'Unsupported or missing source fields must stay visible in QA.',
     'Required diagnosis/evaluation and adaptive/functional assessment evidence must be present before generation; intake/caregiver history is recommended when available.',
     'Visible report text must pass the supervisor-reviewed ABA initial report style QA gate before the helper writes the draft DOCX.',
@@ -215,6 +217,7 @@ const REPORT_GENERATOR_CONTRACT = {
     'source_evidence_ledger',
     'review_summary_json',
     'editable_docx_export',
+    'passage_learning_tree_live_adapter',
   ],
 }
 
