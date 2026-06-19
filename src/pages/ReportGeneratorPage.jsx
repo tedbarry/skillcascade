@@ -55,12 +55,13 @@ function StatusBadge({ children, tone = 'warm' }) {
   )
 }
 
-function Field({ label, value, onChange, placeholder, help, actions }) {
+function Field({ label, value, onChange, placeholder, help, actions, type = 'text', autoComplete }) {
   return (
     <label className="block">
       <span className="text-xs font-semibold uppercase tracking-wide text-warm-500">{label}</span>
       <input
-        type="text"
+        type={type}
+        autoComplete={autoComplete}
         value={value}
         onChange={(event) => onChange(event.target.value)}
         placeholder={placeholder}
@@ -238,6 +239,10 @@ function getHelperCompatibility(payload) {
   }
 
   return { ok: true, reason: '' }
+}
+
+function getPassageCredentialPayloadFromStatus(payload) {
+  return payload?.programSetup?.passageCredential || null
 }
 
 function getHelperPackageRelease(packageData) {
@@ -758,6 +763,12 @@ function LearningTreeSetupPanel({
   onPrepare,
   onCreatePassage,
   onVerify,
+  passageCredentialState,
+  onPassageCredentialFormChange,
+  onSavePassageCredential,
+  onVerifyPassageCredential,
+  onClearPassageCredential,
+  onOpenPassageBrowser,
 }) {
   const preview = state.preview || state.writeResult || state.verifyResult
   const treePlan = preview?.treePlan
@@ -766,6 +777,14 @@ function LearningTreeSetupPanel({
   const byDomain = summary.byDomain || {}
   const ready = preview?.okToPrepare === true || state.writeResult?.prepared === true
   const verified = state.verifyResult?.verified === true
+  const passageCredentialSetup = passageCredentialState?.data?.credentialSetup
+  const passageAccountProof = passageCredentialState?.data?.accountProof
+  const passageCredentialReady = passageAccountProof?.safe === true
+  const passageCredentialConfigured = passageCredentialSetup?.configured === true
+  const passageCredentialBusy = passageCredentialState?.loading
+    || passageCredentialState?.saving
+    || passageCredentialState?.verifying
+    || passageCredentialState?.launching
 
   return (
     <section className="mt-5 rounded-xl border border-blue-200 bg-blue-50 p-4">
@@ -874,9 +893,72 @@ function LearningTreeSetupPanel({
 
       {state.destination === 'passage' ? (
         <div className="mt-4 rounded-lg border border-blue-200 bg-white p-3">
-          <p className="text-xs font-semibold uppercase tracking-wide text-blue-700">Passage live setup</p>
+          <div className="flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between">
+            <div>
+              <p className="text-xs font-semibold uppercase tracking-wide text-blue-700">Passage live setup</p>
+              <p className="mt-1 text-sm leading-6 text-blue-900">
+                Save the Passage login for this computer, verify it, then create the learning tree for the exact client below.
+              </p>
+            </div>
+            <StatusBadge tone={passageCredentialReady ? 'green' : passageCredentialConfigured ? 'blue' : 'warm'}>
+              {passageCredentialReady ? 'Passage verified' : passageCredentialConfigured ? 'Saved login' : 'Login needed'}
+            </StatusBadge>
+          </div>
+          <div className="mt-3 rounded-lg border border-blue-100 bg-blue-50 p-3">
+            <div className="grid gap-3 sm:grid-cols-2">
+              <Field
+                label="Passage login email"
+                value={passageCredentialState.form.email}
+                onChange={(value) => onPassageCredentialFormChange('email', value)}
+                placeholder={passageCredentialSetup?.accountMasked || 'name@example.com'}
+                type="email"
+                autoComplete="username"
+              />
+              <Field
+                label="Passage password"
+                value={passageCredentialState.form.password}
+                onChange={(value) => onPassageCredentialFormChange('password', value)}
+                placeholder={passageCredentialConfigured ? 'Saved on this computer' : 'Password'}
+                type="password"
+                autoComplete="current-password"
+              />
+            </div>
+            <div className="mt-3 flex flex-wrap gap-2">
+              <SmallActionButton tone="sage" onClick={onSavePassageCredential} disabled={passageCredentialBusy}>
+                {passageCredentialState.saving ? 'Saving...' : 'Save and verify login'}
+              </SmallActionButton>
+              <SmallActionButton tone="blue" onClick={onVerifyPassageCredential} disabled={passageCredentialBusy || !passageCredentialConfigured}>
+                {passageCredentialState.verifying ? 'Verifying...' : 'Verify saved login'}
+              </SmallActionButton>
+              <SmallActionButton onClick={onOpenPassageBrowser} disabled={passageCredentialBusy}>
+                {passageCredentialState.launching ? 'Opening...' : 'Open Passage browser'}
+              </SmallActionButton>
+              <SmallActionButton onClick={onClearPassageCredential} disabled={passageCredentialBusy || !passageCredentialConfigured}>
+                Clear saved login
+              </SmallActionButton>
+            </div>
+            {passageCredentialState.error ? (
+              <p className="mt-2 rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-xs font-semibold leading-5 text-red-800">
+                {passageCredentialState.error}
+              </p>
+            ) : null}
+            {passageCredentialState.message ? (
+              <p className="mt-2 rounded-lg border border-sage-200 bg-sage-50 px-3 py-2 text-xs font-semibold leading-5 text-sage-800">
+                {passageCredentialState.message}
+              </p>
+            ) : null}
+            {passageCredentialConfigured ? (
+              <p className="mt-2 text-xs leading-5 text-blue-800">
+                Saved locally for this computer as {passageCredentialSetup.accountMasked || 'configured account'}. SkillCascade does not upload or display the password.
+              </p>
+            ) : (
+              <p className="mt-2 text-xs leading-5 text-blue-800">
+                The saved login is checked against the Passage account before any goals or targets are created.
+              </p>
+            )}
+          </div>
           <p className="mt-1 text-sm leading-6 text-blue-900">
-            This uses the logged-in Passage browser on this computer. Enter the exact Passage client name, review the preview above, then approve the external write.
+            The Passage write will stay blocked unless the saved login verifies successfully.
           </p>
           <label className="mt-3 block">
             <span className="text-xs font-semibold uppercase tracking-wide text-blue-700">Exact Passage client name</span>
@@ -923,7 +1005,7 @@ function LearningTreeSetupPanel({
           <button
             type="button"
             onClick={onCreatePassage}
-            disabled={state.writeLoading || !state.preview || !state.approved || !state.liveExternalWriteApproved || state.liveConfirmation !== 'CREATE LEARNING TREE'}
+            disabled={state.writeLoading || !state.preview || !state.approved || !state.liveExternalWriteApproved || state.liveConfirmation !== 'CREATE LEARNING TREE' || !passageCredentialReady}
             className="min-h-[42px] rounded-full bg-amber-600 px-4 py-2 text-sm font-semibold text-white shadow-sm hover:bg-amber-700 disabled:cursor-not-allowed disabled:bg-warm-300"
           >
             {state.writeLoading ? 'Creating...' : 'Create in Passage'}
@@ -987,6 +1069,20 @@ export default function ReportGeneratorPage() {
     verifyLoading: false,
     verifyResult: null,
     verifyError: '',
+  })
+  const [passageCredentialState, setPassageCredentialState] = useState({
+    loading: false,
+    saving: false,
+    verifying: false,
+    launching: false,
+    data: null,
+    error: '',
+    message: '',
+    form: {
+      email: '',
+      password: '',
+      credentialScope: 'default',
+    },
   })
   const [pathPickerState, setPathPickerState] = useState({ loadingField: '', error: '' })
   const [form, setForm] = useState({
@@ -1135,6 +1231,10 @@ export default function ReportGeneratorPage() {
         discoveredUrl: result.url,
         message: result.url !== helperBase ? 'Helper found automatically at a safe local address.' : 'Helper is current.',
       })
+      const passageCredential = getPassageCredentialPayloadFromStatus(result.payload)
+      if (passageCredential) {
+        setPassageCredentialState((prev) => ({ ...prev, data: passageCredential, error: '', message: '' }))
+      }
     } catch (error) {
       setHelperStatus({ checked: true, loading: false, ok: false, data: null, error: readHelperError(error), discoveredUrl: '', message: '' })
     }
@@ -1160,7 +1260,185 @@ export default function ReportGeneratorPage() {
       discoveredUrl: result.url,
       message: result.url !== helperBase ? 'Helper found automatically at a safe local address.' : 'Helper is current.',
     })
+    const passageCredential = getPassageCredentialPayloadFromStatus(result.payload)
+    if (passageCredential) {
+      setPassageCredentialState((prev) => ({ ...prev, data: passageCredential, error: '', message: '' }))
+    }
     return result.url
+  }
+
+  function updatePassageCredentialForm(field, value) {
+    setPassageCredentialState((prev) => ({
+      ...prev,
+      form: {
+        ...prev.form,
+        [field]: value,
+      },
+      error: '',
+      message: '',
+    }))
+  }
+
+  async function checkPassageCredential({ verify = false, silent = false } = {}) {
+    setPassageCredentialState((prev) => ({
+      ...prev,
+      loading: !verify,
+      verifying: verify,
+      error: '',
+      message: silent ? prev.message : '',
+    }))
+    try {
+      const activeHelperBase = await resolveHelperBaseForLocalAction()
+      const credentialScope = passageCredentialState.form.credentialScope || 'default'
+      const payload = verify
+        ? await fetchHelperJson(activeHelperBase, '/passage-credential/verify', {
+          method: 'POST',
+          headers: { 'content-type': 'application/json' },
+          body: JSON.stringify({ credentialScope }),
+        })
+        : await fetchHelperJson(activeHelperBase, `/passage-credential/status?credentialScope=${encodeURIComponent(credentialScope)}`)
+      const verified = payload.result?.accountProof?.safe === true
+      setPassageCredentialState((prev) => ({
+        ...prev,
+        loading: false,
+        verifying: false,
+        data: payload.result,
+        error: '',
+        message: silent ? prev.message : (verified ? 'Saved Passage login verified.' : 'Saved Passage login status loaded.'),
+      }))
+      return payload.result
+    } catch (error) {
+      const message = readHelperError(error)
+      setPassageCredentialState((prev) => ({
+        ...prev,
+        loading: false,
+        verifying: false,
+        error: message,
+        message: '',
+      }))
+      return null
+    }
+  }
+
+  async function savePassageCredential() {
+    const email = passageCredentialState.form.email.trim()
+    const password = passageCredentialState.form.password
+    if (!email || !password) {
+      setPassageCredentialState((prev) => ({
+        ...prev,
+        error: 'Enter the Passage email and password, then save and verify.',
+        message: '',
+      }))
+      return
+    }
+
+    setPassageCredentialState((prev) => ({
+      ...prev,
+      saving: true,
+      error: '',
+      message: '',
+    }))
+    try {
+      const activeHelperBase = await resolveHelperBaseForLocalAction()
+      const payload = await fetchHelperJson(activeHelperBase, '/passage-credential/setup', {
+        method: 'POST',
+        headers: { 'content-type': 'application/json' },
+        body: JSON.stringify({
+          credentialScope: passageCredentialState.form.credentialScope || 'default',
+          email,
+          password,
+          verify: true,
+        }),
+      })
+      const verified = payload.result?.accountProof?.safe === true
+      setPassageCredentialState((prev) => ({
+        ...prev,
+        saving: false,
+        data: payload.result,
+        error: verified ? '' : 'The saved login could not be verified yet.',
+        message: verified ? 'Passage login saved and verified for this computer.' : '',
+        form: {
+          ...prev.form,
+          password: '',
+        },
+      }))
+    } catch (error) {
+      setPassageCredentialState((prev) => ({
+        ...prev,
+        saving: false,
+        error: readHelperError(error),
+        message: '',
+      }))
+    }
+  }
+
+  async function clearPassageCredential() {
+    setPassageCredentialState((prev) => ({
+      ...prev,
+      loading: true,
+      error: '',
+      message: '',
+    }))
+    try {
+      const activeHelperBase = await resolveHelperBaseForLocalAction()
+      const payload = await fetchHelperJson(activeHelperBase, '/passage-credential/clear', {
+        method: 'POST',
+        headers: { 'content-type': 'application/json' },
+        body: JSON.stringify({ credentialScope: passageCredentialState.form.credentialScope || 'default' }),
+      })
+      setPassageCredentialState((prev) => ({
+        ...prev,
+        loading: false,
+        data: payload.result,
+        error: '',
+        message: 'Saved Passage login cleared from this computer.',
+        form: {
+          ...prev.form,
+          password: '',
+        },
+      }))
+    } catch (error) {
+      setPassageCredentialState((prev) => ({
+        ...prev,
+        loading: false,
+        error: readHelperError(error),
+        message: '',
+      }))
+    }
+  }
+
+  async function openManagedPassageBrowser() {
+    setPassageCredentialState((prev) => ({
+      ...prev,
+      launching: true,
+      error: '',
+      message: '',
+    }))
+    try {
+      const activeHelperBase = await resolveHelperBaseForLocalAction()
+      const payload = await fetchHelperJson(activeHelperBase, '/passage-browser/start', {
+        method: 'POST',
+        headers: { 'content-type': 'application/json' },
+        body: JSON.stringify({}),
+      })
+      setPassageCredentialState((prev) => ({
+        ...prev,
+        launching: false,
+        data: {
+          ...(prev.data || {}),
+          chromeDebug: payload.result?.chromeDebug || null,
+        },
+        error: '',
+        message: 'Managed Passage browser opened. Sign in there if Passage asks, then click Verify saved login.',
+      }))
+    } catch (error) {
+      setPassageCredentialState((prev) => ({
+        ...prev,
+        launching: false,
+        error: readHelperError(error),
+        message: '',
+      }))
+    }
   }
 
   async function pickLocalPath({ field, endpoint, title, defaultPath, filter }) {
@@ -1441,6 +1719,15 @@ export default function ReportGeneratorPage() {
       }))
       return
     }
+    const gate = await checkPassageCredential({ verify: true, silent: true })
+    if (gate?.accountProof?.safe !== true) {
+      setProgramSetupState((prev) => ({
+        ...prev,
+        writeLoading: false,
+        writeError: 'Verify the saved Passage login before creating the learning tree.',
+      }))
+      return
+    }
 
     setProgramSetupState((prev) => ({
       ...prev,
@@ -1460,6 +1747,7 @@ export default function ReportGeneratorPage() {
             enabled: true,
             capability: 'learning_tree_setup_v1',
             clientName: programSetupState.passageClientName.trim(),
+            credentialScope: passageCredentialState.form.credentialScope || 'default',
           },
           approval: {
             approved: true,
@@ -1864,6 +2152,12 @@ export default function ReportGeneratorPage() {
                   onPrepare={prepareProgramSetup}
                   onCreatePassage={createPassageProgramSetup}
                   onVerify={verifyProgramSetup}
+                  passageCredentialState={passageCredentialState}
+                  onPassageCredentialFormChange={updatePassageCredentialForm}
+                  onSavePassageCredential={savePassageCredential}
+                  onVerifyPassageCredential={() => checkPassageCredential({ verify: true })}
+                  onClearPassageCredential={clearPassageCredential}
+                  onOpenPassageBrowser={openManagedPassageBrowser}
                 />
               </div>
             ) : null}

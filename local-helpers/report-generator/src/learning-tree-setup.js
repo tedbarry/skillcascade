@@ -46,8 +46,10 @@ export const LIVE_DESTINATION_ADAPTER_CONTRACT = {
   liveAdapters: {
     passage: {
       implemented: true,
-      transport: 'local_browser_passage_web_app_api',
-      requiresLocalLoggedInBrowser: true,
+      transport: 'local_credential_verified_passage_web_app_api',
+      requiresConfiguredLocalCredential: true,
+      requiresVerifiedAccountGate: true,
+      managedBrowserPort: 9233,
     },
     centralreach: {
       implemented: false,

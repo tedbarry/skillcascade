@@ -20,6 +20,18 @@ import {
   previewInitialAssessmentLearningTree,
   verifyInitialAssessmentLearningTree,
 } from './learning-tree-setup.js'
+import {
+  deleteLocalPassageCredential,
+  normalizeCredentialScope,
+  readLocalPassageCredentialSummary,
+  saveLocalPassageCredential,
+} from './passage-local-credentials.js'
+import {
+  buildPassageAccountGate,
+  ensurePassageDebugBrowser,
+  getReportPassageCredentialContract,
+  normalizePassageCdpUrl,
+} from './passage-managed-session.js'
 
 const rootDir = fileURLToPath(new URL('.', import.meta.url))
 const webDir = join(rootDir, 'web')
@@ -297,6 +309,12 @@ createServer(async (req, res) => {
     if (isHelperEndpoint(pathname, '/status')) {
       const installState = await helperInstallState()
       const licenseReadiness = await localLicenseReadiness()
+      const passageCredential = {
+        credentialSetup: await readLocalPassageCredentialSummary({ credentialScope: 'default' }),
+        accountProof: null,
+        chromeDebug: null,
+        contract: getReportPassageCredentialContract(),
+      }
       sendJson(res, {
         ok: true,
         localOnly: true,
@@ -333,6 +351,11 @@ createServer(async (req, res) => {
           programSetupPreview: helperEndpoint('/program-setup/preview'),
           programSetupWrite: helperEndpoint('/program-setup/write'),
           programSetupVerify: helperEndpoint('/program-setup/verify'),
+          passageCredentialStatus: helperEndpoint('/passage-credential/status'),
+          passageCredentialSetup: helperEndpoint('/passage-credential/setup'),
+          passageCredentialVerify: helperEndpoint('/passage-credential/verify'),
+          passageCredentialClear: helperEndpoint('/passage-credential/clear'),
+          passageBrowserStart: helperEndpoint('/passage-browser/start'),
         },
         legacyEndpoints: {
           installState: legacyHelperEndpoint('/install-state'),
@@ -343,6 +366,11 @@ createServer(async (req, res) => {
           programSetupPreview: legacyHelperEndpoint('/program-setup/preview'),
           programSetupWrite: legacyHelperEndpoint('/program-setup/write'),
           programSetupVerify: legacyHelperEndpoint('/program-setup/verify'),
+          passageCredentialStatus: legacyHelperEndpoint('/passage-credential/status'),
+          passageCredentialSetup: legacyHelperEndpoint('/passage-credential/setup'),
+          passageCredentialVerify: legacyHelperEndpoint('/passage-credential/verify'),
+          passageCredentialClear: legacyHelperEndpoint('/passage-credential/clear'),
+          passageBrowserStart: legacyHelperEndpoint('/passage-browser/start'),
         },
         pathPickers: {
           supported: pathPickerSupported(),
@@ -367,6 +395,7 @@ createServer(async (req, res) => {
           workflow: 'initial-assessment-learning-tree',
           contract: INITIAL_ASSESSMENT_LEARNING_TREE_CONTRACT,
           liveAdapterContract: LIVE_DESTINATION_ADAPTER_CONTRACT,
+          passageCredential,
           destinations: ['centralreach', 'passage'],
           externalWritesRequireApproval: true,
           liveExternalWrites: 'passage-approval-gated',
@@ -379,6 +408,149 @@ createServer(async (req, res) => {
           extraOriginsEnv: 'REPORT_HELPER_ALLOWED_ORIGINS',
         },
       }, corsHeaders)
+      return
+    }
+
+    if (isHelperEndpoint(pathname, '/passage-credential/status') && method === 'GET') {
+      try {
+        const credentialScope = normalizeCredentialScope(requestUrl.searchParams.get('credentialScope') || 'default')
+        const verifyLogin = requestUrl.searchParams.get('verify') === '1' || requestUrl.searchParams.get('verify') === 'true'
+        const cdpUrl = requestUrl.searchParams.get('cdpUrl') || undefined
+        const result = verifyLogin
+          ? await buildPassageAccountGate({ credentialScope, cdpUrl, verifyLogin: true })
+          : {
+            ready: false,
+            cdpUrl: normalizePassageCdpUrl(cdpUrl),
+            credentialScope,
+            credentialSetup: await readLocalPassageCredentialSummary({ credentialScope }),
+            chromeDebug: null,
+            accountProof: null,
+            contract: getReportPassageCredentialContract(),
+          }
+        sendJson(res, { ok: true, result }, corsHeaders)
+      } catch (error) {
+        sendError(res, 400, error.message, corsHeaders)
+      }
+      return
+    }
+
+    if (isHelperEndpoint(pathname, '/passage-credential/setup') && method === 'POST') {
+      let credentialScope = 'default'
+      let credentialSaved = false
+      try {
+        const body = await readJsonBody(req)
+        credentialScope = normalizeCredentialScope(body.credentialScope || 'default')
+        const credentialSetup = await saveLocalPassageCredential({
+          credentialScope,
+          email: body.email || body.username,
+          username: body.username || body.email,
+          password: body.password,
+        })
+        credentialSaved = true
+        if (body.verify === false) {
+          sendJson(res, {
+            ok: true,
+            result: {
+              ready: false,
+              credentialScope,
+              credentialSetup,
+              chromeDebug: null,
+              accountProof: null,
+              contract: getReportPassageCredentialContract(),
+            },
+          }, corsHeaders)
+          return
+        }
+        try {
+          const result = await buildPassageAccountGate({
+            credentialScope,
+            cdpUrl: body.cdpUrl,
+            verifyLogin: true,
+          })
+          sendJson(res, { ok: true, result: { ...result, contract: getReportPassageCredentialContract() } }, corsHeaders)
+        } catch (verifyError) {
+          sendJson(res, {
+            ok: true,
+            result: {
+              ready: false,
+              credentialScope,
+              credentialSetup,
+              chromeDebug: null,
+              accountProof: {
+                safe: false,
+                profileDetected: false,
+                reason: verifyError.message || 'passage_login_not_verified',
+                profileFingerprint: '',
+                configuredFingerprint: credentialSetup.accountFingerprint || '',
+              },
+              contract: getReportPassageCredentialContract(),
+            },
+          }, corsHeaders)
+        }
+      } catch (error) {
+        if (credentialSaved) await deleteLocalPassageCredential({ credentialScope }).catch(() => {})
+        sendError(res, 400, error.message, corsHeaders)
+      }
+      return
+    }
+
+    if (isHelperEndpoint(pathname, '/passage-credential/verify') && method === 'POST') {
+      try {
+        const body = await readJsonBody(req)
+        const credentialScope = normalizeCredentialScope(body.credentialScope || 'default')
+        const result = await buildPassageAccountGate({
+          credentialScope,
+          cdpUrl: body.cdpUrl,
+          verifyLogin: true,
+        })
+        sendJson(res, { ok: true, result: { ...result, contract: getReportPassageCredentialContract() } }, corsHeaders)
+      } catch (error) {
+        sendError(res, 400, error.message, corsHeaders)
+      }
+      return
+    }
+
+    if (isHelperEndpoint(pathname, '/passage-credential/clear') && method === 'POST') {
+      try {
+        const body = await readJsonBody(req)
+        const credentialScope = normalizeCredentialScope(body.credentialScope || 'default')
+        const credentialSetup = await deleteLocalPassageCredential({ credentialScope })
+        sendJson(res, {
+          ok: true,
+          result: {
+            ready: false,
+            credentialScope,
+            credentialSetup,
+            chromeDebug: null,
+            accountProof: null,
+            contract: getReportPassageCredentialContract(),
+          },
+        }, corsHeaders)
+      } catch (error) {
+        sendError(res, 400, error.message, corsHeaders)
+      }
+      return
+    }
+
+    if (isHelperEndpoint(pathname, '/passage-browser/start') && method === 'POST') {
+      try {
+        const body = await readJsonBody(req)
+        const chromeDebug = await ensurePassageDebugBrowser({
+          cdpUrl: body.cdpUrl,
+          startUrl: body.startUrl,
+          profileDir: body.profileDir,
+        })
+        sendJson(res, {
+          ok: true,
+          result: {
+            ready: chromeDebug.ready === true,
+            chromeDebug,
+            contract: getReportPassageCredentialContract(),
+          },
+        }, corsHeaders)
+      } catch (error) {
+        sendError(res, 400, error.message, corsHeaders)
+      }
       return
     }
 

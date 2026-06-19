@@ -1,5 +1,9 @@
-const PASSAGE_ORIGIN = 'https://clinical.passagehealth.com'
-const DEFAULT_PASSAGE_CDP_URL = 'http://127.0.0.1:9233'
+import {
+  DEFAULT_PASSAGE_CDP_URL,
+  ensureVerifiedPassageSession,
+  normalizePassageCdpUrl,
+  PASSAGE_ORIGIN,
+} from './passage-managed-session.js'
 
 export const PASSAGE_DOMAIN_LABELS = {
   behavior: 'Behavior Reduction Domain',
@@ -284,12 +288,25 @@ export async function runPassageLearningTreeAdapter(body = {}, treePlan = {}) {
   }
 
   if (!rows.length) blockers.push('No learning-tree goal rows are available for Passage setup.')
-  const cdpUrl = cleanText(adapter.cdpUrl || process.env.REPORT_HELPER_PASSAGE_CDP_URL || process.env.PASSAGE_CDP_URL || DEFAULT_PASSAGE_CDP_URL)
-  const cookieHeader = blockers.length ? '' : await buildCookieHeaderFromCdp(cdpUrl).catch((error) => {
-    blockers.push(`Could not read Passage browser cookies: ${safeError(error)}`)
-    return ''
+  const credentialScope = cleanText(adapter.credentialScope || body.credentialScope || 'default') || 'default'
+  let cdpUrl = cleanText(adapter.cdpUrl || process.env.REPORT_HELPER_PASSAGE_CDP_URL || process.env.PASSAGE_CDP_URL || DEFAULT_PASSAGE_CDP_URL)
+  try {
+    cdpUrl = normalizePassageCdpUrl(cdpUrl)
+  } catch (error) {
+    blockers.push(`Passage browser setup is not safe: ${safeError(error)}`)
+  }
+  const verifiedSession = blockers.length ? null : await ensureVerifiedPassageSession({
+    credentialScope,
+    cdpUrl,
+  }).catch((error) => {
+    blockers.push(`Passage account verification failed: ${safeError(error)}`)
+    return null
   })
-  if (!cookieHeader) blockers.push(`No logged-in Passage browser session was found at ${cdpUrl}.`)
+  const cookieHeader = verifiedSession?.cookieHeader || ''
+  const accountGateProof = verifiedSession?.accountProof || null
+  if (!cookieHeader && !blockers.length) {
+    blockers.push('No verified Passage browser session was available for the saved account.')
+  }
 
   const profile = cookieHeader ? await trpcGet(cookieHeader, 'users.profile', { 0: { json: null, meta: { values: ['undefined'] } } }).catch((error) => {
     blockers.push(`Could not read Passage user profile: ${safeError(error)}`)
@@ -320,6 +337,14 @@ export async function runPassageLearningTreeAdapter(body = {}, treePlan = {}) {
     passageOrigin: PASSAGE_ORIGIN,
     liveExternalWriteAttempted: false,
     cdpConnected: Boolean(cookieHeader),
+    credentialScope,
+    accountGate: accountGateProof ? {
+      safe: accountGateProof.safe === true,
+      reason: accountGateProof.reason || '',
+      profileDetected: accountGateProof.profileDetected === true,
+      profileFingerprint: accountGateProof.profileFingerprint || '',
+      configuredFingerprint: accountGateProof.configuredFingerprint || '',
+    } : null,
     profileRead: Boolean(profile?.id),
     destination: summarizeClient(destinationClient, destinationGoalsBefore),
     labelSummary: labelSetup?.summary || null,

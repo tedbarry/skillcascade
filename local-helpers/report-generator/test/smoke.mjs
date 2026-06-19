@@ -13,6 +13,7 @@ const port = Number(process.env.REPORT_HELPER_SMOKE_PORT || 4199)
 const baseUrl = `http://127.0.0.1:${port}`
 const origin = 'http://127.0.0.1:5173'
 const dataDir = mkdtempSync(join(tmpdir(), 'skillcascade-report-helper-data-'))
+const passageCredentialDir = mkdtempSync(join(tmpdir(), 'skillcascade-report-helper-passage-credentials-'))
 const helperApi = '/api/local-report-generator'
 const legacyHelperApi = '/api/local-report-pilot'
 const checkedBox = '\u2612'
@@ -101,6 +102,7 @@ function startServer() {
       ...process.env,
       PORT: String(port),
       REPORT_HELPER_DATA_DIR: dataDir,
+      REPORT_HELPER_PASSAGE_LOCAL_CREDENTIAL_DIR: passageCredentialDir,
       REPORT_HELPER_ALLOW_MOCK_PASSAGE_ADAPTER: '1',
     },
     stdio: ['ignore', 'pipe', 'pipe'],
@@ -323,6 +325,11 @@ try {
   assert.equal(statusPayload.endpoints.programSetupPreview, `${helperApi}/program-setup/preview`)
   assert.equal(statusPayload.endpoints.programSetupWrite, `${helperApi}/program-setup/write`)
   assert.equal(statusPayload.endpoints.programSetupVerify, `${helperApi}/program-setup/verify`)
+  assert.equal(statusPayload.endpoints.passageCredentialStatus, `${helperApi}/passage-credential/status`)
+  assert.equal(statusPayload.endpoints.passageCredentialSetup, `${helperApi}/passage-credential/setup`)
+  assert.equal(statusPayload.endpoints.passageCredentialVerify, `${helperApi}/passage-credential/verify`)
+  assert.equal(statusPayload.endpoints.passageCredentialClear, `${helperApi}/passage-credential/clear`)
+  assert.equal(statusPayload.endpoints.passageBrowserStart, `${helperApi}/passage-browser/start`)
   assert.equal(statusPayload.endpoints.templateProfile, undefined)
   assert.equal(statusPayload.endpoints.templateProfiles, undefined)
   assert.equal(statusPayload.legacyEndpoints.licenseReadiness, `${legacyHelperApi}/license-readiness`)
@@ -338,6 +345,11 @@ try {
   assert.equal(statusPayload.programSetup.liveAdapterContract.id, 'initial-assessment-learning-tree-live-adapter-v1')
   assert.equal(statusPayload.programSetup.liveAdapterContract.liveWritesDefault, false)
   assert.equal(statusPayload.programSetup.liveAdapterContract.liveAdapters.passage.implemented, true)
+  assert.equal(statusPayload.programSetup.liveAdapterContract.liveAdapters.passage.requiresConfiguredLocalCredential, true)
+  assert.equal(statusPayload.programSetup.liveAdapterContract.liveAdapters.passage.requiresVerifiedAccountGate, true)
+  assert.equal(statusPayload.programSetup.passageCredential.credentialSetup.configured, false)
+  assert.equal(statusPayload.programSetup.passageCredential.contract.accountGateRequired, true)
+  assert.equal(statusPayload.programSetup.passageCredential.contract.credentialNeverReturnedToWebsite, true)
   assert.ok(statusPayload.programSetup.supportedWriteModes.includes('live_external_write'))
   assert.equal(statusPayload.programSetup.requiredLiveConfirmation, 'CREATE LEARNING TREE')
   assert.equal(statusPayload.programSetup.liveExternalWrites, 'passage-approval-gated')
@@ -346,6 +358,45 @@ try {
   assert.equal(statusPayload.licenseReadiness.authority.localHelperStoresBillingSecrets, false)
   assert.equal(statusPayload.licenseReadiness.authority.localHelperCanGrantAccess, false)
   assert.ok(statusPayload.licenseReadiness.installFingerprint)
+
+  const credentialSetupResponse = await fetch(`${baseUrl}${helperApi}/passage-credential/setup`, {
+    method: 'POST',
+    headers: { 'content-type': 'application/json', Origin: origin },
+    body: JSON.stringify({
+      credentialScope: 'smoke-test',
+      email: 'provider@example.test',
+      password: 'not-a-real-password',
+      verify: false,
+    }),
+  })
+  assert.equal(credentialSetupResponse.status, 200)
+  const credentialSetupPayload = await credentialSetupResponse.json()
+  assert.equal(credentialSetupPayload.ok, true)
+  assert.equal(credentialSetupPayload.result.credentialSetup.configured, true)
+  assert.equal(credentialSetupPayload.result.credentialSetup.credentialScope, 'smoke-test')
+  const credentialSetupJson = JSON.stringify(credentialSetupPayload)
+  assert.equal(credentialSetupJson.includes('not-a-real-password'), false)
+  assert.equal(credentialSetupJson.includes('provider@example.test'), false)
+  assert.match(credentialSetupPayload.result.credentialSetup.accountMasked, /^pr\*\*\*@example\.test$/)
+
+  const credentialStatusResponse = await fetch(`${baseUrl}${helperApi}/passage-credential/status?credentialScope=smoke-test`, {
+    headers: { Origin: origin },
+  })
+  assert.equal(credentialStatusResponse.status, 200)
+  const credentialStatusPayload = await credentialStatusResponse.json()
+  assert.equal(credentialStatusPayload.ok, true)
+  assert.equal(credentialStatusPayload.result.credentialSetup.configured, true)
+  assert.equal(JSON.stringify(credentialStatusPayload).includes('not-a-real-password'), false)
+
+  const credentialClearResponse = await fetch(`${baseUrl}${helperApi}/passage-credential/clear`, {
+    method: 'POST',
+    headers: { 'content-type': 'application/json', Origin: origin },
+    body: JSON.stringify({ credentialScope: 'smoke-test' }),
+  })
+  assert.equal(credentialClearResponse.status, 200)
+  const credentialClearPayload = await credentialClearResponse.json()
+  assert.equal(credentialClearPayload.ok, true)
+  assert.equal(credentialClearPayload.result.credentialSetup.configured, false)
 
   const installStateResponse = await fetch(`${baseUrl}${helperApi}/install-state`, {
     headers: { Origin: origin },

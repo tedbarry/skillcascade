@@ -89,7 +89,7 @@ try {
       'BCBA review required before use.',
       'No automatic signing.',
       'No automatic submission.',
-      'Passage learning-tree writes require explicit BCBA approval, local logged-in browser verification, and the CREATE LEARNING TREE confirmation phrase.'
+      'Passage learning-tree writes require explicit BCBA approval, saved local Passage login verification, and the CREATE LEARNING TREE confirmation phrase.'
     )
   }
   Set-Content -LiteralPath (Join-Path $BundleRoot 'release-manifest.json') -Encoding ASCII -Value ($manifest | ConvertTo-Json -Depth 4)
@@ -125,7 +125,7 @@ What this is:
 What this is not:
 - It is not an automatic signer.
 - It is not an automatic payer/CentralReach/Passage/Word Online writer.
-- Passage learning-tree creation is available only after local browser verification and explicit BCBA approval.
+- Passage learning-tree creation is available only after the saved local Passage login matches the managed browser account and explicit BCBA approval is provided.
 - It is not a cloud PHI uploader.
 
 Buyer setup:
