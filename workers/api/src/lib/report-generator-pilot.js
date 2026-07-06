@@ -69,7 +69,16 @@ export const REPORT_GENERATOR_SUPERVISOR_REVIEWED_STYLE = {
   appliesTo: 'initial-assessment',
   standardTemplateOnly: true,
   reviewGate: 'helper-blocks-visible-template-artifacts-and-unsupported-assessment-references',
-  summary: 'Initial drafts should read like the reviewed house reports from the start: source-supported facts, present-functioning clinical language, standard SkillCascade template sections, clean checkboxes, and no unsupported assessment/tool references.',
+  summary: 'Initial drafts should read like the reviewed house reports from the start: source-supported facts, direct present-functioning clinical language, no visible document-review phrasing, standard SkillCascade template sections, complete parent/BIP/transition sections, clean checkboxes, and no unsupported assessment/tool references.',
+  writingRules: [
+    'Avoid visible document-review phrasing such as records indicate, the evaluation noted, reviewed records indicate, and caregiver/evaluation data indicate unless attribution is clinically necessary.',
+    'Use direct clinical wording such as The client demonstrates, The client has, The client may, or Caregiver reports when attribution matters.',
+    'For high-hour requests, describe emotional reactivity and maladaptive behavior with source-supported observable topographies and clinical impact.',
+    'Avoid ADL/hygiene/self-care wording unless explicitly needed; prefer daily-routine and routine-participation language when payer-sensitive.',
+    'Use comprehensive ABA treatment language for direct-care requests over 25 hours per week.',
+    'Do not include 97154, group-care rows, or social-skills group sections unless group service is actually requested.',
+    'Complete parent involvement sections, align BIP FERBs/baselines with the behavior goals, and make transition criteria measurable.',
+  ],
 }
 
 function flattenKeys(value, prefix = '') {
