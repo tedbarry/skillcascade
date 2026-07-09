@@ -72,6 +72,7 @@ const REPORT_VISIBLE_ARTIFACT_PHRASES = [
   'TBD',
   'TODO',
 ]
+const OBSERVATION_RECORD_SUMMARY_PATTERN = /\b(?:records indicate|records describe|reviewed records indicate|additional assessment information indicates|additional collateral information indicates|caregiver\/evaluation records indicate|caregiver and evaluation records indicate|caregiver\/evaluation data indicate|source review|diagnostic observation\/source review|the evaluation noted)\b/i
 const SEVERITY_RUBRIC_PHRASES = [
   'The individual exhibits some difficulty or delay in acquiring skills',
   'The individual exhibits significant difficulty or delay in acquiring skills',
@@ -93,6 +94,7 @@ export const SUPERVISOR_REVIEWED_REPORT_STYLE = {
   writingRules: [
     'Write report prose as current clinical functioning when supported by records, not as one-time observation language outside observation sections.',
     'Do not use visible document-review phrasing such as "records indicate", "the evaluation noted", "reviewed records indicate", or "caregiver/evaluation data indicate" unless attribution is clinically necessary.',
+    'Observation sections must read as direct observations, not record-review summaries; use observed presentation, engagement, eye contact, reciprocity, affect, regulation, response to demands, flexibility, transitions, prompting, and problem solving.',
     'Use direct clinical wording such as "The client demonstrates...", "The client has...", "The client may...", or "Caregiver reports..." when attribution matters.',
     'Use only source-supported facts; missing facts remain visible as review-needed fields instead of being invented.',
     'Use SkillCascade standard initial assessment wording, transition language, medical-necessity language, risk boxes, and PCP coordination defaults.',
@@ -1504,6 +1506,36 @@ function meaningfulSentenceGroup(text, keywords = [], limit = 2) {
   return compactEvidenceText(fallback.join(' '), 760)
 }
 
+function cleanObservationSentence(sentence) {
+  let text = normalizeText(sentence)
+  if (!text || OBSERVATION_RECORD_SUMMARY_PATTERN.test(text)) return ''
+  text = text
+    .replace(/^During\s+ADOS-2\s+Module\s+\d+\s+(?:assessment|administration|activities|evaluation),?\s*/i, 'During the observation, ')
+    .replace(/^During\s+Autism\s+Diagnostic\s+Observation\s+Schedule[^,]*,\s*/i, 'During the observation, ')
+  return compactEvidenceText(text, 520)
+}
+
+function observationSentenceGroup(text, keywords = [], limit = 2) {
+  const sentences = splitSentences(text)
+    .map(cleanObservationSentence)
+    .filter(Boolean)
+  if (!sentences.length) return ''
+
+  const selected = []
+  const seen = new Set()
+  for (const sentence of sentences) {
+    if (keywords.length && !keywords.some((keyword) => sourceHasKeyword(sentence, keyword))) continue
+    const key = normalizeText(sentence).toLowerCase()
+    if (!key || seen.has(key)) continue
+    seen.add(key)
+    selected.push(sentence)
+    if (selected.length >= limit) break
+  }
+
+  const fallback = selected.length ? selected : sentences.slice(0, limit)
+  return compactEvidenceText(fallback.join(' '), 760)
+}
+
 function sourceHasAnyAffirmedTerm(text, terms = []) {
   return splitSentences(text).some((sentence) => terms.some((term) => sourceHasAffirmedKeyword(sentence, term)))
 }
@@ -1716,9 +1748,9 @@ export function buildLocalClinicalFacts({ sources = [] } = {}) {
     sectionSnippets: {
       reasonForReferral: firstMeaningfulSentence(reasonForReferral, ['referral', 'aggressive', 'communication', 'academic']),
       developmental: meaningfulSentenceGroup(developmental, ['developmental', 'delayed', 'communication', 'emotions'], 2),
-      observationsSocial: meaningfulSentenceGroup(observations, ['reciprocal', 'eye contact', 'social', 'initiation', 'nonverbal'], 3),
-      observationsCommunication: meaningfulSentenceGroup(observations, ['communication', 'questions', 'repetition', 'simplification', 'understanding', 'conversation'], 5),
-      observationsEmotion: meaningfulSentenceGroup(observations, ['emotion', 'frustrated', 'explosive', 'internal', 'escalate'], 2),
+      observationsSocial: observationSentenceGroup(observations, ['reciprocal', 'eye contact', 'social', 'initiation', 'nonverbal'], 3),
+      observationsCommunication: observationSentenceGroup(observations, ['communication', 'questions', 'repetition', 'simplification', 'understanding', 'conversation'], 5),
+      observationsEmotion: observationSentenceGroup(observations, ['emotion', 'frustrated', 'explosive', 'internal', 'escalate'], 2),
       criterionA: firstMeaningfulSentence(criterionA, ['reciprocity', 'nonverbal', 'relationships']),
       criterionB: firstMeaningfulSentence(criterionB, ['rigidity', 'sensory', 'repetitive', 'inflexibility']),
       interpretation: firstMeaningfulSentence(interpretation, ['severity', 'communication', 'reciprocity', 'rigidity']),
@@ -2126,19 +2158,19 @@ function buildClinicalSectionText(sectionId, matches, facts = {}) {
   const vinelandCommunication = vinelandDomain(vineland, 'Communication')
   const vinelandDailyLiving = vinelandDomain(vineland, 'Daily Living Skills')
   const vinelandSocialization = vinelandDomain(vineland, 'Socialization')
-  const behaviorListForReport = supportedBehaviorListText(facts, 'restricted/repetitive behavior, rigidity, emotional regulation, or other treatment-interfering concerns described in the source record')
+  const behaviorListForReport = supportedBehaviorListText(facts, 'restricted/repetitive behavior, rigidity, emotional regulation, or other treatment-interfering concerns identified in the clinical information')
   const behaviorList = facts.behaviors?.length
     ? formatClinicalList(facts.behaviors)
-    : 'restricted/repetitive behavior, rigidity, emotional regulation, or other treatment-interfering concerns described in the source record'
+    : 'restricted/repetitive behavior, rigidity, emotional regulation, or other treatment-interfering concerns identified in the clinical information'
 
   switch (sectionId) {
     case 'diagnosisSummary':
-      return `Records reviewed support a diagnosis of ${facts.diagnosis || 'Autism Spectrum Disorder'}${facts.diagnosisCode && !String(facts.diagnosis || '').includes(facts.diagnosisCode) ? ` (${facts.diagnosisCode})` : ''}${facts.supportLevel ? `, with the diagnostic source describing support needs in the ${facts.supportLevel} range` : ''}. ${facts.coOccurringText ? `The evaluation also referenced co-occurring ${facts.coOccurringText}. ` : ''}${sentenceOrFallback(snippets.reasonForReferral, evidenceText)} The diagnostic information supports the medical necessity of ABA services to address communication, social, adaptive, behavioral, and caregiver-training needs.`
+      return `The available clinical information supports a diagnosis of ${facts.diagnosis || 'Autism Spectrum Disorder'}${facts.diagnosisCode && !String(facts.diagnosis || '').includes(facts.diagnosisCode) ? ` (${facts.diagnosisCode})` : ''}${facts.supportLevel ? `, with support needs in the ${facts.supportLevel} range` : ''}. ${facts.coOccurringText ? `The evaluation also referenced co-occurring ${facts.coOccurringText}. ` : ''}${sentenceOrFallback(snippets.reasonForReferral, evidenceText)} The diagnostic information supports the medical necessity of ABA services to address communication, social, adaptive, behavioral, and caregiver-training needs.`
     case 'familyHistory':
       if (facts.standardSevereBehaviorCandidate) {
-        return `${clientFirstName} is a ${ageText} ${genderText} whose records indicate significant impairment across home, school, and social settings. Caregiver and behavioral documentation describe emotional dysregulation, aggressive escalation, communication deficits, and inability to function in academic environments.${facts.coOccurringText ? ` Co-occurring ${formatCoOccurringText(facts.coOccurringText)} are noted, though the evaluation indicates these diagnoses do not fully account for ${pronouns.possessive} developmental and functional profile.` : ''}`
+        return `${clientFirstName} is a ${ageText} ${genderText} with significant impairment across home, school, and social settings. Caregiver and behavioral information describes emotional dysregulation, aggressive escalation, communication deficits, and inability to function in academic environments.${facts.coOccurringText ? ` Co-occurring ${formatCoOccurringText(facts.coOccurringText)} are noted, though the evaluation indicates these diagnoses do not fully account for ${pronouns.possessive} developmental and functional profile.` : ''}`
       }
-      return `${clientFirstName} is a ${ageText} ${genderText} whose records indicate significant impairment across home, school, and social settings. ${sentenceOrFallback(snippets.reasonForReferral, evidenceText)}${facts.coOccurringText ? ` Co-occurring ${formatCoOccurringText(facts.coOccurringText)} are noted, though the evaluation indicates these diagnoses do not fully account for ${pronouns.possessive} developmental and functional profile.` : ''}${impairments.home ? ` Home functioning is affected by ${sentenceFragment(impairments.home)}.` : ''}`
+      return `${clientFirstName} is a ${ageText} ${genderText} with significant impairment across home, school, and social settings. ${sentenceOrFallback(snippets.reasonForReferral, evidenceText)}${facts.coOccurringText ? ` Co-occurring ${formatCoOccurringText(facts.coOccurringText)} are noted, though the evaluation indicates these diagnoses do not fully account for ${pronouns.possessive} developmental and functional profile.` : ''}${impairments.home ? ` Home functioning is affected by ${sentenceFragment(impairments.home)}.` : ''}`
     case 'developmentalHistory':
       {
         const developmentalSubject = pronouns.subject === 'they' ? clientFirstName : pronouns.subjectCap
@@ -2152,15 +2184,15 @@ function buildClinicalSectionText(sectionId, matches, facts = {}) {
       let schoolRecordSentence = ''
       if (schoolImpairment) {
         if (/^unable to/i.test(schoolImpairment)) {
-          schoolRecordSentence = `The diagnostic record indicates that ${clientFirstName} is ${schoolImpairment}. `
+          schoolRecordSentence = `${clientFirstName} is ${schoolImpairment}. `
         } else if (/^inability to/i.test(schoolImpairment)) {
-          schoolRecordSentence = `The diagnostic record describes ${schoolImpairment}. `
+          schoolRecordSentence = `${clientFirstName} demonstrates ${schoolImpairment}. `
         } else {
-          schoolRecordSentence = `The diagnostic record indicates that ${schoolImpairment}. `
+          schoolRecordSentence = `${clientFirstName}'s educational functioning is affected by ${schoolImpairment}. `
         }
       }
       if (facts.education?.unableToAttendSchool) {
-        return `${clientFirstName} is not currently able to attend a traditional school setting based on the reviewed records. ${schoolRecordSentence || (facts.education.evidence ? `${facts.education.evidence}. ` : '')}Reported behaviors and skill deficits including ${behaviorListForReport} interfere with ${pronouns.possessive} ability to remain safely in a classroom, follow school routines, participate in instruction, and engage appropriately with peers and authority figures. At this time, ABA services are clinically indicated to reduce unsafe and disruptive behavior, increase functional communication and compliance, and build prerequisite skills necessary for future educational participation.`
+        return `${clientFirstName} is not currently able to attend a traditional school setting. ${schoolRecordSentence || (facts.education.evidence ? `${facts.education.evidence}. ` : '')}Reported behaviors and skill deficits including ${behaviorListForReport} interfere with ${pronouns.possessive} ability to remain safely in a classroom, follow school routines, participate in instruction, and engage appropriately with peers and authority figures. At this time, ABA services are clinically indicated to reduce unsafe and disruptive behavior, increase functional communication and compliance, and build prerequisite skills necessary for future educational participation.`
       }
       const attendanceSentence = facts.education?.attendsSchool
         ? `${clientFirstName} is reported to attend school or participate in an educational program. `
@@ -3189,12 +3221,13 @@ function templateObservationText(job, observationNumber) {
   const clientFirstName = reportClientFirstName(job)
   const snippets = job.clinicalFacts?.sectionSnippets || {}
   if (observationNumber === 1) {
-    return `During the diagnostic observation/source review, ${clientFirstName} demonstrated clinically significant social-communication deficits. ${snippets.observationsSocial || snippets.criterionA || templateSectionText(job, 'socialProfile', 'Observation 1')} The observation supports goals targeting reciprocal responding, social initiation, nonverbal integration, and flexible participation with adults and peers.`
+    const observedSocial = snippets.observationsSocial || reviewText('Observation 1 direct-observation details')
+    return `During the observation, ${clientFirstName} presented with clinically significant social-communication needs affecting reciprocal engagement, nonverbal integration, and flexible participation. ${observedSocial} The observation supports goals targeting reciprocal responding, social initiation, nonverbal integration, and flexible participation with adults and peers.`
   }
   const communicationAndEmotion = [snippets.observationsCommunication, snippets.observationsEmotion]
     .filter(Boolean)
-    .join(' ') || templateSectionText(job, 'communicationProfile', 'Observation 2')
-  return `Additional observation findings indicate clinically significant communication, emotional-regulation, and participation needs. ${communicationAndEmotion} These findings support goals targeting comprehension, communication repair, emotional expression, help/break requests, coping, and safe re-engagement following frustration or demands.`
+    .join(' ') || reviewText('Observation 2 direct-observation details')
+  return `During structured interaction and task demands, ${clientFirstName} showed clinically significant communication, emotional-regulation, and participation needs. ${communicationAndEmotion} These observations support goals targeting comprehension, communication repair, emotional expression, help/break requests, coping, and safe re-engagement following frustration or demands.`
 }
 
 function goalProgramBehavior(goal) {

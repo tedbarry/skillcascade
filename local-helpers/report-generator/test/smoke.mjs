@@ -152,6 +152,8 @@ async function createSourceFixture() {
     '',
     'Behavioral Observations:',
     'During the evaluation, the client demonstrated difficulty with reciprocal social interaction. Eye contact was inconsistent and poorly integrated with communication, and spontaneous social initiation was limited. Communication was below age expectations, with difficulty organizing thoughts, limited elaboration, poor conversational reciprocity, and need for repetition and simplification of questions. The client appeared emotionally constricted and internally preoccupied and could escalate when challenged or frustrated.',
+    'Additional assessment information indicates social communication, eye contact, emotional regulation, and conversation concerns that should not be copied into observation prose.',
+    'Additional collateral information indicates reciprocal communication and emotional-regulation concerns that should not be copied into observation prose.',
     '',
     'ADOS-2 Results:',
     'ADOS-2 Module 3 was administered. Social Affect Total: 19. RRB Total: 4. ADOS-2 Classification: Autism. Comparison Score: 10 (High level of autism spectrum-related symptoms).',
@@ -774,6 +776,12 @@ try {
   assert.match(renderedOutput.value, /unable to function in traditional academic environments/)
   assert.match(renderedOutput.value, /Eye contact was inconsistent/)
   assert.match(renderedOutput.value, /need for repetition and simplification/)
+  assert.match(renderedOutput.value, /During the observation, Release/)
+  assert.match(renderedOutput.value, /During structured interaction and task demands, Release/)
+  assert.equal(/diagnostic observation\/source review/i.test(renderedOutput.value), false)
+  assert.equal(/Additional observation findings indicate/i.test(renderedOutput.value), false)
+  assert.equal(/Additional assessment information indicates/i.test(renderedOutput.value), false)
+  assert.equal(/Additional collateral information indicates/i.test(renderedOutput.value), false)
   assert.equal(renderedOutput.value.includes('The following techniques will be utilized to support the client in acquiring the skills that are related to the core deficits of autism'), false)
   assert.equal(renderedOutput.value.includes('The BCBA will utilize a blend of evidence-based ABA principles'), false)
   for (const standaloneTechnique of ['Prompting', 'Shaping', 'Chaining', 'Task Analysis']) {
