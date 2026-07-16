@@ -7,7 +7,13 @@ import { basename, dirname, join } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import mammoth from 'mammoth'
 import JSZip from 'jszip'
-import { resolvePassageDomainLabel } from '../src/passage-learning-tree-adapter.js'
+import {
+  ensurePassageProgrammingScaffold,
+  isMissingPassageAbcScaffold,
+  passageGoalPayload,
+  resolvePassageDomainLabel,
+  verifyPassageProgrammingReadiness,
+} from '../src/passage-learning-tree-adapter.js'
 
 const packageRoot = dirname(dirname(fileURLToPath(import.meta.url)))
 const port = Number(process.env.REPORT_HELPER_SMOKE_PORT || 4199)
@@ -24,6 +30,64 @@ assert.equal(resolvePassageDomainLabel([{ id: 'behavior', value: 'behavior domai
 assert.equal(resolvePassageDomainLabel([{ id: 'communication', value: 'communication domain' }], 'communication')?.id, 'communication')
 assert.equal(resolvePassageDomainLabel([{ id: 'social', value: 'social skills domain' }], 'social')?.id, 'social')
 assert.equal(resolvePassageDomainLabel([{ id: 'parent', value: 'parent training domain' }], 'parentTraining')?.id, 'parent')
+assert.equal(isMissingPassageAbcScaffold({ status: 404, itemStatuses: [] }), true)
+assert.equal(isMissingPassageAbcScaffold({ status: 403, itemStatuses: [] }), false)
+assert.equal(passageGoalPayload({ domain: 'Behavior', dataCollectionType: 'datafrequency2', longTermGoal: 'Behavior' }, 'client').dataCollectionType, 'Frequency')
+assert.equal(passageGoalPayload({ domain: 'Communication', dataCollectionType: 'datapercent', longTermGoal: 'Communication' }, 'client').dataCollectionType, 'Trial')
+
+let scaffoldPostCount = 0
+const scaffoldResponses = [
+  { ok: false, status: 404, itemStatuses: [{ ok: false, message: 'This clients ABC does not exist.' }], data: null },
+  { ok: true, status: 200, itemStatuses: [{ ok: true, message: '' }], data: { id: 'abc' } },
+]
+const scaffoldProof = await ensurePassageProgrammingScaffold('cookie', 'client', {
+  live: true,
+  getDetailed: async () => scaffoldResponses.shift(),
+  post: async () => {
+    scaffoldPostCount += 1
+    return { id: 'abc' }
+  },
+})
+assert.equal(scaffoldProof.state, 'created')
+assert.equal(scaffoldProof.verified, true)
+assert.equal(scaffoldPostCount, 1)
+
+let dryRunPostCount = 0
+const dryRunScaffoldProof = await ensurePassageProgrammingScaffold('cookie', 'client', {
+  live: false,
+  getDetailed: async () => ({ ok: false, status: 404, itemStatuses: [], data: null }),
+  post: async () => {
+    dryRunPostCount += 1
+  },
+})
+assert.equal(dryRunScaffoldProof.state, 'would_create')
+assert.equal(dryRunPostCount, 0)
+await assert.rejects(
+  ensurePassageProgrammingScaffold('cookie', 'client', {
+    live: true,
+    getDetailed: async () => ({ ok: false, status: 403, itemStatuses: [], data: null }),
+  }),
+  /preflight failed/i,
+)
+const programmingReadiness = await verifyPassageProgrammingReadiness('cookie', 'client', {
+  getDetailed: async () => ({
+    ok: true,
+    status: 200,
+    itemStatuses: Array.from({ length: 4 }, () => ({ ok: true, message: '' })),
+  }),
+})
+assert.equal(programmingReadiness.ok, true)
+assert.equal(programmingReadiness.itemCount, 4)
+await assert.rejects(
+  verifyPassageProgrammingReadiness('cookie', 'client', {
+    getDetailed: async () => ({
+      ok: false,
+      status: 207,
+      itemStatuses: [{ ok: false, message: 'This clients ABC does not exist.' }],
+    }),
+  }),
+  /readiness failed/i,
+)
 const unresolvedTemplatePhrases = [
   'Write what ABA methods',
   'Please specify specific long term goals',

@@ -112,7 +112,7 @@ function targetMasteryDate(row = {}) {
   return date
 }
 
-function passageGoalPayload(row = {}, clientId) {
+export function passageGoalPayload(row = {}, clientId) {
   const type = goalTypeForRow(row)
   const payload = {
     clientId,
@@ -125,7 +125,7 @@ function passageGoalPayload(row = {}, clientId) {
     linkedLabels: [],
     labels: [],
     fakeResponseField: '',
-    dataCollectionType: 'Trial',
+    dataCollectionType: targetTypeForRow(row),
   }
 
   if (type === 'Behavior') {
@@ -241,6 +241,90 @@ function verifyPlan(plan, destinationGoalsAfter) {
   }
 }
 
+export function isMissingPassageAbcScaffold(response = {}) {
+  if (Number(response.status) === 404) return true
+  const itemStatuses = Array.isArray(response.itemStatuses) ? response.itemStatuses : []
+  return itemStatuses.some((item) => /abc does not exist|client.?s abc does not exist/i.test(String(item?.message || '')))
+}
+
+export async function ensurePassageProgrammingScaffold(cookieHeader, clientId, options = {}) {
+  const live = options.live === true
+  const getDetailed = options.getDetailed || trpcGetDetailed
+  const post = options.post || trpcPost
+  const input = { 0: { json: { clientId }, meta: { values: {} } } }
+  const before = await getDetailed(cookieHeader, 'abc.getOne', input, 20_000)
+  const missing = isMissingPassageAbcScaffold(before)
+
+  if (!before.ok && !missing) {
+    throw new Error(`Passage ABC scaffold preflight failed with status ${before.status}.`)
+  }
+  if (before.ok && !before.data?.id) {
+    throw new Error('Passage ABC scaffold preflight returned an invalid scaffold record.')
+  }
+  if (!missing) {
+    return {
+      state: 'already_present',
+      created: false,
+      beforeStatus: before.status,
+      afterStatus: before.status,
+      verified: true,
+    }
+  }
+  if (!live) {
+    return {
+      state: 'would_create',
+      created: false,
+      beforeStatus: before.status,
+      afterStatus: before.status,
+      verified: false,
+    }
+  }
+
+  await post(cookieHeader, 'abc.create', { clientId }, 20_000)
+  const after = await getDetailed(cookieHeader, 'abc.getOne', input, 20_000)
+  if (!after.ok || !after.data?.id) {
+    throw new Error(`Passage ABC scaffold verification failed with status ${after.status}.`)
+  }
+  return {
+    state: 'created',
+    created: true,
+    beforeStatus: before.status,
+    afterStatus: after.status,
+    verified: true,
+  }
+}
+
+function passageProgrammingBatchInput(clientId) {
+  return {
+    0: { json: { id: clientId }, meta: { values: {} } },
+    1: { json: null, meta: { values: ['undefined'] } },
+    2: {
+      json: { clientId, type: null, treatmentPhases: [], includeArchived: false },
+      meta: { values: { type: ['undefined'] } },
+    },
+    3: { json: { clientId }, meta: { values: {} } },
+  }
+}
+
+export async function verifyPassageProgrammingReadiness(cookieHeader, clientId, options = {}) {
+  const getDetailed = options.getDetailed || trpcGetDetailed
+  const result = await getDetailed(
+    cookieHeader,
+    'clients.getOne,departments.getAll,goals.getAll,abc.getOne',
+    passageProgrammingBatchInput(clientId),
+    25_000,
+  )
+  if (!result.ok) {
+    throw new Error(`Passage programming readiness failed with status ${result.status}.`)
+  }
+  return {
+    ok: true,
+    status: result.status,
+    itemCount: result.itemStatuses.length,
+    failedItemCount: result.itemStatuses.filter((item) => !item.ok).length,
+  }
+}
+
 function mockAdapterResult({ live, treePlan, destinationLabel = 'Mock Passage Client' }) {
   const rows = treePlan.expectedRows || []
   const goalKeys = new Set(rows.map(goalKeyFromRow))
@@ -275,6 +359,17 @@ function mockAdapterResult({ live, treePlan, destinationLabel = 'Mock Passage Cl
         matchedTargetCount: rows.length,
         missingGoalCount: 0,
         missingTargetCount: 0,
+      } : null,
+      programmingScaffold: {
+        state: live ? 'mock_created' : 'mock_would_create',
+        created: live,
+        verified: live,
+      },
+      programmingReadiness: live ? {
+        ok: true,
+        status: 200,
+        itemCount: 4,
+        failedItemCount: 0,
       } : null,
     },
   }
@@ -343,6 +438,12 @@ export async function runPassageLearningTreeAdapter(body = {}, treePlan = {}) {
     blockers.push(`Could not read Passage goals for destination client: ${safeError(error)}`)
     return []
   }) : []
+  const programmingScaffold = destinationClient?.id && cookieHeader
+    ? await ensurePassageProgrammingScaffold(cookieHeader, destinationClient.id, { live }).catch((error) => {
+        blockers.push(`Could not prepare Passage programming: ${safeError(error)}`)
+        return null
+      })
+    : null
 
   const labelSetup = cookieHeader ? await ensureDomainLabels(cookieHeader, live, warnings, blockers) : null
   const plan = destinationClient?.id && labelSetup
@@ -353,7 +454,7 @@ export async function runPassageLearningTreeAdapter(body = {}, treePlan = {}) {
     adapter: 'passage-web-app-trpc',
     adapterMode: live ? 'live_external_write' : 'adapter_dry_run',
     passageOrigin: PASSAGE_ORIGIN,
-    liveExternalWriteAttempted: false,
+    liveExternalWriteAttempted: Boolean(programmingScaffold?.created),
     cdpConnected: Boolean(cookieHeader),
     credentialScope,
     accountGate: accountGateProof ? {
@@ -365,6 +466,7 @@ export async function runPassageLearningTreeAdapter(body = {}, treePlan = {}) {
     } : null,
     profileRead: Boolean(profile?.id),
     destination: summarizeClient(destinationClient, destinationGoalsBefore),
+    programmingScaffold,
     labelSummary: labelSetup?.summary || null,
     planSummary: summarizePlan(plan),
     writeSummary: null,
@@ -394,6 +496,10 @@ export async function runPassageLearningTreeAdapter(body = {}, treePlan = {}) {
   if (verificationSummary.missingGoalCount || verificationSummary.missingTargetCount) {
     blockers.push(`Passage verification found missing items: goals=${verificationSummary.missingGoalCount}, targets=${verificationSummary.missingTargetCount}.`)
   }
+  const programmingReadiness = await verifyPassageProgrammingReadiness(cookieHeader, destinationClient.id).catch((error) => {
+    blockers.push(`Passage programming page is not ready: ${safeError(error)}`)
+    return null
+  })
 
   return {
     ok: blockers.length === 0,
@@ -406,6 +512,7 @@ export async function runPassageLearningTreeAdapter(body = {}, treePlan = {}) {
       destinationAfter: summarizeClient(destinationClient, destinationGoalsAfter),
       writeSummary,
       verificationSummary,
+      programmingReadiness,
     },
   }
 }
@@ -696,14 +803,39 @@ async function buildCookieHeaderFromCdp(cdpUrl) {
 }
 
 async function trpcGet(cookieHeader, procedure, input, timeoutMs = 15_000) {
+  const result = await trpcGetDetailed(cookieHeader, procedure, input, timeoutMs)
+  if (!result.ok) {
+    const message = result.itemStatuses.find((item) => !item.ok)?.message || 'Passage request failed.'
+    throw new Error(`${procedure} ${result.status}: ${message.slice(0, 240)}`)
+  }
+  return result.data
+}
+
+async function trpcGetDetailed(cookieHeader, procedure, input, timeoutMs = 15_000) {
   const url = `${PASSAGE_ORIGIN}/api/trpc/${procedure}?batch=1&input=${encodeURIComponent(JSON.stringify(input))}`
   const response = await fetch(url, {
     headers: { cookie: cookieHeader, accept: 'application/json' },
     signal: AbortSignal.timeout(timeoutMs),
   })
   const text = await response.text()
-  if (!response.ok) throw new Error(`${procedure} ${response.status}: ${text.slice(0, 240)}`)
-  return JSON.parse(text)?.[0]?.result?.data?.json
+  let parsed = null
+  try {
+    parsed = JSON.parse(text)
+  } catch {
+    parsed = null
+  }
+  const items = Array.isArray(parsed) ? parsed : []
+  const itemStatuses = items.map((item) => ({
+    ok: Boolean(item?.result),
+    code: item?.error?.code ?? null,
+    message: String(item?.error?.message || ''),
+  }))
+  return {
+    ok: response.ok && items.length > 0 && itemStatuses.every((item) => item.ok),
+    status: response.status,
+    itemStatuses,
+    data: items?.[0]?.result?.data?.json ?? null,
+  }
 }
 
 async function trpcPost(cookieHeader, procedure, input, timeoutMs = 25_000) {
