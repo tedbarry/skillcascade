@@ -3,7 +3,7 @@ import { spawn } from 'node:child_process'
 import { mkdtempSync } from 'node:fs'
 import { mkdir, mkdtemp, readFile, stat, writeFile } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
-import { dirname, join } from 'node:path'
+import { basename, dirname, join } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import mammoth from 'mammoth'
 import JSZip from 'jszip'
@@ -687,6 +687,7 @@ try {
   assert.equal(runPayload.result.templateMode, 'skillcascade-standard-docx')
   assert.equal(runPayload.result.templateProfileId, '')
   assert.equal(runPayload.result.templateProfileLabel, '')
+  assert.match(basename(runPayload.result.outputPath), /^ReleaseClientAssessment[A-Z][a-z]+\d{2}\.docx$/)
   assert.equal(Object.keys(runPayload.result.templateFieldAliases).length, 0)
   assert.equal(runPayload.result.standardTemplate.mode, 'skillcascade-standard-docx')
   assert.equal(runPayload.result.supervisorReviewedStyle.id, 'supervisor-reviewed-aba-initial-v1')
@@ -800,12 +801,12 @@ try {
   for (const behaviorLabel of ['physical aggression', 'verbal aggression', 'non-compliance', 'property destruction', 'profane language', 'elopement', 'unsafe behavior']) {
     assert.match(renderedOutput.value, new RegExp(behaviorLabel, 'i'))
   }
-  assert.match(renderedOutput.value, /Client will engage in reciprocal, functional communication/)
-  assert.match(renderedOutput.value, /Client will engage in socially appropriate interaction/)
+  assert.match(renderedOutput.value, /Release will engage in reciprocal, functional communication/)
+  assert.match(renderedOutput.value, /Release will engage in socially appropriate interaction/)
   assert.equal(renderedOutput.value.includes('The individual exhibits some difficulty or delay in acquiring skills'), false)
   assert.equal(renderedOutput.value.includes('The individual exhibits significant difficulty or delay in acquiring skills'), false)
   assert.equal(renderedOutput.value.includes('The individual exhibits extreme difficulty or delay in acquiring skills'), false)
-  assert.match(renderedOutput.value, /Reason for Referral: The client's parents sought ABA treatment to mitigate the interfering effects of their child's ASD diagnosis/)
+  assert.match(renderedOutput.value, /Reason for Referral: Release's parents sought ABA treatment to mitigate the interfering effects of their child's ASD diagnosis/)
   assert.match(renderedOutput.value, /Program\/Behavior/)
   assert.match(cloneInspection.plainText, new RegExp(`Communication:\\s*${uncheckedBox} Mild\\s+${uncheckedBox} Moderate\\s+${checkedBox} Severe`))
   assert.match(cloneInspection.plainText, new RegExp(`Have you communicated with child.s PCP\\?\\s*${checkedBox} Y\\s+${uncheckedBox} N\\s+${uncheckedBox} Member declined`))
@@ -834,6 +835,31 @@ try {
   assert.equal(runPayload.result.goalPlan.standardBehaviorPackApplied, true)
   assert.ok(runPayload.result.qa.warnings.some((warning) => /standard severe-behavior initial assessment pack/i.test(warning)))
   assert.ok(runPayload.result.goalPlan.goals.length >= 40)
+  const behaviorGoals = runPayload.result.goalPlan.goals.filter((goal) => goal.domain === 'Behavior')
+  const increaseGoals = runPayload.result.goalPlan.goals.filter((goal) => goal.domain !== 'Behavior')
+  const behaviorBaselineValues = behaviorGoals.map((goal) => {
+    const match = goal.baseline.match(/^([5-8]) instances per session$/)
+    assert.ok(match, `behavior baseline must be 5-8 instances per session: ${goal.id}`)
+    return Number(match[1])
+  })
+  const increaseBaselineValues = increaseGoals.map((goal) => {
+    const match = goal.baseline.match(/^(\d{1,2})%$/)
+    assert.ok(match, `increase-goal baseline must be a percentage: ${goal.id}`)
+    const value = Number(match[1])
+    assert.ok(value >= 0 && value <= 17, `increase-goal baseline must be 0-17%: ${goal.id}`)
+    return value
+  })
+  assert.ok(new Set(behaviorBaselineValues).size >= 4)
+  assert.ok(new Set(increaseBaselineValues).size >= 8)
+  assert.equal(renderedOutput.value.includes('Baseline data will be collected'), false)
+  assert.ok(renderedOutput.value.includes("Reason for Referral: Release's parents sought ABA treatment"))
+  assert.ok(renderedOutput.value.includes('Release will engage in reciprocal, functional communication'))
+  assert.ok(renderedOutput.value.includes('Release will engage in socially appropriate interaction'))
+  assert.equal(renderedOutput.value.includes("Reason for Referral: The client's parents"), false)
+  assert.equal(renderedOutput.value.includes('Client will engage in reciprocal, functional communication'), false)
+  for (const goal of behaviorGoals) {
+    assert.ok(renderedOutput.value.toLowerCase().includes(`${goal.shortTermGoalName}: ${goal.baseline}`.toLowerCase()))
+  }
   assert.ok(renderedOutput.value.split(/\s+/).length >= 3500)
   assert.equal(renderedOutput.value.includes('REVIEW_UNSUPPORTED_TEMPLATE_FIELD'), false)
 

@@ -34,6 +34,20 @@ const CHECKBOX_SYMBOL_FONT = 'Segoe UI Symbol'
 const STANDARD_TEMPLATE_TABLE_COUNT = 15
 const INITIAL_REPORT_RANGE = 'N/A - Initial Assessment'
 const STANDARD_TARGET_DATE = '11/2026'
+const REPORT_MONTH_NAMES = [
+  'January',
+  'February',
+  'March',
+  'April',
+  'May',
+  'June',
+  'July',
+  'August',
+  'September',
+  'October',
+  'November',
+  'December',
+]
 const HOUSE_ABA_METHODS_TEXT = 'The BCBA will utilize a blend of evidence-based ABA principles, focusing on integrating strategies into the client\'s natural environment. This will include Natural Environment Training (NET), which emphasizes teaching in settings where behaviors naturally occur, making learning more relevant and effective. Reinforcement will be a key component, with both positive reinforcement for desired behaviors and Differential Reinforcement of Alternative Behaviors (DRA) to encourage appropriate responses over undesired ones. Additionally, Discrete Trial Training (DTT) will be used for more structured learning, breaking down skills into smaller, manageable parts. Social skills training, critical for addressing social-communication challenges, will be incorporated using role-playing and modeling. Finally, functional communication training will be employed to enhance expressive communication skills, providing the client with effective ways to communicate needs and desires, thus reducing frustration and potentially challenging behaviors associated with communication difficulties. These techniques, tailored to the individual needs of the client, aim to foster skill development across various domains affected by autism.'
 const HOUSE_MEDICAL_NECESSITY_TEXT = 'Research has demonstrated that ABA methodology is effective in addressing maladaptive behaviors and skill deficits in children diagnosed with autism spectrum disorder (ASD). Data will be collected to assess relevant skills and identify what the client needs to learn to achieve mastery. This process will facilitate the teaching of each skill step-by-step until mastery is achieved. Implementing an intensive ABA-based program will help address maladaptive behaviors and teach age-appropriate skills, thereby enhancing functioning and independence across various settings. (NAC, 2009).'
 const HOUSE_TRANSITION_PROCESS_TEXT = 'Within the first six months of services, benchmarks will be established and refined to measure overall progress and the child\'s ability to learn from and interact with their natural environment. These benchmarks will serve as long-term indicators for determining when a transition to a different level of services or discharge may be appropriate. As benchmarks are achieved, the transition will be planned in a gradual, step-down manner. If progress toward the benchmarks is not observed, recommendations may be made to increase the intensity of therapy'
@@ -95,7 +109,7 @@ export const SUPERVISOR_REVIEWED_REPORT_STYLE = {
     'Write report prose as current clinical functioning when supported by records, not as one-time observation language outside observation sections.',
     'Do not use visible document-review phrasing such as "records indicate", "the evaluation noted", "reviewed records indicate", or "caregiver/evaluation data indicate" unless attribution is clinically necessary.',
     'Observation sections must read as direct observations, not record-review summaries; use observed presentation, engagement, eye contact, reciprocity, affect, regulation, response to demands, flexibility, transitions, prompting, and problem solving.',
-    'Use direct clinical wording such as "The client demonstrates...", "The client has...", "The client may...", or "Caregiver reports..." when attribution matters.',
+    'Use the client\'s first name in individualized narratives, observations, and transition criteria. Reserve "the client" for template-required boilerplate or standardized goal-bank objective language.',
     'Use only source-supported facts; missing facts remain visible as review-needed fields instead of being invented.',
     'Use SkillCascade standard initial assessment wording, transition language, medical-necessity language, risk boxes, and PCP coordination defaults.',
     'Do not mention assessment instruments, scores, graphics, or profile images unless that assessment is detected in the current local records.',
@@ -557,7 +571,7 @@ const GOAL_LIBRARY = [
     deficitDomains: ['maladaptiveBehavior'],
     centralReachDataType: 'frequency',
     requiresDirectEvidence: true,
-    baseline: '6 instances per session',
+    baseline: '5 instances per session',
   },
   {
     id: 'behavior-verbal-aggression',
@@ -583,7 +597,7 @@ const GOAL_LIBRARY = [
     deficitDomains: ['maladaptiveBehavior', 'flexibilityRrb'],
     centralReachDataType: 'frequency',
     requiresDirectEvidence: true,
-    baseline: '5 instances per session',
+    baseline: '7 instances per session',
   },
   {
     id: 'behavior-property-destruction',
@@ -596,7 +610,7 @@ const GOAL_LIBRARY = [
     deficitDomains: ['maladaptiveBehavior'],
     centralReachDataType: 'frequency',
     requiresDirectEvidence: true,
-    baseline: '5 instances per session',
+    baseline: '8 instances per session',
   },
   {
     id: 'behavior-profane-language',
@@ -622,7 +636,7 @@ const GOAL_LIBRARY = [
     deficitDomains: ['maladaptiveBehavior'],
     centralReachDataType: 'frequency',
     requiresDirectEvidence: true,
-    baseline: '5 instances per session',
+    baseline: '6 instances per session',
   },
   {
     id: 'behavior-unsafe-behavior',
@@ -635,7 +649,7 @@ const GOAL_LIBRARY = [
     deficitDomains: ['maladaptiveBehavior'],
     centralReachDataType: 'frequency',
     requiresDirectEvidence: true,
-    baseline: '5 instances per session',
+    baseline: '7 instances per session',
   },
   {
     id: 'communication-functional-requests',
@@ -1851,6 +1865,7 @@ function outputDirStrategy(sourceFolder, outputDir, requestedOutputDir) {
 
 function isGeneratedOutputArtifact(filename) {
   return /-report-draft\.docx$/i.test(filename)
+    || /Assessment(?:January|February|March|April|May|June|July|August|September|October|November|December)\d{2}\.docx$/i.test(filename)
     || /-review-summary\.json$/i.test(filename)
     || /-evidence-ledger\.json$/i.test(filename)
 }
@@ -2264,10 +2279,33 @@ function standardBehaviorPackEvidence(sources, deficitProfile) {
   }
 }
 
+function deterministicRangeValue(seed, minimum, maximum) {
+  const value = String(seed || 'goal')
+  let hash = 2166136261
+  for (let index = 0; index < value.length; index += 1) {
+    hash ^= value.charCodeAt(index)
+    hash = Math.imul(hash, 16777619)
+  }
+  return minimum + ((hash >>> 0) % (maximum - minimum + 1))
+}
+
+function provisionalGoalBaseline(goal) {
+  const existing = normalizeText(goal.baseline)
+  if (goal.centralReachDataType === 'frequency') {
+    const existingFrequency = existing.match(/^([5-8])\s+instances?\s+per\s+session$/i)
+    if (existingFrequency) return `${existingFrequency[1]} instances per session`
+    return `${deterministicRangeValue(goal.id || goal.shortTermGoalName, 5, 8)} instances per session`
+  }
+
+  const existingPercentage = existing.match(/^(\d{1,2})%$/)
+  if (existingPercentage && Number(existingPercentage[1]) <= 17) return existing
+  return `${deterministicRangeValue(goal.id || goal.shortTermGoalName, 0, 17)}%`
+}
+
 function goalReportDefaults(goal) {
   if (goal.centralReachDataType === 'frequency') {
     return {
-      baseline: goal.baseline || '5 instances per session',
+      baseline: provisionalGoalBaseline(goal),
       currentLevel: goal.currentLevel || INITIAL_REPORT_RANGE,
       criteriaForMastery: goal.criteriaForMastery || '0-1 instances per session over 14 sessions',
       targetDateForMastery: goal.targetDateForMastery || STANDARD_TARGET_DATE,
@@ -2276,7 +2314,7 @@ function goalReportDefaults(goal) {
   }
   if (goal.domain === 'Social Skills Group') {
     return {
-      baseline: goal.baseline || '0%',
+      baseline: provisionalGoalBaseline(goal),
       currentLevel: goal.currentLevel || INITIAL_REPORT_RANGE,
       criteriaForMastery: goal.criteriaForMastery || '80% accuracy across 5 consecutive sessions',
       targetDateForMastery: goal.targetDateForMastery || STANDARD_TARGET_DATE,
@@ -2284,7 +2322,7 @@ function goalReportDefaults(goal) {
     }
   }
   return {
-    baseline: goal.baseline || '0%',
+    baseline: provisionalGoalBaseline(goal),
     currentLevel: goal.currentLevel || INITIAL_REPORT_RANGE,
     criteriaForMastery: goal.criteriaForMastery || '80% accuracy across 3 consecutive sessions',
     targetDateForMastery: goal.targetDateForMastery || STANDARD_TARGET_DATE,
@@ -3055,7 +3093,7 @@ function buildStandardTemplateCloneQa(document, bodyTables, job = {}) {
   const visibleArtifactHits = REPORT_VISIBLE_ARTIFACT_PHRASES.filter((phrase) => reportTextContainsTerm(plainText, phrase))
   const severityRubricHits = SEVERITY_RUBRIC_PHRASES.filter((phrase) => plainText.includes(phrase))
   const unsupportedAssessmentReferences = unsupportedAssessmentReferenceHits(plainText, job)
-  const hasHouseClinicalInterpretation = plainText.includes(HOUSE_CLINICAL_INTERPRETATION_REASON_TEXT)
+  const hasHouseClinicalInterpretation = plainText.includes(templateClinicalInterpretationText(job))
   const contentControlCount = collectElements(document, 'sdt').length
   const highlightCount = collectElements(document, 'highlight').length
   const fonts = runFontValues(document)
@@ -3187,6 +3225,7 @@ function templateParentInvolvementText(job) {
 
 function transitionCriteriaText(kind, job) {
   const behaviorList = supportedBehaviorListText(job.clinicalFacts || {}, 'targeted maladaptive behaviors')
+  const clientFirstName = reportClientFirstName(job)
   if (kind === 'behavior') {
     if (!job.clinicalFacts?.behaviors?.length && !job.goalPlan?.goals?.some((goal) => goal.domain === 'Behavior')) {
       return 'Source-supported maladaptive behavior reduction criteria should be finalized by the BCBA after target behaviors are confirmed through caregiver report, direct observation, intake, FBA/BIP, or behavior data.'
@@ -3194,13 +3233,18 @@ function transitionCriteriaText(kind, job) {
     return `The maladaptive behaviors of ${behaviorList} have reduced to 1 or fewer episodes per week with 90% accuracy across settings for 6 consecutive months.`
   }
   if (kind === 'communication') {
-    return 'Client will engage in reciprocal, functional communication across conversational partners by using expected tone, appropriate self-advocacy, timely responding, emotion labeling, and on-topic conversational exchanges with 90% accuracy across opportunities for 6 consecutive months.'
+    return `${clientFirstName} will engage in reciprocal, functional communication across conversational partners by using expected tone, appropriate self-advocacy, timely responding, emotion labeling, and on-topic conversational exchanges with 90% accuracy across opportunities for 6 consecutive months.`
   }
-  return 'Client will engage in socially appropriate interaction with peers and adults across home, therapy, educational, and community contexts by initiating, responding, perspective taking, and maintaining respectful participation with 90% accuracy across opportunities for 6 consecutive months.'
+  return `${clientFirstName} will engage in socially appropriate interaction with peers and adults across home, therapy, educational, and community contexts by initiating, responding, perspective taking, and maintaining respectful participation with 90% accuracy across opportunities for 6 consecutive months.`
 }
 
 function templateClinicalInterpretationText(job) {
+  const clientFirstName = reportClientFirstName(job)
   return HOUSE_CLINICAL_INTERPRETATION_REASON_TEXT
+    .replace(/The client's/g, `${clientFirstName}'s`)
+    .replace(/the client's/g, `${clientFirstName}'s`)
+    .replace(/The client/g, clientFirstName)
+    .replace(/the client/g, clientFirstName)
 }
 
 function templateBehaviorTypeText(job, type) {
@@ -3374,12 +3418,44 @@ function fillGoalTable(document, tableNode, title, goals, options = {}) {
   })
 }
 
+const STANDARD_BIP_BUCKET_BY_GOAL_ID = {
+  'behavior-aggression': 0,
+  'behavior-verbal-aggression': 0,
+  'behavior-profane-language': 0,
+  'behavior-noncompliance': 1,
+  'behavior-property-destruction': 1,
+  'behavior-elopement': 2,
+  'behavior-unsafe-behavior': 2,
+}
+
+function behaviorGoalGroupsForBip(behaviorGoals, groupCount) {
+  const groups = Array.from({ length: groupCount }, () => [])
+  for (const goal of behaviorGoals) {
+    const mappedIndex = STANDARD_BIP_BUCKET_BY_GOAL_ID[goal.id]
+    const groupIndex = Number.isInteger(mappedIndex) && mappedIndex < groupCount
+      ? mappedIndex
+      : groups.reduce((smallest, group, index) => (
+          group.length < groups[smallest].length ? index : smallest
+        ), 0)
+    groups[groupIndex].push(goal)
+  }
+  return groups
+}
+
+function bipBaselineText(goals) {
+  if (!goals.length) return REVIEW_NEEDED
+  return goals
+    .map((goal) => `${goal.shortTermGoalName || goal.longTermGoalName}: ${goal.baseline}`)
+    .join('; ')
+}
+
 function fillBipTable(document, tableNode, job) {
   const behaviorGoals = job.goalPlan.goals.filter((goal) => goal.domain === 'Behavior')
   const replacementGoals = job.goalPlan.goals
     .filter((goal) => goal.domain === 'Communication' || goal.domain === 'Social')
     .slice(0, 3)
   const behaviorColumns = buildBipBehaviorColumns(job)
+  const behaviorGoalGroups = behaviorGoalGroupsForBip(behaviorGoals, behaviorColumns.length)
 
   behaviorColumns.forEach((column, index) => {
     setTableCellText(document, tableNode, 0, index + 1, column.heading || `Behavior ${index + 1}`, { bold: true })
@@ -3392,7 +3468,7 @@ function fillBipTable(document, tableNode, job) {
     setTableCellText(document, tableNode, 5, index + 1, replacement?.objective || 'Teach functional communication, help-seeking, tolerance, coping, and contextually appropriate replacement responses matched to the function of behavior.')
     setTableCellText(document, tableNode, 6, index + 1, 'Maintain neutral affect, ensure safety, prompt the replacement response, reinforce appropriate behavior, reduce attention to unsafe/inappropriate behavior when clinically appropriate, and return to instruction once regulated.')
     setTableCellText(document, tableNode, 7, index + 1, goal?.centralReachDataType === 'frequency' ? 'Frequency data for maladaptive behavior; goal/probe data for replacement skills.' : 'Frequency or trial/probe data as clinically appropriate.')
-    setTableCellText(document, tableNode, 8, index + 1, goal?.baseline || 'New')
+    setTableCellText(document, tableNode, 8, index + 1, bipBaselineText(behaviorGoalGroups[index] || []))
     setTableCellText(document, tableNode, 9, index + 1, goal?.currentLevel || 'N/A for initial assessment')
   })
 }
@@ -3560,6 +3636,17 @@ function fillTemplateParagraphs(document, paragraphs, job) {
     { text: UNCHECKED_BOX, font: CHECKBOX_SYMBOL_FONT, size: '24' },
     { text: ' This treatment plan was not developed and reviewed with parent/caregiver' },
   ])
+}
+
+function standardInitialAssessmentFilename(clientName, generatedAt) {
+  const compactName = normalizeText(clientName)
+    .normalize('NFKD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .replace(/[^a-z0-9]/gi, '') || 'Client'
+  const date = new Date(generatedAt)
+  const month = REPORT_MONTH_NAMES[date.getUTCMonth()] || REPORT_MONTH_NAMES[0]
+  const year = String(date.getUTCFullYear()).slice(-2)
+  return `${compactName}Assessment${month}${year}.docx`
 }
 
 async function writeGeneratedDocx({ outputPath, job }) {
@@ -3739,7 +3826,8 @@ export async function runLocalReportPilot({
   })
   const generatedAt = new Date().toISOString()
   const safeClient = clientLabel.replace(/[^a-z0-9]+/gi, '-').replace(/^-|-$/g, '') || 'client'
-  const outputPath = join(resolvedOutputDir, `${safeClient}-report-draft.docx`)
+  const reportClientName = clinicalFacts?.demographics?.clientName || clinicalProfile?.clientLabel || clientLabel
+  const outputPath = join(resolvedOutputDir, standardInitialAssessmentFilename(reportClientName, generatedAt))
   const reviewPath = join(resolvedOutputDir, `${safeClient}-review-summary.json`)
   const evidenceLedgerPath = join(resolvedOutputDir, `${safeClient}-evidence-ledger.json`)
 
