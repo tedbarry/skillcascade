@@ -7,6 +7,7 @@ import { basename, dirname, join } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import mammoth from 'mammoth'
 import JSZip from 'jszip'
+import { resolvePassageDomainLabel } from '../src/passage-learning-tree-adapter.js'
 
 const packageRoot = dirname(dirname(fileURLToPath(import.meta.url)))
 const port = Number(process.env.REPORT_HELPER_SMOKE_PORT || 4199)
@@ -18,6 +19,11 @@ const helperApi = '/api/local-report-generator'
 const legacyHelperApi = '/api/local-report-pilot'
 const checkedBox = '\u2612'
 const uncheckedBox = '\u2610'
+
+assert.equal(resolvePassageDomainLabel([{ id: 'behavior', value: 'behavior domain' }], 'behavior')?.id, 'behavior')
+assert.equal(resolvePassageDomainLabel([{ id: 'communication', value: 'communication domain' }], 'communication')?.id, 'communication')
+assert.equal(resolvePassageDomainLabel([{ id: 'social', value: 'social skills domain' }], 'social')?.id, 'social')
+assert.equal(resolvePassageDomainLabel([{ id: 'parent', value: 'parent training domain' }], 'parentTraining')?.id, 'parent')
 const unresolvedTemplatePhrases = [
   'Write what ABA methods',
   'Please specify specific long term goals',

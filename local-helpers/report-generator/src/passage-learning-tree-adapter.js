@@ -12,6 +12,13 @@ export const PASSAGE_DOMAIN_LABELS = {
   parentTraining: 'Parent Training Domain',
 }
 
+export const PASSAGE_DOMAIN_LABEL_ALIASES = {
+  behavior: ['Behavior Reduction Domain', 'Behavior Domain'],
+  communication: ['Communication Domain'],
+  social: ['Social Domain', 'Social Skills Domain'],
+  parentTraining: ['Parent Training Domain'],
+}
+
 function cleanText(value) {
   return String(value || '').replace(/\s+/g, ' ').trim()
 }
@@ -22,6 +29,17 @@ function normalizeName(value) {
 
 function normalizeKey(value) {
   return cleanText(value).toLowerCase()
+}
+
+export function resolvePassageDomainLabel(labels = [], domain = '') {
+  const aliases = PASSAGE_DOMAIN_LABEL_ALIASES[domain]
+    || [PASSAGE_DOMAIN_LABELS[domain]].filter(Boolean)
+  const byValue = new Map(labels.map((label) => [normalizeKey(label.value), label]))
+  for (const alias of aliases) {
+    const match = byValue.get(normalizeKey(alias))
+    if (match) return match
+  }
+  return null
 }
 
 function initialsFromName(value) {
@@ -517,16 +535,15 @@ async function ensureDomainLabels(cookieHeader, live, warnings, blockers) {
   if (!Array.isArray(labels)) labels = []
 
   const labelGroupId = groups.find((group) => group.value === 'Uncategorized')?.id || groups[0].id
-  const labelsByValue = new Map(labels.map((label) => [label.value, label]))
   const createdLabels = []
-  for (const labelValue of Object.values(PASSAGE_DOMAIN_LABELS)) {
-    if (labelsByValue.has(labelValue)) continue
+  for (const [domain, labelValue] of Object.entries(PASSAGE_DOMAIN_LABELS)) {
+    if (resolvePassageDomainLabel(labels, domain)) continue
     if (!live) {
       warnings.push(`Passage label will be created during live write: ${labelValue}.`)
       continue
     }
     const created = await trpcPost(cookieHeader, 'goalLabels.createLabel', { labelGroupId, value: labelValue }, 20_000)
-    labelsByValue.set(created.value, created)
+    labels.push(created)
     createdLabels.push(created.value)
   }
 
@@ -534,14 +551,12 @@ async function ensureDomainLabels(cookieHeader, live, warnings, blockers) {
     labels = await trpcGet(cookieHeader, 'goalLabels.getAllLabels', {
       0: { json: null, meta: { values: ['undefined'] } },
     }, 15_000)
-    labelsByValue.clear()
-    for (const label of labels || []) labelsByValue.set(label.value, label)
   }
 
   const labelsByDomain = {}
   for (const [domain, labelValue] of Object.entries(PASSAGE_DOMAIN_LABELS)) {
-    const label = labelsByValue.get(labelValue)
-    labelsByDomain[domain] = { value: labelValue, id: label?.id || null }
+    const label = resolvePassageDomainLabel(labels, domain)
+    labelsByDomain[domain] = { value: label?.value || labelValue, id: label?.id || null }
     if (live && !label?.id) blockers.push(`Missing Passage label after setup: ${labelValue}`)
   }
 
